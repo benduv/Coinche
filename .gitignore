@@ -1,0 +1,26 @@
+# Fichiers compilés
+*.o
+*.obj
+*.exe
+*.out
+*.dll
+*.so
+*.dylib
+
+# Dossiers de build
+build/
+bin/
+obj/
+Debug/
+Release/
+
+# Fichiers IDE
+.vscode/
+.idea/
+*.user
+*.suo
+*.sln.docstates
+
+# Fichiers système
+.DS_Store
+Thumbs.db
