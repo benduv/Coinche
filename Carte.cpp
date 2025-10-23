@@ -21,17 +21,17 @@ Carte::~Carte()
 {
 }
 
-Carte::Couleur Carte::getCouleur()
+Carte::Couleur Carte::getCouleur() const
 {
     return m_couleur;
 }
 
-Carte::Chiffre Carte::getChiffre()
+Carte::Chiffre Carte::getChiffre() const
 {
     return m_chiffre;
 }
 
-int Carte::getValeurDeLaCarte()
+int Carte::getValeurDeLaCarte() const
 {
     int value = 0;
     if(!m_isAtout) {
@@ -63,12 +63,50 @@ int Carte::getValeurDeLaCarte()
     return value;
 }
 
+int Carte::getOrdreCarteForte() const
+{
+    int value = 0;
+    if(m_chiffre == SEPT)
+            value = 0;
+    else if(m_chiffre == HUIT)
+            value = 1;
+    else if(!m_isAtout) {
+        if(m_chiffre == NEUF)
+            value = 2;
+        if(m_chiffre == VALET)
+            value = 3;
+        else if (m_chiffre == DAME)
+            value = 4;
+        else if (m_chiffre == ROI)
+            value = 5;
+        else if (m_chiffre == DIX)
+            value = 6;
+        else if (m_chiffre == AS)
+            value = 7;
+    } else {
+        if(m_chiffre == DAME)
+            value = 2;
+        else if (m_chiffre == ROI)
+            value = 3;
+        else if (m_chiffre == 10)
+            value = 4;
+        else if (m_chiffre == AS)
+            value = 5;
+        else if (m_chiffre == NEUF)
+            value = 6;
+        else if (m_chiffre == VALET)
+            value = 7;
+    }
+
+    return value;
+}
+
 void Carte::setAtout(bool isAtout)
 {
     m_isAtout = isAtout;
 }
 
-void Carte::printCarte()
+void Carte::printCarte() const
 {
     if(m_chiffre <= Carte::DIX)
         std::cout << m_chiffre << " ";
@@ -97,20 +135,23 @@ void Carte::printCarte()
     }
 }
 
-bool Carte::operator<(Carte &other) {
+bool Carte::operator<(const Carte &other) const {
     bool retValue = false;
     if(m_isAtout == false && other.m_isAtout == true)
         retValue = true;
     else if(m_isAtout == true && other.m_isAtout == false)
         retValue = false;
     else {
-        int valeurA = this->getValeurDeLaCarte();
-        int valeurB = other.getValeurDeLaCarte();
-        if(this->getValeurDeLaCarte() != other.getValeurDeLaCarte()) {
-            retValue = this->getValeurDeLaCarte() < other.getValeurDeLaCarte();
-        } else {
-            retValue = this->m_chiffre < other.m_chiffre;
-        }
+        //if(this->getValeurDeLaCarte() != other.getValeurDeLaCarte()) {
+        std::cout << "Comparaison des cartes: " ;
+        this->printCarte();
+        std::cout << "getOrdreCarteForte = " << this->getOrdreCarteForte() << std::endl;
+        other.printCarte();
+        std::cout << "getOrdreCarteForte() = " << other.getOrdreCarteForte() << std::endl;        
+        retValue = this->getOrdreCarteForte() < other.getOrdreCarteForte();
+        // } else {
+        //     retValue = this->m_chiffre < other.m_chiffre;
+        // }
     }
 
     return retValue;

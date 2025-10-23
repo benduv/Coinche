@@ -42,11 +42,13 @@ class Player
         void setIndex(int index);
 
         void printAnnonce();
-        void printMain();
+        void printMain() const;
 
-        std::string getName();
+        std::string getName() const;
+        std::vector<Carte*> getMain() const;
 
         void addPli(std::array<Carte*, 4> &pli);
+        const std::vector<std::array<Carte*, 4>>& getPlis() const { return m_plis; }
 
     private:
         std::string m_name;

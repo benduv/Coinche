@@ -74,23 +74,23 @@ void Deck::distribute(std::vector<Carte *> &main1, std::vector<Carte *> &main2, 
     }
 
     
-    for(auto elt : main1) {
-        std::cout << " MAIN 1" << std::endl;
-        elt->printCarte();
-    }
+    // for(auto elt : main1) {
+    //     std::cout << " MAIN 1" << std::endl;
+    //     elt->printCarte();
+    // }
     
-    for(auto elt : main2) {
-        std::cout << " MAIN 2" << std::endl;
-        elt->printCarte();
-    }
+    // for(auto elt : main2) {
+    //     std::cout << " MAIN 2" << std::endl;
+    //     elt->printCarte();
+    // }
     
-    for(auto elt : main3) {
-        std::cout << " MAIN 3" << std::endl;
-        elt->printCarte();
-    }
+    // for(auto elt : main3) {
+    //     std::cout << " MAIN 3" << std::endl;
+    //     elt->printCarte();
+    // }
     
-    for(auto elt : main4) {
-        std::cout << " MAIN 4" << std::endl;
-        elt->printCarte();
-    }
+    // for(auto elt : main4) {
+    //     std::cout << " MAIN 4" << std::endl;
+    //     elt->printCarte();
+    // }
 }

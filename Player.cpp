@@ -100,7 +100,7 @@ void Player::printAnnonce()
 
 }
 
-void Player::printMain()
+void Player::printMain() const
 {
     std::cout << "Main courante: ";
     for(auto &elt : m_main) {
@@ -108,9 +108,14 @@ void Player::printMain()
     }
 }
 
-std::string Player::getName()
+std::string Player::getName() const
 {
     return m_name;
+}
+
+std::vector<Carte*> Player::getMain() const
+{
+    return m_main;
 }
 
 void Player::addPli(std::array<Carte *, 4> &pli)
@@ -131,7 +136,7 @@ Carte* Player::playCarte()
         i++;
     }
     std::cin >> carteIdx;
-    Carte* carteJouee = new Carte(*(m_main[carteIdx]));
+    Carte* carteJouee = m_main[carteIdx];  // On retourne directement la carte existante
     m_main.erase(m_main.begin()+carteIdx);
     //printMain();
     return carteJouee;
@@ -154,7 +159,11 @@ Carte* Player::playCarte(const Carte::Couleur &couleurDemandee, const Carte::Cou
     }
     while(!validSelection) {
         std::cin >> carteIdx;
-        if(m_main[carteIdx]->getCouleur() != couleurDemandee && hasCouleur(couleurDemandee) && carteAtout != nullptr) {
+        // std::cout << "m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee): " << (m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee)) << std::endl;
+        // std::cout << "m_main[carteIdx]->getCouleur() != couleurAtout" << (m_main[carteIdx]->getCouleur() != couleurAtout) << std::endl;
+        // std::cout << "hasCouleur(couleurAtout): " << hasCouleur(couleurAtout) << std::endl;
+
+        if(m_main[carteIdx]->getCouleur() != couleurDemandee && hasCouleur(couleurDemandee) /*&& carteAtout != nullptr*/) {
             std::cout << "Vous avez la couleur demandee, veuillez selectionner une carte de cette couleur..." << std::endl;
         } else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
         m_main[carteIdx]->getCouleur() != couleurAtout && hasCouleur(couleurAtout) ) {
@@ -162,9 +171,12 @@ Carte* Player::playCarte(const Carte::Couleur &couleurDemandee, const Carte::Cou
         } else if ((m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) &&
         m_main[carteIdx]->getCouleur() == couleurAtout && carteAtout != nullptr)
         || couleurDemandee == couleurAtout) {
+            std::cout << "BEEEEEEEEEEEN1 " << std::endl;
             if(*carteAtout < *m_main[carteIdx]) {
+                std::cout << "BEEEEEEEEEEEN2 " << std::endl;
                 validSelection = true;
             } else {
+                std::cout << "BEEEEEEEEEEEN3 " << std::endl;
                 if(hasHigher(carteAtout)) {
                     std::cout << "Vous avez un atout plus fort que l'atout joue precedemment, " << std::endl;
                     std::cout << "veuillez selectionner un atout plus fort..." << std::endl;
@@ -178,17 +190,18 @@ Carte* Player::playCarte(const Carte::Couleur &couleurDemandee, const Carte::Cou
     }
 
 
-    Carte* carteJouee = new Carte(*(m_main[carteIdx]));
-    m_main.erase(m_main.begin()+carteIdx);
+    Carte* carteJouee = m_main[carteIdx];  // On récupère directement le pointeur
+    m_main.erase(m_main.begin()+carteIdx);  // On retire la carte de la main
+    carteJouee->printCarte();
     //printMain();
-    return carteJouee;
+    return carteJouee;  // On retourne le pointeur original
 }
 
 bool Player::hasCouleur(const Carte::Couleur &couleur)
 {
     bool haveCouleur = false;
-    for(auto &elt : m_main) {
-        if(elt->getCouleur() == couleur) {
+    for(auto &carte : m_main) {
+        if(carte->getCouleur() == couleur) {
             haveCouleur = true;
             break;
         }
@@ -200,7 +213,10 @@ bool Player::hasHigher(Carte *carte)
 {
     bool haveHigher = false;
     for(auto &elt : m_main) {
+        elt->printCarte();
+        carte->printCarte();
         if(*carte < *elt) {
+            std::cout << " BEEEEEEEEEN higher" << std::endl;
             haveHigher = true;
             break;
         }

@@ -4,13 +4,14 @@
 #include "Carte.h"
 #include "Player.h"
 #include <vector>
+#include <memory>
 
 class GameManager
 {
     public:
         GameManager();
 
-        GameManager(const std::vector<Player> &players, const Carte::Couleur &couleur, int idxFirstPlayer);
+        GameManager(const std::vector<std::reference_wrapper<std::unique_ptr<Player>>> &players, const Carte::Couleur &couleur, int idxFirstPlayer);
 
         ~GameManager();
 
@@ -19,7 +20,7 @@ class GameManager
     private:
         Carte::Couleur m_couleurAnnoncee;
         Carte::Couleur m_couleurDemandee;
-        std::vector<Player> m_players;
+        std::vector<std::reference_wrapper<std::unique_ptr<Player>>> m_players;  // Stocke des références aux unique_ptr
         int m_idxFirstPlayer;
 
 

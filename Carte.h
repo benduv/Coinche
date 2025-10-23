@@ -27,16 +27,17 @@ class Carte
         Carte(Couleur couleur, Chiffre chiffre);
         virtual ~Carte();
 
-        Couleur getCouleur();
-        Chiffre getChiffre();
+        Couleur getCouleur() const;
+        Chiffre getChiffre() const;
 
-        void printCarte();
+        void printCarte() const;
 
-        int getValeurDeLaCarte();
+        int getValeurDeLaCarte() const;
+        int getOrdreCarteForte() const;
 
         void setAtout(bool isAtout);
 
-        bool operator<(Carte &other);
+        bool operator<(const Carte &other) const;
 
     private:
         Couleur m_couleur;
