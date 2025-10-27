@@ -7,17 +7,18 @@
 Deck::Deck(/*Carte::Couleur atoutCouleur*/)
     //: m_atoutCouleur(atoutCouleur)
 {
+    // for(Carte::Chiffre ch =  Carte::SEPT ; ch <= Carte::AS ; ch = static_cast<Carte::Chiffre>(static_cast<int>(ch) + 1))
+    // {        
+    //     for(Carte::Couleur co = Carte::COEUR ; co <= Carte::PIQUE ; co = static_cast<Carte::Couleur>(static_cast<int>(co) + 1))
+    //     {
+
     for(Carte::Chiffre ch =  Carte::SEPT ; ch <= Carte::AS ; ch = static_cast<Carte::Chiffre>(static_cast<int>(ch) + 1))
     {        
         for(Carte::Couleur co = Carte::COEUR ; co <= Carte::PIQUE ; co = static_cast<Carte::Couleur>(static_cast<int>(co) + 1))
         {
             Carte* carte = nullptr;
-            
-            /*if(m_atoutCouleur == co)
-                carte = new Atout(co, ch);
-            else*/
+        
             carte = new Carte(co, ch);
-            //carte->printCarte();
             deck.push_back(carte);
         }
     }

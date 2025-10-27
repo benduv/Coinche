@@ -383,7 +383,7 @@ TEST_F(GameManagerTest, RunTurnJoueAtoutPlusFortSiPossible) {
         asCoeur,     // carte 0 : la carte qu'on va jouer pour commencer
         asTrefle         // carte 1
     };
-    // Joueur 2: pas de PIQUE mais a de l'atout (COEUR)
+    // Joueur 2: a de l'atout (COEUR)
     Carte *dameCoeur = new Carte(Carte::COEUR, Carte::DAME);
     dameCoeur->setAtout(true); // Marquer comme atout
     Carte *valetTrefle = new Carte(Carte::TREFLE, Carte::VALET);
@@ -483,8 +483,8 @@ TEST_F(GameManagerTest, RunTurnJoueAtoutPlusFortSiPossible) {
     EXPECT_EQ(count, 2) << "Le message '" << atoutFortMsg << "' apparait " << count << " fois, n'etait pas prevu (expected 2). Sortie:\n" << out;
 }
 
-TEST_F(GameManagerTest, RunTurnDefausseSiPartenaireTiensLaMain) {
-    std::cerr << "\n=== Début du test RunTurnDefausseSiPartenaireTiensLaMain ===\n" << std::endl;
+TEST_F(GameManagerTest, RunTurnDefausseSiPartenaireTientLaMain) {
+    std::cerr << "\n=== Début du test RunTurnDefausseSiPartenaireTientLaMain ===\n" << std::endl;
     
     // Ici on construit des mains contrôlées pour tester le comportement
     // Main du joueur 0: commence par jouer PIQUE
@@ -495,7 +495,7 @@ TEST_F(GameManagerTest, RunTurnDefausseSiPartenaireTiensLaMain) {
         asCoeur,     // carte 0
         asTrefle         // carte 1 : la carte qu'on va jouer pour commencer
     };
-    // Joueur 2: pas de PIQUE mais a de l'atout (COEUR)
+    // Joueur 2: pas de TREFLE mais a de l'atout (COEUR)
     Carte *dameCoeur = new Carte(Carte::COEUR, Carte::DAME);
     dameCoeur->setAtout(true); // Marquer comme atout
     Carte *valetPique = new Carte(Carte::PIQUE, Carte::VALET);
@@ -540,8 +540,8 @@ TEST_F(GameManagerTest, RunTurnDefausseSiPartenaireTiensLaMain) {
     // - Troisieme joueur (index 2) joue carte 0 (huit de COEUR) car n'a pas de TREFLE et que son partenaire ne tient pas la main
     // - Quatrieme joueur (index 3) n'a pas de Trefle mais a de l'atout -> peut se defausser car son partenaire (joueur 2) tient la main
 
-    std::istringstream inputStream("0\n0\n0\n1\n");
-    //std::istringstream inputStream("0\n0\n0\n1\n1\n");
+    std::istringstream inputStream("0\n0\n0\n1\n0\n");
+    //std::istringstream inputStream("1\n0\n0\n1\n");
     std::streambuf* oldCin = std::cin.rdbuf(inputStream.rdbuf());
 
     std::ostringstream outputCapture;
@@ -574,9 +574,9 @@ TEST_F(GameManagerTest, RunTurnDefausseSiPartenaireTiensLaMain) {
     std::cout.rdbuf(oldCout);
 
     // Maintenant on peut afficher la sortie capturée
-    std::cout << "\n=== Debut de la sortie capturee (RunTurnDefausseSiPartenaireTiensLaMain) ===\n" << out << "\n=== Fin de la sortie capturee ===\n";
+    std::cout << "\n=== Debut de la sortie capturee (RunTurnDefausseSiPartenaireTientLaMain) ===\n" << out << "\n=== Fin de la sortie capturee ===\n";
     
-    // Message exact qui devrait ne pas apparaître (provient de Player.cpp)
+    // Message exact qui devrait ne pas apparaître, voulant dire que le joueur 4 se défausse sans jouer d'atout
     const std::string expectedMsg = "Vous avez de l'atout, veuillez selectionner une carte de cette couleur...";
     bool foundMsg = out.find(expectedMsg) != std::string::npos;
 

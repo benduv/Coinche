@@ -17,6 +17,35 @@ GameManager::~GameManager()
 {
 }
 
+void GameManager::playCard(int playerIndex, int cardIndex)
+{
+    if (playerIndex < 0 || playerIndex >= m_players.size())
+        return;
+
+    auto& player = m_players[playerIndex];
+    if (!player.get())
+        return;
+
+    // Vérifie si c'est le tour du joueur
+    if (playerIndex != m_currentPlayerIndex)
+        return;
+
+    // Récupère la carte avant de la jouer (pour le signal)
+    Carte* carte = player.get()->getMain()[cardIndex];
+    if (!carte)
+        return;
+
+    // Utilise la logique existante de playCarte
+    if (player.get()->playCarte(*carte, m_couleurDemandee)) {
+        // La carte a été jouée avec succès
+        emit cardPlayed(playerIndex, *carte);
+        
+        // Met à jour le joueur courant
+        m_currentPlayerIndex = (m_currentPlayerIndex + 1) % m_players.size();
+        emit currentPlayerChanged();
+    }
+}
+
 void GameManager::runTurn()
 {
     Carte *carte = nullptr;
@@ -43,7 +72,7 @@ void GameManager::runTurn()
                 carteWinning = carte;  // On garde une référence à la carte originale
                 idxPlayerWinning = j%4;
             } else { // les autres doivent suivre à la couleur demandée
-                carte = m_players[j%4].get()->playCarte(m_couleurDemandee, m_couleurAnnoncee, carteAtout);
+                carte = m_players[j%4].get()->playCarte(m_couleurDemandee, m_couleurAnnoncee, carteAtout, idxPlayerWinning);
                 if(carte->getCouleur() == m_couleurDemandee || carte->getCouleur() == m_couleurAnnoncee) {
                     if(carteWinning && *carteWinning < *carte) {
                         carteWinning = carte;  // On garde une référence à la carte originale
@@ -62,8 +91,6 @@ void GameManager::runTurn()
                     carteAtout = carte;  // On garde une référence à la carte originale
                     std::cout << "ATOUT JOUE SUPERIEUR AU PRECEDENT: " << std::endl;
                     carteAtout->printCarte();
-                    //carteWinning = carte;  // On garde une référence à la carte originale
-                    //idxPlayerWinning = j%4;
                 }
             }
 

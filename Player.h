@@ -29,19 +29,22 @@ class Player
 
         ~Player();
 
+        // Return a vector of player's cards
+        std::vector<Carte> getCartes() const;
+
         Carte* playCarte();
-        Carte* playCarte(const Carte::Couleur &couleurDemandee, const Carte::Couleur &couleurAtout, Carte* carteAtout);
+        Carte* playCarte(const Carte::Couleur &couleurDemandee, const Carte::Couleur &couleurAtout, Carte* carteAtout, int idxPlayerWinning);
 
         void annonce(Annonce &annoncePrec, Carte::Couleur &couleurAnnonce);
 
-        void getAnnonce(Annonce &annonce);
+        void getAnnonce(Annonce &annonce) const;
 
-        void getCouleurAnnonce(Carte::Couleur &couleur);
+        void getCouleurAnnonce(Carte::Couleur &couleur) const;
 
-        int getIndex();
+        int getIndex() const;
         void setIndex(int index);
 
-        void printAnnonce();
+        void printAnnonce() const;
         void printMain() const;
 
         std::string getName() const;
@@ -57,8 +60,8 @@ class Player
         Annonce m_annonce;
         Carte::Couleur m_couleur;
 
-        bool hasCouleur(const Carte::Couleur &couleur);
-        bool hasHigher(Carte *carte);
+        bool hasCouleur(const Carte::Couleur &couleur) const;
+        bool hasHigher(Carte *carte) const;
         std::vector<std::array<Carte*, 4> > m_plis;
 };
 
