@@ -2,5 +2,39 @@
 <RCC>
     <qresource prefix="/">
         <file>qml/main.qml</file>
+        <file>qml/Card.qml</file>
+        <file>resources/cards/back.png</file>
+        <file>resources/cards/carreau_7.png</file>
+        <file>resources/cards/carreau_8.png</file>
+        <file>resources/cards/carreau_9.png</file>
+        <file>resources/cards/carreau_10.png</file>
+        <file>resources/cards/carreau_valet.png</file>
+        <file>resources/cards/carreau_dame.png</file>
+        <file>resources/cards/carreau_roi.png</file>
+        <file>resources/cards/carreau_as.png</file>
+        <file>resources/cards/coeur_7.png</file>
+        <file>resources/cards/coeur_8.png</file>
+        <file>resources/cards/coeur_9.png</file>
+        <file>resources/cards/coeur_10.png</file>
+        <file>resources/cards/coeur_valet.png</file>
+        <file>resources/cards/coeur_dame.png</file>
+        <file>resources/cards/coeur_roi.png</file>
+        <file>resources/cards/coeur_as.png</file>
+        <file>resources/cards/pique_7.png</file>
+        <file>resources/cards/pique_8.png</file>
+        <file>resources/cards/pique_9.png</file>
+        <file>resources/cards/pique_10.png</file>
+        <file>resources/cards/pique_valet.png</file>
+        <file>resources/cards/pique_dame.png</file>
+        <file>resources/cards/pique_roi.png</file>
+        <file>resources/cards/pique_as.png</file>
+        <file>resources/cards/trefle_7.png</file>
+        <file>resources/cards/trefle_8.png</file>
+        <file>resources/cards/trefle_9.png</file>
+        <file>resources/cards/trefle_10.png</file>
+        <file>resources/cards/trefle_valet.png</file>
+        <file>resources/cards/trefle_dame.png</file>
+        <file>resources/cards/trefle_roi.png</file>
+        <file>resources/cards/trefle_as.png</file>
     </qresource>
 </RCC>

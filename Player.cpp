@@ -133,89 +133,159 @@ void Player::addPli(std::array<Carte *, 4> &pli)
     m_plis.push_back(pli);
 }
 
-Carte* Player::playCarte()
-{
-    int carteIdx = 0;
+bool Player::isCartePlayable(int cardIndex, const Carte::Couleur &couleurDemandee, 
+                     const Carte::Couleur &couleurAtout, Carte* carteAtout, 
+                     int idxPlayerWinning) const {
+
+    std::cout << "Vérification si la carte est jouable pour le joueur: " << m_name << std::endl;
     
-    //printMain();
-    std::cout << "Selectionnez: " << std::endl;
-    int i = 0;
-    for(auto &elt : m_main) {
-        std::cout << i << ": ";
-        elt->printCarte();
-        i++;
+    if (cardIndex < 0 || cardIndex >= m_main.size()) {
+        return false;
+        std::cout << "Index de carte invalide." << std::endl;
     }
-    std::cin >> carteIdx;
-    Carte* carteJouee = m_main[carteIdx];  // On retourne directement la carte existante
-    m_main.erase(m_main.begin()+carteIdx);
-    //printMain();
-    return carteJouee;
-}
-
-Carte* Player::playCarte(const Carte::Couleur &couleurDemandee, const Carte::Couleur &couleurAtout, Carte* carteAtout, int idxPlayerWinning)
-{
-    int carteIdx = 0;
-    bool validSelection = false;
     
-    //printMain();
-    std::cout << "Joueur << " << m_name << ", jouez une carte..." << std::endl;
-    std::cout << "Couleur demandee : " << couleurDemandee << std::endl;
-    std::cout << "Selectionnez: " << std::endl;
-    int i = 0;
-    for(auto &elt : m_main) {
-        std::cout << i << ": ";
-        elt->printCarte();
-        i++;
+    const Carte* carte = m_main[cardIndex];
+
+    std::cout << "Couleur demandé: " << couleurDemandee << ", Couleur atout: " << couleurAtout << std::endl;
+    
+    // Premier joueur peut jouer n'importe quoi
+    if (couleurDemandee == Carte::COULEURINVALIDE) {
+        std::cout << "Premier joueur, carte jouable." << std::endl;
+        return true;
     }
-    while(!validSelection) {
-        std::cin >> carteIdx;
-        // std::cout << "m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee): " << (m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee)) << std::endl;
-        // std::cout << "m_main[carteIdx]->getCouleur() != couleurAtout" << (m_main[carteIdx]->getCouleur() != couleurAtout) << std::endl;
-        // std::cout << "hasCouleur(couleurAtout): " << hasCouleur(couleurAtout) << std::endl;
-
-        // Vérifier d'abord que l'index est valide
-        if (carteIdx < 0 || carteIdx >= m_main.size()) {
-            std::cout << "Index invalide, veuillez choisir un index entre 0 et " << (m_main.size()-1) << std::endl;
-            continue;
+    
+    // Si la carte est de la couleur demandée, toujours jouable
+    if (carte->getCouleur() == couleurDemandee) {
+        return true;
+    }
+    
+    // Si on n'a pas la couleur demandée
+    if (!hasCouleur(couleurDemandee)) {
+        // Si c'est notre partenaire qui gagne, on peut se défausser
+        if ((idxPlayerWinning + 2) % 4 == m_index) {
+            return true;
         }
-
-        std::cout << "idxPlayerWinning: " << idxPlayerWinning << ", m_index: " << m_index << std::endl;
-        std::cout << "idxPlayerWinning + 2)%4: " << (idxPlayerWinning + 2)%4 << std::endl;
-
-        if(m_main[carteIdx]->getCouleur() != couleurDemandee && hasCouleur(couleurDemandee) /*&& carteAtout != nullptr*/) {
-            std::cout << "Vous avez la couleur demandee, veuillez selectionner une carte de cette couleur..." << std::endl;
-        } 
-        else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
-                (idxPlayerWinning + 2)%4 == m_index) {
-            // Si pas la couleur demandée mais que son partenaire tient le pli, alors le joueur peut se defausser
-            validSelection = true;
-        }
-        else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
-        m_main[carteIdx]->getCouleur() != couleurAtout && hasCouleur(couleurAtout) ) {
-             std::cout << "Vous avez de l'atout, veuillez selectionner une carte de cette couleur..." << std::endl;
-        } else if ((m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) &&
-        m_main[carteIdx]->getCouleur() == couleurAtout && carteAtout != nullptr)
-        || couleurDemandee == couleurAtout) {
-            if(*carteAtout < *m_main[carteIdx]) {
-                validSelection = true;
-            } else {
-                if(hasHigher(carteAtout)) {
-                    std::cout << "Vous avez un atout plus fort que l'atout joue precedemment, " << std::endl;
-                    std::cout << "veuillez selectionner un atout plus fort..." << std::endl;
-                } else {
-                    validSelection = true;
-                }
+        
+        // Si on doit couper
+        if (carte->getCouleur() == couleurAtout) {
+            // Si pas d'atout joué, n'importe quel atout est ok
+            if (carteAtout == nullptr) {
+                return true;
             }
-        } else {
-            validSelection = true;
+            // Si atout joué, on doit monter si possible
+            if (*carteAtout < *carte) {
+                return true;
+            }
+            // Si on ne peut pas monter, vérifier qu'on n'a pas mieux
+            if (!hasHigher(carteAtout)) {
+                return true;
+            }
+            return false;
         }
+        
+        // Si on n'a pas l'atout mais on devrait en avoir
+        if (hasCouleur(couleurAtout)) {
+            return false;
+        }
+        
+        // Sinon on peut se défausser
+        return true;
     }
-
-    Carte* carteJouee = m_main[carteIdx];  // On récupère directement le pointeur
-    m_main.erase(m_main.begin()+carteIdx);  // On retire la carte de la main
-    carteJouee->printCarte();
-    return carteJouee;  // On retourne le pointeur original
+    
+    // On a la couleur mais on ne la joue pas
+    return false;
 }
+
+void Player::removeCard(int cardIndex)
+{
+    if (cardIndex >= 0 && cardIndex < m_main.size()) {
+        m_main.erase(m_main.begin() + cardIndex);
+    }
+}
+
+// Carte* Player::playCarte(int carteIdx)
+// {
+//     //int carteIdx = 0;
+    
+//     //printMain();
+//     //std::cout << "Selectionnez: " << std::endl;
+//     int i = 0;
+//     for(auto &elt : m_main) {
+//         std::cout << i << ": ";
+//         elt->printCarte();
+//         i++;
+//     }
+//     //std::cin >> carteIdx;
+//     Carte* carteJouee = m_main[carteIdx];  // On retourne directement la carte existante
+//     m_main.erase(m_main.begin()+carteIdx);
+//     //printMain();
+//     return carteJouee;
+// }
+
+// Carte* Player::playCarte(const Carte::Couleur &couleurDemandee, const Carte::Couleur &couleurAtout, Carte* carteAtout, int idxPlayerWinning)
+// {
+//     int carteIdx = 0;
+//     bool validSelection = false;
+    
+//     //printMain();
+//     std::cout << "Joueur << " << m_name << ", jouez une carte..." << std::endl;
+//     std::cout << "Couleur demandee : " << couleurDemandee << std::endl;
+//     std::cout << "Selectionnez: " << std::endl;
+//     int i = 0;
+//     for(auto &elt : m_main) {
+//         std::cout << i << ": ";
+//         elt->printCarte();
+//         i++;
+//     }
+//     while(!validSelection) {
+//         std::cin >> carteIdx;
+//         // std::cout << "m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee): " << (m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee)) << std::endl;
+//         // std::cout << "m_main[carteIdx]->getCouleur() != couleurAtout" << (m_main[carteIdx]->getCouleur() != couleurAtout) << std::endl;
+//         // std::cout << "hasCouleur(couleurAtout): " << hasCouleur(couleurAtout) << std::endl;
+
+//         // Vérifier d'abord que l'index est valide
+//         if (carteIdx < 0 || carteIdx >= m_main.size()) {
+//             std::cout << "Index invalide, veuillez choisir un index entre 0 et " << (m_main.size()-1) << std::endl;
+//             continue;
+//         }
+
+//         std::cout << "idxPlayerWinning: " << idxPlayerWinning << ", m_index: " << m_index << std::endl;
+//         std::cout << "idxPlayerWinning + 2)%4: " << (idxPlayerWinning + 2)%4 << std::endl;
+
+//         if(m_main[carteIdx]->getCouleur() != couleurDemandee && hasCouleur(couleurDemandee) /*&& carteAtout != nullptr*/) {
+//             std::cout << "Vous avez la couleur demandee, veuillez selectionner une carte de cette couleur..." << std::endl;
+//         } 
+//         else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
+//                 (idxPlayerWinning + 2)%4 == m_index) {
+//             // Si pas la couleur demandée mais que son partenaire tient le pli, alors le joueur peut se defausser
+//             validSelection = true;
+//         }
+//         else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
+//         m_main[carteIdx]->getCouleur() != couleurAtout && hasCouleur(couleurAtout) ) {
+//              std::cout << "Vous avez de l'atout, veuillez selectionner une carte de cette couleur..." << std::endl;
+//         } else if ((m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) &&
+//         m_main[carteIdx]->getCouleur() == couleurAtout && carteAtout != nullptr)
+//         || couleurDemandee == couleurAtout) {
+//             if(*carteAtout < *m_main[carteIdx]) {
+//                 validSelection = true;
+//             } else {
+//                 if(hasHigher(carteAtout)) {
+//                     std::cout << "Vous avez un atout plus fort que l'atout joue precedemment, " << std::endl;
+//                     std::cout << "veuillez selectionner un atout plus fort..." << std::endl;
+//                 } else {
+//                     validSelection = true;
+//                 }
+//             }
+//         } else {
+//             validSelection = true;
+//         }
+//     }
+
+//     Carte* carteJouee = m_main[carteIdx];  // On récupère directement le pointeur
+//     m_main.erase(m_main.begin()+carteIdx);  // On retire la carte de la main
+//     carteJouee->printCarte();
+//     return carteJouee;  // On retourne le pointeur original
+// }
 
 bool Player::hasCouleur(const Carte::Couleur &couleur) const
 {

@@ -5,7 +5,7 @@
 #include "Carte.h"
 #include "Player.h"
 #include "GameManager.h"
-#include "CardModel.h"
+#include "GameModel.h"
 #include <memory>
 
 int main(int argc, char *argv[]) {
@@ -31,25 +31,25 @@ int main(int argc, char *argv[]) {
         playerRefs.push_back(std::ref(player));
     }
 
-    // Create game manager and card model
-    GameManager gameManager(playerRefs, Carte::CARREAU, 0);
-    CardModel *cardsModel = new CardModel(&app);
-
-    // Create QML engine
+        // Créer le GameManager
+    GameManager gameManager(playerRefs, Carte::COEUR, 0);
+    
+    // Créer le modèle QML
+    GameModel gameModel(playerRefs);
+    
+    // Créer et configurer le moteur QML
     QQmlApplicationEngine engine;
-
-    // Expose C++ objects to QML
-    engine.rootContext()->setContextProperty("gameManager", &gameManager);
-    engine.rootContext()->setContextProperty("cardsModel", cardsModel);
-
-    // Set initial cards in the model
-    cardsModel->setCards(players[0]->getCartes());  // Show first player's cards
-
-    // Load main QML file
-    engine.load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
-
+    
+    // Exposer le modèle à QML
+    engine.rootContext()->setContextProperty("gameModel", &gameModel);
+    
+    // Charger le fichier QML principal
+    const QUrl url(QStringLiteral("qrc:/qml/main.qml"));
+    engine.load(url);
+    
     if (engine.rootObjects().isEmpty())
         return -1;
-
+    
     return app.exec();
+
 }

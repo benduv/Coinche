@@ -32,8 +32,14 @@ class Player
         // Return a vector of player's cards
         std::vector<Carte> getCartes() const;
 
-        Carte* playCarte();
-        Carte* playCarte(const Carte::Couleur &couleurDemandee, const Carte::Couleur &couleurAtout, Carte* carteAtout, int idxPlayerWinning);
+        void removeCard(int cardIndex);
+
+        bool isCartePlayable(int cardIndex, const Carte::Couleur &couleurDemandee, 
+                     const Carte::Couleur &couleurAtout, Carte* carteAtout, 
+                     int idxPlayerWinning) const;
+
+        // Carte* playCarte(int carteIdx);
+        // Carte* playCarte(const Carte::Couleur &couleurDemandee, const Carte::Couleur &couleurAtout, Carte* carteAtout, int idxPlayerWinning);
 
         void annonce(Annonce &annoncePrec, Carte::Couleur &couleurAnnonce);
 

@@ -8,7 +8,8 @@ class Carte
             COEUR = 3,
             CARREAU,
             TREFLE,
-            PIQUE
+            PIQUE,
+            COULEURINVALIDE
         };
 
         enum Chiffre {

@@ -9,10 +9,10 @@
 
 class GameManager : public QObject
 {
-    Q_OBJECT
-    Q_PROPERTY(Carte::Couleur couleurAnnoncee READ getCouleurAnnoncee NOTIFY couleurAnnonceeChanged)
-    Q_PROPERTY(Carte::Couleur couleurDemandee READ getCouleurDemandee NOTIFY couleurDemandeeChanged)
-    Q_PROPERTY(int currentPlayerIndex READ getCurrentPlayerIndex NOTIFY currentPlayerChanged)
+    // Q_OBJECT
+    // Q_PROPERTY(Carte::Couleur couleurAnnoncee READ getCouleurAnnoncee NOTIFY couleurAnnonceeChanged)
+    // Q_PROPERTY(Carte::Couleur couleurDemandee READ getCouleurDemandee NOTIFY couleurDemandeeChanged)
+    // Q_PROPERTY(int currentPlayerIndex READ getCurrentPlayerIndex NOTIFY currentPlayerChanged)
     public:
         GameManager();
 
@@ -20,17 +20,17 @@ class GameManager : public QObject
 
         ~GameManager();
 
-        void runTurn();
+        //void runTurn();
 
-    signals:
-        void couleurAnnonceeChanged();
-        void couleurDemandeeChanged();
-        void currentPlayerChanged();
-        void cardPlayed(int playerIndex, const Carte &carte);
-        void turnCompleted();
+    // signals:
+    //     void couleurAnnonceeChanged();
+    //     void couleurDemandeeChanged();
+    //     void currentPlayerChanged();
+    //     void cardPlayed(int playerIndex, const Carte &carte);
+    //     void turnCompleted();
 
-    public slots:
-        void playCard(int playerIndex, int cardIndex);
+    // public slots:
+    //     void playCard(int playerIndex, int cardIndex);
         
     public:
         Carte::Couleur getCouleurAnnoncee() const { return m_couleurAnnoncee; }

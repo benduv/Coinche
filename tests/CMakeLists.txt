@@ -10,6 +10,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+qt_add_resources(RESOURCES resources.qrc)
+
 enable_testing()
 
 add_executable(
