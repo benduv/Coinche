@@ -57,7 +57,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
 
                 Text {
-                    text: "Joueur Nord (Partenaire)"
+                    text: "Joueur 3"
                     color: "white"
                     font.pixelSize: 16
                     Layout.alignment: Qt.AlignHCenter
@@ -129,7 +129,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
 
                 Text {
-                        text: "Joueur Ouest"
+                        text: "Joueur 2"
                         color: "white"
                         font.pixelSize: 16
                     }
@@ -269,7 +269,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
 
                 Text {
-                        text: "Joueur Est"
+                        text: "Joueur 4"
                         color: "white"
                         font.pixelSize: 16
                     }

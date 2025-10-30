@@ -6,6 +6,8 @@
 *.dll
 *.so
 *.dylib
+*.ilk
+*.pdb
 
 # Dossiers de build
 build/
