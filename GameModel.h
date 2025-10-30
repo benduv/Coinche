@@ -142,6 +142,11 @@ class GameModel : public QObject {
     Q_PROPERTY(int currentPlayer READ currentPlayer NOTIFY currentPlayerChanged)
     Q_PROPERTY(QString currentPlayerName READ currentPlayerName NOTIFY currentPlayerChanged)
     Q_PROPERTY(QList<QVariant> currentPli READ currentPli NOTIFY currentPliChanged)
+    Q_PROPERTY(bool biddingPhase READ biddingPhase NOTIFY biddingPhaseChanged)
+    Q_PROPERTY(int biddingPlayer READ biddingPlayer NOTIFY biddingPlayerChanged)
+    Q_PROPERTY(QString lastBid READ lastBid NOTIFY lastBidChanged)
+    Q_PROPERTY(int lastBidValue READ lastBidValue NOTIFY lastBidChanged)
+    Q_PROPERTY(QString lastBidSuit READ lastBidSuit NOTIFY lastBidChanged)
 
 
 public:
@@ -159,6 +164,12 @@ public:
         , m_scorePli(0)
         , m_scoreTeam1(0)
         , m_scoreTeam2(0)
+        , m_biddingPhase(true)
+        , m_biddingPlayer(0)
+        , m_passCount(0)
+        , m_lastBidPlayer(-1)
+        , m_lastBidAnnonce(Player::ANNONCEINVALIDE)
+        , m_lastBidCouleur(Carte::CARREAU)
     {
         m_players[0].get()->setAtout(m_couleurAtout);
         m_players[1].get()->setAtout(m_couleurAtout);
@@ -215,6 +226,89 @@ public:
             }
         }
         return "";
+    }
+
+    bool biddingPhase() const { return m_biddingPhase; }
+    int biddingPlayer() const { return m_biddingPlayer; }
+    int lastBidValue() const { return static_cast<int>(m_lastBidAnnonce); }
+    
+    QString lastBid() const {
+        if (m_lastBidAnnonce == Player::ANNONCEINVALIDE) return "Aucune annonce";
+        if (m_lastBidAnnonce == Player::PASSE) return "Passe";
+        
+        QString bid;
+        switch(m_lastBidAnnonce) {
+            case Player::QUATREVINGT: bid = "80"; break;
+            case Player::QUATREVINGTDIX: bid = "90"; break;
+            case Player::CENT: bid = "100"; break;
+            case Player::CENTDIX: bid = "110"; break;
+            case Player::CENTVINGT: bid = "120"; break;
+            case Player::CENTTRENTRE: bid = "130"; break;
+            case Player::CENTQUARANTE: bid = "140"; break;
+            case Player::CENTCINQUANTE: bid = "150"; break;
+            case Player::CENTSOIXANTE: bid = "160"; break;
+            case Player::CAPOT: bid = "Capot"; break;
+            case Player::GENERALE: bid = "Générale"; break;
+            default: bid = "?";
+        }
+        return bid;
+    }
+    
+    QString lastBidSuit() const {
+        switch(m_lastBidCouleur) {
+            case Carte::COEUR: return "♥ Cœur";
+            case Carte::CARREAU: return "♦ Carreau";
+            case Carte::TREFLE: return "♣ Trèfle";
+            case Carte::PIQUE: return "♠ Pique";
+            default: return "";
+        }
+    }
+
+    // Faire une annonce
+    Q_INVOKABLE void makeBid(int bidValue, int suitValue) {
+        if (!m_biddingPhase) return;
+        //if (m_biddingPlayer != 0) return; // Seulement le joueur humain pour l'instant
+        
+        Player::Annonce annonce = static_cast<Player::Annonce>(bidValue);
+        Carte::Couleur couleur = static_cast<Carte::Couleur>(suitValue);
+        
+        // Vérifier que l'annonce est valide (supérieure à la précédente)
+        if (annonce <= m_lastBidAnnonce && annonce != Player::PASSE) {
+            qDebug() << "Annonce invalide : doit être supérieure à la précédente";
+            return;
+        }
+        
+        auto& player = m_players[m_biddingPlayer].get();
+        if (!player) return;
+        
+        if (annonce == Player::PASSE) {
+            m_passCount++;
+        } else {
+            m_lastBidPlayer = m_biddingPlayer;
+            m_lastBidAnnonce = annonce;
+            m_lastBidCouleur = couleur;
+            m_passCount = 0; // Reset le compteur
+            emit lastBidChanged();
+        }
+        
+        // Passer au joueur suivant
+        m_biddingPlayer = (m_biddingPlayer + 1) % 4;
+        emit biddingPlayerChanged();
+        
+        // Si 3 joueurs ont passé, fin des annonces
+        if (m_passCount >= 3) {
+            std::cout << "Fin de la phase d'annonces." << std::endl;
+            endBiddingPhase();
+        } else {
+            // Faire annoncer les IA
+            // std::cout << "processAIBids" << std::endl;
+            // processAIBids();
+        }
+    }
+    
+    // Passer son tour
+    Q_INVOKABLE void passBid() {
+        makeBid(static_cast<int>(Player::PASSE), 0);
     }
 
     // Jouer une carte
@@ -414,8 +508,46 @@ signals:
     void currentPlayerChanged();
     void cardPlayed(int playerIndex, int cardIndex);
     void currentPliChanged();
+    void biddingPhaseChanged();
+    void biddingPlayerChanged();
+    void lastBidChanged();
 
 private:
+
+    void processAIBids() {
+        while (m_biddingPlayer != 0 && m_passCount < 3) {
+            auto& player = m_players[m_biddingPlayer].get();
+            if (!player) break;
+            
+            // Pour l'instant, les IA passent automatiquement
+            // TODO: Implémenter une vraie logique d'IA
+            m_passCount++;
+            
+            m_biddingPlayer = (m_biddingPlayer + 1) % 4;
+            emit biddingPlayerChanged();
+        }
+    }
+    
+    // Fin de la phase d'annonces
+    void endBiddingPhase() {
+        m_biddingPhase = false;
+        emit biddingPhaseChanged();
+        
+        // Définir la couleur d'atout
+        if (m_lastBidPlayer >= 0) {
+            m_couleurAtout = m_lastBidCouleur;
+            m_players[0].get()->setAtout(m_couleurAtout);
+            m_players[1].get()->setAtout(m_couleurAtout);
+            m_players[2].get()->setAtout(m_couleurAtout);
+            m_players[3].get()->setAtout(m_couleurAtout);
+        }
+        
+        // Mettre à jour les cartes jouables
+        updatePlayableStates();
+        
+        qDebug() << "Fin des annonces. Atout:" << static_cast<int>(m_couleurAtout);
+    }
+
     const std::vector<std::reference_wrapper<std::unique_ptr<Player>>>& m_players;
     HandModel* m_player0Hand;
     HandModel* m_player1Hand;
@@ -434,6 +566,14 @@ private:
     int m_scorePli;
     int m_scoreTeam1;;
     int m_scoreTeam2;
+
+    // Phase d'annonces
+    bool m_biddingPhase;
+    int m_biddingPlayer;
+    int m_passCount;
+    int m_lastBidPlayer;
+    Player::Annonce m_lastBidAnnonce;
+    Carte::Couleur m_lastBidCouleur;
 };
 
 #endif // GAMEMODEL_H

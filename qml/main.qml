@@ -184,6 +184,13 @@ ApplicationWindow {
                     //horizontalAlignment: Text.AlignHCenter
                 //}
 
+                // Panneau d'annonces (overlay)
+                AnnoncesPanel {
+                    anchors.fill: parent
+                    anchors.margins: 50
+                    visible: gameModel.biddingPhase
+                }
+
                 // Représentation du pli actuel
                 Item {
                     id: pliArea

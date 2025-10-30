@@ -137,7 +137,7 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
                      const Carte::Couleur &couleurAtout, Carte* carteAtout, 
                      int idxPlayerWinning) const {
 
-    std::cout << "Verification si la carte est jouable pour le joueur: " << m_name << " et carteIdx = " << carteIdx << std::endl;
+    std::cout << "Verification si la carte est jouable pour le jouer: " << m_name << " et carteIdx = " << carteIdx << std::endl;
     
     if (carteIdx < 0 || carteIdx >= m_main.size()) {
         return false;
@@ -164,9 +164,6 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
         return true;
     }
 
-
-
-
     if(m_main[carteIdx]->getCouleur() != couleurDemandee && hasCouleur(couleurDemandee) /*&& carteAtout != nullptr*/) {
         std::cout << "Vous avez la couleur demandee, veuillez selectionner une carte de cette couleur..." << std::endl;
         return false;
@@ -174,7 +171,6 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
     else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
             (idxPlayerWinning + 2)%4 == m_index) {
         // Si pas la couleur demandée mais que son partenaire tient le pli, alors le joueur peut se defausser
-        //validSelection = true;
         return true;
     }
     else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
@@ -185,7 +181,6 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
                 m_main[carteIdx]->getCouleur() == couleurAtout && carteAtout != nullptr)
                 || couleurDemandee == couleurAtout) {
         if(*carteAtout < *m_main[carteIdx]) {
-            //validSelection = true;
             return true;
         } else {
             if(hasHigher(carteAtout)) {
@@ -193,27 +188,13 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
                 std::cout << "veuillez selectionner un atout plus fort..." << std::endl;
                 return false;
             } else {
-                //validSelection = true;
                 return true;
             }
         }
     } else {
-            //validSelection = true;
         return true;
     }
-    
-
-
-
-
-
-
-
-
-
-
-
-    
+        
     // Si on n'a pas la couleur demandée
     // if (!hasCouleur(couleurDemandee)) {
     //     // Si c'est notre partenaire qui gagne, on peut se défausser

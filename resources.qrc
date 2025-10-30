@@ -3,6 +3,7 @@
     <qresource prefix="/">
         <file>qml/main.qml</file>
         <file>qml/Card.qml</file>
+        <file>qml/AnnoncesPanel.qml</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>
