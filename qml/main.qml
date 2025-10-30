@@ -25,7 +25,7 @@ ApplicationWindow {
             Item { Layout.fillWidth: true; Layout.fillHeight: true }
 
             // Joueur Nord (Player 2) - en haut
-            ColumnLayout {
+            /*ColumnLayout {
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
                 Layout.fillWidth: true
 
@@ -51,6 +51,45 @@ ApplicationWindow {
                             enabled: false
                         }
                     }
+                }*/
+            ColumnLayout {
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
+                Layout.fillWidth: true
+
+                Text {
+                    text: "Joueur Nord (Partenaire)"
+                    color: "white"
+                    font.pixelSize: 16
+                    Layout.alignment: Qt.AlignHCenter
+                }
+
+                Row {
+                    spacing: 5
+                    Layout.alignment: Qt.AlignHCenter
+
+                    Repeater {
+                        model: gameModel.player2Hand
+                        Card {
+                            value: model.value
+                            suit: model.suit
+                            faceUp: true //model.faceUp
+                            isPlayable: model.isPlayable  // Binding avec le modèle
+                            width: 80
+                            height: 120
+                            enabled: gameModel.currentPlayer === 2
+
+                            // Quand on clique sur une carte
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: gameModel.currentPlayer === 2 && model.isPlayable
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+
+                                onClicked: {
+                                    gameModel.playCard(2, index)
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -58,29 +97,69 @@ ApplicationWindow {
             Item { Layout.fillWidth: true; Layout.fillHeight: true }
 
             // Joueur Ouest (Player 1) - à gauche
+ //           ColumnLayout {
+   //             Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+     //           Layout.fillHeight: true
+//
+  //              Text {
+    //                text: "Joueur Ouest"
+      //              color: "white"
+        //            font.pixelSize: 16
+          //      }
+
+            //    Column {
+              //      spacing: -60
+
+//                    Repeater {
+  //                      model: gameModel.player1Hand
+    //                    Card {
+      //                      value: model.value
+        //                    suit: model.suit
+          //                  faceUp: model.faceUp
+            //                width: 60
+              //              height: 90
+                //            enabled: false
+                  //          rotation: 90
+                    //    }
+                    //}
+                //}
+            //}
             ColumnLayout {
                 Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                 Layout.fillHeight: true
 
                 Text {
-                    text: "Joueur Ouest"
-                    color: "white"
-                    font.pixelSize: 16
-                }
+                        text: "Joueur Ouest"
+                        color: "white"
+                        font.pixelSize: 16
+                    }
 
                 Column {
-                    spacing: -60
+                    spacing: -30
+                    //Layout.alignment: Qt.AlignHCenter
 
                     Repeater {
                         model: gameModel.player1Hand
                         Card {
                             value: model.value
                             suit: model.suit
-                            faceUp: model.faceUp
+                            faceUp: true//model.faceUp
+                            isPlayable: model.isPlayable  // Binding avec le modèle
                             width: 60
                             height: 90
-                            enabled: false
                             rotation: 90
+                            enabled: gameModel.currentPlayer === 1
+
+                            // Quand on clique sur une carte
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: gameModel.currentPlayer === 1 && model.isPlayable
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+
+                                onClicked: {
+                                    gameModel.playCard(1, index)
+                                }
+                            }
                         }
                     }
                 }
@@ -88,6 +167,7 @@ ApplicationWindow {
 
             // Centre - Zone de jeu
             Rectangle {
+                id: playArea
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.alignment: Qt.AlignCenter
@@ -96,17 +176,60 @@ ApplicationWindow {
                 border.color: "#8b6914"
                 border.width: 3
 
-                Text {
+                //Text {
+                  //  anchors.centerIn: parent
+                    //text: "Pli en cours\n(à implémenter)"
+                    //color: "white"
+                    //font.pixelSize: 18
+                    //horizontalAlignment: Text.AlignHCenter
+                //}
+
+                // Représentation du pli actuel
+                Item {
+                    id: pliArea
                     anchors.centerIn: parent
-                    text: "Pli en cours\n(à implémenter)"
-                    color: "white"
-                    font.pixelSize: 18
-                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                    height: parent.height
+
+                    Repeater {
+                        id: pliRepeater
+                        model: gameModel.currentPli
+
+                        Card {
+                            width: 80
+                            height: 120
+                            value: modelData.value
+                            suit: modelData.suit
+                            faceUp: true
+
+                            // Position selon le joueur
+                            x: {
+                                switch (modelData.playerId) {
+                                    case 0: return pliArea.width / 2 - width / 2;     // Sud
+                                    case 1: return pliArea.width / 2 - width / 2 - 150; // Ouest
+                                    case 2: return pliArea.width / 2 - width / 2;     // Nord
+                                    case 3: return pliArea.width / 2 - width / 2 + 150; // Est
+                                }
+                            }
+                            y: {
+                                switch (modelData.playerId) {
+                                    case 0: return pliArea.height / 2 + 100; // Sud
+                                    case 1: return pliArea.height / 2;       // Ouest
+                                    case 2: return pliArea.height / 2 - 200; // Nord
+                                    case 3: return pliArea.height / 2;       // Est
+                                }
+                            }
+
+                            Behavior on x { NumberAnimation { duration: 400; easing.type: Easing.InOutQuad } }
+                            Behavior on y { NumberAnimation { duration: 400; easing.type: Easing.InOutQuad } }
+                            Component.onCompleted: console.log("currentPli =", JSON.stringify(gameModel.currentPli))
+                        }
+                    }
                 }
             }
 
             // Joueur Est (Player 3) - à droite
-            ColumnLayout {
+            /*ColumnLayout {
                 Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
                 Layout.fillHeight: true
 
@@ -129,6 +252,47 @@ ApplicationWindow {
                             height: 90
                             enabled: false
                             rotation: -90
+                        }
+                    }
+                }
+            }*/
+
+            ColumnLayout {
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                Layout.fillHeight: true
+
+                Text {
+                        text: "Joueur Est"
+                        color: "white"
+                        font.pixelSize: 16
+                    }
+
+                Column {
+                    spacing: -30
+                    //Layout.alignment: Qt.AlignHCenter
+
+                    Repeater {
+                        model: gameModel.player3Hand
+                        Card {
+                            value: model.value
+                            suit: model.suit
+                            faceUp: true //model.faceUp
+                            isPlayable: model.isPlayable  // Binding avec le modèle
+                            width: 60
+                            height: 90
+                            rotation: 90
+                            enabled: gameModel.currentPlayer === 3
+
+                            // Quand on clique sur une carte
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: gameModel.currentPlayer === 3 && model.isPlayable
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+
+                                onClicked: {
+                                    gameModel.playCard(3, index)
+                                }
+                            }
                         }
                     }
                 }

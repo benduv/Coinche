@@ -7,6 +7,11 @@
 #include "Carte.h"
 #include <iostream>
 
+struct CarteDuPli {
+    int playerId;
+    Carte* carte;
+};
+
 // Modèle pour une main de cartes
 class HandModel : public QAbstractListModel {
     Q_OBJECT
@@ -136,6 +141,8 @@ class GameModel : public QObject {
     Q_PROPERTY(HandModel* player3Hand READ player3Hand CONSTANT)
     Q_PROPERTY(int currentPlayer READ currentPlayer NOTIFY currentPlayerChanged)
     Q_PROPERTY(QString currentPlayerName READ currentPlayerName NOTIFY currentPlayerChanged)
+    Q_PROPERTY(QList<QVariant> currentPli READ currentPli NOTIFY currentPliChanged)
+
 
 public:
     explicit GameModel(const std::vector<std::reference_wrapper<std::unique_ptr<Player>>>& players, 
@@ -147,7 +154,17 @@ public:
         , m_couleurAtout(Carte::COEUR)  // À initialiser avec la vraie valeur
         , m_carteAtout(nullptr)
         , m_idxPlayerWinning(-1)
+        , m_idxFirstPlayer(0)
+        , m_carteWinning(nullptr)
+        , m_scorePli(0)
+        , m_scoreTeam1(0)
+        , m_scoreTeam2(0)
     {
+        m_players[0].get()->setAtout(m_couleurAtout);
+        m_players[1].get()->setAtout(m_couleurAtout);
+        m_players[2].get()->setAtout(m_couleurAtout);
+        m_players[3].get()->setAtout(m_couleurAtout);
+
         // Créer les modèles de mains
         m_player0Hand = new HandModel(this);
         m_player1Hand = new HandModel(this);
@@ -155,10 +172,10 @@ public:
         m_player3Hand = new HandModel(this);
 
         // Associer chaque modèle à son joueur
-        if (players.size() >= 1) m_player0Hand->setPlayer(players[0].get().get(), true);   // Face visible
-        if (players.size() >= 2) m_player1Hand->setPlayer(players[1].get().get(), false);  // Face cachée
-        if (players.size() >= 3) m_player2Hand->setPlayer(players[2].get().get(), false);  // Face cachée
-        if (players.size() >= 4) m_player3Hand->setPlayer(players[3].get().get(), false);  // Face cachée
+        if (m_players.size() >= 1) m_player0Hand->setPlayer(m_players[0].get().get(), true);   // Face visible
+        if (m_players.size() >= 2) m_player1Hand->setPlayer(m_players[1].get().get(), false);  // Face cachée
+        if (m_players.size() >= 3) m_player2Hand->setPlayer(m_players[2].get().get(), false);  // Face cachée
+        if (m_players.size() >= 4) m_player3Hand->setPlayer(m_players[3].get().get(), false);  // Face cachée
         
         // Mettre à jour les états initiaux
         updatePlayableStates();
@@ -169,7 +186,26 @@ public:
     HandModel* player2Hand() const { return m_player2Hand; }
     HandModel* player3Hand() const { return m_player3Hand; }
     
-    int currentPlayer() const { return m_currentPlayer; }
+    int currentPlayer() const { 
+        std::cout << "Current player index requested: " << m_currentPlayer << std::endl;
+        return m_currentPlayer; }
+
+    QList<QVariant> currentPli() const { 
+        QList<QVariant> pliList;
+        for (const auto &cdp : m_currentPli) {
+            QVariantMap map;
+            map["playerId"] = cdp.playerId;
+            if (cdp.carte) {
+                map["value"] = static_cast<int>(cdp.carte->getChiffre());
+                map["suit"] = static_cast<int>(cdp.carte->getCouleur());
+            } else {
+                map["value"] = -1;
+                map["suit"] = -1;
+            }
+            pliList.append(map);
+        }
+        return pliList;
+    }
     
     QString currentPlayerName() const {
         if (m_currentPlayer >= 0 && m_currentPlayer < m_players.size()) {
@@ -200,7 +236,7 @@ public:
             return;
         }
 
-        // Vérifier que la carte est jouable (sécurité)
+                // Vérifier que la carte est jouable (sécurité)
         if (!player->isCartePlayable(cardIndex, m_couleurDemandee, m_couleurAtout, 
                                      m_carteAtout, m_idxPlayerWinning)) {
             qDebug() << "Cette carte n'est pas jouable!";
@@ -209,33 +245,95 @@ public:
 
         // Jouer la carte
         Carte* carteJouee = player->getMain()[cardIndex];
-        
+
+                
         // Si c'est le premier joueur du pli, définir la couleur demandée
         if (m_couleurDemandee == static_cast<Carte::Couleur>(7)) {
             m_couleurDemandee = carteJouee->getCouleur();
             m_idxPlayerWinning = playerIndex;
+            m_carteWinning = carteJouee;
+        } else { // les autres doivent suivre à la couleur demandée
+            if(carteJouee->getCouleur() == m_couleurDemandee || carteJouee->getCouleur() == m_couleurAtout) {
+                if(m_carteWinning && *m_carteWinning < *carteJouee) {
+                    m_carteWinning = carteJouee;  // On garde une référence à la carte originale
+                    m_idxPlayerWinning = playerIndex;
+                }
+            }
         }
+            
+        // si une carte d'atout est jouée, on la garde comme référence
+        if(carteJouee->getCouleur() == m_couleurAtout && m_carteAtout == nullptr) {  
+            m_carteAtout = carteJouee;  // On garde une référence à la carte originale
+            std::cout << "ATOUT JOUE: " << std::endl;
+            m_carteAtout->printCarte();
+        } else if(carteJouee->getCouleur() == m_couleurAtout && m_carteAtout != nullptr) {
+            if(*m_carteAtout < *carteJouee) {
+                m_carteAtout = carteJouee;  // On garde une référence à la carte originale
+                std::cout << "ATOUT JOUE SUPERIEUR AU PRECEDENT: " << std::endl;
+                m_carteAtout->printCarte();
+            }
+        }
+
+            // Stocke la carte dans le pli
+            //pli[j%4] = carte;
+        m_scorePli += carteJouee->getValeurDeLaCarte();
         
-        // Si c'est un atout, mettre à jour carteAtout
-        if (carteJouee->getCouleur() == m_couleurAtout) {
-            if (!m_carteAtout || *m_carteAtout < *carteJouee) {
-                m_carteAtout = carteJouee;
-                m_idxPlayerWinning = playerIndex;
-            }
-        } else if (carteJouee->getCouleur() == m_couleurDemandee) {
-            // Comparer avec la carte gagnante actuelle
-            if (m_carteAtout == nullptr) {
-                auto& winningPlayer = m_players[m_idxPlayerWinning].get();
-                // Logique de comparaison simplifiée - à adapter
-                m_idxPlayerWinning = playerIndex;
-            }
-        }
+        // Si c'est le premier joueur du pli, définir la couleur demandée
+        // if (m_couleurDemandee == static_cast<Carte::Couleur>(7)) {
+        //     m_couleurDemandee = carteJouee->getCouleur();
+        //     m_idxPlayerWinning = playerIndex;
+        // }
+        
+        // // Si c'est un atout, mettre à jour carteAtout
+        // if (carteJouee->getCouleur() == m_couleurAtout) {
+        //     if (!m_carteAtout || *m_carteAtout < *carteJouee) {
+        //         m_carteAtout = carteJouee;
+        //         m_idxPlayerWinning = playerIndex;
+        //     }
+        // } else if (carteJouee->getCouleur() == m_couleurDemandee) {
+        //     // Comparer avec la carte gagnante actuelle
+        //     if (m_carteAtout == nullptr) {
+        //         auto& winningPlayer = m_players[m_idxPlayerWinning].get();
+        //         // Logique de comparaison simplifiée - à adapter
+        //         m_idxPlayerWinning = playerIndex;
+        //     }
+        // }
         
         // Retirer la carte de la main (vous devriez avoir une méthode pour ça)
         player->removeCard(cardIndex);
 
         // Rafraîchir l'affichage de la main
         refreshHand(playerIndex);
+
+        CarteDuPli cdP;
+        cdP.playerId = playerIndex;
+        cdP.carte = carteJouee;
+        m_currentPli.append(cdP);
+        emit currentPliChanged();
+
+        std::cout << "Joueur gagnant actuel" << player->getName() << " a joué: ";
+
+        if(m_currentPli.size() == 4) {
+            // Le pli est complet, gérer la fin du pli ailleurs
+            std::cout << "****************************************************" << std::endl;
+            std::cout << "******************* FIN DE PLI ******************" << std::endl;
+            std::cout << "Player: " << m_players[m_idxPlayerWinning].get()->getName() << " gagne le pli" << std::endl;
+            std::cout << "Il vaut score: " << m_scorePli << std::endl;
+            
+            // Mise à jour des scores
+            if(m_idxPlayerWinning % 2 == 0) {
+                m_scoreTeam1 += m_scorePli;
+            } else {
+                m_scoreTeam2 += m_scorePli;
+            }
+
+            // Donner le pli au gagnant
+            //m_players[m_idxPlayerWinning].get()->addPli(pli);
+            m_idxFirstPlayer = m_idxPlayerWinning;
+        
+            resetPli();
+            return;
+        }
         
         // Passer au joueur suivant
         m_currentPlayer = (m_currentPlayer + 1) % 4;
@@ -244,7 +342,7 @@ public:
         // Mettre à jour les cartes jouables pour le nouveau joueur
         updatePlayableStates();
         
-        emit cardPlayed(playerIndex, cardIndex);
+        //emit cardPlayed(playerIndex, cardIndex);
     }
 
     // Rafraîchir toutes les mains
@@ -288,8 +386,13 @@ public:
     Q_INVOKABLE void resetPli() {
         m_couleurDemandee = static_cast<Carte::Couleur>(7);
         m_carteAtout = nullptr;
+        m_idxFirstPlayer = m_idxPlayerWinning;
+        m_currentPlayer = m_idxFirstPlayer;
+        emit currentPlayerChanged();
         m_idxPlayerWinning = -1;
         updatePlayableStates();
+        m_currentPli.clear();
+        emit currentPliChanged();
     }
 
     // Révéler les cartes d'un joueur (pour débug)
@@ -310,6 +413,7 @@ public:
 signals:
     void currentPlayerChanged();
     void cardPlayed(int playerIndex, int cardIndex);
+    void currentPliChanged();
 
 private:
     const std::vector<std::reference_wrapper<std::unique_ptr<Player>>>& m_players;
@@ -318,12 +422,18 @@ private:
     HandModel* m_player2Hand;
     HandModel* m_player3Hand;
     int m_currentPlayer;
+    QList<CarteDuPli> m_currentPli;
     
     // Contexte du pli en cours
     Carte::Couleur m_couleurDemandee;
     Carte::Couleur m_couleurAtout;
     Carte* m_carteAtout;
     int m_idxPlayerWinning;
+    int m_idxFirstPlayer;
+    Carte* m_carteWinning;
+    int m_scorePli;
+    int m_scoreTeam1;;
+    int m_scoreTeam2;
 };
 
 #endif // GAMEMODEL_H

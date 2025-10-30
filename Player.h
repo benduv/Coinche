@@ -34,7 +34,7 @@ class Player
 
         void removeCard(int cardIndex);
 
-        bool isCartePlayable(int cardIndex, const Carte::Couleur &couleurDemandee, 
+        bool isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee, 
                      const Carte::Couleur &couleurAtout, Carte* carteAtout, 
                      int idxPlayerWinning) const;
 
@@ -49,6 +49,8 @@ class Player
 
         int getIndex() const;
         void setIndex(int index);
+
+        void setAtout(const Carte::Couleur &couleurAtout);
 
         void printAnnonce() const;
         void printMain() const;
