@@ -366,7 +366,86 @@ ApplicationWindow {
             opacity: 0.8
             radius: 5
 
-            ColumnLayout {
+            GridLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                rows: 3
+                columns: 3
+                rowSpacing: 20
+                columnSpacing: 20
+
+                Text {
+                    text: "Score"
+                    color: "white"
+                    font.pixelSize: 18
+                    font.bold: true
+                }
+
+                Text {
+                    text: "Manche"
+                    color: "white"
+                    font.pixelSize: 14
+                    font.bold: true
+                }
+
+                Text {
+                    text: "Total"
+                    color: "white"
+                    font.pixelSize: 14
+                    font.bold: true
+                }
+
+                Text {
+                    text: "Équipe 1: "
+                    color: "white"
+                    font.pixelSize: 14
+                }
+
+                Text {
+                    text: gameModel.scoreTeam1
+                    color: "white"
+                    font.pixelSize: 14
+                }
+
+                Text {
+                    text: gameModel.scoreTotalTeam1
+                    color: "white"
+                    font.pixelSize: 14
+                }
+
+                Text {
+                    text: "Équipe 2: "
+                    color: "white"
+                    font.pixelSize: 14
+                }
+
+                Text {
+                    text: gameModel.scoreTeam2
+                    color: "white"
+                    font.pixelSize: 14
+                }
+
+                Text {
+                    text: gameModel.scoreTotalTeam2
+                    color: "white"
+                    font.pixelSize: 14
+                }
+
+                /*Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: "gray"
+                }
+
+                Text {
+                    text: "Joueur actuel: " + (gameModel.currentPlayer + 1)
+                    color: "yellow"
+                    font.pixelSize: 14
+                }*/
+
+            }
+
+            /*ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 10
 
@@ -378,13 +457,13 @@ ApplicationWindow {
                 }
 
                 Text {
-                    text: "Équipe 1: 0"
+                    text: "Équipe 1: " + gameModel.scoreTeam1
                     color: "white"
                     font.pixelSize: 14
                 }
 
                 Text {
-                    text: "Équipe 2: 0"
+                    text: "Équipe 2: " + gameModel.scoreTeam2
                     color: "white"
                     font.pixelSize: 14
                 }
@@ -400,7 +479,7 @@ ApplicationWindow {
                     color: "yellow"
                     font.pixelSize: 14
                 }
-            }
+            }*/
         }
     }
 }

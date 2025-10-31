@@ -16,7 +16,7 @@ class Player
             CENT,
             CENTDIX,
             CENTVINGT,
-            CENTTRENTRE,
+            CENTTRENTE,
             CENTQUARANTE,
             CENTCINQUANTE,
             CENTSOIXANTE,
@@ -34,6 +34,8 @@ class Player
 
         void removeCard(int cardIndex);
 
+        void addCardToHand(Carte* carte);
+
         bool isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee, 
                      const Carte::Couleur &couleurAtout, Carte* carteAtout, 
                      int idxPlayerWinning) const;
@@ -41,11 +43,11 @@ class Player
         // Carte* playCarte(int carteIdx);
         // Carte* playCarte(const Carte::Couleur &couleurDemandee, const Carte::Couleur &couleurAtout, Carte* carteAtout, int idxPlayerWinning);
 
-        void annonce(Annonce &annoncePrec, Carte::Couleur &couleurAnnonce);
+        //void annonce(Annonce &annoncePrec, Carte::Couleur &couleurAnnonce);
 
-        void getAnnonce(Annonce &annonce) const;
+        //void getAnnonce(Annonce &annonce) const;
 
-        void getCouleurAnnonce(Carte::Couleur &couleur) const;
+        //void getCouleurAnnonce(Carte::Couleur &couleur) const;
 
         int getIndex() const;
         void setIndex(int index);
@@ -57,6 +59,8 @@ class Player
 
         std::string getName() const;
         std::vector<Carte*> getMain() const;
+
+        static int convertAnnonceEnPoint(const Annonce &annonce);
 
         void addPli(std::array<Carte*, 4> &pli);
         const std::vector<std::array<Carte*, 4>>& getPlis() const { return m_plis; }

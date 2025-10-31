@@ -5,6 +5,7 @@
 #include <QAbstractListModel>
 #include "Player.h"
 #include "Carte.h"
+#include "Deck.h"
 #include <iostream>
 
 struct CarteDuPli {
@@ -98,7 +99,7 @@ public:
             case FaceUpRole:
                 return m_faceUp;
             case IsAtoutRole:
-                return false; // À adapter selon votre logique
+                return false; // À adapter selon la logique
             case IsPlayableRole:
                 if (!m_isCurrentPlayer || !m_player) {
                     return false;
@@ -147,23 +148,30 @@ class GameModel : public QObject {
     Q_PROPERTY(QString lastBid READ lastBid NOTIFY lastBidChanged)
     Q_PROPERTY(int lastBidValue READ lastBidValue NOTIFY lastBidChanged)
     Q_PROPERTY(QString lastBidSuit READ lastBidSuit NOTIFY lastBidChanged)
-
+    Q_PROPERTY(int scoreTeam1 READ scoreTeam1 NOTIFY scoreTeam1Changed)
+    Q_PROPERTY(int scoreTeam2 READ scoreTeam2 NOTIFY scoreTeam2Changed)
+    Q_PROPERTY(int scoreTotalTeam1 READ scoreTotalTeam1 NOTIFY scoreTotalTeam1Changed)
+    Q_PROPERTY(int scoreTotalTeam2 READ scoreTotalTeam2 NOTIFY scoreTotalTeam2Changed)
 
 public:
-    explicit GameModel(const std::vector<std::reference_wrapper<std::unique_ptr<Player>>>& players, 
+    explicit GameModel(const std::vector<std::reference_wrapper<std::unique_ptr<Player>>>& players, Deck &deck,
                       QObject *parent = nullptr)
         : QObject(parent)
         , m_players(players)
+        , m_deck(deck)
         , m_currentPlayer(0)
         , m_couleurDemandee(static_cast<Carte::Couleur>(7))
         , m_couleurAtout(Carte::COEUR)  // À initialiser avec la vraie valeur
         , m_carteAtout(nullptr)
         , m_idxPlayerWinning(-1)
-        , m_idxFirstPlayer(0)
+        , m_idxPlayerStartPli(0)
+        , m_idxPlayerStartManche(0)
         , m_carteWinning(nullptr)
         , m_scorePli(0)
         , m_scoreTeam1(0)
         , m_scoreTeam2(0)
+        , m_scoreTotalTeam1(0)
+        , m_scoreTotalTeam2(0)
         , m_biddingPhase(true)
         , m_biddingPlayer(0)
         , m_passCount(0)
@@ -171,10 +179,10 @@ public:
         , m_lastBidAnnonce(Player::ANNONCEINVALIDE)
         , m_lastBidCouleur(Carte::CARREAU)
     {
-        m_players[0].get()->setAtout(m_couleurAtout);
-        m_players[1].get()->setAtout(m_couleurAtout);
-        m_players[2].get()->setAtout(m_couleurAtout);
-        m_players[3].get()->setAtout(m_couleurAtout);
+        // m_players[0].get()->setAtout(m_couleurAtout);
+        // m_players[1].get()->setAtout(m_couleurAtout);
+        // m_players[2].get()->setAtout(m_couleurAtout);
+        // m_players[3].get()->setAtout(m_couleurAtout);
 
         // Créer les modèles de mains
         m_player0Hand = new HandModel(this);
@@ -229,8 +237,14 @@ public:
     }
 
     bool biddingPhase() const { return m_biddingPhase; }
-    int biddingPlayer() const { return m_biddingPlayer; }
+    int biddingPlayer() const { 
+        std::cout << "Bidding player index requested: " << m_biddingPlayer << std::endl;
+        return m_biddingPlayer; }
     int lastBidValue() const { return static_cast<int>(m_lastBidAnnonce); }
+    int scoreTeam1() const { return m_scoreTeam1; }
+    int scoreTeam2() const { return m_scoreTeam2; }
+    int scoreTotalTeam1() const { return m_scoreTotalTeam1; }
+    int scoreTotalTeam2() const { return m_scoreTotalTeam2; }
     
     QString lastBid() const {
         if (m_lastBidAnnonce == Player::ANNONCEINVALIDE) return "Aucune annonce";
@@ -243,12 +257,12 @@ public:
             case Player::CENT: bid = "100"; break;
             case Player::CENTDIX: bid = "110"; break;
             case Player::CENTVINGT: bid = "120"; break;
-            case Player::CENTTRENTRE: bid = "130"; break;
+            case Player::CENTTRENTE: bid = "130"; break;
             case Player::CENTQUARANTE: bid = "140"; break;
             case Player::CENTCINQUANTE: bid = "150"; break;
             case Player::CENTSOIXANTE: bid = "160"; break;
             case Player::CAPOT: bid = "Capot"; break;
-            case Player::GENERALE: bid = "Générale"; break;
+            case Player::GENERALE: bid = "Generale"; break;
             default: bid = "?";
         }
         return bid;
@@ -330,7 +344,7 @@ public:
             return;
         }
 
-                // Vérifier que la carte est jouable (sécurité)
+        // Vérifier que la carte est jouable (sécurité)
         if (!player->isCartePlayable(cardIndex, m_couleurDemandee, m_couleurAtout, 
                                      m_carteAtout, m_idxPlayerWinning)) {
             qDebug() << "Cette carte n'est pas jouable!";
@@ -339,7 +353,6 @@ public:
 
         // Jouer la carte
         Carte* carteJouee = player->getMain()[cardIndex];
-
                 
         // Si c'est le premier joueur du pli, définir la couleur demandée
         if (m_couleurDemandee == static_cast<Carte::Couleur>(7)) {
@@ -368,32 +381,9 @@ public:
             }
         }
 
-            // Stocke la carte dans le pli
-            //pli[j%4] = carte;
         m_scorePli += carteJouee->getValeurDeLaCarte();
         
-        // Si c'est le premier joueur du pli, définir la couleur demandée
-        // if (m_couleurDemandee == static_cast<Carte::Couleur>(7)) {
-        //     m_couleurDemandee = carteJouee->getCouleur();
-        //     m_idxPlayerWinning = playerIndex;
-        // }
-        
-        // // Si c'est un atout, mettre à jour carteAtout
-        // if (carteJouee->getCouleur() == m_couleurAtout) {
-        //     if (!m_carteAtout || *m_carteAtout < *carteJouee) {
-        //         m_carteAtout = carteJouee;
-        //         m_idxPlayerWinning = playerIndex;
-        //     }
-        // } else if (carteJouee->getCouleur() == m_couleurDemandee) {
-        //     // Comparer avec la carte gagnante actuelle
-        //     if (m_carteAtout == nullptr) {
-        //         auto& winningPlayer = m_players[m_idxPlayerWinning].get();
-        //         // Logique de comparaison simplifiée - à adapter
-        //         m_idxPlayerWinning = playerIndex;
-        //     }
-        // }
-        
-        // Retirer la carte de la main (vous devriez avoir une méthode pour ça)
+        // Retirer la carte de la main
         player->removeCard(cardIndex);
 
         // Rafraîchir l'affichage de la main
@@ -417,15 +407,21 @@ public:
             // Mise à jour des scores
             if(m_idxPlayerWinning % 2 == 0) {
                 m_scoreTeam1 += m_scorePli;
+                emit scoreTeam1Changed();
             } else {
                 m_scoreTeam2 += m_scorePli;
+                emit scoreTeam2Changed();
             }
 
-            // Donner le pli au gagnant
-            //m_players[m_idxPlayerWinning].get()->addPli(pli);
-            m_idxFirstPlayer = m_idxPlayerWinning;
-        
+            // Le gagnant du pli commencera le prochain pli
+            m_idxPlayerStartPli = m_idxPlayerWinning;
+
             resetPli();
+
+            if(player->getMain().empty()) {
+                std::cout << "La manche est terminée!" << std::endl;
+                endManche();
+            }
             return;
         }
         
@@ -480,8 +476,11 @@ public:
     Q_INVOKABLE void resetPli() {
         m_couleurDemandee = static_cast<Carte::Couleur>(7);
         m_carteAtout = nullptr;
-        m_idxFirstPlayer = m_idxPlayerWinning;
-        m_currentPlayer = m_idxFirstPlayer;
+        m_idxPlayerStartPli = m_idxPlayerWinning;
+        m_currentPlayer = m_idxPlayerStartPli;
+
+        std::cout << "Nouveau pli, premier joueur: " << m_currentPlayer << std::endl;
+        m_scorePli = 0;
         emit currentPlayerChanged();
         m_idxPlayerWinning = -1;
         updatePlayableStates();
@@ -511,6 +510,10 @@ signals:
     void biddingPhaseChanged();
     void biddingPlayerChanged();
     void lastBidChanged();
+    void scoreTeam1Changed();
+    void scoreTeam2Changed();
+    void scoreTotalTeam1Changed();
+    void scoreTotalTeam2Changed();
 
 private:
 
@@ -541,6 +544,10 @@ private:
             m_players[2].get()->setAtout(m_couleurAtout);
             m_players[3].get()->setAtout(m_couleurAtout);
         }
+
+        // m_currentPlayer = m_idxPlayerStartPli;
+        // std::cout << "Premier joueur du jeu apres annonces: " << m_currentPlayer << std::endl;
+        // emit currentPlayerChanged();
         
         // Mettre à jour les cartes jouables
         updatePlayableStates();
@@ -548,7 +555,128 @@ private:
         qDebug() << "Fin des annonces. Atout:" << static_cast<int>(m_couleurAtout);
     }
 
+    void endManche() {
+        // Calcul si l'equipe qui a choisit l'atout a reussi son contrat
+        int scoreAtoutTeam = (m_lastBidPlayer % 2 == 0) ? m_scoreTeam1 : m_scoreTeam2;
+        int scoreOtherTeam = (m_lastBidPlayer % 2 == 0) ? m_scoreTeam2 : m_scoreTeam1;
+        int lastBidPoints = Player::convertAnnonceEnPoint(m_lastBidAnnonce);
+
+        // Ajoute 10 points a l'equipe qui fait le dernier pli
+        if(m_idxPlayerWinning % 2 == 0) {
+            m_scoreTeam1 += 10;
+            scoreAtoutTeam += 10;
+        } else {
+            m_scoreTeam2 += 10;
+            scoreAtoutTeam += 10;
+        }
+        
+        if(m_lastBidAnnonce == Player::CAPOT) {
+            std::cout << "CAPOT" << std::endl;
+            // TODO
+            return;
+        }
+        if(m_lastBidAnnonce == Player::GENERALE) {
+            std::cout << "GENERALE" << std::endl;
+            // TODO
+            return;
+        }
+        if (scoreAtoutTeam >= lastBidPoints) {
+            std::cout << "L'equipe partant a reussi son contrat!" << std::endl;
+            int scoreManche = lastBidPoints + scoreAtoutTeam;
+            std::cout << "Score manche: " << scoreManche << std::endl;
+            if (m_lastBidPlayer % 2 == 0) {  // L'équipe 1  a gagné la manche
+                m_scoreTotalTeam1 += scoreManche;
+                m_scoreTotalTeam2 += scoreOtherTeam;
+                std::cout << "Score manche equipe 1: " << m_scoreTotalTeam1 << std::endl;
+            } else { // L'équipe 2 a gagné la manche
+                m_scoreTotalTeam2 += scoreManche;
+                m_scoreTotalTeam1 += scoreOtherTeam;
+                std::cout << "Score manche equipe 2: " << m_scoreTotalTeam2 << std::endl;
+            }
+
+        } else {
+            std::cout << "L'equipe partante a echoue son contrat!" << std::endl;
+            int scoreManche = 160 + lastBidPoints;
+            // L'équipe adverse marque tous les points
+            if (m_lastBidPlayer % 2 == 0) {  // L'équipe 1 a perdu la manche
+                m_scoreTotalTeam2 += scoreManche;
+                std::cout << "Score manche equipe 2: " << m_scoreTotalTeam2 << std::endl;
+            } else {  // L'equipe 2 a perdu la manche
+                m_scoreTotalTeam1 += scoreManche;
+                std::cout << "Score manche equipe 1: " << m_scoreTotalTeam1 << std::endl;
+            }
+        }
+
+        // Réinitialiser les scores et les mains pour une nouvelle manche
+        m_scoreTeam1 = 0;
+        m_scoreTeam2 = 0;
+        emit scoreTeam1Changed();
+        emit scoreTeam2Changed();
+        emit scoreTotalTeam1Changed();
+        emit scoreTotalTeam2Changed();
+
+        if(m_scoreTotalTeam1 >= 1000 || m_scoreTotalTeam2 >= 1000) {
+            std::cout << "Fin de la partie!" << std::endl;
+            // TODO: Afficher un message de fin de partie avec le gagnant
+        } else {
+            std::cout << "Nouvelle manche!" << std::endl;
+            // Réinitialiser les mains des joueurs
+            // for (auto& playerRef : m_players) {
+            //     auto& player = playerRef.get();
+            //     if (player) {
+            //         player->clearHand();
+            //     }
+            // }
+            // Réinitialiser les variables de jeu
+            m_currentPli.clear();
+            m_couleurDemandee = static_cast<Carte::Couleur>(7);
+            m_carteAtout = nullptr;
+            m_idxPlayerWinning = -1;
+            //m_idxPlayerStartPli = (m_idxPlayerStartPli + 1) % 4;
+            m_idxPlayerStartManche = (m_idxPlayerStartManche + 1) % 4;
+            std::cout << "Premier joueur de la nouvelle manche: " << m_idxPlayerStartManche << std::endl;
+            
+            m_currentPlayer = m_idxPlayerStartManche;
+            m_biddingPhase = true;
+            m_biddingPlayer = m_idxPlayerStartManche;
+            std::cout << "Premier joueur des annonces: " << m_biddingPlayer << std::endl;
+            m_passCount = 0;
+            m_lastBidPlayer = -1;
+            m_lastBidAnnonce = Player::ANNONCEINVALIDE;
+            m_carteWinning = nullptr;
+            m_scorePli = 0;
+            m_lastBidCouleur = Carte::COULEURINVALIDE;
+
+            // TODO: créer le deck en fonction de l'ordre des plis fait. Ne pas melanger le deck mais couper les cartes.
+            m_deck.resetDeck();
+            m_deck.shuffleDeck();
+            for (int i = 0; i < 4; i++) {
+                auto& player = m_players[i].get();
+                if (player) {
+                    for (int j = 0; j < 8; j++) {
+                        Carte* carte = m_deck.drawCard();
+                        if (carte) {
+                            player->addCardToHand(carte);
+                        }
+                    }
+                    refreshHand(i);
+                }
+            }
+            //refreshAllHands();
+
+            std::cout << "idFirstPlayer apres reinitialisation: " << m_idxPlayerStartPli << std::endl;
+            // updatePlayableStates();
+            // refreshAllHands();
+
+            emit biddingPhaseChanged();
+            emit biddingPlayerChanged();
+            emit lastBidChanged();
+            emit currentPlayerChanged();
+        }
+    }
+
     const std::vector<std::reference_wrapper<std::unique_ptr<Player>>>& m_players;
+    Deck &m_deck;
     HandModel* m_player0Hand;
     HandModel* m_player1Hand;
     HandModel* m_player2Hand;
@@ -560,12 +688,15 @@ private:
     Carte::Couleur m_couleurDemandee;
     Carte::Couleur m_couleurAtout;
     Carte* m_carteAtout;
+    int m_idxPlayerStartManche;
     int m_idxPlayerWinning;
-    int m_idxFirstPlayer;
+    int m_idxPlayerStartPli;
     Carte* m_carteWinning;
     int m_scorePli;
-    int m_scoreTeam1;;
+    int m_scoreTeam1;
     int m_scoreTeam2;
+    int m_scoreTotalTeam1;
+    int m_scoreTotalTeam2;
 
     // Phase d'annonces
     bool m_biddingPhase;

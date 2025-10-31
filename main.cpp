@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     GameManager gameManager(playerRefs, Carte::COEUR, 0);
     
     // Créer le modèle QML
-    GameModel gameModel(playerRefs);
+    GameModel gameModel(playerRefs, deck);
     
     // Créer et configurer le moteur QML
     QQmlApplicationEngine engine;

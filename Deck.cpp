@@ -19,22 +19,22 @@ Deck::Deck(/*Carte::Couleur atoutCouleur*/)
             Carte* carte = nullptr;
         
             carte = new Carte(co, ch);
-            deck.push_back(carte);
+            m_deck.push_back(carte);
         }
     }
 }
 
 Deck::~Deck()
 {
-    for(Carte* carte : deck) {
+    for(Carte* carte : m_deck) {
         delete carte;
     }
-    deck.clear();
+    m_deck.clear();
 }
 
 void Deck::printDeck()
 {
-    for(Carte* c : deck) {
+    for(Carte* c : m_deck) {
         c->printCarte();
     }
 }
@@ -42,12 +42,22 @@ void Deck::printDeck()
 void Deck::shuffleDeck()
 {
     auto rng = std::default_random_engine {};
-    std::shuffle(std::begin(deck), std::end(deck), rng);
+    std::shuffle(std::begin(m_deck), std::end(m_deck), rng);
+}
+
+Carte* Deck::drawCard()
+{
+    if(m_deck.empty()) {
+        return nullptr;
+    }
+    Carte* carte = m_deck.back();
+    m_deck.pop_back();
+    return carte;
 }
 
 void Deck::setAtout(Carte::Couleur atoutCouleur)
 {
-    for(auto & elt : deck) {
+    for(auto & elt : m_deck) {
         if(elt->getCouleur() == atoutCouleur) {
             elt->setAtout(true);
         }
@@ -58,10 +68,31 @@ void Deck::setAtout(Carte::Couleur atoutCouleur)
     }*/
 }
 
+void Deck::resetDeck()
+{
+    // Supprimer les cartes existantes
+    for(Carte* carte : m_deck) {
+        delete carte;
+    }
+    m_deck.clear();
+
+    // Recréer le deck complet
+    for(Carte::Chiffre ch =  Carte::SEPT ; ch <= Carte::AS ; ch = static_cast<Carte::Chiffre>(static_cast<int>(ch) + 1))
+    {        
+        for(Carte::Couleur co = Carte::COEUR ; co <= Carte::PIQUE ; co = static_cast<Carte::Couleur>(static_cast<int>(co) + 1))
+        {
+            Carte* carte = nullptr;
+        
+            carte = new Carte(co, ch);
+            m_deck.push_back(carte);
+        }
+    }
+}
+
 void Deck::distribute(std::vector<Carte *> &main1, std::vector<Carte *> &main2, std::vector<Carte *> &main3, std::vector<Carte *> &main4)
 {
     int cpt = 1;
-    for(auto & elt : deck) {
+    for(auto & elt : m_deck) {
         if(cpt % 4 == 1) {
             main1.push_back(elt);
         } else if (cpt % 4 == 2) {

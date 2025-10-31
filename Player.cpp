@@ -24,43 +24,43 @@ std::vector<Carte> Player::getCartes() const {
     return cartes;
 }
 
-void Player::annonce(Annonce &annoncePrec, Carte::Couleur &couleurAnnonce)
-{
-    int annonce = 0;
-    std::cout << "Player: " << m_name << std::endl;
-    std::cout << "Annonces: 1: 80, 2: 90, 3: 100, 4: 110, 5:120, 6: 130, 7: 140, 8: 150, 9: 160, 10: Capot, 11: Generale, 12: Passe" << std::endl;
-    std::cout << "Choisissez une valeur entre 1 et 12..." << std::endl;
-    std::cin >> annonce;
-    while(annoncePrec >= annonce || PASSE < annonce) {
-        std::cout << "Annonce invalide, veuillez faire une annonce valide..." << std::endl;
-        std::cin >> annonce;  
-    }
-    m_annonce = static_cast<Annonce>(annonce);
-    if(static_cast<Annonce>(annonce) != PASSE) {
-        annoncePrec = static_cast<Annonce>(annonce);
-        int couleur = 0;
-        std::cout << "Choississez la couleur: 1: Coeur, 2: Carreaux, 3: Trefle, 4: Pique" << std::endl;
-        std::cin >> couleur;
-        while(1 > couleur || couleur > 4) {
-            std::cout << "Annonce invalide, veuillez faire une annonce valide..." << std::endl;
-            std::cin >> couleur; 
-        }
-        m_couleur = static_cast<Carte::Couleur>(couleurAnnonce);
-        m_couleur = static_cast<Carte::Couleur>(couleur+2);
-    }
+// void Player::annonce(Annonce &annoncePrec, Carte::Couleur &couleurAnnonce)
+// {
+//     int annonce = 0;
+//     std::cout << "Player: " << m_name << std::endl;
+//     std::cout << "Annonces: 1: 80, 2: 90, 3: 100, 4: 110, 5:120, 6: 130, 7: 140, 8: 150, 9: 160, 10: Capot, 11: Generale, 12: Passe" << std::endl;
+//     std::cout << "Choisissez une valeur entre 1 et 12..." << std::endl;
+//     std::cin >> annonce;
+//     while(annoncePrec >= annonce || PASSE < annonce) {
+//         std::cout << "Annonce invalide, veuillez faire une annonce valide..." << std::endl;
+//         std::cin >> annonce;  
+//     }
+//     m_annonce = static_cast<Annonce>(annonce);
+//     if(static_cast<Annonce>(annonce) != PASSE) {
+//         annoncePrec = static_cast<Annonce>(annonce);
+//         int couleur = 0;
+//         std::cout << "Choississez la couleur: 1: Coeur, 2: Carreaux, 3: Trefle, 4: Pique" << std::endl;
+//         std::cin >> couleur;
+//         while(1 > couleur || couleur > 4) {
+//             std::cout << "Annonce invalide, veuillez faire une annonce valide..." << std::endl;
+//             std::cin >> couleur; 
+//         }
+//         m_couleur = static_cast<Carte::Couleur>(couleurAnnonce);
+//         m_couleur = static_cast<Carte::Couleur>(couleur+2);
+//     }
     
     
-}
+// }
 
-void Player::getAnnonce(Annonce &annonce) const
-{
-    annonce = m_annonce;
-}
+// void Player::getAnnonce(Annonce &annonce) const
+// {
+//     annonce = m_annonce;
+// }
 
-void Player::getCouleurAnnonce(Carte::Couleur &couleur) const
-{
-    couleur = m_couleur;
-}
+// void Player::getCouleurAnnonce(Carte::Couleur &couleur) const
+// {
+//     couleur = m_couleur;
+// }
 
 int Player::getIndex() const
 {
@@ -85,7 +85,7 @@ void Player::printAnnonce() const
         std::cout << "110 ";
     else if (m_annonce == CENTVINGT)
         std::cout << "120 ";
-    else if (m_annonce == CENTTRENTRE)
+    else if (m_annonce == CENTTRENTE)
         std::cout << "130 ";
     else if (m_annonce == CENTQUARANTE)
         std::cout << "140 ";
@@ -106,8 +106,11 @@ void Player::printAnnonce() const
         std::cout << "Trefle" << std::endl;
     else if(m_couleur == Carte::PIQUE)
         std::cout << "Pique" << std::endl;
+}
 
-
+void Player::addCardToHand(Carte* carte)
+{
+    m_main.push_back(carte);
 }
 
 void Player::printMain() const
@@ -131,6 +134,49 @@ std::vector<Carte*> Player::getMain() const
 void Player::addPli(std::array<Carte *, 4> &pli)
 {
     m_plis.push_back(pli);
+}
+
+int Player::convertAnnonceEnPoint(const Annonce &annonce)
+{
+    switch (annonce)
+    {
+    case Annonce::QUATREVINGT:
+        return 80;
+        break;
+    case Annonce::QUATREVINGTDIX:
+        return 90;
+        break;
+    case Annonce::CENT:
+        return 100;
+        break;
+    case Annonce::CENTDIX:
+        return 110;
+        break;
+    case Annonce::CENTVINGT:
+        return 120;
+        break;
+    case Annonce::CENTTRENTE:
+        return 130;
+        break;
+    case Annonce::CENTQUARANTE:
+        return 140; 
+        break;
+    case Annonce::CENTCINQUANTE:
+        return 150;
+        break;
+    case Annonce::CENTSOIXANTE:
+        return 160;
+        break;
+    case Annonce::CAPOT:
+        return 250;
+        break;
+    case Annonce::GENERALE:
+        return 500;
+        break;    
+    default:
+        return 0;
+        break;
+    }
 }
 
 bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee, 
@@ -161,6 +207,22 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
     // Si la carte est de la couleur demandée, toujours jouable
     if (carte->getCouleur() == couleurDemandee) {
         std::cout << "Carte de la couleur demandee, carte jouable. Carte couleur : " << carte->getCouleur() << " carte chiffre : " << carte->getChiffre() << std::endl;
+        if(carte->getCouleur() == couleurAtout) {
+            std::cout << "C'est aussi un atout." << std::endl;
+            if(carteAtout != nullptr) {
+                if(*carteAtout < *carte) {
+                    std::cout << "Atout joue precedemment, mais on peut monter, carte jouable." << std::endl;
+                } else {
+                    if(hasHigher(carteAtout)) {
+                        std::cout << "Vous avez un atout plus fort que l'atout joue precedemment, " << std::endl;
+                        std::cout << "veuillez selectionner un atout plus fort..." << std::endl;
+                        return false;
+                    } else {
+                        std::cout << "Atout joue precedemment, on ne peut pas monter, carte jouable." << std::endl;
+                    }
+                }
+            }
+        }
         return true;
     }
 

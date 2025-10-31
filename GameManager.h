@@ -33,8 +33,8 @@ class GameManager : public QObject
     //     void playCard(int playerIndex, int cardIndex);
         
     public:
-        Carte::Couleur getCouleurAnnoncee() const { return m_couleurAnnoncee; }
-        Carte::Couleur getCouleurDemandee() const { return m_couleurDemandee; }
+        // Carte::Couleur getCouleurAnnoncee() const { return m_couleurAnnoncee; }
+        // Carte::Couleur getCouleurDemandee() const { return m_couleurDemandee; }
         int getCurrentPlayerIndex() const { return m_currentPlayerIndex; }
 
     private:
