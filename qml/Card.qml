@@ -18,8 +18,8 @@ Item {
         var suitName = ""
         switch(suit) {
             case 3: suitName = "coeur"; break
-            case 4: suitName = "carreau"; break
-            case 5: suitName = "trefle"; break
+            case 4: suitName = "trefle"; break
+            case 5: suitName = "carreau"; break
             case 6: suitName = "pique"; break
             default: suitName = "coeur"
         }

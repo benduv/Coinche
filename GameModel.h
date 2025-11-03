@@ -81,6 +81,7 @@ private:
     void processAIBids();
     void endBiddingPhase();
     void endManche();
+    void nouvelleManche();
 
     const std::vector<std::reference_wrapper<std::unique_ptr<Player>>>& m_players;
     Deck &m_deck;

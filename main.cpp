@@ -28,11 +28,12 @@ int main(int argc, char *argv[]) {
     // Create references vector for GameManager
     std::vector<std::reference_wrapper<std::unique_ptr<Player>>> playerRefs;
     for (auto& player : players) {
+        player->sortHand();
         playerRefs.push_back(std::ref(player));
     }
 
-        // Créer le GameManager
-    GameManager gameManager(playerRefs, Carte::COEUR, 0);
+    // Créer le GameManager
+    //GameManager gameManager(playerRefs, Carte::COEUR, 0);
     
     // Créer le modèle QML
     GameModel gameModel(playerRefs, deck);

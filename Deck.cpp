@@ -4,14 +4,8 @@
 #include <algorithm>
 #include <random>
 
-Deck::Deck(/*Carte::Couleur atoutCouleur*/)
-    //: m_atoutCouleur(atoutCouleur)
+Deck::Deck()
 {
-    // for(Carte::Chiffre ch =  Carte::SEPT ; ch <= Carte::AS ; ch = static_cast<Carte::Chiffre>(static_cast<int>(ch) + 1))
-    // {        
-    //     for(Carte::Couleur co = Carte::COEUR ; co <= Carte::PIQUE ; co = static_cast<Carte::Couleur>(static_cast<int>(co) + 1))
-    //     {
-
     for(Carte::Chiffre ch =  Carte::SEPT ; ch <= Carte::AS ; ch = static_cast<Carte::Chiffre>(static_cast<int>(ch) + 1))
     {        
         for(Carte::Couleur co = Carte::COEUR ; co <= Carte::PIQUE ; co = static_cast<Carte::Couleur>(static_cast<int>(co) + 1))
@@ -41,7 +35,10 @@ void Deck::printDeck()
 
 void Deck::shuffleDeck()
 {
-    auto rng = std::default_random_engine {};
+    // auto rng = std::default_random_engine {};
+    // std::shuffle(std::begin(m_deck), std::end(m_deck), rng);
+    std::random_device rd;  // Utilise une source aléatoire fournie par le système
+    std::mt19937 rng(rd()); // Utilisez le générateur Mersenne Twister avec la graine de random_device
     std::shuffle(std::begin(m_deck), std::end(m_deck), rng);
 }
 

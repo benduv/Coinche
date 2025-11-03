@@ -189,9 +189,9 @@ Rectangle {
 
                 SuitButton { text: "♥"; suitColor: "#E60000"; suitValue: 3
                     onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 3); suitSelector.close() } }
-                SuitButton { text: "♦"; suitColor: "#E60000"; suitValue: 4
+                SuitButton { text: "♣"; suitColor: "#000000"; suitValue: 4
                     onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 4); suitSelector.close() } }
-                SuitButton { text: "♣"; suitColor: "#000000"; suitValue: 5
+                SuitButton { text: "♦"; suitColor: "#E60000"; suitValue: 5
                     onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 5); suitSelector.close() } }
                 SuitButton { text: "♠"; suitColor: "#000000"; suitValue: 6
                     onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 6); suitSelector.close() } }

@@ -97,7 +97,7 @@ int Carte::getOrdreCarteForte() const
         else if (m_chiffre == VALET)
             value = 7;
     }
-
+    std::cout << "getOrdreCarteForte called: " << value << std::endl;
     return value;
 }
 
@@ -142,16 +142,12 @@ bool Carte::operator<(const Carte &other) const {
     else if(m_isAtout == true && other.m_isAtout == false)
         retValue = false;
     else {
-        //if(this->getValeurDeLaCarte() != other.getValeurDeLaCarte()) {
         std::cout << "Comparaison des cartes: " ;
         this->printCarte();
         std::cout << "getOrdreCarteForte = " << this->getOrdreCarteForte() << std::endl;
         other.printCarte();
         std::cout << "getOrdreCarteForte() = " << other.getOrdreCarteForte() << std::endl;        
         retValue = this->getOrdreCarteForte() < other.getOrdreCarteForte();
-        // } else {
-        //     retValue = this->m_chiffre < other.m_chiffre;
-        // }
     }
 
     return retValue;

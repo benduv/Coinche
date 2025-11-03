@@ -116,8 +116,8 @@ QString GameModel::lastBid() const {
 QString GameModel::lastBidSuit() const {
     switch(m_lastBidCouleur) {
         case Carte::COEUR: return "♥ Cœur";
-        case Carte::CARREAU: return "♦ Carreau";
         case Carte::TREFLE: return "♣ Trèfle";
+        case Carte::CARREAU: return "♦ Carreau";
         case Carte::PIQUE: return "♠ Pique";
         default: return "";
     }
@@ -139,6 +139,12 @@ void GameModel::makeBid(int bidValue, int suitValue) {
 
     if (annonce == Player::PASSE) {
         m_passCount++;
+        if(m_passCount == 4 && m_lastBidAnnonce == Player::ANNONCEINVALIDE) {
+            std::cout << "Tous les joueurs ont passe. Redistribution des cartes." << std::endl;
+            // Réinitialiser la partie ou redistribuer les cartes
+            nouvelleManche();
+            return;
+        }
     } else {
         m_lastBidPlayer = m_biddingPlayer;
         m_lastBidAnnonce = annonce;
@@ -150,9 +156,7 @@ void GameModel::makeBid(int bidValue, int suitValue) {
     m_biddingPlayer = (m_biddingPlayer + 1) % 4;
     emit biddingPlayerChanged();
 
-    
-
-    if (m_passCount >= 3) {
+    if (m_passCount >= 3 && m_lastBidAnnonce != Player::ANNONCEINVALIDE) {
         std::cout << "Fin de la phase d'annonces." << std::endl;
         endBiddingPhase();
     } else {
@@ -412,43 +416,100 @@ void GameModel::endManche() {
     if(m_scoreTotalTeam1 >= 1000 || m_scoreTotalTeam2 >= 1000) {
         std::cout << "Fin de la partie!" << std::endl;
     } else {
-        std::cout << "Nouvelle manche!" << std::endl;
-        m_currentPli.clear();
-        m_couleurDemandee = static_cast<Carte::Couleur>(7);
-        m_carteAtout = nullptr;
-        m_idxPlayerStartManche = (m_idxPlayerStartManche + 1) % 4;
-        std::cout << "Premier joueur de la nouvelle manche: " << m_idxPlayerStartManche << std::endl;
+        nouvelleManche();
+        // std::cout << "Nouvelle manche!" << std::endl;
+        // m_currentPli.clear();
+        // m_couleurDemandee = static_cast<Carte::Couleur>(7);
+        // m_carteAtout = nullptr;
+        // m_idxPlayerStartManche = (m_idxPlayerStartManche + 1) % 4;
+        // std::cout << "Premier joueur de la nouvelle manche: " << m_idxPlayerStartManche << std::endl;
 
-        m_currentPlayer = m_idxPlayerStartManche;
-        m_biddingPhase = true;
-        m_biddingPlayer = m_idxPlayerStartManche;
-        std::cout << "Premier joueur des annonces: " << m_biddingPlayer << std::endl;
-        m_passCount = 0;
-        m_lastBidPlayer = -1;
-        m_lastBidAnnonce = Player::ANNONCEINVALIDE;
-        m_carteWinning = nullptr;
-        m_scorePli = 0;
-        m_lastBidCouleur = Carte::COULEURINVALIDE;
+        // m_currentPlayer = m_idxPlayerStartManche;
+        // m_biddingPhase = true;
+        // m_biddingPlayer = m_idxPlayerStartManche;
+        // std::cout << "Premier joueur des annonces: " << m_biddingPlayer << std::endl;
+        // m_passCount = 0;
+        // m_lastBidPlayer = -1;
+        // m_lastBidAnnonce = Player::ANNONCEINVALIDE;
+        // m_carteWinning = nullptr;
+        // m_scorePli = 0;
+        // m_lastBidCouleur = Carte::COULEURINVALIDE;
 
-        m_deck.resetDeck();
-        m_deck.shuffleDeck();
-        for (int i = 0; i < 4; i++) {
-            auto& player = m_players[i].get();
-            if (player) {
-                for (int j = 0; j < 8; j++) {
-                    Carte* carte = m_deck.drawCard();
-                    if (carte) {
-                        player->addCardToHand(carte);
-                    }
-                }
-                refreshHand(i);
-            }
-        }
+        // m_deck.resetDeck();
+        // m_deck.shuffleDeck();
+        // for (int i = 0; i < 4; i++) {
+        //     auto& player = m_players[i].get();
+        //     if (player) {
+        //         for (int j = 0; j < 8; j++) {
+        //             Carte* carte = m_deck.drawCard();
+        //             if (carte) {
+        //                 player->addCardToHand(carte);
+        //             }
+        //         }
+        //         refreshHand(i);
+        //     }
+        // }
 
-        std::cout << "idFirstPlayer apres reinitialisation: " << m_idxPlayerStartPli << std::endl;
-        emit biddingPhaseChanged();
-        emit biddingPlayerChanged();
-        emit lastBidChanged();
-        emit currentPlayerChanged();
+        // std::cout << "idFirstPlayer apres reinitialisation: " << m_idxPlayerStartPli << std::endl;
+        // emit biddingPhaseChanged();
+        // emit biddingPlayerChanged();
+        // emit lastBidChanged();
+        // emit currentPlayerChanged();
     }
+}
+
+void GameModel::nouvelleManche() {
+    std::cout << "Nouvelle manche!" << std::endl;
+
+    for (int i = 0; i < 4; i++) {
+        auto& player = m_players[i].get();
+        if (player) {
+            player->clearHand();
+        }
+    }
+
+    m_currentPli.clear();
+    m_couleurDemandee = static_cast<Carte::Couleur>(7);
+    m_carteAtout = nullptr;
+    m_idxPlayerStartManche = (m_idxPlayerStartManche + 1) % 4;
+    std::cout << "Premier joueur de la nouvelle manche: " << m_idxPlayerStartManche << std::endl;
+
+    m_currentPlayer = m_idxPlayerStartManche;
+    m_biddingPhase = true;
+    m_biddingPlayer = m_idxPlayerStartManche;
+    std::cout << "Premier joueur des annonces: " << m_biddingPlayer << std::endl;
+    m_passCount = 0;
+    m_lastBidPlayer = -1;
+    m_lastBidAnnonce = Player::ANNONCEINVALIDE;
+    m_carteWinning = nullptr;
+    m_scorePli = 0;
+    m_lastBidCouleur = Carte::COULEURINVALIDE;
+
+    m_deck.resetDeck();
+    m_deck.shuffleDeck();
+    for (int i = 0; i < 4; i++) {
+        auto& player = m_players[i].get();
+        if (player) {
+            for (int j = 0; j < 8; j++) {
+                Carte* carte = m_deck.drawCard();
+                if (carte) {
+                    player->addCardToHand(carte);
+                }
+            }
+            //refreshHand(i);
+        }
+    }
+
+    m_players[0].get()->sortHand();
+    m_players[1].get()->sortHand();
+    m_players[2].get()->sortHand();
+    m_players[3].get()->sortHand();
+
+    refreshAllHands();
+
+    std::cout << "idFirstPlayer apres reinitialisation: " << m_idxPlayerStartPli << std::endl;
+    emit biddingPhaseChanged();
+    emit biddingPlayerChanged();
+    emit lastBidChanged();
+    emit currentPlayerChanged();
 }

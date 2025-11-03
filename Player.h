@@ -34,6 +34,10 @@ class Player
 
         void removeCard(int cardIndex);
 
+        void clearHand();
+
+        void sortHand();
+
         void addCardToHand(Carte* carte);
 
         bool isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee, 

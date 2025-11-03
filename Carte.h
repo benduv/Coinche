@@ -6,10 +6,10 @@ class Carte
     public:
         enum Couleur {
             COEUR = 3,
-            CARREAU,
             TREFLE,
+            CARREAU,
             PIQUE,
-            COULEURINVALIDE
+            COULEURINVALIDE = 7
         };
 
         enum Chiffre {
