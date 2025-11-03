@@ -54,6 +54,9 @@ class Player
 
         void setAtout(const Carte::Couleur &couleurAtout);
 
+        bool hasBelotte(const Carte::Couleur &couleurAtout) const;
+        bool getHasBelotte() const;
+
         void printAnnonce() const;
         void printMain() const;
 
@@ -75,6 +78,7 @@ class Player
         bool hasCouleur(const Carte::Couleur &couleur) const;
         bool hasHigher(Carte *carte) const;
         std::vector<std::array<Carte*, 4> > m_plis;
+        bool m_hasBelotte = false;
 };
 
 #endif

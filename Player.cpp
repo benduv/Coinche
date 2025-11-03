@@ -310,6 +310,32 @@ void Player::setAtout(const Carte::Couleur &couleurAtout)
             carte->setAtout(false);
         }
     }
+
+    if(hasBelotte(couleurAtout)) {
+        std::cout << "Le joueur " << m_name << " a la belote!" << std::endl;
+        m_hasBelotte = true;
+    }
+}
+
+bool Player::hasBelotte(const Carte::Couleur &couleurAtout) const
+{
+    bool hasRoiAtout = false;
+    bool hasDameAtout = false;
+    for (const auto* carte : m_main) {
+        if (carte) {
+            if (carte->getChiffre() == Carte::ROI && carte->getCouleur() == couleurAtout) {
+                hasRoiAtout = true;
+            } else if (carte->getChiffre() == Carte::DAME && carte->getCouleur() == couleurAtout) {
+                hasDameAtout = true;
+            }
+        }
+    }
+    return hasRoiAtout && hasDameAtout;
+}
+
+bool Player::getHasBelotte() const
+{
+    return m_hasBelotte;
 }
 
 void Player::removeCard(int cardIndex)

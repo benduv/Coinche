@@ -4,183 +4,139 @@ import QtQuick.Layouts
 
 Rectangle {
     id: root
+    anchors.fill: parent
     color: "#000000"
-    opacity: 0.95
+    opacity: 0.92
     radius: 10
-    
+    border.color: "#FFD700"
+    border.width: parent ? parent.width * 0.002 : 2
+
+    // Dimensions relatives pour adaptation
+    property real w: width
+    property real h: height
+
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 30
-        spacing: 20
-        
-        // Titre
+        anchors.margins: w * 0.04
+        spacing: h * 0.04
+
+        // ========= Titre =========
         Text {
             text: "Phase d'annonces"
-            font.pixelSize: 32
+            font.pixelSize: h * 0.06
             font.bold: true
             color: "#FFD700"
             Layout.alignment: Qt.AlignHCenter
         }
-        
-        // Annonce actuelle
+
+        // ========= Dernière annonce =========
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 100
+            Layout.preferredHeight: h * 0.20
             color: "#1a1a1a"
             radius: 8
             border.color: "#FFD700"
             border.width: 2
-            
+
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 5
-                
+                spacing: h * 0.01
+
                 Text {
                     text: "Dernière annonce"
-                    font.pixelSize: 16
+                    font.pixelSize: h * 0.03
                     color: "#aaaaaa"
                     Layout.alignment: Qt.AlignHCenter
                 }
-                
+
                 Text {
                     text: gameModel.lastBid
-                    font.pixelSize: 28
+                    font.pixelSize: h * 0.06
                     font.bold: true
                     color: "#FFD700"
                     Layout.alignment: Qt.AlignHCenter
                 }
-                
+
                 Text {
                     text: gameModel.lastBidSuit
-                    font.pixelSize: 20
+                    font.pixelSize: h * 0.035
                     color: "#ffffff"
                     Layout.alignment: Qt.AlignHCenter
                     visible: gameModel.lastBidValue > 0
                 }
             }
         }
-        
-        // Tour du joueur
+
+        // ========= Tour du joueur =========
         Text {
-            text: gameModel.biddingPlayer === 0 ? 
-                  "À vous d'annoncer !" : 
+            text: gameModel.biddingPlayer === 0 ?
+                  "À vous d'annoncer !" :
                   "Joueur " + (gameModel.biddingPlayer + 1) + " annonce..."
-            font.pixelSize: 20
+            font.pixelSize: h * 0.035
             color: gameModel.biddingPlayer === 0 ? "#00ff00" : "#ffffff"
             Layout.alignment: Qt.AlignHCenter
         }
-        
+
         Item { Layout.fillHeight: true }
-        
-        // Choix de l'annonce (visible seulement pour le joueur humain)
-        /*ColumnLayout {
-            Layout.fillWidth: true
+
+        // ========= Choix des annonces =========
+        ColumnLayout {
+            //Layout.fillWidth: true
             //anchors.horizontalCenter: parent
-            //: 15
-            visible: gameModel.biddingPlayer === 0*/
-            
+            Layout.alignment: Qt.AlignHCenter
+            //visible: gameModel.biddingPlayer === 0
+            spacing: h * 0.02
+
             Text {
                 text: "Choisissez votre annonce :"
-                font.pixelSize: 18
+                font.pixelSize: h * 0.035
                 color: "#ffffff"
                 Layout.alignment: Qt.AlignHCenter
             }
-            
-            // Grille des annonces
-            RowLayout {
-                //Layout.fillWidth: true
-                Layout.alignment: Qt.AlignHCenter
-                //columns: 4
-                //spacing: 0
-                //columnSpacing: 10
-                
-                // 80-100
-                BidButton {
-                    text: "80"
-                    bidValue: 1
-                    enabled: 1 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(1)
-                }
-                BidButton {
-                    text: "90"
-                    bidValue: 2
-                    enabled: 2 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(2)
-                }
-                BidButton {
-                    text: "100"
-                    bidValue: 3
-                    enabled: 3 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(3)
-                }
-                BidButton {
-                    text: "110"
-                    bidValue: 4
-                    enabled: 4 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(4)
-                }
-                
-                // 120-150
-                BidButton {
-                    text: "120"
-                    bidValue: 5
-                    enabled: 5 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(5)
-                }
-                BidButton {
-                    text: "130"
-                    bidValue: 6
-                    enabled: 6 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(6)
-                }
-                BidButton {
-                    text: "140"
-                    bidValue: 7
-                    enabled: 7 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(7)
-                }
-                BidButton {
-                    text: "150"
-                    bidValue: 8
-                    enabled: 8 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(8)
-                }
-                
-                // 160, Capot, Générale
-                BidButton {
-                    text: "160"
-                    bidValue: 9
-                    enabled: 9 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(9)
-                }
-                BidButton {
-                    text: "Capot"
-                    bidValue: 10
-                    enabled: 10 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(10)
-                }
-                BidButton {
-                    text: "Générale"
-                    bidValue: 11
-                    enabled: 11 > gameModel.lastBidValue
-                    onClicked: showSuitSelector(11)
-                }
-            //}
-            
 
+            // ---- Grille des annonces ----
+            Row {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: w * 0.008
+                Repeater {
+                    model: [
+                        { value: 1, label: "80" },
+                        { value: 2, label: "90" },
+                        { value: 3, label: "100" },
+                        { value: 4, label: "110" },
+                        { value: 5, label: "120" },
+                        { value: 6, label: "130" },
+                        { value: 7, label: "140" },
+                        { value: 8, label: "150" },
+                        { value: 9, label: "160" },
+                        { value: 10, label: "Capot" },
+                        { value: 11, label: "Générale" }
+                    ]
+
+                    BidButton {
+                        text: modelData.label
+                        bidValue: modelData.value
+                        width: w * 0.07
+                        height: h * 0.09
+                        enabled: bidValue > gameModel.lastBidValue
+                        onClicked: showSuitSelector(bidValue)
+                    }
+                }
+            }
         }
 
-        // Bouton Passer
+        // ========= Bouton "Passer" =========
         Button {
             text: "Passer"
-            font.pixelSize: 18
-            Layout.preferredWidth: 200
-            Layout.preferredHeight: 50
+            font.pixelSize: h * 0.04
+            Layout.preferredWidth: w * 0.25
+            Layout.preferredHeight: h * 0.10
             Layout.alignment: Qt.AlignHCenter
 
             background: Rectangle {
-                color: parent.down ? "#cc0000" : (parent.hovered ? "#ff3333" : "#ff0000")
-                radius: 5
+                color: parent.down ? "#cc0000" :
+                       (parent.hovered ? "#ff3333" : "#ff0000")
+                radius: 8
             }
 
             contentItem: Text {
@@ -193,139 +149,104 @@ Rectangle {
 
             onClicked: gameModel.passBid()
         }
-        
+
         Item { Layout.fillHeight: true }
     }
-    
-    // Popup pour choisir la couleur
+
+    // ========= POPUP SELECTION COULEUR =========
     Popup {
         id: suitSelector
         anchors.centerIn: parent
-        width: 400
-        height: 250
+        width: w * 0.7
+        height: h * 0.4
         modal: true
         focus: true
         closePolicy: Popup.CloseOnEscape
-        
         property int selectedBidValue: 0
-        
+
         background: Rectangle {
             color: "#2a2a2a"
             radius: 10
             border.color: "#FFD700"
             border.width: 2
         }
-        
+
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 15
-            
+            anchors.margins: w * 0.025
+            spacing: h * 0.035
+
             Text {
                 text: "Choisissez la couleur d'atout :"
-                font.pixelSize: 20
+                font.pixelSize: h * 0.05
                 color: "#ffffff"
                 Layout.alignment: Qt.AlignHCenter
             }
-            
+
             Row {
                 Layout.alignment: Qt.AlignHCenter
-                spacing: 15
-                
-                SuitButton {
-                    text: "♥"
-                    suitColor: "#E60000"
-                    suitValue: 3
-                    onClicked: {
-                        gameModel.makeBid(suitSelector.selectedBidValue, 3)
-                        suitSelector.close()
-                    }
-                }
-                
-                SuitButton {
-                    text: "♦"
-                    suitColor: "#E60000"
-                    suitValue: 4
-                    onClicked: {
-                        gameModel.makeBid(suitSelector.selectedBidValue, 4)
-                        suitSelector.close()
-                    }
-                }
-                
-                SuitButton {
-                    text: "♣"
-                    suitColor: "#000000"
-                    suitValue: 5
-                    onClicked: {
-                        gameModel.makeBid(suitSelector.selectedBidValue, 5)
-                        suitSelector.close()
-                    }
-                }
-                
-                SuitButton {
-                    text: "♠"
-                    suitColor: "#000000"
-                    suitValue: 6
-                    onClicked: {
-                        gameModel.makeBid(suitSelector.selectedBidValue, 6)
-                        suitSelector.close()
-                    }
-                }
+                spacing: w * 0.04
+
+                SuitButton { text: "♥"; suitColor: "#E60000"; suitValue: 3
+                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 3); suitSelector.close() } }
+                SuitButton { text: "♦"; suitColor: "#E60000"; suitValue: 4
+                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 4); suitSelector.close() } }
+                SuitButton { text: "♣"; suitColor: "#000000"; suitValue: 5
+                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 5); suitSelector.close() } }
+                SuitButton { text: "♠"; suitColor: "#000000"; suitValue: 6
+                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 6); suitSelector.close() } }
             }
         }
     }
-    
+
+    // ========= Fonctions =========
     function showSuitSelector(bidValue) {
         suitSelector.selectedBidValue = bidValue
         suitSelector.open()
     }
-    
-    // Composant pour les boutons d'annonce
+
+    // ========= Composants =========
     component BidButton: Button {
         property int bidValue
-        
-        /*Layout.preferredWidth: 40
-        Layout.preferredHeight: 40*/
-        
+
         background: Rectangle {
-            color: parent.enabled ? 
-                   (parent.down ? "#0066cc" : (parent.hovered ? "#0080ff" : "#0099ff")) : 
-                   "#333333"
-            radius: 5
+            color: parent.enabled
+                   ? (parent.down ? "#0066cc" :
+                      (parent.hovered ? "#0080ff" : "#0099ff"))
+                   : "#333333"
+            radius: 6
             border.color: parent.enabled ? "#FFD700" : "#555555"
             border.width: 1
         }
-        
+
         contentItem: Text {
             text: parent.text
-            font.pixelSize: 16
+            font.pixelSize: h * 0.03
             font.bold: true
             color: parent.enabled ? "white" : "#666666"
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
-
-        //Component.onCompleted: console.log("Layout.preferredWidth = " + Layout.preferredWidth)
     }
-    
-    // Composant pour les boutons de couleur
+
     component SuitButton: Button {
         property color suitColor
         property int suitValue
-        
-        width: 80
-        height: 80
-        
+
+        width: w * 0.11
+        height: h * 0.15
+
         background: Rectangle {
-            color: parent.down ? "#444444" : (parent.hovered ? "#555555" : "#333333")
+            color: parent.down ? "#444444" :
+                   (parent.hovered ? "#555555" : "#333333")
             radius: 10
             border.color: suitColor
             border.width: 3
         }
-        
+
         contentItem: Text {
             text: parent.text
-            font.pixelSize: 48
+            font.pixelSize: h * 0.09
             color: suitColor
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter

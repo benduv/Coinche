@@ -18,7 +18,8 @@ add_library(
     Deck.cpp
     Player.cpp
     GameManager.cpp
-    #GameModel.cpp
+    HandModel.cpp
+    GameModel.cpp
 )
 target_include_directories(coinche_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -32,9 +33,9 @@ target_link_libraries(coinche_lib PUBLIC
     Qt6::Qml
 )
 
-target_sources(coinche_lib PRIVATE
-    GameModel.h
-)
+# target_sources(coinche_lib PRIVATE
+#     GameModel.h
+# )
 
 # Create main executable
 qt_add_executable(coinche 
