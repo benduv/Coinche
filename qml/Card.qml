@@ -2,16 +2,18 @@ import QtQuick
 
 Item {
     id: root
+    // Taille par défaut
     width: 80
     height: 120
+    property real cardRatio: 1.0  // Ratio par défaut
 
     // Propriétés de la carte
-    property int value: 7  // 7-14 (7,8,9,10,V,D,R,A)
-    property int suit: 3   // 3=♥, 4=♦, 5=♣, 6=♠
+    property int value: 7
+    property int suit: 3
     property bool faceUp: true
     property bool selected: false
     property bool enabled: true
-    property bool isPlayable: true  // Nouvelle propriété
+    property bool isPlayable: true
 
     // Fonction pour construire le chemin de l'image
     function getCardImagePath() {
@@ -59,11 +61,11 @@ Item {
     Rectangle {
         id: cardBorder
         anchors.fill: parent
-        color: "transparent"
+        anchors.margins: 3
+        color: "white"
         border.color: selected ? "#FFD700" : "#000000"
         border.width: selected ? 3 : 1
-        radius: 8
-
+        radius: 5
         Behavior on border.color { ColorAnimation { duration: 100 } }
         Behavior on border.width { NumberAnimation { duration: 100 } }
 
@@ -71,13 +73,19 @@ Item {
         Image {
             id: cardFace
             anchors.fill: parent
-            anchors.margins: 1
-            source: root.faceUp ? getCardImagePath() : ""
+            //anchors.margins: 1
+            source: root.faceUp ? root.getCardImagePath() : ""
             visible: root.faceUp
             fillMode: Image.PreserveAspectFit
             smooth: true
             antialiasing: true
+            onStatusChanged: {
+                if (status === Image.Ready) {
+                    root.cardRatio = implicitWidth / implicitHeight
+                }
+            }
         }
+
 
         // Dos de la carte (image ou pattern)
         Image {

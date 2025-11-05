@@ -90,7 +90,10 @@ ApplicationWindow {
                 Repeater {
                     model: gameModel.player0Hand
                     Card {
-                        width: rootArea.width * 0.06
+                        width: {
+                            var desiredHeight = rootArea.height * 0.13
+                            return desiredHeight * cardRatio
+                        }
                         height: rootArea.height * 0.12
                         value: model.value
                         suit: model.suit
@@ -109,7 +112,8 @@ ApplicationWindow {
             }
 
             Text {
-                text: gameModel.player0Hand.m_player ? "Sud (Vous)" : "Sud"
+                //text: gameModel.player0Hand.m_player ? "Sud (Vous)" : "Sud"
+                text: defaultPlayerName
                 color: gameModel.currentPlayer === 0 ? "#ffff66" : "white"
                 font.pixelSize: parent.height * 0.1
                 font.bold: gameModel.currentPlayer === 0
@@ -127,7 +131,7 @@ ApplicationWindow {
             spacing: parent.height * 0.01
 
             Text {
-                text: "Nord"
+                text: defaultPlayerName
                 color: gameModel.currentPlayer === 2 ? "#ffff66" : "white"
                 font.pixelSize: parent.height * 0.1
                 font.bold: gameModel.currentPlayer === 2
@@ -140,7 +144,10 @@ ApplicationWindow {
                 Repeater {
                     model: gameModel.player2Hand
                     Card {
-                        width: rootArea.width * 0.06
+                        width: {
+                            var desiredHeight = rootArea.height * 0.13
+                            return desiredHeight * cardRatio
+                        }
                         height: rootArea.height * 0.12
                         value: model.value
                         suit: model.suit
@@ -183,7 +190,10 @@ ApplicationWindow {
                 Repeater {
                     model: gameModel.player1Hand
                     Card {
-                        width: rootArea.width * 0.05
+                        width: {
+                            var desiredHeight = rootArea.height * 0.1
+                            return desiredHeight * cardRatio
+                        }
                         height: rootArea.height * 0.1
                         rotation: 90
                         faceUp: true
@@ -226,7 +236,10 @@ ApplicationWindow {
                 Repeater {
                     model: gameModel.player3Hand
                     Card {
-                        width: rootArea.width * 0.05
+                        width: {
+                            var desiredHeight = rootArea.height * 0.1
+                            return desiredHeight * cardRatio
+                        }
                         height: rootArea.height * 0.1
                         rotation: -90
                         faceUp: true

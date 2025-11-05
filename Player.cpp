@@ -296,7 +296,6 @@ bool Player::hasHigher(Carte *carte) const
         elt->printCarte();
         carte->printCarte();
         if(*carte < *elt) {
-            std::cout << " BEEEEEEEEEN higher" << std::endl;
             haveHigher = true;
             break;
         }
