@@ -6,12 +6,18 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include "GameModel.h"  // ⭐ Inclure GameModel
 
 class NetworkManager : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged)
     Q_PROPERTY(QString matchmakingStatus READ matchmakingStatus NOTIFY matchmakingStatusChanged)
     Q_PROPERTY(int playersInQueue READ playersInQueue NOTIFY playersInQueueChanged)
+    Q_PROPERTY(QJsonArray myCards READ myCards NOTIFY gameDataChanged)
+    Q_PROPERTY(int myPosition READ myPosition NOTIFY gameDataChanged)
+    Q_PROPERTY(QJsonArray opponents READ opponents NOTIFY gameDataChanged)
 
 public:
     explicit NetworkManager(QObject *parent = nullptr)
@@ -19,6 +25,8 @@ public:
         , m_socket(new QWebSocket)
         , m_connected(false)
         , m_playersInQueue(0)
+        , m_myPosition(-1)
+        , m_gameModel(nullptr)  // ⭐ Initialiser à nullptr
     {
         connect(m_socket, &QWebSocket::connected, this, &NetworkManager::onConnected);
         connect(m_socket, &QWebSocket::disconnected, this, &NetworkManager::onDisconnected);
@@ -29,13 +37,51 @@ public:
     ~NetworkManager() {
         m_socket->close();
         delete m_socket;
+        if (m_gameModel) {
+            delete m_gameModel;
+        }
     }
 
     bool connected() const { return m_connected; }
     QString matchmakingStatus() const { return m_matchmakingStatus; }
     int playersInQueue() const { return m_playersInQueue; }
+    QJsonArray myCards() const { return m_myCards; }
+    int myPosition() const { return m_myPosition; }
+    QJsonArray opponents() const { return m_opponents; }
+    GameModel* gameModel() const { return m_gameModel; }
 
-    // Méthodes appelables depuis QML
+    // ⭐ Nouvelle méthode pour créer le GameModel
+    Q_INVOKABLE void createGameModel(int position, const QJsonArray& cards, const QJsonArray& opps) {
+        qDebug() << "Création du GameModel en C++";
+        
+        // Supprimer l'ancien si existant
+        if (m_gameModel) {
+            delete m_gameModel;
+        }
+        
+        // Créer le nouveau GameModel
+        m_gameModel = new GameModel(this);
+        
+        // Connecter les signaux
+        connect(m_gameModel, &GameModel::cardPlayedLocally, this, [this](int cardIndex) {
+            qDebug() << "Envoi playCard au serveur:" << cardIndex;
+            playCard(cardIndex);
+        });
+        
+        connect(m_gameModel, &GameModel::bidMadeLocally, this, [this](int bidValue, int suitValue) {
+            qDebug() << "Envoi makeBid au serveur:" << bidValue << suitValue;
+            makeBid(bidValue, suitValue);
+        });
+        
+        // Initialiser avec les données
+        m_gameModel->initOnlineGame(position, cards, opps);
+        
+        qDebug() << "GameModel créé et initialisé";
+        
+        // Émettre signal pour que QML navigue vers CoincheView
+        emit gameModelReady();
+    }
+
     Q_INVOKABLE void connectToServer(const QString &url) {
         qDebug() << "Connexion au serveur:" << url;
         m_socket->open(QUrl(url));
@@ -79,7 +125,9 @@ signals:
     void connectedChanged();
     void matchmakingStatusChanged();
     void playersInQueueChanged();
+    void gameDataChanged();
     void gameFound(int playerPosition, QJsonArray opponents);
+    void gameModelReady();  // ⭐ Nouveau signal
     void cardPlayed(QString playerId, int cardIndex);
     void bidMade(QString playerId, int bidValue, int suit);
     void playerDisconnected(QString playerId);
@@ -87,13 +135,13 @@ signals:
 
 private slots:
     void onConnected() {
-        qDebug() << "Connecte au serveur";
+        qDebug() << "Connecté au serveur";
         m_connected = true;
         emit connectedChanged();
     }
 
     void onDisconnected() {
-        qDebug() << "Deconnecté du serveur";
+        qDebug() << "Déconnecté du serveur";
         m_connected = false;
         emit connectedChanged();
     }
@@ -106,8 +154,8 @@ private slots:
         qDebug() << "NetWorkManager - Message recu:" << type;
 
         if (type == "registered") {
-            m_playerId = obj["playerId"].toString();
-            qDebug() << "Enregistre avec ID:" << m_playerId;
+            m_playerId = obj["connectionId"].toString();
+            qDebug() << "Enregistré avec ID:" << m_playerId;
         }
         else if (type == "matchmakingStatus") {
             m_matchmakingStatus = obj["status"].toString();
@@ -116,20 +164,42 @@ private slots:
             emit playersInQueueChanged();
         }
         else if (type == "gameFound") {
-            int position = obj["playerPosition"].toInt();
-            QJsonArray opponents = obj["opponents"].toArray();
-            emit gameFound(position, opponents);
+            qDebug() << "=============== GAME FOUND ===============";
+            
+            m_myPosition = obj["playerPosition"].toInt();
+            m_myCards = obj["myCards"].toArray();
+            m_opponents = obj["opponents"].toArray();
+            
+            qDebug() << "Position:" << m_myPosition;
+            qDebug() << "Nombre de cartes:" << m_myCards.size();
+            qDebug() << "Nombre d'adversaires:" << m_opponents.size();
+            
+            emit gameDataChanged();
+            emit gameFound(m_myPosition, m_opponents);
+            
+            qDebug() << "Signal gameFound émis";
         }
         else if (type == "cardPlayed") {
-            QString playerId = obj["playerId"].toString();
+            int playerIndex = obj["playerIndex"].toInt();
             int cardIndex = obj["cardIndex"].toInt();
-            emit cardPlayed(playerId, cardIndex);
+            
+            // Transmettre au GameModel
+            if (m_gameModel) {
+                m_gameModel->receivePlayerAction(playerIndex, "playCard", cardIndex);
+            }
         }
         else if (type == "bidMade") {
-            QString playerId = obj["playerId"].toString();
+            int playerIndex = obj["playerIndex"].toInt();
             int bidValue = obj["bidValue"].toInt();
             int suit = obj["suit"].toInt();
-            emit bidMade(playerId, bidValue, suit);
+            
+            // Transmettre au GameModel
+            if (m_gameModel) {
+                QJsonObject bidData;
+                bidData["value"] = bidValue;
+                bidData["suit"] = suit;
+                m_gameModel->receivePlayerAction(playerIndex, "makeBid", bidData);
+            }
         }
         else if (type == "playerDisconnected") {
             QString playerId = obj["playerId"].toString();
@@ -153,6 +223,12 @@ private:
     QString m_playerId;
     QString m_matchmakingStatus;
     int m_playersInQueue;
+    
+    QJsonArray m_myCards;
+    int m_myPosition;
+    QJsonArray m_opponents;
+    
+    GameModel* m_gameModel;  // ⭐ Le GameModel géré par NetworkManager
 };
 
 #endif // NETWORKMANAGER_H

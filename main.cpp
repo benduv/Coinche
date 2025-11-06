@@ -4,7 +4,7 @@
 #include <QQuickStyle>
 #include <QCommandLineParser>
 #include <QRandomGenerator>
-#include "NetworkManager.h"
+#include "server/NetworkManager.h"
 #include "GameModel.h"
 
 int main(int argc, char *argv[])
@@ -32,32 +32,19 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle("Material");
     
     QQmlApplicationEngine engine;
-
-    // Initialize game components
-    // Deck deck;
-    // deck.shuffleDeck();
-
-    // std::vector<Carte*> main1, main2, main3, main4;
-    // deck.distribute(main1, main2, main3, main4);
-
-    // std::vector<std::unique_ptr<Player>> players;
-    // players.push_back(std::make_unique<Player>("Joueur1", main1, 0));
-    // players.push_back(std::make_unique<Player>("Joueur2", main2, 1));
-    // players.push_back(std::make_unique<Player>("Joueur3", main3, 2));
-    // players.push_back(std::make_unique<Player>("Joueur4", main4, 3));
-
-    // std::vector<std::reference_wrapper<std::unique_ptr<Player>>> playerRefs;
-    // for (auto& player : players) {
-    //     player->sortHand();
-    //     playerRefs.push_back(std::ref(player));
-    // }
-    
-    // GameModel gameModel(playerRefs, deck);
-    // engine.rootContext()->setContextProperty("gameModel", &gameModel);
-    
+        
+    // NetworkManager global
     NetworkManager networkManager;
     engine.rootContext()->setContextProperty("networkManager", &networkManager);
     engine.rootContext()->setContextProperty("defaultPlayerName", playerName);
+
+    engine.rootContext()->setContextProperty("gameModel", QVariant::fromValue<QObject*>(nullptr));
+    
+    // Mettre à jour quand gameModel est créé
+    QObject::connect(&networkManager, &NetworkManager::gameModelReady, [&]() {
+        qDebug() << "Exposition de gameModel au contexte QML";
+        engine.rootContext()->setContextProperty("gameModel", networkManager.gameModel());
+    });
     
     const QUrl url(QStringLiteral("qrc:/qml/MainMenu.qml"));
     engine.load(url);

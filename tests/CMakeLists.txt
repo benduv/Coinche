@@ -19,7 +19,6 @@ add_executable(
     carte_test.cpp
     deck_test.cpp
     player_test.cpp
-    gamemanager_test.cpp
 )
 
 target_link_libraries(

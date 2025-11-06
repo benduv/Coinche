@@ -37,6 +37,7 @@ struct GameRoom {
     // État de la partie
     Carte::Couleur couleurAtout;
     int currentPlayerIndex;
+    GameModel* gameModel = nullptr;
     // ... autres données
 };
 
@@ -235,57 +236,69 @@ private:
             
             m_gameRooms[roomId] = room;  // Stocker le pointeur
 
-            qDebug() << "Partie créée! Room ID:" << roomId;
-
-                // Deck deck;
-    // deck.shuffleDeck();
-
-    // std::vector<Carte*> main1, main2, main3, main4;
-    // deck.distribute(main1, main2, main3, main4);
-
-            // std::vector<std::unique_ptr<Player>> players;
-            // players.push_back(std::make_unique<Player>("Joueur1", main1, 0));
-            // players.push_back(std::make_unique<Player>("Joueur2", main2, 1));
-            // players.push_back(std::make_unique<Player>("Joueur3", main3, 2));
-            // players.push_back(std::make_unique<Player>("Joueur4", main4, 3));
-
-            std::vector<std::reference_wrapper<std::unique_ptr<Player>>> playerRefs;
-            for (auto& player : room->players) {
-                player->sortHand();
-                playerRefs.push_back(std::ref(player));
-            }
-            
-            GameModel gameModel(playerRefs, deck);
-            engine.rootContext()->setContextProperty("gameModel", &gameModel);
+            qDebug() << "Partie creee! Room ID:" << roomId;
 
             // Notifier tous les joueurs
             notifyGameStart(roomId, connectionIds);
+
+            qDebug() << "Notifications gameFound envoyees à" << connectionIds.size() << "joueurs";
+
         }
     }
 
     void notifyGameStart(int roomId, const QList<QString> &connectionIds) {
+        GameRoom* room = m_gameRooms[roomId];
+        if (!room) return;
+
+        qDebug() << "Envoi des notifications gameFound à" << connectionIds.size() << "joueurs";
+
+        
         for (int i = 0; i < connectionIds.size(); i++) {
             PlayerConnection *conn = m_connections[connectionIds[i]];
-            if (!conn) continue;
+            if (!conn) {
+                qDebug() << "Erreur: Connexion introuvable pour ID" << connectionIds[i];
+                continue;
+            } 
 
             QJsonObject msg;
             msg["type"] = "gameFound";
             msg["roomId"] = roomId;
-            msg["playerPosition"] = i; // Position du joueur (0-3)
+            msg["playerPosition"] = i;
             
+            // IMPORTANT : Envoyer les cartes du joueur
+            QJsonArray myCards;
+            const auto& playerHand = room->players[i]->getMain();
+            qDebug() << "Envoi de" << playerHand.size() << "cartes au joueur" << i;
+
+            for (const auto* carte : playerHand) {
+                if (carte) {
+                    QJsonObject cardObj;
+                    cardObj["value"] = static_cast<int>(carte->getChiffre());
+                    cardObj["suit"] = static_cast<int>(carte->getCouleur());
+                    myCards.append(cardObj);
+                }
+            }
+            msg["myCards"] = myCards;
+            
+            // Infos sur les adversaires
             QJsonArray opponents;
             for (int j = 0; j < connectionIds.size(); j++) {
                 if (i != j) {
                     QJsonObject opp;
                     opp["position"] = j;
                     opp["name"] = m_connections[connectionIds[j]]->playerName;
+                    opp["cardCount"] = int(room->players[j]->getMain().size());
                     opponents.append(opp);
                 }
             }
             msg["opponents"] = opponents;
+            qDebug() << "Envoi gameFound à" << conn->playerName << "position" << i;
+
 
             sendMessage(conn->socket, msg);
         }
+        qDebug() << "Toutes les notifications envoyées";
+
     }
 
     void handlePlayCard(QWebSocket *socket, const QJsonObject &data) {

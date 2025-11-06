@@ -31,7 +31,7 @@ ApplicationWindow {
             AnnoncesPanel {
                 anchors.fill: parent
                 anchors.margins: parent.width * 0.05
-                visible: gameModel.biddingPhase
+                visible: gameModel.biddingPhase && gameModel.biddingPlayer === gameModel.myPosition
             }
 
             // ---- Zone du pli (cartes jouées) ----

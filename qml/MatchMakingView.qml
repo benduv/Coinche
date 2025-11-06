@@ -176,27 +176,74 @@ Rectangle {
         }
     }
 
-    // Connexions aux signaux du NetworkManager
     Connections {
         target: networkManager
-        
+
         function onGameFound(playerPosition, opponents) {
-            console.log("Partie trouvée! Position:", playerPosition)
-            // Passer à l'écran de jeu avec les infos
+            console.log("Partie trouvee! Position:", playerPosition)
+            networkManager.createGameModel(
+                networkManager.myPosition,
+                networkManager.myCards,
+                networkManager.opponents
+            )
+        }
+
+        function onGameModelReady() {
+            console.log("QML: GameModel prêt, navigation vers CoincheView")
+            stackView.push("qrc:/qml/CoincheView.qml")
+        }
+    }
+
+
+            // Créer le GameModel
+            /*var gameModel = gameModelComponent.createObject(root)
+
+            if (!gameModel) {
+                console.error("ERREUR: Impossible de créer GameModel!")
+                return
+            }
+
+            console.log("GameModel créé")
+
+            // Initialiser avec les données du serveur
+            gameModel.initOnlineGame(
+                networkManager.myPosition,
+                networkManager.myCards,
+                networkManager.opponents
+            )
+
+            // Connecter les signaux
+            gameModel.cardPlayedLocally.connect(function(cardIndex) {
+                networkManager.playCard(cardIndex)
+            })
+
+            gameModel.bidMadeLocally.connect(function(bidValue, suitValue) {
+                networkManager.makeBid(bidValue, suitValue)
+            })
+
+            networkManager.cardPlayed.connect(function(playerId, cardIndex) {
+                gameModel.receivePlayerAction(playerId, "playCard", cardIndex)
+            })
+
+            networkManager.bidMade.connect(function(playerId, bidValue, suit) {
+                var bidData = { "value": bidValue, "suit": suit }
+                gameModel.receivePlayerAction(playerId, "makeBid", bidData)
+            })
+
+            // Naviguer vers la vue de jeu
             stackView.push("qrc:/qml/CoincheView.qml", {
-                "playerPosition": playerPosition,
-                "opponents": opponents,
-                "isOnline": true
+                "gameModel": gameModel
             })
         }
     }
 
+    Component {
+        id: gameModelComponent
+        GameModel {}
+    }*/
+
     Component.onCompleted: {
         if (networkManager.connected) {
-            // S'enregistrer d'abord
-            //networkManager.registerPlayer("Joueur" + Math.floor(Math.random() * 1000))
-            //networkManager.registerPlayer(defaultPlayerName)
-            // Puis rejoindre le matchmaking
             networkManager.joinMatchmaking()
         }
     }
