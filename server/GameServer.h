@@ -60,6 +60,10 @@ struct GameRoom {
     std::vector<std::pair<int, Carte*>> plisTeam1;  // Cartes gagnées par équipe 1
     std::vector<std::pair<int, Carte*>> plisTeam2;  // Cartes gagnées par équipe 2
 
+    // Belote (détectée au début de la phase de jeu)
+    bool beloteTeam1 = false;
+    bool beloteTeam2 = false;
+
     GameModel* gameModel = nullptr;
 };
 
@@ -537,9 +541,19 @@ private:
         int pointsRealisesTeam1 = room->scoreMancheTeam1;
         int pointsRealisesTeam2 = room->scoreMancheTeam2;
 
-        qDebug() << "GameServer - Points realises dans la manche:";
-        qDebug() << "  Equipe 1 (joueurs 0 et 2):" << pointsRealisesTeam1 << "points";
-        qDebug() << "  Equipe 2 (joueurs 1 et 3):" << pointsRealisesTeam2 << "points";
+        // Ajouter les points de Belote (détectée au début de la phase de jeu)
+        if (room->beloteTeam1) {
+            pointsRealisesTeam1 += 20;
+            qDebug() << "GameServer - +20 points de Belote pour l'Équipe 1";
+        }
+        if (room->beloteTeam2) {
+            pointsRealisesTeam2 += 20;
+            qDebug() << "GameServer - +20 points de Belote pour l'Équipe 2";
+        }
+
+        qDebug() << "GameServer - Points réalisés dans la manche (avec Belote):";
+        qDebug() << "  Équipe 1 (joueurs 0 et 2):" << pointsRealisesTeam1 << "points";
+        qDebug() << "  Équipe 2 (joueurs 1 et 3):" << pointsRealisesTeam2 << "points";
 
         // Déterminer quelle équipe a fait l'enchère
         // Équipe 1: joueurs 0 et 2, Équipe 2: joueurs 1 et 3
@@ -667,11 +681,13 @@ private:
 
         qDebug() << "GameServer - Nouvelle manche: mélange et distribution des cartes";
 
-        // Nettoyer les plis de la manche précédente
+        // Nettoyer les plis de la manche precedente
         room->plisTeam1.clear();
         room->plisTeam2.clear();
         room->scoreMancheTeam1 = 0;
         room->scoreMancheTeam2 = 0;
+        room->beloteTeam1 = false;
+        room->beloteTeam2 = false;
 
         // Réinitialiser les mains des joueurs
         for (auto& player : room->players) {
@@ -823,6 +839,30 @@ private:
         qDebug() << "Phase de jeu demarree - Atout:" << static_cast<int>(room->couleurAtout)
                  << "Premier joueur:" << room->currentPlayerIndex
                  << "(Gagnant encheres:" << room->lastBidderIndex << ")";
+
+        // Verifier la Belote (Dame + Roi de l'atout) pour chaque equipe
+        room->beloteTeam1 = false;
+        room->beloteTeam2 = false;
+
+        // Verifier joueurs de l'equipe 1 (joueurs 0 et 2)
+        if (room->players[0]->hasBelotte(room->couleurAtout)) {
+            room->beloteTeam1 = true;
+            qDebug() << "GameServer - Belote detectee pour le joueur 0 (Equipe 1)";
+        }
+        if (room->players[2]->hasBelotte(room->couleurAtout)) {
+            room->beloteTeam1 = true;
+            qDebug() << "GameServer - Belote detectee pour le joueur 2 (Equipe 1)";
+        }
+
+        // Verifier joueurs de l'equipe 2 (joueurs 1 et 3)
+        if (room->players[1]->hasBelotte(room->couleurAtout)) {
+            room->beloteTeam2 = true;
+            qDebug() << "GameServer - Belote detectee pour le joueur 1 (Equipe 2)";
+        }
+        if (room->players[3]->hasBelotte(room->couleurAtout)) {
+            room->beloteTeam2 = true;
+            qDebug() << "GameServer - Belote detectee pour le joueur 3 (Equipe 2)";
+        }
 
         // Notifie tous les joueurs du changement de phase avec cartes jouables
         notifyPlayersWithPlayableCards(roomId);
