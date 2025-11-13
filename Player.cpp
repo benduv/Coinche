@@ -25,6 +25,26 @@ std::vector<Carte> Player::getCartes() const {
     return cartes;
 }
 
+int Player::getContractValue(Annonce annonce)
+{
+    switch (annonce) {
+        case QUATREVINGT:       return 80;
+        case QUATREVINGTDIX:    return 90;
+        case CENT:              return 100;
+        case CENTDIX:           return 110;
+        case CENTVINGT:         return 120;
+        case CENTTRENTE:        return 130;
+        case CENTQUARANTE:      return 140;
+        case CENTCINQUANTE:     return 150;
+        case CENTSOIXANTE:      return 160;
+        case CAPOT:             return 250;
+        case GENERALE:          return 500;
+        case ANNONCEINVALIDE:
+        case PASSE:
+        default:                return 0;
+    }
+}
+
 int Player::getIndex() const
 {
     return m_index;

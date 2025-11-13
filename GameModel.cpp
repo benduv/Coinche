@@ -9,6 +9,8 @@ GameModel::GameModel(QObject *parent)
     , m_biddingPlayer(-1)
     , m_scoreTeam1(0)
     , m_scoreTeam2(0)
+    , m_scoreTotalTeam1(0)
+    , m_scoreTotalTeam2(0)
     , m_lastBidAnnonce(Player::ANNONCEINVALIDE)
     , m_lastBidCouleur(Carte::COULEURINVALIDE)
 {
@@ -106,6 +108,16 @@ int GameModel::scoreTeam1() const
 int GameModel::scoreTeam2() const
 {
     return m_scoreTeam2;
+}
+
+int GameModel::scoreTotalTeam1() const
+{
+    return m_scoreTotalTeam1;
+}
+
+int GameModel::scoreTotalTeam2() const
+{
+    return m_scoreTotalTeam2;
 }
 
 QString GameModel::lastBid() const
@@ -409,8 +421,19 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             qDebug() << "GameModel::receivePlayerAction - Joueur" << playerIndex << "passe";
         }
     } else if (action == "pliFinished") {
-        int winnerId = data.toInt();
+        QJsonObject pliData = data.toJsonObject();
+        int winnerId = pliData["winnerId"].toInt();
+        int scoreMancheTeam1 = pliData["scoreMancheTeam1"].toInt();
+        int scoreMancheTeam2 = pliData["scoreMancheTeam2"].toInt();
+
         qDebug() << "GameModel::receivePlayerAction - Pli terminé, gagnant: joueur" << winnerId;
+        qDebug() << "  Scores de manche: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
+
+        // Mettre à jour les scores de manche pour affichage dans l'UI
+        m_scoreTeam1 = scoreMancheTeam1;
+        m_scoreTeam2 = scoreMancheTeam2;
+        emit scoreTeam1Changed();
+        emit scoreTeam2Changed();
 
         // Attendre un peu pour que l'utilisateur voie le pli, puis le nettoyer
         QTimer::singleShot(2000, this, [this]() {
@@ -418,6 +441,102 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             m_currentPli.clear();
             emit currentPliChanged();
         });
+    } else if (action == "mancheFinished") {
+        QJsonObject scoreData = data.toJsonObject();
+        int scoreTotalTeam1 = scoreData["scoreTotalTeam1"].toInt();
+        int scoreTotalTeam2 = scoreData["scoreTotalTeam2"].toInt();
+
+        qDebug() << "GameModel::receivePlayerAction - Manche terminee";
+        qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
+
+        // Mettre à jour les scores totaux
+        m_scoreTotalTeam1 = scoreTotalTeam1;
+        m_scoreTotalTeam2 = scoreTotalTeam2;
+        emit scoreTotalTeam1Changed();
+        emit scoreTotalTeam2Changed();
+
+        // Réinitialiser les scores de manche (ils seront recalculés au prochain pli)
+        m_scoreTeam1 = 0;
+        m_scoreTeam2 = 0;
+        emit scoreTeam1Changed();
+        emit scoreTeam2Changed();
+
+        // TODO: Afficher une popup ou notification pour les scores de la manche
+    } else if (action == "gameOver") {
+        QJsonObject gameOverData = data.toJsonObject();
+        int winner = gameOverData["winner"].toInt();
+        int scoreTeam1 = gameOverData["scoreTeam1"].toInt();
+        int scoreTeam2 = gameOverData["scoreTeam2"].toInt();
+
+        qDebug() << "GameModel::receivePlayerAction - Partie terminée!";
+        qDebug() << "  Gagnant: Équipe" << winner;
+        qDebug() << "  Scores finaux: Team1 =" << scoreTeam1 << ", Team2 =" << scoreTeam2;
+
+        m_scoreTeam1 = scoreTeam1;
+        m_scoreTeam2 = scoreTeam2;
+        emit scoreTeam1Changed();
+        emit scoreTeam2Changed();
+
+        // TODO: Afficher un écran de victoire
+    } else if (action == "newManche") {
+        QJsonObject newMancheData = data.toJsonObject();
+        int biddingPlayer = newMancheData["biddingPlayer"].toInt();
+        int currentPlayer = newMancheData["currentPlayer"].toInt();
+        QJsonArray myCards = newMancheData["myCards"].toArray();
+
+        qDebug() << "GameModel::receivePlayerAction - Nouvelle manche";
+        qDebug() << "  Joueur qui commence les enchères:" << biddingPlayer;
+        qDebug() << "  Nouvelles cartes:" << myCards.size();
+
+        // Nettoyer le pli en cours
+        m_currentPli.clear();
+        emit currentPliChanged();
+
+        // Réinitialiser les enchères
+        m_biddingPhase = true;
+        m_biddingPlayer = biddingPlayer;
+        m_currentPlayer = currentPlayer;
+        m_lastBidAnnonce = Player::ANNONCEINVALIDE;
+        m_lastBidCouleur = Carte::COULEURINVALIDE;
+        emit biddingPhaseChanged();
+        emit biddingPlayerChanged();
+        emit currentPlayerChanged();
+        emit lastBidChanged();
+
+        // Mettre à jour les cartes du joueur local
+        Player* localPlayer = getPlayerByPosition(m_myPosition);
+        if (localPlayer) {
+            // Vider la main actuelle
+            std::vector<Carte*> main = localPlayer->getMain();
+            main.clear();
+
+            // Ajouter les nouvelles cartes
+            std::vector<Carte*> newCartes;
+            for (const QJsonValue& val : myCards) {
+                QJsonObject cardObj = val.toObject();
+                Carte* carte = new Carte(
+                    static_cast<Carte::Couleur>(cardObj["suit"].toInt()),
+                    static_cast<Carte::Chiffre>(cardObj["value"].toInt())
+                );
+                newCartes.push_back(carte);
+            }
+
+            // Remplacer la main
+            for (Carte* carte : newCartes) {
+                localPlayer->addCardToHand(carte);
+            }
+
+            // Trier la main
+            localPlayer->sortHand();
+
+            // Rafraîchir l'affichage
+            HandModel* hand = getHandModelByPosition(m_myPosition);
+            if (hand) {
+                hand->refresh();
+            }
+        }
+
+        qDebug() << "Nouvelle manche initialisée";
     }
 }
 

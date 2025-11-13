@@ -31,6 +31,8 @@ class GameModel : public QObject {
     Q_PROPERTY(QString lastBidSuit READ lastBidSuit NOTIFY lastBidChanged)
     Q_PROPERTY(int scoreTeam1 READ scoreTeam1 NOTIFY scoreTeam1Changed)
     Q_PROPERTY(int scoreTeam2 READ scoreTeam2 NOTIFY scoreTeam2Changed)
+    Q_PROPERTY(int scoreTotalTeam1 READ scoreTotalTeam1 NOTIFY scoreTotalTeam1Changed)
+    Q_PROPERTY(int scoreTotalTeam2 READ scoreTotalTeam2 NOTIFY scoreTotalTeam2Changed)
 
 public:
     explicit GameModel(QObject *parent = nullptr);
@@ -50,6 +52,8 @@ public:
     int lastBidValue() const;
     int scoreTeam1() const;
     int scoreTeam2() const;
+    int scoreTotalTeam1() const;
+    int scoreTotalTeam2() const;
     QString lastBid() const;
     QString lastBidSuit() const;
     
@@ -75,6 +79,8 @@ signals:
     void lastBidChanged();
     void scoreTeam1Changed();
     void scoreTeam2Changed();
+    void scoreTotalTeam1Changed();
+    void scoreTotalTeam2Changed();
     void gameInitialized();
     
     // Signaux vers NetworkManager
@@ -97,8 +103,10 @@ private:
     QList<CarteDuPli> m_currentPli;
     bool m_biddingPhase;
     int m_biddingPlayer;
-    int m_scoreTeam1;
-    int m_scoreTeam2;
+    int m_scoreTeam1;          // Score de la manche en cours
+    int m_scoreTeam2;          // Score de la manche en cours
+    int m_scoreTotalTeam1;     // Score total de la partie
+    int m_scoreTotalTeam2;     // Score total de la partie
     Player::Annonce m_lastBidAnnonce;
     Carte::Couleur m_lastBidCouleur;
 

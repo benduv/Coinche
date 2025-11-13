@@ -87,10 +87,10 @@ Rectangle {
                     model: gameModel.player0Hand
                     Card {
                         width: {
-                            var desiredHeight = rootArea.height * 0.13
+                            var desiredHeight = rootArea.height * 0.16
                             return desiredHeight * cardRatio
                         }
-                        height: rootArea.height * 0.12
+                        height: rootArea.height * 0.16
                         value: model.value
                         suit: model.suit
                         faceUp: model.faceUp
@@ -141,10 +141,10 @@ Rectangle {
                     model: gameModel.player2Hand
                     Card {
                         width: {
-                            var desiredHeight = rootArea.height * 0.13
+                            var desiredHeight = rootArea.height * 0.16
                             return desiredHeight * cardRatio
                         }
-                        height: rootArea.height * 0.12
+                        height: rootArea.height * 0.16
                         value: model.value
                         suit: model.suit
                         faceUp: model.faceUp
@@ -187,10 +187,10 @@ Rectangle {
                     model: gameModel.player1Hand
                     Card {
                         width: {
-                            var desiredHeight = rootArea.height * 0.1
+                            var desiredHeight = rootArea.height * 0.115
                             return desiredHeight * cardRatio
                         }
-                        height: rootArea.height * 0.1
+                        height: rootArea.height * 0.115
                         rotation: 90
                         faceUp: model.faceUp
                         value: model.value
@@ -233,10 +233,10 @@ Rectangle {
                     model: gameModel.player3Hand
                     Card {
                         width: {
-                            var desiredHeight = rootArea.height * 0.1
+                            var desiredHeight = rootArea.height * 0.115
                             return desiredHeight * cardRatio
                         }
-                        height: rootArea.height * 0.1
+                        height: rootArea.height * 0.115
                         rotation: -90
                         faceUp: model.faceUp
                         value: model.value
@@ -279,16 +279,16 @@ Rectangle {
                 columnSpacing: parent.width * 0.02
 
                 Text { text: "Score"; color: "white"; font.pixelSize: parent.height * 0.12; font.bold: true }
-                Text { text: "Manche"; color: "white"; font.pixelSize: parent.height * 0.08; font.bold: true }
-                Text { text: "Total"; color: "white"; font.pixelSize: parent.height * 0.08; font.bold: true }
+                Text { text: "Manche"; color: "white"; font.pixelSize: parent.height * 0.09; font.bold: true }
+                Text { text: "Total"; color: "white"; font.pixelSize: parent.height * 0.09; font.bold: true }
 
-                Text { text: "Équipe 1:"; color: "white"; font.pixelSize: parent.height * 0.08 }
-                Text { text: gameModel.scoreTeam1; color: "white"; font.pixelSize: parent.height * 0.08 }
-                Text { text: gameModel.scoreTotalTeam1; color: "white"; font.pixelSize: parent.height * 0.08 }
+                Text { text: "Équipe 1:"; color: "white"; font.pixelSize: parent.height * 0.09 }
+                Text { text: gameModel.scoreTeam1; color: "white"; font.pixelSize: parent.height * 0.09 }
+                Text { text: gameModel.scoreTotalTeam1; color: "white"; font.pixelSize: parent.height * 0.09 }
 
-                Text { text: "Équipe 2:"; color: "white"; font.pixelSize: parent.height * 0.08 }
-                Text { text: gameModel.scoreTeam2; color: "white"; font.pixelSize: parent.height * 0.08 }
-                Text { text: gameModel.scoreTotalTeam2; color: "white"; font.pixelSize: parent.height * 0.08 }
+                Text { text: "Équipe 2:"; color: "white"; font.pixelSize: parent.height * 0.09 }
+                Text { text: gameModel.scoreTeam2; color: "white"; font.pixelSize: parent.height * 0.09 }
+                Text { text: gameModel.scoreTotalTeam2; color: "white"; font.pixelSize: parent.height * 0.09 }
             }
         }
 }

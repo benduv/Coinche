@@ -218,11 +218,72 @@ private slots:
         }
         else if (type == "pliFinished") {
             int winnerId = obj["winnerId"].toInt();
-            qDebug() << "NetworkManager - Pli terminé, gagnant:" << winnerId;
+            int scoreMancheTeam1 = obj["scoreMancheTeam1"].toInt();
+            int scoreMancheTeam2 = obj["scoreMancheTeam2"].toInt();
 
-            // Transmettre au GameModel pour nettoyer le pli
+            qDebug() << "NetworkManager - Pli terminé, gagnant:" << winnerId;
+            qDebug() << "  Scores de manche: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
+
+            // Transmettre au GameModel pour nettoyer le pli et mettre à jour les scores de manche
             if (m_gameModel) {
-                m_gameModel->receivePlayerAction(winnerId, "pliFinished", winnerId);
+                QJsonObject pliData;
+                pliData["winnerId"] = winnerId;
+                pliData["scoreMancheTeam1"] = scoreMancheTeam1;
+                pliData["scoreMancheTeam2"] = scoreMancheTeam2;
+                m_gameModel->receivePlayerAction(winnerId, "pliFinished", pliData);
+            }
+        }
+        else if (type == "mancheFinished") {
+            int scoreTotalTeam1 = obj["scoreTotalTeam1"].toInt();
+            int scoreTotalTeam2 = obj["scoreTotalTeam2"].toInt();
+
+            qDebug() << "NetworkManager - Manche terminee!";
+            qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
+
+            // Transmettre au GameModel
+            if (m_gameModel) {
+                QJsonObject scoreData;
+                scoreData["scoreTotalTeam1"] = scoreTotalTeam1;
+                scoreData["scoreTotalTeam2"] = scoreTotalTeam2;
+                m_gameModel->receivePlayerAction(-1, "mancheFinished", scoreData);
+            }
+        }
+        else if (type == "gameOver") {
+            int winner = obj["winner"].toInt();
+            int scoreTeam1 = obj["scoreTeam1"].toInt();
+            int scoreTeam2 = obj["scoreTeam2"].toInt();
+
+            qDebug() << "NetworkManager - Partie terminée! Gagnant: Équipe" << winner;
+            qDebug() << "  Scores finaux: Team1 =" << scoreTeam1 << ", Team2 =" << scoreTeam2;
+
+            // Transmettre au GameModel
+            if (m_gameModel) {
+                QJsonObject gameOverData;
+                gameOverData["winner"] = winner;
+                gameOverData["scoreTeam1"] = scoreTeam1;
+                gameOverData["scoreTeam2"] = scoreTeam2;
+                m_gameModel->receivePlayerAction(-1, "gameOver", gameOverData);
+            }
+        }
+        else if (type == "newManche") {
+            int playerPosition = obj["playerPosition"].toInt();
+            int biddingPlayer = obj["biddingPlayer"].toInt();
+            int currentPlayer = obj["currentPlayer"].toInt();
+            QJsonArray myCards = obj["myCards"].toArray();
+
+            qDebug() << "NetworkManager - Nouvelle manche!";
+            qDebug() << "  Position:" << playerPosition;
+            qDebug() << "  Joueur qui commence les enchères:" << biddingPlayer;
+            qDebug() << "  Nombre de cartes:" << myCards.size();
+
+            // Transmettre au GameModel
+            if (m_gameModel) {
+                QJsonObject newMancheData;
+                newMancheData["playerPosition"] = playerPosition;
+                newMancheData["biddingPlayer"] = biddingPlayer;
+                newMancheData["currentPlayer"] = currentPlayer;
+                newMancheData["myCards"] = myCards;
+                m_gameModel->receivePlayerAction(-1, "newManche", newMancheData);
             }
         }
         else if (type == "error") {

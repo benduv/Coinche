@@ -50,6 +50,16 @@ struct GameRoom {
     std::vector<std::pair<int, Carte*>> currentPli;  // pair<playerIndex, carte>
     Carte::Couleur couleurDemandee = Carte::COULEURINVALIDE;
 
+    // Scores
+    int scoreTeam1 = 0;  // Équipe 0: Joueurs 0 et 2
+    int scoreTeam2 = 0;  // Équipe 1: Joueurs 1 et 3
+    int scoreMancheTeam1 = 0;
+    int scoreMancheTeam2 = 0;
+
+    // Plis gagnés dans la manche en cours
+    std::vector<std::pair<int, Carte*>> plisTeam1;  // Cartes gagnées par équipe 1
+    std::vector<std::pair<int, Carte*>> plisTeam2;  // Cartes gagnées par équipe 2
+
     GameModel* gameModel = nullptr;
 };
 
@@ -395,7 +405,7 @@ private:
             room->couleurDemandee = cartePlayed->getCouleur();
         }
 
-        // Ajouter au pli courant
+        // Ajoute au pli courant
         room->currentPli.push_back(std::make_pair(playerIndex, cartePlayed));
 
         // IMPORTANT : Retirer la carte de la main du joueur côté serveur
@@ -424,7 +434,7 @@ private:
             // Passe au joueur suivant
             room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
 
-            // Notifier avec les cartes jouables pour le nouveau joueur
+            // Notifie les cartes jouables pour le nouveau joueur
             notifyPlayersWithPlayableCards(roomId);
         }
     }
@@ -453,19 +463,293 @@ private:
 
         qDebug() << "GameServer - Pli termine, gagnant: joueur" << gagnantIndex;
 
-        // Notifie le gagnant du pli
+        // Calculer les points de ce pli
+        int pointsPli = 0;
+        for (const auto& pair : room->currentPli) {
+            Carte* carte = pair.second;
+            pointsPli += carte->getValeurDeLaCarte();
+        }
+
+        // Ajouter les cartes du pli à l'équipe gagnante et mettre à jour le score de manche
+        // Équipe 1: joueurs 0 et 2, Équipe 2: joueurs 1 et 3
+        if (gagnantIndex == 0 || gagnantIndex == 2) {
+            // Équipe 1 gagne le pli
+            for (const auto& pair : room->currentPli) {
+                room->plisTeam1.push_back(pair);
+            }
+            room->scoreMancheTeam1 += pointsPli;
+        } else {
+            // Équipe 2 gagne le pli
+            for (const auto& pair : room->currentPli) {
+                room->plisTeam2.push_back(pair);
+            }
+            room->scoreMancheTeam2 += pointsPli;
+        }
+
+        qDebug() << "GameServer - Points du pli:" << pointsPli;
+        qDebug() << "GameServer - Scores de manche: Team1 =" << room->scoreMancheTeam1
+                 << ", Team2 =" << room->scoreMancheTeam2;
+
+        // Notifie le gagnant du pli avec les scores de manche mis à jour
         QJsonObject pliFinishedMsg;
         pliFinishedMsg["type"] = "pliFinished";
         pliFinishedMsg["winnerId"] = gagnantIndex;
+        pliFinishedMsg["scoreMancheTeam1"] = room->scoreMancheTeam1;
+        pliFinishedMsg["scoreMancheTeam2"] = room->scoreMancheTeam2;
         broadcastToRoom(roomId, pliFinishedMsg);
 
-        // Réinitialise pour le prochain pli
+        // Vérifier si la manche est terminée (tous les joueurs n'ont plus de cartes)
+        bool mancheTerminee = true;
+        for (const auto& player : room->players) {
+            if (!player->getMain().empty()) {
+                mancheTerminee = false;
+                break;
+            }
+        }
+
+        if (mancheTerminee) {
+            qDebug() << "GameServer - Manche terminee, calcul des scores...";
+            finishManche(roomId);
+        } else {
+            // Réinitialise pour le prochain pli
+            room->currentPli.clear();
+            room->couleurDemandee = Carte::COULEURINVALIDE;
+            room->currentPlayerIndex = gagnantIndex;  // Le gagnant commence le prochain pli
+
+            // Notifie avec les cartes jouables pour le nouveau pli
+            notifyPlayersWithPlayableCards(roomId);
+        }
+    }
+
+    void finishManche(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        // Les scores de manche ont déjà été calculés pendant les plis
+        // On ajoute juste le bonus du dernier pli (+10 points)
+        int lastWinner = room->currentPlayerIndex; // C'est le gagnant du dernier pli
+        if (lastWinner == 0 || lastWinner == 2) {
+            room->scoreMancheTeam1 += 10;
+        } else {
+            room->scoreMancheTeam2 += 10;
+        }
+
+        int pointsRealisesTeam1 = room->scoreMancheTeam1;
+        int pointsRealisesTeam2 = room->scoreMancheTeam2;
+
+        qDebug() << "GameServer - Points realises dans la manche:";
+        qDebug() << "  Equipe 1 (joueurs 0 et 2):" << pointsRealisesTeam1 << "points";
+        qDebug() << "  Equipe 2 (joueurs 1 et 3):" << pointsRealisesTeam2 << "points";
+
+        // Déterminer quelle équipe a fait l'enchère
+        // Équipe 1: joueurs 0 et 2, Équipe 2: joueurs 1 et 3
+        bool team1HasBid = (room->lastBidderIndex == 0 || room->lastBidderIndex == 2);
+        int valeurContrat = Player::getContractValue(room->lastBidAnnonce);
+
+        qDebug() << "GameServer - Contrat: valeur =" << valeurContrat
+                 << ", équipe =" << (team1HasBid ? 1 : 2);
+
+        // Appliquer les règles du contrat
+        int scoreToAddTeam1 = 0;
+        int scoreToAddTeam2 = 0;
+
+        if (team1HasBid) {
+            // L'équipe 1 a annoncé
+            if (pointsRealisesTeam1 >= valeurContrat) {
+                // Contrat réussi: valeurContrat + pointsRéalisés
+                scoreToAddTeam1 = valeurContrat + pointsRealisesTeam1;
+                scoreToAddTeam2 = pointsRealisesTeam2;
+                qDebug() << "GameServer - Equipe 1 reussit son contrat!";
+                qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(" << valeurContrat << "+" << pointsRealisesTeam1 << ")";
+                qDebug() << "  Team2 marque:" << scoreToAddTeam2;
+            } else {
+                // Contrat échoué: équipe 1 marque 0, équipe 2 marque 160 + valeurContrat
+                scoreToAddTeam1 = 0;
+                scoreToAddTeam2 = 160 + valeurContrat;
+                qDebug() << "GameServer - Equipe 1 echoue son contrat!";
+                qDebug() << "  Team1 marque: 0";
+                qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(160+" << valeurContrat << ")";
+            }
+        } else {
+            // L'équipe 2 a annoncé
+            if (pointsRealisesTeam2 >= valeurContrat) {
+                // Contrat réussi: valeurContrat + pointsRéalisés
+                scoreToAddTeam1 = pointsRealisesTeam1;
+                scoreToAddTeam2 = valeurContrat + pointsRealisesTeam2;
+                qDebug() << "GameServer - Équipe 2 réussit son contrat!";
+                qDebug() << "  Team1 marque:" << scoreToAddTeam1;
+                qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(" << valeurContrat << "+" << pointsRealisesTeam2 << ")";
+            } else {
+                // Contrat échoué: équipe 2 marque 0, équipe 1 marque 160 + valeurContrat
+                scoreToAddTeam1 = 160 + valeurContrat;
+                scoreToAddTeam2 = 0;
+                qDebug() << "GameServer - Équipe 2 échoue son contrat!";
+                qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(160+" << valeurContrat << ")";
+                qDebug() << "  Team2 marque: 0";
+            }
+        }
+
+        // Ajouter les scores de la manche aux scores totaux
+        room->scoreTeam1 += scoreToAddTeam1;
+        room->scoreTeam2 += scoreToAddTeam2;
+
+        qDebug() << "GameServer - Scores totaux:";
+        qDebug() << "  Équipe 1:" << room->scoreTeam1;
+        qDebug() << "  Équipe 2:" << room->scoreTeam2;
+
+        // Envoyer les scores aux clients
+        QJsonObject scoreMsg;
+        scoreMsg["type"] = "mancheFinished";
+        // scoreMsg["pointsRealisesTeam1"] = pointsRealisesTeam1;
+        // scoreMsg["pointsRealisesTeam2"] = pointsRealisesTeam2;
+        // scoreMsg["scoreAddedTeam1"] = scoreToAddTeam1;
+        // scoreMsg["scoreAddedTeam2"] = scoreToAddTeam2;
+        scoreMsg["scoreTotalTeam1"] = room->scoreTeam1;
+        scoreMsg["scoreTotalTeam2"] = room->scoreTeam2;
+        // scoreMsg["contractValue"] = valeurContrat;
+        // scoreMsg["contractTeam"] = team1HasBid ? 1 : 2;
+        broadcastToRoom(roomId, scoreMsg);
+
+        // Vérifier si une équipe a atteint 1000 points
+        bool team1Won = room->scoreTeam1 >= 1000;
+        bool team2Won = room->scoreTeam2 >= 1000;
+
+        if (team1Won || team2Won) {
+            // Une ou les deux équipes ont dépassé 1000 points
+            if (team1Won && team2Won) {
+                // Les deux équipes ont dépassé 1000, celle avec le plus de points gagne
+                int winner = (room->scoreTeam1 > room->scoreTeam2) ? 1 : 2;
+                qDebug() << "GameServer - Les deux équipes ont dépassé 1000 points!";
+                qDebug() << "GameServer - Équipe" << winner << "gagne avec"
+                         << ((winner == 1) ? room->scoreTeam1 : room->scoreTeam2) << "points";
+
+                QJsonObject gameOverMsg;
+                gameOverMsg["type"] = "gameOver";
+                gameOverMsg["winner"] = winner;
+                gameOverMsg["scoreTeam1"] = room->scoreTeam1;
+                gameOverMsg["scoreTeam2"] = room->scoreTeam2;
+                broadcastToRoom(roomId, gameOverMsg);
+
+                room->gameState = "finished";
+            } else if (team1Won) {
+                qDebug() << "GameServer - Équipe 1 gagne avec" << room->scoreTeam1 << "points!";
+
+                QJsonObject gameOverMsg;
+                gameOverMsg["type"] = "gameOver";
+                gameOverMsg["winner"] = 1;
+                gameOverMsg["scoreTeam1"] = room->scoreTeam1;
+                gameOverMsg["scoreTeam2"] = room->scoreTeam2;
+                broadcastToRoom(roomId, gameOverMsg);
+
+                room->gameState = "finished";
+            } else {
+                qDebug() << "GameServer - Équipe 2 gagne avec" << room->scoreTeam2 << "points!";
+
+                QJsonObject gameOverMsg;
+                gameOverMsg["type"] = "gameOver";
+                gameOverMsg["winner"] = 2;
+                gameOverMsg["scoreTeam1"] = room->scoreTeam1;
+                gameOverMsg["scoreTeam2"] = room->scoreTeam2;
+                broadcastToRoom(roomId, gameOverMsg);
+
+                room->gameState = "finished";
+            }
+        } else {
+            // Aucune équipe n'a atteint 1000 points, on démarre une nouvelle manche
+            qDebug() << "GameServer - Démarrage d'une nouvelle manche...";
+            startNewManche(roomId);
+        }
+    }
+
+    void startNewManche(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        qDebug() << "GameServer - Nouvelle manche: mélange et distribution des cartes";
+
+        // Nettoyer les plis de la manche précédente
+        room->plisTeam1.clear();
+        room->plisTeam2.clear();
+        room->scoreMancheTeam1 = 0;
+        room->scoreMancheTeam2 = 0;
+
+        // Réinitialiser les mains des joueurs
+        for (auto& player : room->players) {
+            // Vider la main actuelle
+            auto main = player->getMain();
+            main.clear();
+        }
+
+        // Réinitialiser et mélanger le deck
+        room->deck = Deck();  // Crée un nouveau deck
+        room->deck.shuffleDeck();
+
+        // Redistribuer les cartes (8 cartes par joueur)
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 8; j++) {
+                Carte* carte = room->deck.drawCard();
+                if (carte) {
+                    room->players[i]->addCardToHand(carte);
+                }
+            }
+            // Trier la main de chaque joueur pour maintenir la synchronisation avec les clients
+            room->players[i]->sortHand();
+        }
+
+        // Réinitialiser l'état de la partie pour les enchères
+        room->gameState = "bidding";
+        room->passedBidsCount = 0;
+        room->lastBidAnnonce = Player::ANNONCEINVALIDE;
+        room->lastBidCouleur = Carte::COULEURINVALIDE;
+        room->lastBidderIndex = -1;
+        room->couleurAtout = Carte::COULEURINVALIDE;
         room->currentPli.clear();
         room->couleurDemandee = Carte::COULEURINVALIDE;
-        room->currentPlayerIndex = gagnantIndex;  // Le gagnant commence le prochain pli
 
-        // Notifier avec les cartes jouables pour le nouveau pli
-        notifyPlayersWithPlayableCards(roomId);
+        // Le joueur suivant commence les enchères (rotation)
+        room->firstPlayerIndex = (room->firstPlayerIndex + 1) % 4;
+        room->currentPlayerIndex = room->firstPlayerIndex;
+        room->biddingPlayer = room->firstPlayerIndex;
+
+        qDebug() << "GameServer - Nouvelle manche: joueur" << room->firstPlayerIndex << "commence les enchères";
+
+        // Notifier tous les joueurs de la nouvelle manche avec leurs nouvelles cartes
+        notifyNewManche(roomId);
+    }
+
+    void notifyNewManche(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        qDebug() << "Envoi des notifications de nouvelle manche à" << room->connectionIds.size() << "joueurs";
+
+        for (int i = 0; i < room->connectionIds.size(); i++) {
+            PlayerConnection *conn = m_connections[room->connectionIds[i]];
+            if (!conn) continue;
+
+            QJsonObject msg;
+            msg["type"] = "newManche";
+            msg["roomId"] = roomId;
+            msg["playerPosition"] = i;
+            msg["biddingPlayer"] = room->biddingPlayer;
+            msg["currentPlayer"] = room->currentPlayerIndex;
+
+            // Envoi les nouvelles cartes du joueur
+            QJsonArray myCards;
+            const auto& playerHand = room->players[i]->getMain();
+            for (const auto* carte : playerHand) {
+                if (carte) {
+                    QJsonObject cardObj;
+                    cardObj["value"] = static_cast<int>(carte->getChiffre());
+                    cardObj["suit"] = static_cast<int>(carte->getCouleur());
+                    myCards.append(cardObj);
+                }
+            }
+            msg["myCards"] = myCards;
+
+            sendMessage(conn->socket, msg);
+            qDebug() << "Nouvelle manche envoyée au joueur" << i;
+        }
     }
 
     void handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
@@ -485,7 +769,7 @@ private:
 
         Player::Annonce annonce = static_cast<Player::Annonce>(bidValue);
 
-        // Mise à jour l'état de la room
+        // Mise à jour de l'état de la room
         if (annonce == Player::PASSE) {
             room->passedBidsCount++;
             qDebug() << "GameServer - Joueur" << playerIndex << "passe ("
@@ -508,7 +792,7 @@ private:
 
         // Vérifie si phase d'enchères terminée
         if (room->passedBidsCount >= 3 && room->lastBidAnnonce != Player::ANNONCEINVALIDE) {
-            qDebug() << "GameServer - Fin des enchères! Lancement phase de jeu";
+            qDebug() << "GameServer - Fin des encheres! Lancement phase de jeu";
             for (int i = 0; i < 4; i++) {
                 room->players[i]->setAtout(room->lastBidCouleur);
             }
@@ -550,10 +834,10 @@ private:
 
         int currentPlayer = room->currentPlayerIndex;
 
-        // Calculer les cartes jouables pour le joueur actuel
+        // Calcule les cartes jouables pour le joueur actuel
         QJsonArray playableCards = calculatePlayableCards(room, currentPlayer);
 
-        // Envoyer à tous les joueurs
+        // Envoi à tous les joueurs
         QJsonObject stateMsg;
         stateMsg["type"] = "gameState";
         stateMsg["biddingPhase"] = false;
@@ -581,7 +865,7 @@ private:
         Player* player = room->players[playerIndex].get();
         if (!player) return playableIndices;
 
-        // Déterminer la carte gagnante actuelle du pli
+        // Détermine la carte gagnante actuelle du pli
         Carte* carteGagnante = nullptr;
         int idxPlayerWinning = -1;
         if (!room->currentPli.empty()) {
@@ -597,7 +881,7 @@ private:
             }
         }
 
-        // Vérifier chaque carte
+        // Vérifie chaque carte
         const auto& main = player->getMain();
         for (size_t i = 0; i < main.size(); i++) {
             bool isPlayable = player->isCartePlayable(
@@ -626,16 +910,16 @@ private:
         int roomId = conn->gameRoomId;
         if (roomId == -1) return;
 
-        // Notifier les autres joueurs
+        // Notifie les autres joueurs
         QJsonObject msg;
         msg["type"] = "playerDisconnected";
         msg["playerIndex"] = conn->playerIndex;
         broadcastToRoom(roomId, msg, connectionId);
 
-        // Terminer la partie et libérer la mémoire
+        // Termine la partie et libérer la mémoire
         GameRoom* room = m_gameRooms.value(roomId);
         if (room) {
-            delete room;  // Libérer la GameRoom
+            delete room;  // Libére la GameRoom
             m_gameRooms.remove(roomId);
         }
     }
@@ -672,7 +956,7 @@ private:
     QWebSocketServer *m_server;
     QMap<QString, PlayerConnection*> m_connections; // connectionId → PlayerConnection
     QQueue<QString> m_matchmakingQueue;
-    QMap<int, GameRoom*> m_gameRooms; // roomId → GameRoom*
+    QMap<int, GameRoom*> m_gameRooms;
     int m_nextRoomId;
 };
 

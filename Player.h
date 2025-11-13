@@ -56,6 +56,9 @@ class Player
         int getIndex() const;
         void setIndex(int index);
 
+        // Convertit une valeur d'Annonce en points du contrat
+        static int getContractValue(Annonce annonce);
+
         void setAtout(const Carte::Couleur &couleurAtout);
 
         bool hasBelotte(const Carte::Couleur &couleurAtout) const;
