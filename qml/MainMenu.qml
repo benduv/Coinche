@@ -3,10 +3,16 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 ApplicationWindow {
+    id: mainWindow
     visible: true
     width: 1024
     height: 768
     title: "Jeu de Coinche"
+
+    Component.onCompleted: {
+        // Positionner automatiquement la fenêtre au démarrage
+        windowPositioner.positionWindow(mainWindow)
+    }
 
     StackView {
         id: stackView

@@ -1,4 +1,4 @@
-#include <iostream>
+#include <QDebug>
 #include "HandModel.h"
 
 
@@ -6,11 +6,6 @@ HandModel::HandModel(QObject *parent)
     : QAbstractListModel(parent)
     , m_player(nullptr)
     , m_faceUp(true)
-    , m_couleurDemandee(static_cast<Carte::Couleur>(7))
-    , m_couleurAtout(static_cast<Carte::Couleur>(7))
-    , m_carteAtout(nullptr)
-    , m_idxPlayerWinning(-1)
-    , m_isCurrentPlayer(false)
 {
 }
 
@@ -26,19 +21,12 @@ void HandModel::setPlayer(Player* player, bool faceUp) {
     endResetModel();
 }
 
-// Mettre à jour le contexte de jeu pour déterminer les cartes jouables
-void HandModel::setGameContext(const Carte::Couleur& couleurDemandee, 
-                    const Carte::Couleur& couleurAtout,
-                    Carte* carteAtout,
-                    int idxPlayerWinning,
-                    bool isCurrentPlayer) {
-    std::cout << "couleur demandee dans HandModel: " << couleurDemandee << std::endl;
-    m_couleurDemandee = couleurDemandee;
-    m_couleurAtout = couleurAtout;
-    m_carteAtout = carteAtout;
-    m_idxPlayerWinning = idxPlayerWinning;
-    m_isCurrentPlayer = isCurrentPlayer;
-    
+// Définir quelles cartes sont jouables (indices reçus du serveur)
+void HandModel::setPlayableCards(const QList<int>& playableIndices) {
+    m_playableIndices = playableIndices;
+
+    qDebug() << "HandModel - Cartes jouables mises à jour:" << m_playableIndices;
+
     // Notifier QML que les états "playable" ont changé
     if (rowCount() > 0) {
         emit dataChanged(index(0), index(rowCount() - 1), {IsPlayableRole});
@@ -81,12 +69,8 @@ QVariant HandModel::data(const QModelIndex &index, int role) const {
         case IsAtoutRole:
             return false; // À adapter selon la logique
         case IsPlayableRole:
-            if (!m_isCurrentPlayer || !m_player) {
-                return false;
-            }
-            return m_player->isCartePlayable(index.row(), m_couleurDemandee, 
-                                                m_couleurAtout, m_carteAtout, 
-                                                m_idxPlayerWinning);
+            // Vérifier si l'index est dans la liste des cartes jouables (reçue du serveur)
+            return m_playableIndices.contains(index.row());
         default:
             return QVariant();
     }

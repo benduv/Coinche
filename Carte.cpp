@@ -97,7 +97,7 @@ int Carte::getOrdreCarteForte() const
         else if (m_chiffre == VALET)
             value = 7;
     }
-    std::cout << "getOrdreCarteForte called: " << value << std::endl;
+    //std::cout << "getOrdreCarteForte called: " << value << std::endl;
     return value;
 }
 
@@ -137,11 +137,25 @@ void Carte::printCarte() const
 
 bool Carte::operator<(const Carte &other) const {
     bool retValue = false;
-    if(m_isAtout == false && other.m_isAtout == true)
+    if(m_isAtout == false && other.m_isAtout == true) {
+        std::cout << "Comparaison des cartes: " << std::endl;
+        this->printCarte();
+        other.printCarte();
+        std::cout << "Résultat: true (cette carte n'est pas atout, l'autre est atout)" << std::endl;
         retValue = true;
-    else if(m_isAtout == true && other.m_isAtout == false)
+    } else if(m_isAtout == true && other.m_isAtout == false){
+        std::cout << "Comparaison des cartes: " << std::endl;
+        this->printCarte();
+        other.printCarte();
+        std::cout << "Résultat: false (cette carte est atout, l'autre ne l'est pas)" << std::endl;
         retValue = false;
-    else {
+    } else if(this->m_couleur != other.m_couleur){
+        std::cout << "Comparaison des cartes: " << std::endl;
+        this->printCarte();
+        other.printCarte();
+        std::cout << "Résultat: false (les couleurs sont différentes)" << std::endl;
+        retValue = false;
+    } else {
         std::cout << "Comparaison des cartes: " ;
         this->printCarte();
         std::cout << "getOrdreCarteForte = " << this->getOrdreCarteForte() << std::endl;
@@ -151,6 +165,4 @@ bool Carte::operator<(const Carte &other) const {
     }
 
     return retValue;
-
-
 }

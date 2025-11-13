@@ -101,7 +101,7 @@ private:
     int m_scoreTeam2;
     Player::Annonce m_lastBidAnnonce;
     Carte::Couleur m_lastBidCouleur;
-    
+
     QList<Player*> m_onlinePlayers;  // Tous les joueurs de la partie
 };
 

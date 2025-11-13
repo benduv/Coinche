@@ -1,25 +1,32 @@
 # test_multiplayer.ps1
 
-# Lancer le serveur en arrière-plan
+# Réinitialiser le compteur de fenêtres dans le registre Qt
+Write-Host "Réinitialisation du compteur de fenêtres..." -ForegroundColor Cyan
+Remove-ItemProperty -Path "HKCU:\Software\Coinche\WindowCounter" -Name "windowCount" -ErrorAction SilentlyContinue
+
+# Lancer le serveur en arrière-plan avec console visible
 Write-Host "Lancement du serveur..." -ForegroundColor Green
 Start-Process -FilePath ".\build\server.exe" -WindowStyle Normal
 
 # Attendre que le serveur démarre
 Start-Sleep -Seconds 2
 
-# Lancer 4 clients avec des noms différents
+# Noms des joueurs
 $playerNames = @("Alice", "Bob", "Charlie", "David")
 
+# Lancer les 4 clients (le positionnement est automatique via WindowPositioner)
 foreach ($name in $playerNames) {
     Write-Host "Lancement du client: $name" -ForegroundColor Cyan
     Start-Process -FilePath ".\build\coinche.exe" -ArgumentList "--name", $name -WindowStyle Normal
-    Start-Sleep -Milliseconds 500
+    Start-Sleep -Milliseconds 800
 }
 
-Write-Host "`nTous les clients sont lancés!" -ForegroundColor Green
+Write-Host "`nTous les clients sont lancés et positionnés!" -ForegroundColor Green
 Write-Host "Appuyez sur une touche pour tout fermer..." -ForegroundColor Yellow
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 
 # Fermer tous les processus
-Get-Process coinche* | Stop-Process -Force
+Write-Host "`nFermeture des processus..." -ForegroundColor Yellow
+Get-Process coinche* -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process server* -ErrorAction SilentlyContinue | Stop-Process -Force
 Write-Host "Tous les processus sont fermés." -ForegroundColor Red

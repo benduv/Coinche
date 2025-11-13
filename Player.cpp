@@ -147,6 +147,8 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
                      int idxPlayerWinning) const {
 
     std::cout << "Verification si la carte est jouable pour le jouer: " << m_name << " et carteIdx = " << carteIdx << std::endl;
+    std::cout << "******************************************************* " << std::endl;
+    std::cout << "*****************************idxPlayerWinning: " << idxPlayerWinning << " m_index: " << m_index << std::endl; 
     
     if (carteIdx < 0 || carteIdx >= m_main.size()) {
         return false;
@@ -154,6 +156,7 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
     }
     
     const Carte* carte = m_main[carteIdx];
+    carte->printCarte();
 
     std::cout << "Couleur demandee: " << couleurDemandee << ", Couleur atout: " << couleurAtout << std::endl;
     
@@ -165,19 +168,19 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
     
     // Si la carte est de la couleur demandée, toujours jouable
     if (carte->getCouleur() == couleurDemandee) {
-        std::cout << "Carte de la couleur demandee, carte jouable. Carte couleur : " << carte->getCouleur() << " carte chiffre : " << carte->getChiffre() << std::endl;
+        //std::cout << "Carte de la couleur demandee, carte jouable. Carte couleur : " << carte->getCouleur() << " carte chiffre : " << carte->getChiffre() << std::endl;
         if(carte->getCouleur() == couleurAtout) {
-            std::cout << "C'est aussi un atout." << std::endl;
+            //std::cout << "C'est aussi un atout." << std::endl;
             if(carteAtout != nullptr) {
                 if(*carteAtout < *carte) {
-                    std::cout << "Atout joue precedemment, mais on peut monter, carte jouable." << std::endl;
+                    //std::cout << "Atout joue precedemment, mais on peut monter, carte jouable." << std::endl;
                 } else {
                     if(hasHigher(carteAtout)) {
-                        std::cout << "Vous avez un atout plus fort que l'atout joue precedemment, " << std::endl;
-                        std::cout << "veuillez selectionner un atout plus fort..." << std::endl;
+                        //std::cout << "Vous avez un atout plus fort que l'atout joue precedemment, " << std::endl;
+                        //std::cout << "veuillez selectionner un atout plus fort..." << std::endl;
                         return false;
                     } else {
-                        std::cout << "Atout joue precedemment, on ne peut pas monter, carte jouable." << std::endl;
+                        //std::cout << "Atout joue precedemment, on ne peut pas monter, carte jouable." << std::endl;
                     }
                 }
             }
@@ -186,7 +189,7 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
     }
 
     if(m_main[carteIdx]->getCouleur() != couleurDemandee && hasCouleur(couleurDemandee)) {
-        std::cout << "Vous avez la couleur demandee, veuillez selectionner une carte de cette couleur..." << std::endl;
+        //std::cout << "Vous avez la couleur demandee, veuillez selectionner une carte de cette couleur..." << std::endl;
         return false;
     } 
     else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
@@ -196,7 +199,7 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
     }
     else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
             m_main[carteIdx]->getCouleur() != couleurAtout && hasCouleur(couleurAtout) ) {
-        std::cout << "Vous avez de l'atout, veuillez selectionner une carte de cette couleur..." << std::endl;
+        //std::cout << "Vous avez de l'atout, veuillez selectionner une carte de cette couleur..." << std::endl;
         return false;
     } else if ((m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) &&
                 m_main[carteIdx]->getCouleur() == couleurAtout && carteAtout != nullptr)
@@ -205,8 +208,8 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
             return true;
         } else {
             if(hasHigher(carteAtout)) {
-                std::cout << "Vous avez un atout plus fort que l'atout joue precedemment, " << std::endl;
-                std::cout << "veuillez selectionner un atout plus fort..." << std::endl;
+                //std::cout << "Vous avez un atout plus fort que l'atout joue precedemment, " << std::endl;
+                //std::cout << "veuillez selectionner un atout plus fort..." << std::endl;
                 return false;
             } else {
                 return true;

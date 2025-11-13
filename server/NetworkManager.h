@@ -26,7 +26,7 @@ public:
         , m_connected(false)
         , m_playersInQueue(0)
         , m_myPosition(-1)
-        , m_gameModel(nullptr)  // ⭐ Initialiser à nullptr
+        , m_gameModel(nullptr)
     {
         connect(m_socket, &QWebSocket::connected, this, &NetworkManager::onConnected);
         connect(m_socket, &QWebSocket::disconnected, this, &NetworkManager::onDisconnected);
@@ -182,17 +182,25 @@ private slots:
         else if (type == "cardPlayed") {
             int playerIndex = obj["playerIndex"].toInt();
             int cardIndex = obj["cardIndex"].toInt();
-            
+            int cardValue = obj["cardValue"].toInt();
+            int cardSuit = obj["cardSuit"].toInt();
+
+            // Créer un objet avec toutes les infos de la carte
+            QJsonObject cardData;
+            cardData["index"] = cardIndex;
+            cardData["value"] = cardValue;
+            cardData["suit"] = cardSuit;
+
             // Transmettre au GameModel
             if (m_gameModel) {
-                m_gameModel->receivePlayerAction(playerIndex, "playCard", cardIndex);
+                m_gameModel->receivePlayerAction(playerIndex, "playCard", cardData);
             }
         }
         else if (type == "bidMade") {
             int playerIndex = obj["playerIndex"].toInt();
             int bidValue = obj["bidValue"].toInt();
             int suit = obj["suit"].toInt();
-            
+
             // Transmettre au GameModel
             if (m_gameModel) {
                 QJsonObject bidData;
@@ -200,6 +208,27 @@ private slots:
                 bidData["suit"] = suit;
                 m_gameModel->receivePlayerAction(playerIndex, "makeBid", bidData);
             }
+        }
+        else if (type == "gameState") {
+            // Transmettre l'état du jeu au GameModel
+            if (m_gameModel) {
+                m_gameModel->updateGameState(obj);
+                qDebug() << "NetworkManager - État du jeu mis à jour";
+            }
+        }
+        else if (type == "pliFinished") {
+            int winnerId = obj["winnerId"].toInt();
+            qDebug() << "NetworkManager - Pli terminé, gagnant:" << winnerId;
+
+            // Transmettre au GameModel pour nettoyer le pli
+            if (m_gameModel) {
+                m_gameModel->receivePlayerAction(winnerId, "pliFinished", winnerId);
+            }
+        }
+        else if (type == "error") {
+            QString errorMsg = obj["message"].toString();
+            qDebug() << "NetworkManager - Erreur reçue:" << errorMsg;
+            emit errorOccurred(errorMsg);
         }
         else if (type == "playerDisconnected") {
             QString playerId = obj["playerId"].toString();

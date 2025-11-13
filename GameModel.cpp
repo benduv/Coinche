@@ -1,4 +1,5 @@
 #include "GameModel.h"
+#include <QTimer>
 
 GameModel::GameModel(QObject *parent)
     : QObject(parent)
@@ -262,7 +263,7 @@ void GameModel::passBid()
 void GameModel::updateGameState(const QJsonObject& state)
 {
     qDebug() << "Mise à jour état du jeu:" << state;
-    
+
     // Mettre à jour l'état global
     if (state.contains("currentPlayer")) {
         int newCurrentPlayer = state["currentPlayer"].toInt();
@@ -272,20 +273,27 @@ void GameModel::updateGameState(const QJsonObject& state)
             qDebug() << "Joueur actuel changé:" << m_currentPlayer;
         }
     }
-    
+
     if (state.contains("currentPlayerName")) {
         m_currentPlayerName = state["currentPlayerName"].toString();
     }
-    
+
     if (state.contains("biddingPhase")) {
         bool newBiddingPhase = state["biddingPhase"].toBool();
         if (m_biddingPhase != newBiddingPhase) {
             m_biddingPhase = newBiddingPhase;
             emit biddingPhaseChanged();
             qDebug() << "Phase d'annonces:" << m_biddingPhase;
+
+            // Si on passe en phase de jeu, vider le pli actuel
+            if (!m_biddingPhase) {
+                m_currentPli.clear();
+                emit currentPliChanged();
+                qDebug() << "Début de la phase de jeu!";
+            }
         }
     }
-    
+
     if (state.contains("biddingPlayer")) {
         int newBiddingPlayer = state["biddingPlayer"].toInt();
         if (m_biddingPlayer != newBiddingPlayer) {
@@ -293,7 +301,22 @@ void GameModel::updateGameState(const QJsonObject& state)
             emit biddingPlayerChanged();
         }
     }
-    
+
+    if (state.contains("atout")) {
+        m_lastBidCouleur = static_cast<Carte::Couleur>(state["atout"].toInt());
+        qDebug() << "Atout défini:" << static_cast<int>(m_lastBidCouleur);
+    }
+
+    if (state.contains("biddingWinnerId")) {
+        int winnerId = state["biddingWinnerId"].toInt();
+        qDebug() << "Gagnant des enchères: joueur" << winnerId;
+    }
+
+    if (state.contains("biddingWinnerAnnonce")) {
+        m_lastBidAnnonce = static_cast<Player::Annonce>(state["biddingWinnerAnnonce"].toInt());
+        emit lastBidChanged();
+    }
+
     if (state.contains("scoreTeam1")) {
         int newScore = state["scoreTeam1"].toInt();
         if (m_scoreTeam1 != newScore) {
@@ -301,7 +324,7 @@ void GameModel::updateGameState(const QJsonObject& state)
             emit scoreTeam1Changed();
         }
     }
-    
+
     if (state.contains("scoreTeam2")) {
         int newScore = state["scoreTeam2"].toInt();
         if (m_scoreTeam2 != newScore) {
@@ -309,58 +332,98 @@ void GameModel::updateGameState(const QJsonObject& state)
             emit scoreTeam2Changed();
         }
     }
+
+    // Mettre à jour les cartes jouables pour le joueur actuel
+    if (state.contains("playableCards") && state.contains("currentPlayer")) {
+        int currentPlayer = state["currentPlayer"].toInt();
+        QJsonArray playableArray = state["playableCards"].toArray();
+
+        // Convertir en QList<int>
+        QList<int> playableIndices;
+        for (const QJsonValue& val : playableArray) {
+            playableIndices.append(val.toInt());
+        }
+
+        qDebug() << "Cartes jouables reçues pour joueur" << currentPlayer << ":" << playableIndices;
+
+        // Mettre à jour le HandModel du joueur actuel
+        HandModel* hand = getHandModelByPosition(currentPlayer);
+        if (hand) {
+            hand->setPlayableCards(playableIndices);
+        }
+    }
 }
 
 void GameModel::receivePlayerAction(int playerIndex, const QString& action, const QVariant& data)
 {
-    qDebug() << "Action reçue - Joueur:" << playerIndex << "Action:" << action;
+    qDebug() << "GameModel::receivePlayerAction - Action recue - Joueur:" << playerIndex << "Action:" << action;
     
     if (action == "playCard") {
-        int cardIndex = data.toInt();
-        
+        QJsonObject cardData = data.toJsonObject();
+        int cardIndex = cardData["index"].toInt();
+        int cardValue = cardData["value"].toInt();
+        int cardSuit = cardData["suit"].toInt();
+
+        qDebug() << "GameModel::receivePlayerAction - Joueur" << playerIndex
+                 << "joue carte - Index:" << cardIndex
+                 << "Valeur:" << cardValue << "Couleur:" << cardSuit;
+
+        // Créer la carte à partir des infos reçues du serveur
+        Carte* cartePlayed = new Carte(
+            static_cast<Carte::Couleur>(cardSuit),
+            static_cast<Carte::Chiffre>(cardValue)
+        );
+
+        // Ajouter au pli courant
+        CarteDuPli cdp;
+        cdp.playerId = playerIndex;
+        cdp.carte = cartePlayed;
+        m_currentPli.append(cdp);
+
         // Retirer la carte de la main du joueur
         Player* player = getPlayerByPosition(playerIndex);
-        if (player) {
-            if (cardIndex >= 0 && cardIndex < player->getMain().size()) {
-                Carte* cartePlayed = player->getMain()[cardIndex];
-                
-                // Ajouter au pli courant
-                CarteDuPli cdp;
-                cdp.playerId = playerIndex;
-                cdp.carte = cartePlayed;
-                m_currentPli.append(cdp);
-                
-                // Retirer de la main
-                player->removeCard(cardIndex);
-                
-                // Rafraîchir l'affichage
-                HandModel* hand = getHandModelByPosition(playerIndex);
-                if (hand) {
-                    hand->refresh();
-                }
-                
-                emit currentPliChanged();
-                
-                qDebug() << "Carte retiree de la main du joueur" << playerIndex;
+        if (player && cardIndex >= 0 && cardIndex < player->getMain().size()) {
+            player->removeCard(cardIndex);
+
+            // Rafraîchir l'affichage
+            HandModel* hand = getHandModelByPosition(playerIndex);
+            if (hand) {
+                hand->refresh();
             }
         }
+
+        emit currentPliChanged();
+
+        qDebug() << "Carte ajoutée au pli - Total:" << m_currentPli.size() << "cartes";
     } else if (action == "makeBid") {
         QJsonObject bidData = data.toJsonObject();
-        m_lastBidAnnonce = static_cast<Player::Annonce>(bidData["value"].toInt());
-        m_lastBidCouleur = static_cast<Carte::Couleur>(bidData["suit"].toInt());
-        emit lastBidChanged();
-        m_currentPlayer = (m_currentPlayer + 1) % 4; // Passer au joueur suivant
-        emit currentPlayerChanged();
-        m_biddingPlayer = m_currentPlayer;
-        emit biddingPlayerChanged();
-        
-        qDebug() << "Enchère reçue:" << lastBid() << lastBidSuit();
+        Player::Annonce annonce = static_cast<Player::Annonce>(bidData["value"].toInt());
+
+        // Mettre à jour l'affichage de la dernière enchère pour l'UI
+        if (annonce != Player::PASSE) {
+            m_lastBidAnnonce = annonce;
+            m_lastBidCouleur = static_cast<Carte::Couleur>(bidData["suit"].toInt());
+            emit lastBidChanged();
+            qDebug() << "GameModel::receivePlayerAction - Enchère:" << lastBid() << lastBidSuit();
+        } else {
+            qDebug() << "GameModel::receivePlayerAction - Joueur" << playerIndex << "passe";
+        }
+    } else if (action == "pliFinished") {
+        int winnerId = data.toInt();
+        qDebug() << "GameModel::receivePlayerAction - Pli terminé, gagnant: joueur" << winnerId;
+
+        // Attendre un peu pour que l'utilisateur voie le pli, puis le nettoyer
+        QTimer::singleShot(2000, this, [this]() {
+            qDebug() << "Nettoyage du pli";
+            m_currentPli.clear();
+            emit currentPliChanged();
+        });
     }
 }
 
 void GameModel::refreshAllHands()
 {
-    qDebug() << "Rafraîchissement de toutes les mains";
+    qDebug() << "Rafraichissement de toutes les mains";
     m_player0Hand->refresh();
     m_player1Hand->refresh();
     m_player2Hand->refresh();

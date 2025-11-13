@@ -28,12 +28,8 @@ public:
     // Définir le joueur source
     void setPlayer(Player* player, bool faceUp = true);
 
-    // Mettre à jour le contexte de jeu pour déterminer les cartes jouables
-    void setGameContext(const Carte::Couleur& couleurDemandee, 
-                       const Carte::Couleur& couleurAtout,
-                       Carte* carteAtout,
-                       int idxPlayerWinning,
-                       bool isCurrentPlayer);
+    // Définir quelles cartes sont jouables (indices reçus du serveur)
+    void setPlayableCards(const QList<int>& playableIndices);
 
     // Rafraîchir les données
     void refresh();
@@ -50,10 +46,6 @@ public:
 private:
     Player* m_player;
     bool m_faceUp;
-    Carte::Couleur m_couleurDemandee;
-    Carte::Couleur m_couleurAtout;
-    Carte* m_carteAtout;
-    int m_idxPlayerWinning;
-    bool m_isCurrentPlayer;
+    QList<int> m_playableIndices;  // Indices des cartes jouables (depuis le serveur)
 };
 #endif

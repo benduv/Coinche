@@ -29,16 +29,28 @@ struct GameRoom {
     int roomId;
     QList<QString> connectionIds;  // IDs des connexions WebSocket
     QString gameState; // "waiting", "bidding", "playing", "finished"
-    
-    // Vos objets de jeu réels
-    std::vector<std::unique_ptr<Player>> players;  // Les 4 vrais joueurs
+
+    // Les objets de jeu réels
+    std::vector<std::unique_ptr<Player>> players;  // Les 4 joueurs
     Deck deck;
-    
+
     // État de la partie
-    Carte::Couleur couleurAtout;
-    int currentPlayerIndex;
+    Carte::Couleur couleurAtout = Carte::COULEURINVALIDE;
+    int currentPlayerIndex = 0;
+    int biddingPlayer = 0;
+    int firstPlayerIndex = 0;  // Joueur qui commence les enchères ET qui jouera en premier
+
+    // Gestion des enchères
+    int passedBidsCount = 0;
+    Player::Annonce lastBidAnnonce = Player::ANNONCEINVALIDE;
+    Carte::Couleur lastBidCouleur = Carte::COULEURINVALIDE;
+    int lastBidderIndex = -1;
+
+    // Pli en cours
+    std::vector<std::pair<int, Carte*>> currentPli;  // pair<playerIndex, carte>
+    Carte::Couleur couleurDemandee = Carte::COULEURINVALIDE;
+
     GameModel* gameModel = nullptr;
-    // ... autres données
 };
 
 class GameServer : public QObject {
@@ -62,10 +74,10 @@ public:
     ~GameServer() {
         m_server->close();
         
-        // Libérer toutes les GameRooms
+        // Libére toutes les GameRooms
         qDeleteAll(m_gameRooms.values());
         
-        // Libérer toutes les connexions
+        // Libére toutes les connexions
         qDeleteAll(m_connections.values());
     }
 
@@ -80,7 +92,7 @@ private slots:
         connect(socket, &QWebSocket::disconnected,
                 this, &GameServer::onDisconnected);
         
-        // Envoyer message de bienvenue
+        // Envoi un message de bienvenue
         QJsonObject welcome;
         welcome["type"] = "connected";
         welcome["message"] = "Connecté au serveur";
@@ -116,16 +128,16 @@ private slots:
 
         qDebug() << "Client deconnecte";
         
-        // Trouver la connexion
+        // Trouve la connexion
         QString connectionId;
         for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
             if (it.value()->socket == socket) {
                 connectionId = it.key();
                 
-                // Retirer de la file d'attente
+                // Retire de la file d'attente
                 m_matchmakingQueue.removeAll(connectionId);
                 
-                // Notifier la room si le joueur était en partie
+                // Notifie la room si le joueur était en partie
                 if (it.value()->gameRoomId != -1) {
                     handlePlayerDisconnect(connectionId);
                 }
@@ -159,7 +171,7 @@ private:
         response["playerName"] = playerName;
         sendMessage(socket, response);
 
-        qDebug() << "Joueur enregistré:" << playerName << "ID:" << connectionId;
+        qDebug() << "Joueur enregistre:" << playerName << "ID:" << connectionId;
     }
 
     void handleJoinMatchmaking(QWebSocket *socket) {
@@ -177,7 +189,7 @@ private:
             response["playersInQueue"] = m_matchmakingQueue.size();
             sendMessage(socket, response);
 
-            // Essayer de créer une partie si 4 joueurs
+            // Essaye de créer une partie si 4 joueurs
             tryCreateGame();
         }
     }
@@ -202,18 +214,17 @@ private:
             }
 
             int roomId = m_nextRoomId++;
-            GameRoom* room = new GameRoom();  // Créer sur le heap
+            GameRoom* room = new GameRoom();  // Créé sur le heap
             room->roomId = roomId;
             room->connectionIds = connectionIds;
             room->gameState = "waiting";
             
-            // Créer les vrais joueurs du jeu
+            // Crée les joueurs du jeu
             for (int i = 0; i < 4; i++) {
                 PlayerConnection* conn = m_connections[connectionIds[i]];
                 conn->gameRoomId = roomId;
                 conn->playerIndex = i;
                 
-                // Créer un vrai Player avec votre classe
                 std::vector<Carte*> emptyHand;
                 auto player = std::make_unique<Player>(
                     conn->playerName.toStdString(),
@@ -223,7 +234,7 @@ private:
                 room->players.push_back(std::move(player));
             }
             
-            // Distribuer les cartes
+            // Distribue les cartes
             room->deck.shuffleDeck();
             for (int i = 0; i < 4; i++) {
                 for (int j = 0; j < 8; j++) {
@@ -232,13 +243,21 @@ private:
                         room->players[i]->addCardToHand(carte);
                     }
                 }
+                // Trier la main de chaque joueur pour maintenir la synchronisation avec les clients
+                room->players[i]->sortHand();
             }
-            
-            m_gameRooms[roomId] = room;  // Stocker le pointeur
 
-            qDebug() << "Partie creee! Room ID:" << roomId;
+            m_gameRooms[roomId] = room;  // Stock le pointeur
 
-            // Notifier tous les joueurs
+            // Init le premier joueur (celui qui commence les enchères)
+            room->firstPlayerIndex = 0;  // Joueur 0 commence
+            room->currentPlayerIndex = 0;
+            room->biddingPlayer = 0;
+            room->gameState = "bidding";
+
+            qDebug() << "Partie creee! Room ID:" << roomId << "- Premier joueur:" << room->firstPlayerIndex;
+
+            // Notifie tous les joueurs
             notifyGameStart(roomId, connectionIds);
 
             qDebug() << "Notifications gameFound envoyees à" << connectionIds.size() << "joueurs";
@@ -265,7 +284,7 @@ private:
             msg["roomId"] = roomId;
             msg["playerPosition"] = i;
             
-            // IMPORTANT : Envoyer les cartes du joueur
+            // Envoi les cartes du joueur
             QJsonArray myCards;
             const auto& playerHand = room->players[i]->getMain();
             qDebug() << "Envoi de" << playerHand.size() << "cartes au joueur" << i;
@@ -309,23 +328,144 @@ private:
         int roomId = conn->gameRoomId;
         if (roomId == -1) return;
 
-        GameRoom* room = m_gameRooms[roomId];  // Pointeur
+        GameRoom* room = m_gameRooms[roomId];
+        if (!room) return;
+
         int playerIndex = conn->playerIndex;
         int cardIndex = data["cardIndex"].toInt();
-        
-        // Utiliser la vraie logique de votre classe Player
+
+        // Check que c'est bien le tour du joueur
+        if (room->currentPlayerIndex != playerIndex) {
+            qDebug() << "GameServer - Erreur: ce n'est pas le tour du joueur" << playerIndex;
+            return;
+        }
+
         Player* player = room->players[playerIndex].get();
-        
-        // Vérifier si la carte est jouable avec VOTRE logique
-        // (cette partie dépend de votre implémentation du jeu)
-        
-        // Broadcaster l'action à tous les joueurs de la room
+        if (!player || cardIndex < 0 || cardIndex >= player->getMain().size()) {
+            qDebug() << "GameServer - Erreur: index de carte invalide" << cardIndex;
+            return;
+        }
+
+        // Détermine la carte la plus forte du pli actuel
+        Carte* carteGagnante = nullptr;
+        int idxPlayerWinning = -1;
+        if (!room->currentPli.empty()) {
+            carteGagnante = room->currentPli[0].second;
+            idxPlayerWinning = room->currentPli[0].first;
+
+            for (size_t i = 1; i < room->currentPli.size(); i++) {
+                Carte* c = room->currentPli[i].second;
+                if (*carteGagnante < *c) {
+                    carteGagnante = c;
+                    idxPlayerWinning = room->currentPli[i].first;
+                }
+            }
+        }
+
+        // Check si la carte est jouable
+        bool isPlayable = player->isCartePlayable(
+            cardIndex,
+            room->couleurDemandee,
+            room->couleurAtout,
+            carteGagnante,
+            idxPlayerWinning
+        );
+
+        if (!isPlayable) {
+            qDebug() << "GameServer - Erreur: carte non jouable selon les regles";
+
+            // Envoi un message d'erreur au joueur
+            QJsonObject errorMsg;
+            errorMsg["type"] = "error";
+            errorMsg["message"] = "Cette carte n'est pas jouable";
+            sendMessage(socket, errorMsg);
+            return;
+        }
+
+        // La carte est valide, la récupérer et la retirer de la main
+        Carte* cartePlayed = player->getMain()[cardIndex];
+
+        qDebug() << "GameServer - Joueur" << playerIndex
+                 << "joue la carte - Index:" << cardIndex
+                 << "Valeur:" << static_cast<int>(cartePlayed->getChiffre())
+                 << "Couleur:" << static_cast<int>(cartePlayed->getCouleur());
+
+        // Si c'est la première carte du pli, définir la couleur demandée
+        if (room->currentPli.empty()) {
+            room->couleurDemandee = cartePlayed->getCouleur();
+        }
+
+        // Ajouter au pli courant
+        room->currentPli.push_back(std::make_pair(playerIndex, cartePlayed));
+
+        // IMPORTANT : Retirer la carte de la main du joueur côté serveur
+        // Cela maintient la synchronisation avec les clients
+        player->removeCard(cardIndex);
+
+        qDebug() << "GameServer - Carte retirée, main du joueur" << playerIndex
+                 << "contient maintenant" << player->getMain().size() << "cartes";
+
+        qDebug() << "GameServer - Carte jouee par joueur" << playerIndex
+                 << "- Pli:" << room->currentPli.size() << "/4";
+
+        // Broadcast l'action à tous les joueurs avec les infos de la carte
         QJsonObject msg;
         msg["type"] = "cardPlayed";
         msg["playerIndex"] = playerIndex;
         msg["cardIndex"] = cardIndex;
-
+        msg["cardValue"] = static_cast<int>(cartePlayed->getChiffre());
+        msg["cardSuit"] = static_cast<int>(cartePlayed->getCouleur());
         broadcastToRoom(roomId, msg);
+
+        // Si le pli est complet (4 cartes)
+        if (room->currentPli.size() == 4) {
+            finishPli(roomId);
+        } else {
+            // Passe au joueur suivant
+            room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
+
+            // Notifier avec les cartes jouables pour le nouveau joueur
+            notifyPlayersWithPlayableCards(roomId);
+        }
+    }
+
+    void finishPli(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        // Détermine le gagnant du pli
+        Carte* carteGagnante = room->currentPli[0].second;
+        int gagnantIndex = room->currentPli[0].first;
+        qDebug() << "***************************GameServer - Determination du gagnant du pli";
+        qDebug() << "Carte gagnante initiale:";
+        carteGagnante->printCarte();
+
+        for (size_t i = 1; i < room->currentPli.size(); i++) {
+            Carte* c = room->currentPli[i].second;
+            qDebug() << "Comparaison avec la carte du joueur" << room->currentPli[i].first << ":";
+            c->printCarte();
+            if (*carteGagnante < *c) {
+                carteGagnante = c;
+                gagnantIndex = room->currentPli[i].first;
+                carteGagnante->printCarte();
+            }
+        }
+
+        qDebug() << "GameServer - Pli termine, gagnant: joueur" << gagnantIndex;
+
+        // Notifie le gagnant du pli
+        QJsonObject pliFinishedMsg;
+        pliFinishedMsg["type"] = "pliFinished";
+        pliFinishedMsg["winnerId"] = gagnantIndex;
+        broadcastToRoom(roomId, pliFinishedMsg);
+
+        // Réinitialise pour le prochain pli
+        room->currentPli.clear();
+        room->couleurDemandee = Carte::COULEURINVALIDE;
+        room->currentPlayerIndex = gagnantIndex;  // Le gagnant commence le prochain pli
+
+        // Notifier avec les cartes jouables pour le nouveau pli
+        notifyPlayersWithPlayableCards(roomId);
     }
 
     void handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
@@ -336,13 +476,147 @@ private:
         int roomId = conn->gameRoomId;
         if (roomId == -1) return;
 
+        GameRoom* room = m_gameRooms[roomId];
+        if (!room) return;
+
+        int playerIndex = conn->playerIndex;
+        int bidValue = data["bidValue"].toInt();
+        int suit = data["suit"].toInt();
+
+        Player::Annonce annonce = static_cast<Player::Annonce>(bidValue);
+
+        // Mise à jour l'état de la room
+        if (annonce == Player::PASSE) {
+            room->passedBidsCount++;
+            qDebug() << "GameServer - Joueur" << playerIndex << "passe ("
+                     << room->passedBidsCount << "/3 passes)";
+        } else {
+            room->lastBidAnnonce = annonce;
+            room->lastBidCouleur = static_cast<Carte::Couleur>(suit);
+            room->lastBidderIndex = playerIndex;
+            room->passedBidsCount = 0;  // Reset le compteur
+            qDebug() << "GameServer - Nouvelle enchère:" << bidValue << "couleur:" << suit;
+        }
+
+        // Broadcast l'enchère à tous
         QJsonObject msg;
         msg["type"] = "bidMade";
-        msg["playerIndex"] = conn->playerIndex;
-        msg["bidValue"] = data["bidValue"].toInt();
-        msg["suit"] = data["suit"].toInt();
-
+        msg["playerIndex"] = playerIndex;
+        msg["bidValue"] = bidValue;
+        msg["suit"] = suit;
         broadcastToRoom(roomId, msg);
+
+        // Vérifie si phase d'enchères terminée
+        if (room->passedBidsCount >= 3 && room->lastBidAnnonce != Player::ANNONCEINVALIDE) {
+            qDebug() << "GameServer - Fin des enchères! Lancement phase de jeu";
+            for (int i = 0; i < 4; i++) {
+                room->players[i]->setAtout(room->lastBidCouleur);
+            }
+            startPlayingPhase(roomId);
+        } else {
+            // Passe au joueur suivant
+            room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
+            room->biddingPlayer = room->currentPlayerIndex;
+
+            QJsonObject stateMsg;
+            stateMsg["type"] = "gameState";
+            stateMsg["currentPlayer"] = room->currentPlayerIndex;
+            stateMsg["biddingPlayer"] = room->biddingPlayer;
+            stateMsg["biddingPhase"] = true;
+            broadcastToRoom(roomId, stateMsg);
+        }
+    }
+
+    void startPlayingPhase(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        room->gameState = "playing";
+        room->couleurAtout = room->lastBidCouleur;
+        // Le joueur qui a commencé les enchères joue en premier
+        room->currentPlayerIndex = room->firstPlayerIndex;
+
+        qDebug() << "Phase de jeu demarree - Atout:" << static_cast<int>(room->couleurAtout)
+                 << "Premier joueur:" << room->currentPlayerIndex
+                 << "(Gagnant encheres:" << room->lastBidderIndex << ")";
+
+        // Notifie tous les joueurs du changement de phase avec cartes jouables
+        notifyPlayersWithPlayableCards(roomId);
+    }
+
+    void notifyPlayersWithPlayableCards(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        int currentPlayer = room->currentPlayerIndex;
+
+        // Calculer les cartes jouables pour le joueur actuel
+        QJsonArray playableCards = calculatePlayableCards(room, currentPlayer);
+
+        // Envoyer à tous les joueurs
+        QJsonObject stateMsg;
+        stateMsg["type"] = "gameState";
+        stateMsg["biddingPhase"] = false;
+        stateMsg["currentPlayer"] = currentPlayer;
+        stateMsg["atout"] = static_cast<int>(room->couleurAtout);
+        stateMsg["playableCards"] = playableCards;  // Liste des indices des cartes jouables
+
+        // Si on est au début de la phase de jeu, inclure les infos d'enchères
+        if (room->currentPli.empty() && currentPlayer == room->firstPlayerIndex) {
+            stateMsg["biddingWinnerId"] = room->lastBidderIndex;
+            stateMsg["biddingWinnerAnnonce"] = static_cast<int>(room->lastBidAnnonce);
+        }
+
+        broadcastToRoom(roomId, stateMsg);
+    }
+
+    QJsonArray calculatePlayableCards(GameRoom* room, int playerIndex) {
+        QJsonArray playableIndices;
+
+        if (room->gameState != "playing") {
+            // Pendant les enchères, aucune carte n'est jouable
+            return playableIndices;
+        }
+
+        Player* player = room->players[playerIndex].get();
+        if (!player) return playableIndices;
+
+        // Déterminer la carte gagnante actuelle du pli
+        Carte* carteGagnante = nullptr;
+        int idxPlayerWinning = -1;
+        if (!room->currentPli.empty()) {
+            carteGagnante = room->currentPli[0].second;
+            idxPlayerWinning = room->currentPli[0].first;
+
+            for (size_t i = 1; i < room->currentPli.size(); i++) {
+                Carte* c = room->currentPli[i].second;
+                if (*carteGagnante < *c) {
+                    carteGagnante = c;
+                    idxPlayerWinning = room->currentPli[i].first;
+                }
+            }
+        }
+
+        // Vérifier chaque carte
+        const auto& main = player->getMain();
+        for (size_t i = 0; i < main.size(); i++) {
+            bool isPlayable = player->isCartePlayable(
+                static_cast<int>(i),
+                room->couleurDemandee,
+                room->couleurAtout,
+                carteGagnante,
+                idxPlayerWinning
+            );
+
+            if (isPlayable) {
+                playableIndices.append(static_cast<int>(i));
+            }
+        }
+
+        qDebug() << "Joueur" << playerIndex << ":" << playableIndices.size()
+                 << "cartes jouables sur" << main.size();
+
+        return playableIndices;
     }
 
     void handlePlayerDisconnect(const QString &connectionId) {

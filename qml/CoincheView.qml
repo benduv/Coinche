@@ -2,17 +2,10 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-ApplicationWindow {
-    visible: true
-    width: 1024
-    height: 768
-    title: "Jeu de Coinche"
+Rectangle {
+    id: rootArea
+    anchors.fill: parent
     color: "#2d5016"
-
-    Rectangle {
-        id: rootArea
-        anchors.fill: parent
-        color: "#2d5016"
 
         // =====================
         // ZONE CENTRALE DE JEU
@@ -44,7 +37,10 @@ ApplicationWindow {
                     model: gameModel.currentPli
 
                     Card {
-                        width: playArea.width * 0.15
+                        width: {
+                            var desiredHeight = playArea.height * 0.3
+                            return desiredHeight * cardRatio
+                        }
                         height: playArea.height * 0.3
                         value: modelData.value
                         suit: modelData.suit
@@ -105,7 +101,7 @@ ApplicationWindow {
                             anchors.fill: parent
                             enabled: gameModel.currentPlayer === 0 && model.isPlayable
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                            onClicked: gameModel.playCard(0, index)
+                            onClicked: gameModel.playCard(index)
                         }
                     }
                 }
@@ -151,7 +147,7 @@ ApplicationWindow {
                         height: rootArea.height * 0.12
                         value: model.value
                         suit: model.suit
-                        faceUp: true
+                        faceUp: model.faceUp
                         isPlayable: model.isPlayable
                         enabled: gameModel.currentPlayer === 2
 
@@ -159,7 +155,7 @@ ApplicationWindow {
                             anchors.fill: parent
                             enabled: gameModel.currentPlayer === 2 && model.isPlayable
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                            onClicked: gameModel.playCard(2, index)
+                            onClicked: gameModel.playCard(index)
                         }
                     }
                 }
@@ -196,7 +192,7 @@ ApplicationWindow {
                         }
                         height: rootArea.height * 0.1
                         rotation: 90
-                        faceUp: true
+                        faceUp: model.faceUp
                         value: model.value
                         suit: model.suit
                         isPlayable: model.isPlayable
@@ -206,7 +202,7 @@ ApplicationWindow {
                             anchors.fill: parent
                             enabled: gameModel.currentPlayer === 1 && model.isPlayable
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                            onClicked: gameModel.playCard(1, index)
+                            onClicked: gameModel.playCard(index)
                         }
                     }
                 }
@@ -242,7 +238,7 @@ ApplicationWindow {
                         }
                         height: rootArea.height * 0.1
                         rotation: -90
-                        faceUp: true
+                        faceUp: model.faceUp
                         value: model.value
                         suit: model.suit
                         isPlayable: model.isPlayable
@@ -252,7 +248,7 @@ ApplicationWindow {
                             anchors.fill: parent
                             enabled: gameModel.currentPlayer === 3 && model.isPlayable
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                            onClicked: gameModel.playCard(3, index)
+                            onClicked: gameModel.playCard(index)
                         }
                     }
                 }
@@ -295,5 +291,5 @@ ApplicationWindow {
                 Text { text: gameModel.scoreTotalTeam2; color: "white"; font.pixelSize: parent.height * 0.08 }
             }
         }
-    }
 }
+

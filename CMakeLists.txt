@@ -57,9 +57,10 @@ target_link_libraries(coinche_client PUBLIC
 # ========================================
 # Exécutable CLIENT (coinche)
 # ========================================
-qt_add_executable(coinche 
+qt_add_executable(coinche
     main.cpp
     server/NetworkManager.h  # Header-only, mis directement dans le client
+    WindowPositioner.h       # Header-only pour positionner les fenêtres
     resources.qrc
 )
 

@@ -6,6 +6,7 @@
 #include <QRandomGenerator>
 #include "server/NetworkManager.h"
 #include "GameModel.h"
+#include "WindowPositioner.h"
 
 int main(int argc, char *argv[])
 {
@@ -37,6 +38,10 @@ int main(int argc, char *argv[])
     NetworkManager networkManager;
     engine.rootContext()->setContextProperty("networkManager", &networkManager);
     engine.rootContext()->setContextProperty("defaultPlayerName", playerName);
+
+    // WindowPositioner pour positionner automatiquement les fenêtres
+    WindowPositioner windowPositioner;
+    engine.rootContext()->setContextProperty("windowPositioner", &windowPositioner);
 
     engine.rootContext()->setContextProperty("gameModel", QVariant::fromValue<QObject*>(nullptr));
     
