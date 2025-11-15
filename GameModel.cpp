@@ -503,40 +503,53 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         emit currentPlayerChanged();
         emit lastBidChanged();
 
-        // Mettre à jour les cartes du joueur local
-        Player* localPlayer = getPlayerByPosition(m_myPosition);
-        if (localPlayer) {
+        // Mettre à jour TOUS les joueurs
+        for (int i = 0; i < 4; i++) {
+            Player* player = getPlayerByPosition(i);
+            if (!player) continue;
+
             // Vider la main actuelle
-            std::vector<Carte*> main = localPlayer->getMain();
+            std::vector<Carte*> main = player->getMain();
             main.clear();
 
-            // Ajouter les nouvelles cartes
-            std::vector<Carte*> newCartes;
-            for (const QJsonValue& val : myCards) {
-                QJsonObject cardObj = val.toObject();
-                Carte* carte = new Carte(
-                    static_cast<Carte::Couleur>(cardObj["suit"].toInt()),
-                    static_cast<Carte::Chiffre>(cardObj["value"].toInt())
-                );
-                newCartes.push_back(carte);
+            if (i == m_myPosition) {
+                // Pour le joueur local: ajouter ses vraies cartes
+                std::vector<Carte*> newCartes;
+                for (const QJsonValue& val : myCards) {
+                    QJsonObject cardObj = val.toObject();
+                    Carte* carte = new Carte(
+                        static_cast<Carte::Couleur>(cardObj["suit"].toInt()),
+                        static_cast<Carte::Chiffre>(cardObj["value"].toInt())
+                    );
+                    newCartes.push_back(carte);
+                }
+
+                // Remplacer la main
+                for (Carte* carte : newCartes) {
+                    player->addCardToHand(carte);
+                }
+
+                // Trier la main
+                player->sortHand();
+            } else {
+                // Pour les autres joueurs: ajouter 8 cartes fantomes
+                for (int j = 0; j < 8; j++) {
+                    Carte* phantomCard = new Carte(
+                        Carte::COEUR,  // Couleur arbitraire
+                        Carte::SEPT    // Valeur arbitraire
+                    );
+                    player->addCardToHand(phantomCard);
+                }
             }
 
-            // Remplacer la main
-            for (Carte* carte : newCartes) {
-                localPlayer->addCardToHand(carte);
-            }
-
-            // Trier la main
-            localPlayer->sortHand();
-
-            // Rafraîchir l'affichage
-            HandModel* hand = getHandModelByPosition(m_myPosition);
+            // Rafraîchir l'affichage de tous les joueurs
+            HandModel* hand = getHandModelByPosition(i);
             if (hand) {
                 hand->refresh();
             }
         }
 
-        qDebug() << "Nouvelle manche initialisée";
+        qDebug() << "Nouvelle manche initialisee - Toutes les mains rafraichies";
     }
 }
 

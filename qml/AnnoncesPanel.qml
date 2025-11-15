@@ -240,8 +240,8 @@ Rectangle {
     Popup {
         id: suitSelector
         anchors.centerIn: parent
-        width: w * 0.7
-        height: h * 0.4
+        width: parent.width * 0.9
+        height: parent.height * 0.9
         modal: true
         focus: true
         closePolicy: Popup.CloseOnEscape
@@ -254,30 +254,46 @@ Rectangle {
             border.width: 2
         }
 
-        ColumnLayout {
+        // Utiliser un Item pour avoir une reference stable pour les dimensions
+        contentItem: Item {
             anchors.fill: parent
-            anchors.margins: w * 0.025
-            spacing: h * 0.035
-
-            Text {
-                text: "Choisissez la couleur d'atout :"
-                font.pixelSize: h * 0.05
-                color: "#ffffff"
-                Layout.alignment: Qt.AlignHCenter
-            }
 
             Row {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: w * 0.04
+                anchors.centerIn: parent
+                spacing: parent.width * 0.05
 
-                SuitButton { text: "♥"; suitColor: "#E60000"; suitValue: 3
-                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 3); suitSelector.close() } }
-                SuitButton { text: "♣"; suitColor: "#000000"; suitValue: 4
-                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 4); suitSelector.close() } }
-                SuitButton { text: "♦"; suitColor: "#E60000"; suitValue: 5
-                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 5); suitSelector.close() } }
-                SuitButton { text: "♠"; suitColor: "#000000"; suitValue: 6
-                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 6); suitSelector.close() } }
+                SuitButton {
+                    text: "♥"
+                    suitColor: "#E60000"
+                    suitValue: 3
+                    popupWidth: suitSelector.width
+                    popupHeight: suitSelector.height
+                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 3); suitSelector.close() }
+                }
+                SuitButton {
+                    text: "♣"
+                    suitColor: "#000000"
+                    suitValue: 4
+                    popupWidth: suitSelector.width
+                    popupHeight: suitSelector.height
+                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 4); suitSelector.close() }
+                }
+                SuitButton {
+                    text: "♦"
+                    suitColor: "#E60000"
+                    suitValue: 5
+                    popupWidth: suitSelector.width
+                    popupHeight: suitSelector.height
+                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 5); suitSelector.close() }
+                }
+                SuitButton {
+                    text: "♠"
+                    suitColor: "#000000"
+                    suitValue: 6
+                    popupWidth: suitSelector.width
+                    popupHeight: suitSelector.height
+                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 6); suitSelector.close() }
+                }
             }
         }
     }
@@ -315,9 +331,11 @@ Rectangle {
     component SuitButton: Button {
         property color suitColor
         property int suitValue
+        property real popupWidth: 100
+        property real popupHeight: 100
 
-        width: w * 0.11
-        height: h * 0.15
+        width: popupWidth * 0.18
+        height: popupHeight * 0.6
 
         background: Rectangle {
             color: parent.down ? "#444444" :
@@ -329,7 +347,7 @@ Rectangle {
 
         contentItem: Text {
             text: parent.text
-            font.pixelSize: h * 0.09
+            font.pixelSize: popupHeight * 0.35
             color: suitColor
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
