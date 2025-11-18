@@ -60,6 +60,12 @@ struct GameRoom {
     std::vector<std::pair<int, Carte*>> plisTeam1;  // Cartes gagnées par équipe 1
     std::vector<std::pair<int, Carte*>> plisTeam2;  // Cartes gagnées par équipe 2
 
+    // Compteur de plis par joueur (pour CAPOT et GENERALE)
+    int plisCountPlayer0 = 0;
+    int plisCountPlayer1 = 0;
+    int plisCountPlayer2 = 0;
+    int plisCountPlayer3 = 0;
+
     // Belote (détectée au début de la phase de jeu)
     bool beloteTeam1 = false;
     bool beloteTeam2 = false;
@@ -467,6 +473,14 @@ private:
 
         qDebug() << "GameServer - Pli termine, gagnant: joueur" << gagnantIndex;
 
+        // Incrementer le compteur de plis du gagnant
+        switch (gagnantIndex) {
+            case 0: room->plisCountPlayer0++; break;
+            case 1: room->plisCountPlayer1++; break;
+            case 2: room->plisCountPlayer2++; break;
+            case 3: room->plisCountPlayer3++; break;
+        }
+
         // Calculer les points de ce pli
         int pointsPli = 0;
         for (const auto& pair : room->currentPli) {
@@ -541,7 +555,7 @@ private:
         int pointsRealisesTeam1 = room->scoreMancheTeam1;
         int pointsRealisesTeam2 = room->scoreMancheTeam2;
 
-        // Ajouter les points de Belote (détectée au début de la phase de jeu)
+        // Ajoute les points de Belote (détectée au début de la phase de jeu)
         if (room->beloteTeam1) {
             pointsRealisesTeam1 += 20;
             qDebug() << "GameServer - +20 points de Belote pour l'Équipe 1";
@@ -551,24 +565,128 @@ private:
             qDebug() << "GameServer - +20 points de Belote pour l'Équipe 2";
         }
 
-        qDebug() << "GameServer - Points réalisés dans la manche (avec Belote):";
-        qDebug() << "  Équipe 1 (joueurs 0 et 2):" << pointsRealisesTeam1 << "points";
-        qDebug() << "  Équipe 2 (joueurs 1 et 3):" << pointsRealisesTeam2 << "points";
+        qDebug() << "GameServer - Points realises dans la manche (avec Belote):";
+        qDebug() << "  Equipe 1 (joueurs 0 et 2):" << pointsRealisesTeam1 << "points";
+        qDebug() << "  Equipe 2 (joueurs 1 et 3):" << pointsRealisesTeam2 << "points";
 
-        // Déterminer quelle équipe a fait l'enchère
+        qDebug() << "GameServer - Plis gagnes par joueur:";
+        qDebug() << "  Joueur 0:" << room->plisCountPlayer0 << "plis";
+        qDebug() << "  Joueur 1:" << room->plisCountPlayer1 << "plis";
+        qDebug() << "  Joueur 2:" << room->plisCountPlayer2 << "plis";
+        qDebug() << "  Joueur 3:" << room->plisCountPlayer3 << "plis";
+
+        // Détermine quelle équipe a fait l'enchère
         // Équipe 1: joueurs 0 et 2, Équipe 2: joueurs 1 et 3
         bool team1HasBid = (room->lastBidderIndex == 0 || room->lastBidderIndex == 2);
         int valeurContrat = Player::getContractValue(room->lastBidAnnonce);
 
         qDebug() << "GameServer - Contrat: valeur =" << valeurContrat
-                 << ", équipe =" << (team1HasBid ? 1 : 2);
+                 << ", equipe =" << (team1HasBid ? 1 : 2)
+                 << ", annonce =" << static_cast<int>(room->lastBidAnnonce);
 
-        // Appliquer les règles du contrat
+        // Verification des conditions speciales CAPOT et GENERALE
+        bool isCapotAnnonce = (room->lastBidAnnonce == Player::CAPOT);
+        bool isGeneraleAnnonce = (room->lastBidAnnonce == Player::GENERALE);
+        bool capotReussi = false;
+        bool generaleReussie = false;
+
+        if (isCapotAnnonce) {
+            // CAPOT: l'equipe qui a annonce doit faire tous les 8 plis
+            int plisTeamAnnonceur = 0;
+            if (team1HasBid) {
+                plisTeamAnnonceur = room->plisCountPlayer0 + room->plisCountPlayer2;
+            } else {
+                plisTeamAnnonceur = room->plisCountPlayer1 + room->plisCountPlayer3;
+            }
+            capotReussi = (plisTeamAnnonceur == 8);
+            qDebug() << "GameServer - CAPOT annonce: equipe a fait" << plisTeamAnnonceur << "/8 plis -"
+                     << (capotReussi ? "REUSSI" : "ECHOUE");
+        } else if (isGeneraleAnnonce) {
+            // GENERALE: le joueur qui a annonce doit faire tous les 8 plis seul
+            int plisJoueurAnnonceur = 0;
+            switch (room->lastBidderIndex) {
+                case 0: plisJoueurAnnonceur = room->plisCountPlayer0; break;
+                case 1: plisJoueurAnnonceur = room->plisCountPlayer1; break;
+                case 2: plisJoueurAnnonceur = room->plisCountPlayer2; break;
+                case 3: plisJoueurAnnonceur = room->plisCountPlayer3; break;
+            }
+            generaleReussie = (plisJoueurAnnonceur == 8);
+            qDebug() << "GameServer - GENERALE annoncee par joueur" << room->lastBidderIndex
+                     << ": a fait" << plisJoueurAnnonceur << "/8 plis -"
+                     << (generaleReussie ? "REUSSIE" : "ECHOUEE");
+        }
+
+        // Applique les règles du contrat
         int scoreToAddTeam1 = 0;
         int scoreToAddTeam2 = 0;
 
-        if (team1HasBid) {
-            // L'équipe 1 a annoncé
+        // Regles speciales pour CAPOT et GENERALE
+        if (isCapotAnnonce) {
+            if (capotReussi) {
+                // CAPOT reussi: 250 + 250 = 500 points pour l'equipe
+                if (team1HasBid) {
+                    scoreToAddTeam1 = 500;
+                    scoreToAddTeam2 = 0;
+                    qDebug() << "GameServer - Equipe 1 reussit son CAPOT!";
+                    qDebug() << "  Team1 marque: 500 (250+250)";
+                    qDebug() << "  Team2 marque: 0";
+                } else {
+                    scoreToAddTeam1 = 0;
+                    scoreToAddTeam2 = 500;
+                    qDebug() << "GameServer - Equipe 2 reussit son CAPOT!";
+                    qDebug() << "  Team1 marque: 0";
+                    qDebug() << "  Team2 marque: 500 (250+250)";
+                }
+            } else {
+                // CAPOT echoue: equipe adverse marque 160 + 250
+                if (team1HasBid) {
+                    scoreToAddTeam1 = 0;
+                    scoreToAddTeam2 = 410; // 160 + 250
+                    qDebug() << "GameServer - Equipe 1 echoue son CAPOT!";
+                    qDebug() << "  Team1 marque: 0";
+                    qDebug() << "  Team2 marque: 410 (160+250)";
+                } else {
+                    scoreToAddTeam1 = 410;
+                    scoreToAddTeam2 = 0;
+                    qDebug() << "GameServer - Equipe 2 echoue son CAPOT!";
+                    qDebug() << "  Team1 marque: 410 (160+250)";
+                    qDebug() << "  Team2 marque: 0";
+                }
+            }
+        } else if (isGeneraleAnnonce) {
+            if (generaleReussie) {
+                // GENERALE reussie: 500 + 500 = 1000 points pour l'equipe
+                if (team1HasBid) {
+                    scoreToAddTeam1 = 1000;
+                    scoreToAddTeam2 = 0;
+                    qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 1) reussit sa GENERALE!";
+                    qDebug() << "  Team1 marque: 1000 (500+500)";
+                    qDebug() << "  Team2 marque: 0";
+                } else {
+                    scoreToAddTeam1 = 0;
+                    scoreToAddTeam2 = 1000;
+                    qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 2) reussit sa GENERALE!";
+                    qDebug() << "  Team1 marque: 0";
+                    qDebug() << "  Team2 marque: 1000 (500+500)";
+                }
+            } else {
+                // GENERALE echouee: equipe adverse marque 160 + 500
+                if (team1HasBid) {
+                    scoreToAddTeam1 = 0;
+                    scoreToAddTeam2 = 660; // 160 + 500
+                    qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 1) echoue sa GENERALE!";
+                    qDebug() << "  Team1 marque: 0";
+                    qDebug() << "  Team2 marque: 660 (160+500)";
+                } else {
+                    scoreToAddTeam1 = 660;
+                    scoreToAddTeam2 = 0;
+                    qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 2) echoue sa GENERALE!";
+                    qDebug() << "  Team1 marque: 660 (160+500)";
+                    qDebug() << "  Team2 marque: 0";
+                }
+            }
+        } else if (team1HasBid) {
+            // L'équipe 1 a annoncé (contrat normal)
             if (pointsRealisesTeam1 >= valeurContrat) {
                 // Contrat réussi: valeurContrat + pointsRéalisés
                 scoreToAddTeam1 = valeurContrat + pointsRealisesTeam1;
@@ -585,7 +703,7 @@ private:
                 qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(160+" << valeurContrat << ")";
             }
         } else {
-            // L'équipe 2 a annoncé
+            // L'équipe 2 a annoncé (contrat normal)
             if (pointsRealisesTeam2 >= valeurContrat) {
                 // Contrat réussi: valeurContrat + pointsRéalisés
                 scoreToAddTeam1 = pointsRealisesTeam1;
@@ -603,25 +721,19 @@ private:
             }
         }
 
-        // Ajouter les scores de la manche aux scores totaux
+        // Ajoute les scores de la manche aux scores totaux
         room->scoreTeam1 += scoreToAddTeam1;
         room->scoreTeam2 += scoreToAddTeam2;
 
         qDebug() << "GameServer - Scores totaux:";
-        qDebug() << "  Équipe 1:" << room->scoreTeam1;
-        qDebug() << "  Équipe 2:" << room->scoreTeam2;
+        qDebug() << "  Equipe 1:" << room->scoreTeam1;
+        qDebug() << "  Equipe 2:" << room->scoreTeam2;
 
-        // Envoyer les scores aux clients
+        // Envoi les scores aux clients
         QJsonObject scoreMsg;
         scoreMsg["type"] = "mancheFinished";
-        // scoreMsg["pointsRealisesTeam1"] = pointsRealisesTeam1;
-        // scoreMsg["pointsRealisesTeam2"] = pointsRealisesTeam2;
-        // scoreMsg["scoreAddedTeam1"] = scoreToAddTeam1;
-        // scoreMsg["scoreAddedTeam2"] = scoreToAddTeam2;
         scoreMsg["scoreTotalTeam1"] = room->scoreTeam1;
         scoreMsg["scoreTotalTeam2"] = room->scoreTeam2;
-        // scoreMsg["contractValue"] = valeurContrat;
-        // scoreMsg["contractTeam"] = team1HasBid ? 1 : 2;
         broadcastToRoom(roomId, scoreMsg);
 
         // Vérifier si une équipe a atteint 1000 points
@@ -633,8 +745,8 @@ private:
             if (team1Won && team2Won) {
                 // Les deux équipes ont dépassé 1000, celle avec le plus de points gagne
                 int winner = (room->scoreTeam1 > room->scoreTeam2) ? 1 : 2;
-                qDebug() << "GameServer - Les deux équipes ont dépassé 1000 points!";
-                qDebug() << "GameServer - Équipe" << winner << "gagne avec"
+                qDebug() << "GameServer - Les deux equipes ont depasse 1000 points!";
+                qDebug() << "GameServer - Equipe" << winner << "gagne avec"
                          << ((winner == 1) ? room->scoreTeam1 : room->scoreTeam2) << "points";
 
                 QJsonObject gameOverMsg;
@@ -646,7 +758,7 @@ private:
 
                 room->gameState = "finished";
             } else if (team1Won) {
-                qDebug() << "GameServer - Équipe 1 gagne avec" << room->scoreTeam1 << "points!";
+                qDebug() << "GameServer - Equipe 1 gagne avec" << room->scoreTeam1 << "points!";
 
                 QJsonObject gameOverMsg;
                 gameOverMsg["type"] = "gameOver";
@@ -657,7 +769,7 @@ private:
 
                 room->gameState = "finished";
             } else {
-                qDebug() << "GameServer - Équipe 2 gagne avec" << room->scoreTeam2 << "points!";
+                qDebug() << "GameServer - Equipe 2 gagne avec" << room->scoreTeam2 << "points!";
 
                 QJsonObject gameOverMsg;
                 gameOverMsg["type"] = "gameOver";
@@ -670,7 +782,7 @@ private:
             }
         } else {
             // Aucune équipe n'a atteint 1000 points, on démarre une nouvelle manche
-            qDebug() << "GameServer - Démarrage d'une nouvelle manche...";
+            qDebug() << "GameServer - Demarrage d'une nouvelle manche...";
             startNewManche(roomId);
         }
     }
@@ -679,7 +791,7 @@ private:
         GameRoom* room = m_gameRooms.value(roomId);
         if (!room) return;
 
-        qDebug() << "GameServer - Nouvelle manche: mélange et distribution des cartes";
+        qDebug() << "GameServer - Nouvelle manche: melange et distribution des cartes";
 
         // Nettoyer les plis de la manche precedente
         room->plisTeam1.clear();
@@ -688,6 +800,12 @@ private:
         room->scoreMancheTeam2 = 0;
         room->beloteTeam1 = false;
         room->beloteTeam2 = false;
+
+        // Reinitialiser les compteurs de plis par joueur
+        room->plisCountPlayer0 = 0;
+        room->plisCountPlayer1 = 0;
+        room->plisCountPlayer2 = 0;
+        room->plisCountPlayer3 = 0;
 
         // Réinitialiser les mains des joueurs
         for (auto& player : room->players) {
@@ -956,7 +1074,7 @@ private:
         msg["playerIndex"] = conn->playerIndex;
         broadcastToRoom(roomId, msg, connectionId);
 
-        // Termine la partie et libérer la mémoire
+        // Termine la partie et libére la mémoire
         GameRoom* room = m_gameRooms.value(roomId);
         if (room) {
             delete room;  // Libére la GameRoom

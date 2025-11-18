@@ -267,6 +267,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottomMargin: - parent.height * 0.09
             spacing: parent.width * 0.01
+            height: rootArea.height * 0.3  // Hauteur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(0)
 
@@ -280,7 +281,7 @@ Rectangle {
 
             Row {
                 id: playerSouth
-                spacing: - rootArea.height * 0.03
+                spacing: - rootArea.height * 0.06
                 Repeater {
                     model: {
                         switch (playerSouthRow.actualPlayerIndex) {
@@ -292,15 +293,15 @@ Rectangle {
                     }
                     Card {
                         width: {
-                            var desiredHeight = rootArea.height * 0.25
+                            var desiredHeight = rootArea.height * 0.3
                             return desiredHeight * cardRatio
                         }
-                        height: rootArea.height * 0.25
+                        height: rootArea.height * 0.3
                         value: model.value
                         suit: model.suit
                         faceUp: model.faceUp
-                        isPlayable: model.isPlayable
-                        enabled: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
+                        isPlayable: gameModel.biddingPhase || gameModel.currentPlayer !== playerSouthRow.actualPlayerIndex || model.isPlayable
+                        enabled: !gameModel.biddingPhase && gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
 
                         MouseArea {
                             anchors.fill: parent
@@ -322,6 +323,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.topMargin: - parent.height * 0.06
             spacing: parent.width * 0.01
+            height: rootArea.height * 0.125  // Hauteur fixe pour eviter que playArea change de taille
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(2)
 
@@ -335,7 +337,7 @@ Rectangle {
 
             Row {
                 id: playerNorth
-                spacing: - rootArea.height * 0.025
+                spacing: - rootArea.height * 0.05
                 Repeater {
                     model: {
                         switch (playerNorthRow.actualPlayerIndex) {
@@ -375,9 +377,10 @@ Rectangle {
             id: playerWestColumn
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            anchors.leftMargin: parent.width * 0.01
+            anchors.leftMargin: - parent.width * 0.03
             spacing: parent.height * 0.008
             rotation: 0
+            width: rootArea.width * 0.0625 // Largeur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(1)
 
@@ -391,7 +394,8 @@ Rectangle {
 
             Column {
                 id: playerWest
-                spacing: - rootArea.height * 0.05
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: - rootArea.height * 0.07
                 Repeater {
                     model: {
                         switch (playerWestColumn.actualPlayerIndex) {
@@ -432,8 +436,9 @@ Rectangle {
             id: playerEastColumn
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            anchors.rightMargin: parent.width * 0.01
+            anchors.rightMargin: - parent.width * 0.02
             spacing: parent.height * 0.008
+            width: rootArea.width * 0.0625  // Largeur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(3)
 
@@ -447,7 +452,8 @@ Rectangle {
 
             Column {
                 id: playerEast
-                spacing: - rootArea.height * 0.05
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: - rootArea.height * 0.07
                 Repeater {
                     model: {
                         switch (playerEastColumn.actualPlayerIndex) {
@@ -486,11 +492,11 @@ Rectangle {
         // =====================
         Rectangle {
             id: scorePanel
-            width: parent.width * 0.15
-            height: parent.height * 0.15
+            width: parent.width * 0.13
+            height: parent.height * 0.13
             anchors.top: parent.top
             anchors.right: parent.right
-            anchors.margins: parent.width * 0.02
+            anchors.margins: parent.width * 0.007
             color: "#1a1a1a"
             opacity: 0.85
             radius: 8
@@ -498,23 +504,23 @@ Rectangle {
 
             GridLayout {
                 anchors.fill: parent
-                anchors.margins: parent.width * 0.015
+                anchors.margins: parent.width * 0.013
                 rows: 3
                 columns: 3
                 rowSpacing: parent.height * 0.03
                 columnSpacing: parent.width * 0.02
 
-                Text { text: "Score"; color: "white"; font.pixelSize: parent.height * 0.12; font.bold: true }
-                Text { text: "Manche"; color: "white"; font.pixelSize: parent.height * 0.1; font.bold: true }
-                Text { text: "Total"; color: "white"; font.pixelSize: parent.height * 0.1; font.bold: true }
+                Text { text: "Score"; color: "white"; font.pixelSize: parent.height * 0.13; font.bold: true }
+                Text { text: "Manche"; color: "white"; font.pixelSize: parent.height * 0.13; font.bold: true }
+                Text { text: "Total"; color: "white"; font.pixelSize: parent.height * 0.13; font.bold: true }
 
-                Text { text: "Équipe 1:"; color: "white"; font.pixelSize: parent.height * 0.1 }
-                Text { text: gameModel.scoreTeam1; color: "white"; font.pixelSize: parent.height * 0.1 }
-                Text { text: gameModel.scoreTotalTeam1; color: "white"; font.pixelSize: parent.height * 0.1 }
+                Text { text: "Équipe 1:"; color: "white"; font.pixelSize: parent.height * 0.13 }
+                Text { text: gameModel.scoreTeam1; color: "white"; font.pixelSize: parent.height * 0.13 }
+                Text { text: gameModel.scoreTotalTeam1; color: "white"; font.pixelSize: parent.height * 0.13 }
 
-                Text { text: "Équipe 2:"; color: "white"; font.pixelSize: parent.height * 0.1 }
-                Text { text: gameModel.scoreTeam2; color: "white"; font.pixelSize: parent.height * 0.1 }
-                Text { text: gameModel.scoreTotalTeam2; color: "white"; font.pixelSize: parent.height * 0.1 }
+                Text { text: "Équipe 2:"; color: "white"; font.pixelSize: parent.height * 0.13 }
+                Text { text: gameModel.scoreTeam2; color: "white"; font.pixelSize: parent.height * 0.13 }
+                Text { text: gameModel.scoreTotalTeam2; color: "white"; font.pixelSize: parent.height * 0.13 }
             }
         }
 }

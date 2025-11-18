@@ -110,4 +110,4 @@ target_link_libraries(server PRIVATE
 # ========================================
 # Tests
 # ========================================
-#add_subdirectory(tests)
+add_subdirectory(tests)

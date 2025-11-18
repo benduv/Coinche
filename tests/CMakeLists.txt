@@ -24,8 +24,29 @@ add_executable(
 target_link_libraries(
     coinche_tests
     gtest_main
-    coinche_lib
+    coinche_common
+    Qt6::Core
 )
 
 include(GoogleTest)
 gtest_discover_tests(coinche_tests)
+
+# ========================================
+# Tests fonctionnels CAPOT et GENERALE
+# ========================================
+add_executable(test_capot_generale
+    test_capot_generale.cpp
+    GameServerTest.h
+)
+
+target_include_directories(test_capot_generale PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_capot_generale PRIVATE
+    coinche_common
+    Qt6::Core
+    Qt6::Network
+    Qt6::WebSockets
+)
