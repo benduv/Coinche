@@ -35,8 +35,7 @@ gtest_discover_tests(coinche_tests)
 # Tests fonctionnels CAPOT et GENERALE
 # ========================================
 add_executable(test_capot_generale
-    test_capot_generale.cpp
-    GameServerTest.h
+    capot_generale_test.cpp
 )
 
 target_include_directories(test_capot_generale PRIVATE
@@ -45,8 +44,13 @@ target_include_directories(test_capot_generale PRIVATE
 )
 
 target_link_libraries(test_capot_generale PRIVATE
+    gtest_main
     coinche_common
     Qt6::Core
     Qt6::Network
     Qt6::WebSockets
 )
+
+# Découvrir automatiquement les tests Google Test
+include(GoogleTest)
+gtest_discover_tests(test_capot_generale)

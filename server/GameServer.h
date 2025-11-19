@@ -688,12 +688,22 @@ private:
         } else if (team1HasBid) {
             // L'équipe 1 a annoncé (contrat normal)
             if (pointsRealisesTeam1 >= valeurContrat) {
-                // Contrat réussi: valeurContrat + pointsRéalisés
-                scoreToAddTeam1 = valeurContrat + pointsRealisesTeam1;
-                scoreToAddTeam2 = pointsRealisesTeam2;
-                qDebug() << "GameServer - Equipe 1 reussit son contrat!";
-                qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(" << valeurContrat << "+" << pointsRealisesTeam1 << ")";
-                qDebug() << "  Team2 marque:" << scoreToAddTeam2;
+                // Vérifier si Team1 a fait un CAPOT non annoncé (tous les 8 plis)
+                if (capotReussi) {
+                    // CAPOT non annoncé: 250 + valeurContrat
+                    scoreToAddTeam1 = 250 + valeurContrat;
+                    scoreToAddTeam2 = 0;
+                    qDebug() << "GameServer - Equipe 1 fait un CAPOT non annonce!";
+                    qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(250+" << valeurContrat << ")";
+                    qDebug() << "  Team2 marque: 0";
+                } else {
+                    // Contrat réussi: valeurContrat + pointsRéalisés
+                    scoreToAddTeam1 = valeurContrat + pointsRealisesTeam1;
+                    scoreToAddTeam2 = pointsRealisesTeam2;
+                    qDebug() << "GameServer - Equipe 1 reussit son contrat!";
+                    qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(" << valeurContrat << "+" << pointsRealisesTeam1 << ")";
+                    qDebug() << "  Team2 marque:" << scoreToAddTeam2;
+                }
             } else {
                 // Contrat échoué: équipe 1 marque 0, équipe 2 marque 160 + valeurContrat
                 scoreToAddTeam1 = 0;
@@ -705,12 +715,22 @@ private:
         } else {
             // L'équipe 2 a annoncé (contrat normal)
             if (pointsRealisesTeam2 >= valeurContrat) {
-                // Contrat réussi: valeurContrat + pointsRéalisés
-                scoreToAddTeam1 = pointsRealisesTeam1;
-                scoreToAddTeam2 = valeurContrat + pointsRealisesTeam2;
-                qDebug() << "GameServer - Équipe 2 réussit son contrat!";
-                qDebug() << "  Team1 marque:" << scoreToAddTeam1;
-                qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(" << valeurContrat << "+" << pointsRealisesTeam2 << ")";
+                // Vérifier si Team2 a fait un CAPOT non annoncé (tous les 8 plis)
+                if (capotReussi) {
+                    // CAPOT non annoncé: 250 + valeurContrat
+                    scoreToAddTeam1 = 0;
+                    scoreToAddTeam2 = 250 + valeurContrat;
+                    qDebug() << "GameServer - Equipe 2 fait un CAPOT non annonce!";
+                    qDebug() << "  Team1 marque: 0";
+                    qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(250+" << valeurContrat << ")";
+                } else {
+                    // Contrat réussi: valeurContrat + pointsRéalisés
+                    scoreToAddTeam1 = pointsRealisesTeam1;
+                    scoreToAddTeam2 = valeurContrat + pointsRealisesTeam2;
+                    qDebug() << "GameServer - Équipe 2 réussit son contrat!";
+                    qDebug() << "  Team1 marque:" << scoreToAddTeam1;
+                    qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(" << valeurContrat << "+" << pointsRealisesTeam2 << ")";
+                }
             } else {
                 // Contrat échoué: équipe 2 marque 0, équipe 1 marque 160 + valeurContrat
                 scoreToAddTeam1 = 160 + valeurContrat;
@@ -719,6 +739,16 @@ private:
                 qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(160+" << valeurContrat << ")";
                 qDebug() << "  Team2 marque: 0";
             }
+        }
+
+        // Ajouter les points de belote (20 points)
+        if (room->beloteTeam1) {
+            scoreToAddTeam1 += 20;
+            qDebug() << "GameServer - Equipe 1 a la belote: +20 points";
+        }
+        if (room->beloteTeam2) {
+            scoreToAddTeam2 += 20;
+            qDebug() << "GameServer - Equipe 2 a la belote: +20 points";
         }
 
         // Ajoute les scores de la manche aux scores totaux
