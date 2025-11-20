@@ -286,6 +286,54 @@ private slots:
                 m_gameModel->receivePlayerAction(-1, "newManche", newMancheData);
             }
         }
+        else if (type == "surcoincheOffer") {
+            int timeLeft = obj["timeLeft"].toInt();
+
+            qDebug() << "NetworkManager - Offre de surcoinche reçue, temps restant:" << timeLeft;
+
+            // Transmettre au GameModel
+            if (m_gameModel) {
+                QJsonObject surcoincheData;
+                surcoincheData["timeLeft"] = timeLeft;
+                m_gameModel->receivePlayerAction(-1, "surcoincheOffer", surcoincheData);
+            }
+        }
+        else if (type == "surcoincheTimeout") {
+            qDebug() << "NetworkManager - Timeout de la surcoinche";
+
+            // Transmettre au GameModel
+            if (m_gameModel) {
+                m_gameModel->receivePlayerAction(-1, "surcoincheTimeout", QJsonObject());
+            }
+        }
+        else if (type == "surcoincheTimeUpdate") {
+            int timeLeft = obj["timeLeft"].toInt();
+
+            qDebug() << "NetworkManager - Mise à jour temps surcoinche:" << timeLeft;
+
+            // Transmettre au GameModel
+            if (m_gameModel) {
+                QJsonObject timeData;
+                timeData["timeLeft"] = timeLeft;
+                m_gameModel->receivePlayerAction(-1, "surcoincheTimeUpdate", timeData);
+            }
+        }
+        else if (type == "belote") {
+            int playerIndex = obj["playerIndex"].toInt();
+            qDebug() << "NetworkManager - BELOTE annoncée par joueur" << playerIndex;
+
+            if (m_gameModel) {
+                m_gameModel->receivePlayerAction(playerIndex, "belote", QJsonObject());
+            }
+        }
+        else if (type == "rebelote") {
+            int playerIndex = obj["playerIndex"].toInt();
+            qDebug() << "NetworkManager - REBELOTE annoncée par joueur" << playerIndex;
+
+            if (m_gameModel) {
+                m_gameModel->receivePlayerAction(playerIndex, "rebelote", QJsonObject());
+            }
+        }
         else if (type == "error") {
             QString errorMsg = obj["message"].toString();
             qDebug() << "NetworkManager - Erreur reçue:" << errorMsg;

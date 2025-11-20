@@ -39,5 +39,10 @@
         <file>resources/cards/trefle_dame.png</file>
         <file>resources/cards/trefle_roi.png</file>
         <file>resources/cards/trefle_as.png</file>
+        <file>resources/Tapis poker3.jpg</file>
+        <file>resources/avatar/animal-1293181.svg</file>
+        <file>resources/avatar/bee-24633.svg</file>
+        <file>resources/avatar/cartoon-1294036.svg</file>
+        <file>resources/avatar/warrior-149098.svg</file>
     </qresource>
 </RCC>

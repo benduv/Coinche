@@ -13,6 +13,13 @@ GameModel::GameModel(QObject *parent)
     , m_scoreTotalTeam2(0)
     , m_lastBidAnnonce(Player::ANNONCEINVALIDE)
     , m_lastBidCouleur(Carte::COULEURINVALIDE)
+    , m_lastBidderIndex(-1)
+    , m_surcoincheAvailable(false)
+    , m_surcoincheTimeLeft(0)
+    , m_showCoincheAnimation(false)
+    , m_showSurcoincheAnimation(false)
+    , m_showBeloteAnimation(false)
+    , m_showRebeloteAnimation(false)
 {
     // Créer les HandModels vides
     m_player0Hand = new HandModel(this);
@@ -53,6 +60,11 @@ HandModel* GameModel::player3Hand() const
 }
 
 int GameModel::myPosition() const
+{
+    return m_myPosition;
+}
+
+int GameModel::playerIndex() const
 {
     return m_myPosition;
 }
@@ -98,6 +110,11 @@ int GameModel::biddingPlayer() const
 int GameModel::lastBidValue() const
 {
     return static_cast<int>(m_lastBidAnnonce);
+}
+
+int GameModel::lastBidderIndex() const
+{
+    return m_lastBidderIndex;
 }
 
 int GameModel::scoreTeam1() const
@@ -150,6 +167,49 @@ QString GameModel::lastBidSuit() const
         case Carte::PIQUE: return "♠ Pique";
         default: return "";
     }
+}
+
+bool GameModel::surcoincheAvailable() const
+{
+    return m_surcoincheAvailable;
+}
+
+int GameModel::surcoincheTimeLeft() const
+{
+    return m_surcoincheTimeLeft;
+}
+
+bool GameModel::showCoincheAnimation() const
+{
+    return m_showCoincheAnimation;
+}
+
+bool GameModel::showSurcoincheAnimation() const
+{
+    return m_showSurcoincheAnimation;
+}
+
+bool GameModel::showBeloteAnimation() const
+{
+    return m_showBeloteAnimation;
+}
+
+bool GameModel::showRebeloteAnimation() const
+{
+    return m_showRebeloteAnimation;
+}
+
+QList<QVariant> GameModel::lastPliCards() const
+{
+    QList<QVariant> result;
+    for (const CarteDuPli& cdp : m_lastPliCards) {
+        QVariantMap cardInfo;
+        cardInfo["playerId"] = cdp.playerId;
+        cardInfo["value"] = static_cast<int>(cdp.carte->getChiffre());
+        cardInfo["suit"] = static_cast<int>(cdp.carte->getCouleur());
+        result.append(cardInfo);
+    }
+    return result;
 }
 
 void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents)
@@ -272,6 +332,26 @@ void GameModel::passBid()
     emit bidMadeLocally(static_cast<int>(Player::PASSE), 0);
 }
 
+void GameModel::coincheBid()
+{
+    qDebug() << "GameModel - Coinche locale";
+    // COINCHE est une annonce spéciale (valeur 12 dans l'enum Player::Annonce)
+    emit bidMadeLocally(static_cast<int>(Player::COINCHE), 0);
+}
+
+void GameModel::surcoincheBid()
+{
+    qDebug() << "GameModel - Surcoinche locale";
+    // SURCOINCHE est une annonce spéciale (valeur 13 dans l'enum Player::Annonce)
+    emit bidMadeLocally(static_cast<int>(Player::SURCOINCHE), 0);
+
+    // Désactiver le bouton surcoinche immédiatement
+    m_surcoincheAvailable = false;
+    m_surcoincheTimeLeft = 0;
+    emit surcoincheAvailableChanged();
+    emit surcoincheTimeLeftChanged();
+}
+
 void GameModel::updateGameState(const QJsonObject& state)
 {
     qDebug() << "Mise à jour état du jeu:" << state;
@@ -297,11 +377,17 @@ void GameModel::updateGameState(const QJsonObject& state)
             emit biddingPhaseChanged();
             qDebug() << "Phase d'annonces:" << m_biddingPhase;
 
-            // Si on passe en phase de jeu, vider le pli actuel
+            // Si on passe en phase de jeu, vider le pli actuel et masquer les animations
             if (!m_biddingPhase) {
                 m_currentPli.clear();
                 emit currentPliChanged();
                 qDebug() << "Début de la phase de jeu!";
+
+                // Masquer toutes les animations Coinche/Surcoinche
+                m_showCoincheAnimation = false;
+                m_showSurcoincheAnimation = false;
+                emit showCoincheAnimationChanged();
+                emit showSurcoincheAnimationChanged();
             }
         }
     }
@@ -406,20 +492,99 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
 
         emit currentPliChanged();
 
-        qDebug() << "Carte ajoutée au pli - Total:" << m_currentPli.size() << "cartes";
+        qDebug() << "Carte ajoutee au pli - Total:" << m_currentPli.size() << "cartes";
     } else if (action == "makeBid") {
         QJsonObject bidData = data.toJsonObject();
         Player::Annonce annonce = static_cast<Player::Annonce>(bidData["value"].toInt());
 
         // Mettre à jour l'affichage de la dernière enchère pour l'UI
-        if (annonce != Player::PASSE) {
+        if (annonce != Player::PASSE && annonce != Player::COINCHE && annonce != Player::SURCOINCHE) {
             m_lastBidAnnonce = annonce;
             m_lastBidCouleur = static_cast<Carte::Couleur>(bidData["suit"].toInt());
+            m_lastBidderIndex = playerIndex;
             emit lastBidChanged();
-            qDebug() << "GameModel::receivePlayerAction - Enchère:" << lastBid() << lastBidSuit();
+            emit lastBidderIndexChanged();
+            qDebug() << "GameModel::receivePlayerAction - Enchere:" << lastBid() << lastBidSuit() << "par joueur" << playerIndex;
+        } else if (annonce == Player::COINCHE) {
+            qDebug() << "GameModel::receivePlayerAction - Joueur" << playerIndex << "COINCHE";
+
+            // Afficher l'animation Coinche pour tous les joueurs
+            m_showCoincheAnimation = true;
+            emit showCoincheAnimationChanged();
+        } else if (annonce == Player::SURCOINCHE) {
+            qDebug() << "GameModel::receivePlayerAction - Joueur" << playerIndex << "SURCOINCHE";
+
+            // Afficher l'animation Surcoinche pour tous les joueurs
+            m_showSurcoincheAnimation = true;
+            emit showSurcoincheAnimationChanged();
         } else {
             qDebug() << "GameModel::receivePlayerAction - Joueur" << playerIndex << "passe";
         }
+    } else if (action == "surcoincheOffer") {
+        QJsonObject surcoincheData = data.toJsonObject();
+        int timeLeft = surcoincheData["timeLeft"].toInt();
+
+        qDebug() << "GameModel::receivePlayerAction - Offre de Surcoinche! Temps restant:" << timeLeft;
+
+        // Masquer l'animation Coinche
+        m_showCoincheAnimation = false;
+        emit showCoincheAnimationChanged();
+
+        // Vérifier si je suis dans l'équipe qui a fait l'annonce (et donc peut surcoincher)
+        int myTeam = m_myPosition % 2;
+        int bidderTeam = m_lastBidderIndex % 2;
+
+        if (myTeam == bidderTeam) {
+            // Activer le bouton surcoinche
+            m_surcoincheAvailable = true;
+            m_surcoincheTimeLeft = timeLeft;
+            emit surcoincheAvailableChanged();
+            emit surcoincheTimeLeftChanged();
+        }
+    } else if (action == "surcoincheTimeout") {
+        qDebug() << "GameModel::receivePlayerAction - Timeout Surcoinche";
+
+        // Masquer toutes les animations
+        m_showCoincheAnimation = false;
+        m_showSurcoincheAnimation = false;
+        emit showCoincheAnimationChanged();
+        emit showSurcoincheAnimationChanged();
+
+        // Désactiver le bouton surcoinche
+        m_surcoincheAvailable = false;
+        m_surcoincheTimeLeft = 0;
+        emit surcoincheAvailableChanged();
+        emit surcoincheTimeLeftChanged();
+    } else if (action == "surcoincheTimeUpdate") {
+        QJsonObject timeData = data.toJsonObject();
+        int timeLeft = timeData["timeLeft"].toInt();
+
+        m_surcoincheTimeLeft = timeLeft;
+        emit surcoincheTimeLeftChanged();
+    } else if (action == "belote") {
+        qDebug() << "GameModel::receivePlayerAction - BELOTE annoncée par joueur" << playerIndex;
+
+        // Afficher l'animation Belote pour tous les joueurs
+        m_showBeloteAnimation = true;
+        emit showBeloteAnimationChanged();
+
+        // Masquer l'animation après 2 secondes
+        QTimer::singleShot(2000, this, [this]() {
+            m_showBeloteAnimation = false;
+            emit showBeloteAnimationChanged();
+        });
+    } else if (action == "rebelote") {
+        qDebug() << "GameModel::receivePlayerAction - REBELOTE annoncée par joueur" << playerIndex;
+
+        // Afficher l'animation Rebelote pour tous les joueurs
+        m_showRebeloteAnimation = true;
+        emit showRebeloteAnimationChanged();
+
+        // Masquer l'animation après 2 secondes
+        QTimer::singleShot(2000, this, [this]() {
+            m_showRebeloteAnimation = false;
+            emit showRebeloteAnimationChanged();
+        });
     } else if (action == "pliFinished") {
         QJsonObject pliData = data.toJsonObject();
         int winnerId = pliData["winnerId"].toInt();
@@ -438,6 +603,11 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         // Attendre un peu pour que l'utilisateur voie le pli, puis le nettoyer
         QTimer::singleShot(2000, this, [this]() {
             qDebug() << "Nettoyage du pli";
+
+            // Sauvegarder le pli courant comme dernier pli avant de le nettoyer
+            m_lastPliCards = m_currentPli;
+            emit lastPliCardsChanged();
+
             m_currentPli.clear();
             emit currentPliChanged();
         });
@@ -498,10 +668,12 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_currentPlayer = currentPlayer;
         m_lastBidAnnonce = Player::ANNONCEINVALIDE;
         m_lastBidCouleur = Carte::COULEURINVALIDE;
+        m_lastBidderIndex = -1;
         emit biddingPhaseChanged();
         emit biddingPlayerChanged();
         emit currentPlayerChanged();
         emit lastBidChanged();
+        emit lastBidderIndexChanged();
 
         // Mettre à jour TOUS les joueurs
         for (int i = 0; i < 4; i++) {

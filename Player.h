@@ -21,7 +21,9 @@ class Player
             CENTCINQUANTE,
             CENTSOIXANTE,
             CAPOT,
-            GENERALE, 
+            GENERALE,
+            COINCHE,
+            SURCOINCHE,
             PASSE
         };
 

@@ -45,6 +45,10 @@ struct GameRoom {
     Player::Annonce lastBidAnnonce = Player::ANNONCEINVALIDE;
     Carte::Couleur lastBidCouleur = Carte::COULEURINVALIDE;
     int lastBidderIndex = -1;
+    bool coinched = false;  // True si COINCHE a été annoncé
+    bool surcoinched = false;  // True si SURCOINCHE a été annoncé
+    QTimer* surcoincheTimer = nullptr;  // Timer pour le timeout de surcoinche
+    int surcoincheTimeLeft = 0;  // Temps restant en secondes
 
     // Pli en cours
     std::vector<std::pair<int, Carte*>> currentPli;  // pair<playerIndex, carte>
@@ -69,6 +73,10 @@ struct GameRoom {
     // Belote (détectée au début de la phase de jeu)
     bool beloteTeam1 = false;
     bool beloteTeam2 = false;
+
+    // Suivi des cartes de la belote jouées (pour animations)
+    bool beloteRoiJoue = false;   // Roi de l'atout joué
+    bool beloteDameJouee = false; // Dame de l'atout jouée
 
     GameModel* gameModel = nullptr;
 };
@@ -428,6 +436,56 @@ private:
         qDebug() << "GameServer - Carte jouee par joueur" << playerIndex
                  << "- Pli:" << room->currentPli.size() << "/4";
 
+        // Vérifier si c'est une carte de la belote (Roi ou Dame de l'atout)
+        bool isBeloteCard = false;
+        bool isRoi = (cartePlayed->getChiffre() == Carte::ROI);
+        bool isDame = (cartePlayed->getChiffre() == Carte::DAME);
+        bool isAtout = (cartePlayed->getCouleur() == room->couleurAtout);
+
+        if (isAtout && (isRoi || isDame)) {
+            // Vérifier si ce joueur a la belote
+            int teamIndex = playerIndex % 2; // 0 pour team1, 1 pour team2
+            bool hasBelote = (teamIndex == 0) ? room->beloteTeam1 : room->beloteTeam2;
+
+            if (hasBelote) {
+                isBeloteCard = true;
+
+                // Vérifier si c'est la première ou la deuxième carte de la belote jouée
+                if (!room->beloteRoiJoue && !room->beloteDameJouee) {
+                    // Première carte de la belote jouée - afficher "Belote"
+                    qDebug() << "GameServer - Joueur" << playerIndex << "joue la première carte de la belote (BELOTE)";
+
+                    if (isRoi) {
+                        room->beloteRoiJoue = true;
+                    } else {
+                        room->beloteDameJouee = true;
+                    }
+
+                    // Broadcaster l'animation "Belote"
+                    QJsonObject beloteMsg;
+                    beloteMsg["type"] = "belote";
+                    beloteMsg["playerIndex"] = playerIndex;
+                    broadcastToRoom(roomId, beloteMsg);
+
+                } else if ((isRoi && room->beloteDameJouee) || (isDame && room->beloteRoiJoue)) {
+                    // Deuxième carte de la belote jouée - afficher "Rebelote"
+                    qDebug() << "GameServer - Joueur" << playerIndex << "joue la deuxième carte de la belote (REBELOTE)";
+
+                    if (isRoi) {
+                        room->beloteRoiJoue = true;
+                    } else {
+                        room->beloteDameJouee = true;
+                    }
+
+                    // Broadcaster l'animation "Rebelote"
+                    QJsonObject rebeloteMsg;
+                    rebeloteMsg["type"] = "rebelote";
+                    rebeloteMsg["playerIndex"] = playerIndex;
+                    broadcastToRoom(roomId, rebeloteMsg);
+                }
+            }
+        }
+
         // Broadcast l'action à tous les joueurs avec les infos de la carte
         QJsonObject msg;
         msg["type"] = "cardPlayed";
@@ -620,68 +678,165 @@ private:
         int scoreToAddTeam1 = 0;
         int scoreToAddTeam2 = 0;
 
+        // Multiplicateur COINCHE/SURCOINCHE
+        int multiplicateur = 1;
+        if (room->surcoinched) {
+            multiplicateur = 4;
+        } else if (room->coinched) {
+            multiplicateur = 2;
+        }
+
         // Regles speciales pour CAPOT et GENERALE
         if (isCapotAnnonce) {
             if (capotReussi) {
-                // CAPOT reussi: 250 + 250 = 500 points pour l'equipe
+                // CAPOT reussi
+                // Normal: 250 + 250 = 500
+                // Coinché: 500 * 2 = 1000
+                // Surcoinché: 500 * 4 = 2000
+                int scoreCapot = 500 * multiplicateur;
                 if (team1HasBid) {
-                    scoreToAddTeam1 = 500;
+                    scoreToAddTeam1 = scoreCapot;
                     scoreToAddTeam2 = 0;
                     qDebug() << "GameServer - Equipe 1 reussit son CAPOT!";
-                    qDebug() << "  Team1 marque: 500 (250+250)";
+                    if (multiplicateur > 1) {
+                        qDebug() << "  Team1 marque:" << scoreCapot << "(500*" << multiplicateur << ")";
+                    } else {
+                        qDebug() << "  Team1 marque:" << scoreCapot << "(250+250)";
+                    }
                     qDebug() << "  Team2 marque: 0";
                 } else {
                     scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = 500;
+                    scoreToAddTeam2 = scoreCapot;
                     qDebug() << "GameServer - Equipe 2 reussit son CAPOT!";
                     qDebug() << "  Team1 marque: 0";
-                    qDebug() << "  Team2 marque: 500 (250+250)";
+                    if (multiplicateur > 1) {
+                        qDebug() << "  Team2 marque:" << scoreCapot << "(500*" << multiplicateur << ")";
+                    } else {
+                        qDebug() << "  Team2 marque:" << scoreCapot << "(250+250)";
+                    }
                 }
             } else {
-                // CAPOT echoue: equipe adverse marque 160 + 250
+                // CAPOT echoue: equipe adverse marque les memes points
+                // Normal: 160 + 250 = 410
+                // Coinché: (160 + 250) * 2 = 820
+                // Surcoinché: (160 + 250) * 4 = 1640
+                int scoreCapotEchoue = (160 + 250) * multiplicateur;
                 if (team1HasBid) {
                     scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = 410; // 160 + 250
+                    scoreToAddTeam2 = scoreCapotEchoue;
                     qDebug() << "GameServer - Equipe 1 echoue son CAPOT!";
                     qDebug() << "  Team1 marque: 0";
-                    qDebug() << "  Team2 marque: 410 (160+250)";
+                    if (multiplicateur > 1) {
+                        qDebug() << "  Team2 marque:" << scoreCapotEchoue << "((160+250)*" << multiplicateur << ")";
+                    } else {
+                        qDebug() << "  Team2 marque:" << scoreCapotEchoue << "(160+250)";
+                    }
                 } else {
-                    scoreToAddTeam1 = 410;
+                    scoreToAddTeam1 = scoreCapotEchoue;
                     scoreToAddTeam2 = 0;
                     qDebug() << "GameServer - Equipe 2 echoue son CAPOT!";
-                    qDebug() << "  Team1 marque: 410 (160+250)";
+                    if (multiplicateur > 1) {
+                        qDebug() << "  Team1 marque:" << scoreCapotEchoue << "((160+250)*" << multiplicateur << ")";
+                    } else {
+                        qDebug() << "  Team1 marque:" << scoreCapotEchoue << "(160+250)";
+                    }
                     qDebug() << "  Team2 marque: 0";
                 }
             }
         } else if (isGeneraleAnnonce) {
             if (generaleReussie) {
-                // GENERALE reussie: 500 + 500 = 1000 points pour l'equipe
+                // GENERALE reussie
+                // Normal: 500 + 500 = 1000
+                // Coinché: 1000 * 2 = 2000
+                // Surcoinché: 1000 * 4 = 4000
+                int scoreGenerale = 1000 * multiplicateur;
                 if (team1HasBid) {
-                    scoreToAddTeam1 = 1000;
+                    scoreToAddTeam1 = scoreGenerale;
                     scoreToAddTeam2 = 0;
                     qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 1) reussit sa GENERALE!";
-                    qDebug() << "  Team1 marque: 1000 (500+500)";
+                    if (multiplicateur > 1) {
+                        qDebug() << "  Team1 marque:" << scoreGenerale << "(1000*" << multiplicateur << ")";
+                    } else {
+                        qDebug() << "  Team1 marque:" << scoreGenerale << "(500+500)";
+                    }
                     qDebug() << "  Team2 marque: 0";
                 } else {
                     scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = 1000;
+                    scoreToAddTeam2 = scoreGenerale;
                     qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 2) reussit sa GENERALE!";
                     qDebug() << "  Team1 marque: 0";
-                    qDebug() << "  Team2 marque: 1000 (500+500)";
+                    if (multiplicateur > 1) {
+                        qDebug() << "  Team2 marque:" << scoreGenerale << "(1000*" << multiplicateur << ")";
+                    } else {
+                        qDebug() << "  Team2 marque:" << scoreGenerale << "(500+500)";
+                    }
                 }
             } else {
-                // GENERALE echouee: equipe adverse marque 160 + 500
+                // GENERALE echouee: equipe adverse marque les memes points
+                // Normal: 160 + 500 = 660
+                // Coinché: (160 + 500) * 2 = 1320
+                // Surcoinché: (160 + 500) * 4 = 2640
+                int scoreGeneraleEchoue = (160 + 500) * multiplicateur;
                 if (team1HasBid) {
                     scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = 660; // 160 + 500
+                    scoreToAddTeam2 = scoreGeneraleEchoue;
                     qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 1) echoue sa GENERALE!";
                     qDebug() << "  Team1 marque: 0";
-                    qDebug() << "  Team2 marque: 660 (160+500)";
+                    if (multiplicateur > 1) {
+                        qDebug() << "  Team2 marque:" << scoreGeneraleEchoue << "((160+500)*" << multiplicateur << ")";
+                    } else {
+                        qDebug() << "  Team2 marque:" << scoreGeneraleEchoue << "(160+500)";
+                    }
                 } else {
-                    scoreToAddTeam1 = 660;
+                    scoreToAddTeam1 = scoreGeneraleEchoue;
                     scoreToAddTeam2 = 0;
                     qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 2) echoue sa GENERALE!";
-                    qDebug() << "  Team1 marque: 660 (160+500)";
+                    if (multiplicateur > 1) {
+                        qDebug() << "  Team1 marque:" << scoreGeneraleEchoue << "((160+500)*" << multiplicateur << ")";
+                    } else {
+                        qDebug() << "  Team1 marque:" << scoreGeneraleEchoue << "(160+500)";
+                    }
+                    qDebug() << "  Team2 marque: 0";
+                }
+            }
+        } else if (room->coinched || room->surcoinched) {
+            // COINCHE ou SURCOINCHE: scoring spécial
+            // Si réussi par l'équipe qui a annoncé: (valeurContrat + pointsRealisés) × multiplicateur
+            // Si échoué: équipe adverse marque (valeurContrat + 160) × multiplicateur
+            int multiplicateur = room->surcoinched ? 4 : 2;  // SURCOINCHE = ×4, COINCHE = ×2
+
+            if (team1HasBid) {
+                // Team1 a annoncé, vérifie si elle réussit
+                if (pointsRealisesTeam1 >= valeurContrat) {
+                    // Contrat réussi: (valeurContrat + pointsRealisés) × multiplicateur
+                    scoreToAddTeam1 = (valeurContrat + pointsRealisesTeam1) * multiplicateur;
+                    scoreToAddTeam2 = 0;
+                    qDebug() << "GameServer - Equipe 1 reussit son contrat COINCHE!";
+                    qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "((" << valeurContrat << "+" << pointsRealisesTeam1 << ")*" << multiplicateur << ")";
+                    qDebug() << "  Team2 marque: 0";
+                } else {
+                    // Contrat échoué: équipe adverse marque (valeurContrat + 160) × multiplicateur
+                    scoreToAddTeam1 = 0;
+                    scoreToAddTeam2 = (valeurContrat + 160) * multiplicateur;
+                    qDebug() << "GameServer - Equipe 1 echoue son contrat COINCHE!";
+                    qDebug() << "  Team1 marque: 0";
+                    qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((" << valeurContrat << "+160)*" << multiplicateur << ")";
+                }
+            } else {
+                // Team2 a annoncé, vérifie si elle réussit
+                if (pointsRealisesTeam2 >= valeurContrat) {
+                    // Contrat réussi: (valeurContrat + pointsRealisés) × multiplicateur
+                    scoreToAddTeam1 = 0;
+                    scoreToAddTeam2 = (valeurContrat + pointsRealisesTeam2) * multiplicateur;
+                    qDebug() << "GameServer - Equipe 2 reussit son contrat COINCHE!";
+                    qDebug() << "  Team1 marque: 0";
+                    qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((" << valeurContrat << "+" << pointsRealisesTeam2 << ")*" << multiplicateur << ")";
+                } else {
+                    // Contrat échoué: équipe adverse marque (valeurContrat + 160) × multiplicateur
+                    scoreToAddTeam1 = (valeurContrat + 160) * multiplicateur;
+                    scoreToAddTeam2 = 0;
+                    qDebug() << "GameServer - Equipe 2 echoue son contrat COINCHE!";
+                    qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "((" << valeurContrat << "+160)*" << multiplicateur << ")";
                     qDebug() << "  Team2 marque: 0";
                 }
             }
@@ -830,6 +985,8 @@ private:
         room->scoreMancheTeam2 = 0;
         room->beloteTeam1 = false;
         room->beloteTeam2 = false;
+        room->beloteRoiJoue = false;
+        room->beloteDameJouee = false;
 
         // Reinitialiser les compteurs de plis par joueur
         room->plisCountPlayer0 = 0;
@@ -867,6 +1024,8 @@ private:
         room->lastBidCouleur = Carte::COULEURINVALIDE;
         room->lastBidderIndex = -1;
         room->couleurAtout = Carte::COULEURINVALIDE;
+        room->coinched = false;
+        room->surcoinched = false;
         room->currentPli.clear();
         room->couleurDemandee = Carte::COULEURINVALIDE;
 
@@ -933,7 +1092,89 @@ private:
 
         Player::Annonce annonce = static_cast<Player::Annonce>(bidValue);
 
-        // Mise à jour de l'état de la room
+        // Gestion COINCHE et SURCOINCHE
+        if (annonce == Player::COINCHE) {
+            // Vérifier qu'il y a une enchère en cours
+            if (room->lastBidAnnonce == Player::ANNONCEINVALIDE) {
+                qDebug() << "GameServer - COINCHE impossible: aucune enchère en cours";
+                return;
+            }
+
+            // Vérifier que le joueur est dans l'équipe adverse
+            int lastBidderTeam = room->lastBidderIndex % 2;  // 0 ou 1
+            int playerTeam = playerIndex % 2;  // 0 ou 1
+            if (lastBidderTeam == playerTeam) {
+                qDebug() << "GameServer - COINCHE impossible: joueur de la même équipe";
+                return;
+            }
+
+            room->coinched = true;
+            qDebug() << "GameServer - Joueur" << playerIndex << "COINCHE l'enchère!";
+
+            // Broadcast le COINCHE
+            QJsonObject msg;
+            msg["type"] = "bidMade";
+            msg["playerIndex"] = playerIndex;
+            msg["bidValue"] = bidValue;
+            msg["suit"] = suit;
+            broadcastToRoom(roomId, msg);
+
+            // Démarrer le timer de 10 secondes pour permettre la surcoinche
+            startSurcoincheTimer(roomId);
+            return;
+        }
+
+        if (annonce == Player::SURCOINCHE) {
+            // Vérifier qu'un COINCHE a été annoncé
+            if (!room->coinched) {
+                qDebug() << "GameServer - SURCOINCHE impossible: aucun COINCHE en cours";
+                return;
+            }
+
+            // Vérifier que le joueur est dans l'équipe qui a fait l'enchère
+            int lastBidderTeam = room->lastBidderIndex % 2;  // 0 ou 1
+            int playerTeam = playerIndex % 2;  // 0 ou 1
+            if (lastBidderTeam != playerTeam) {
+                qDebug() << "GameServer - SURCOINCHE impossible: joueur de l'équipe adverse";
+                return;
+            }
+
+            room->surcoinched = true;
+            qDebug() << "GameServer - Joueur" << playerIndex << "SURCOINCHE l'enchère!";
+
+            // Arrêter le timer de surcoinche
+            stopSurcoincheTimer(roomId);
+
+            // Notifier tous les joueurs que la surcoinche a été acceptée (masquer le bouton)
+            QJsonObject timeoutMsg;
+            timeoutMsg["type"] = "surcoincheTimeout";
+            broadcastToRoom(roomId, timeoutMsg);
+
+            // Broadcast le SURCOINCHE
+            QJsonObject msg;
+            msg["type"] = "bidMade";
+            msg["playerIndex"] = playerIndex;
+            msg["bidValue"] = bidValue;
+            msg["suit"] = suit;
+            broadcastToRoom(roomId, msg);
+
+            // Attendre 2 secondes pour afficher l'animation "Surcoinche !"
+            qDebug() << "GameServer - Attente de 2 secondes pour afficher l'animation Surcoinche";
+            QTimer::singleShot(2000, this, [this, roomId]() {
+                GameRoom* room = m_gameRooms.value(roomId);
+                if (!room) return;
+
+                // Fin des enchères, lancement phase de jeu
+                qDebug() << "GameServer - SURCOINCHE annoncé! Fin des enchères, lancement phase de jeu";
+                for (int i = 0; i < 4; i++) {
+                    room->players[i]->setAtout(room->lastBidCouleur);
+                }
+                startPlayingPhase(roomId);
+            });
+            return;
+        }
+
+        // Mise à jour de l'état de la room pour enchères normales
         if (annonce == Player::PASSE) {
             room->passedBidsCount++;
             qDebug() << "GameServer - Joueur" << playerIndex << "passe ("
@@ -972,6 +1213,86 @@ private:
             stateMsg["biddingPlayer"] = room->biddingPlayer;
             stateMsg["biddingPhase"] = true;
             broadcastToRoom(roomId, stateMsg);
+        }
+    }
+
+    void startSurcoincheTimer(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        qDebug() << "GameServer - Attente de 2 secondes avant d'afficher le bouton Surcoinche (animation Coinche)";
+
+        // Attendre 2 secondes pour permettre l'animation "Coinche !" de s'afficher
+        QTimer::singleShot(2000, this, [this, roomId]() {
+            GameRoom* room = m_gameRooms.value(roomId);
+            if (!room) return;
+
+            // Initialiser le temps restant à 10 secondes
+            room->surcoincheTimeLeft = 10;
+
+            // Créer le timer s'il n'existe pas
+            if (!room->surcoincheTimer) {
+                room->surcoincheTimer = new QTimer(this);
+                connect(room->surcoincheTimer, &QTimer::timeout, this, [this, roomId]() {
+                    onSurcoincheTimerTick(roomId);
+                });
+            }
+
+            // Démarrer le timer (tick chaque seconde)
+            room->surcoincheTimer->start(1000);
+
+            qDebug() << "GameServer - Timer de surcoinche démarré pour la room" << roomId;
+
+            // Envoyer l'offre de surcoinche aux joueurs de l'équipe qui a fait l'annonce
+            QJsonObject offerMsg;
+            offerMsg["type"] = "surcoincheOffer";
+            offerMsg["timeLeft"] = room->surcoincheTimeLeft;
+            broadcastToRoom(roomId, offerMsg);
+        });
+    }
+
+    void stopSurcoincheTimer(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        if (room->surcoincheTimer) {
+            room->surcoincheTimer->stop();
+            qDebug() << "GameServer - Timer de surcoinche arrêté pour la room" << roomId;
+        }
+
+        room->surcoincheTimeLeft = 0;
+    }
+
+    void onSurcoincheTimerTick(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        room->surcoincheTimeLeft--;
+
+        qDebug() << "GameServer - Surcoinche timer tick, temps restant:" << room->surcoincheTimeLeft;
+
+        if (room->surcoincheTimeLeft <= 0) {
+            // Timeout atteint, arrêter le timer et lancer la phase de jeu
+            stopSurcoincheTimer(roomId);
+
+            qDebug() << "GameServer - Timeout surcoinche! Fin des enchères, lancement phase de jeu";
+
+            // Notifier les joueurs du timeout
+            QJsonObject timeoutMsg;
+            timeoutMsg["type"] = "surcoincheTimeout";
+            broadcastToRoom(roomId, timeoutMsg);
+
+            // Lancer la phase de jeu
+            for (int i = 0; i < 4; i++) {
+                room->players[i]->setAtout(room->lastBidCouleur);
+            }
+            startPlayingPhase(roomId);
+        } else {
+            // Envoyer la mise à jour du temps restant
+            QJsonObject timeUpdateMsg;
+            timeUpdateMsg["type"] = "surcoincheTimeUpdate";
+            timeUpdateMsg["timeLeft"] = room->surcoincheTimeLeft;
+            broadcastToRoom(roomId, timeUpdateMsg);
         }
     }
 

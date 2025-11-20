@@ -54,3 +54,27 @@ target_link_libraries(test_capot_generale PRIVATE
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
 gtest_discover_tests(test_capot_generale)
+
+# ========================================
+# Tests fonctionnels COINCHE et SURCOINCHE
+# ========================================
+add_executable(test_coinche
+    coinche_test.cpp
+)
+
+target_include_directories(test_coinche PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_coinche PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Network
+    Qt6::WebSockets
+)
+
+# Découvrir automatiquement les tests Google Test
+include(GoogleTest)
+gtest_discover_tests(test_coinche)

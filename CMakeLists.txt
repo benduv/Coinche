@@ -77,7 +77,7 @@ qt_add_qml_module(coinche
     RESOURCE_PREFIX "/"
 )
 
-target_link_libraries(coinche PRIVATE 
+target_link_libraries(coinche PRIVATE
     coinche_client  # Contient GameModel + HandModel
     Qt6::Core
     Qt6::Quick
