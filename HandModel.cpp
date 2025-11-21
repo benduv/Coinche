@@ -6,6 +6,7 @@ HandModel::HandModel(QObject *parent)
     : QAbstractListModel(parent)
     , m_player(nullptr)
     , m_faceUp(true)
+    , m_atoutCouleur(Carte::COULEURINVALIDE)
 {
 }
 
@@ -30,6 +31,18 @@ void HandModel::setPlayableCards(const QList<int>& playableIndices) {
     // Notifier QML que les états "playable" ont changé
     if (rowCount() > 0) {
         emit dataChanged(index(0), index(rowCount() - 1), {IsPlayableRole});
+    }
+}
+
+// Définir la couleur d'atout
+void HandModel::setAtoutCouleur(Carte::Couleur atoutCouleur) {
+    m_atoutCouleur = atoutCouleur;
+
+    qDebug() << "HandModel - Couleur d'atout mise à jour:" << static_cast<int>(m_atoutCouleur);
+
+    // Notifier QML que les états "isAtout" ont changé
+    if (rowCount() > 0) {
+        emit dataChanged(index(0), index(rowCount() - 1), {IsAtoutRole});
     }
 }
 
@@ -67,7 +80,8 @@ QVariant HandModel::data(const QModelIndex &index, int role) const {
         case FaceUpRole:
             return m_faceUp;
         case IsAtoutRole:
-            return false; // À adapter selon la logique
+            // Retourner true si la carte est de la couleur d'atout
+            return (m_atoutCouleur != Carte::COULEURINVALIDE && carte->getCouleur() == m_atoutCouleur);
         case IsPlayableRole:
             // Vérifier si l'index est dans la liste des cartes jouables (reçue du serveur)
             return m_playableIndices.contains(index.row());

@@ -14,6 +14,13 @@ struct CarteDuPli {
     Carte* carte;
 };
 
+// Structure pour sauvegarder les cartes du dernier pli (avec copie des valeurs)
+struct CarteDuPliSauvegardee {
+    int playerId;
+    Carte::Chiffre chiffre;
+    Carte::Couleur couleur;
+};
+
 class GameModel : public QObject {
     Q_OBJECT
     Q_PROPERTY(HandModel* player0Hand READ player0Hand CONSTANT)
@@ -42,6 +49,7 @@ class GameModel : public QObject {
     Q_PROPERTY(bool showBeloteAnimation READ showBeloteAnimation NOTIFY showBeloteAnimationChanged)
     Q_PROPERTY(bool showRebeloteAnimation READ showRebeloteAnimation NOTIFY showRebeloteAnimationChanged)
     Q_PROPERTY(QList<QVariant> lastPliCards READ lastPliCards NOTIFY lastPliCardsChanged)
+    Q_PROPERTY(int distributionPhase READ distributionPhase NOTIFY distributionPhaseChanged)
 
 public:
     explicit GameModel(QObject *parent = nullptr);
@@ -74,6 +82,7 @@ public:
     bool showBeloteAnimation() const;
     bool showRebeloteAnimation() const;
     QList<QVariant> lastPliCards() const;
+    int distributionPhase() const;
 
     // Initialiser la partie avec les données du serveur
     Q_INVOKABLE void initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents);
@@ -109,6 +118,7 @@ signals:
     void showBeloteAnimationChanged();
     void showRebeloteAnimationChanged();
     void lastPliCardsChanged();
+    void distributionPhaseChanged();
     void gameInitialized();
 
     // Signaux vers NetworkManager
@@ -119,6 +129,7 @@ private:
     HandModel* getHandModelByPosition(int position);
     Player* getPlayerByPosition(int position);
     void refreshHand(int playerIndex);
+    void distributeCards(int startIdx, int endIdx, const std::vector<Carte*>& myCards);
 
     HandModel* m_player0Hand;
     HandModel* m_player1Hand;
@@ -144,7 +155,8 @@ private:
     bool m_showSurcoincheAnimation;
     bool m_showBeloteAnimation;
     bool m_showRebeloteAnimation;
-    QList<CarteDuPli> m_lastPliCards;  // Cartes du dernier pli terminé
+    QList<CarteDuPliSauvegardee> m_lastPliCards;  // Cartes du dernier pli terminé (avec copie des valeurs)
+    int m_distributionPhase;  // 0=pas de distribution, 1=3 cartes, 2=2 cartes, 3=3 cartes
 
     QList<Player*> m_onlinePlayers;  // Tous les joueurs de la partie
 };

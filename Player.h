@@ -40,6 +40,8 @@ class Player
 
         void sortHand();
 
+        void sortHandWithAtout(Carte::Couleur atout);
+
         void addCardToHand(Carte* carte);
 
         bool isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee, 

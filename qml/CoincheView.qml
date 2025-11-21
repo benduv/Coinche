@@ -45,13 +45,13 @@ Rectangle {
     Rectangle {
         id: playArea
         anchors.top: playerNorthColumn.bottom
-        anchors.topMargin: parent.height * 0.005
+        anchors.topMargin: - parent.height * 0.15
         anchors.bottom: playerSouthRow.top
-        anchors.bottomMargin: - parent.height * 0.1
+        anchors.bottomMargin: - parent.height * 0.15
         anchors.right: playerEastRow.left
-        anchors.rightMargin: parent.width * 0.015 - parent.width * 0.085 //+ parent.height * 0.008 // margin + avatar width + spacing
+        anchors.rightMargin: parent.width * 0.015 - parent.width * 0.085
         anchors.left: playerWestRow.right
-        anchors.leftMargin: parent.width * 0.015 //- parent.width * 0.075 //+ parent.height * 0.008 // margin + avatar width + spacing
+        anchors.leftMargin: parent.width * 0.015 - parent.width * 0.085
         color: "transparent"
         radius: 10
 
@@ -62,10 +62,6 @@ Rectangle {
             radius: playArea.radius
             color: "#1a3d0f"
             clip: true
-
-            /*layer.enabled: true
-            layer.smooth: true
-            layer.samples: 4 */ // Anti-aliasing pour des coins plus nets
 
             Image {
                 anchors.fill: parent
@@ -79,17 +75,37 @@ Rectangle {
         // Bordure par-dessus l'image
         Rectangle {
             anchors.fill: parent
-            anchors.margins: -3
+            anchors.margins: -parent.height * 0.01
             radius: playArea.radius
             color: "transparent"
             border.color: "#8b6914"
-            border.width: parent.height * 0.05
+            border.width: parent.height * 0.06
+        }
+
+        // Bordure par-dessus l'image
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -parent.height * 0.01
+            radius: playArea.radius
+            color: "transparent"
+            border.color: "black"
+            border.width: parent.height * 0.005
+        }
+
+        // Bordure par-dessus l'image
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: parent.height * 0.04
+            radius: playArea.radius
+            color: "transparent"
+            border.color: "black"
+            border.width: parent.height * 0.01
         }
 
         // ---- Panneau d'annonces ----
         AnnoncesPanel {
             anchors.fill: parent
-            anchors.margins: parent.width * 0.05
+            anchors.margins: parent.width * 0.09
             visible: gameModel.biddingPhase &&
                      gameModel.biddingPlayer === gameModel.myPosition &&
                      !gameModel.showCoincheAnimation &&      // Masquer si animation Coinche
@@ -110,7 +126,6 @@ Rectangle {
                 model: gameModel.currentPli
 
                 onCountChanged: {
-                    //console.log("Pli count changed: " + count + " (was: " + pliArea.lastCardCount + ")")
                     if (count === 0) {
                         pliArea.lastCardCount = 0
                     }
@@ -119,12 +134,13 @@ Rectangle {
                 Card {
                     id: cardInPli
                     width: {
-                        var desiredHeight = playArea.height * 0.4
+                        var desiredHeight = playArea.height * 0.38
                         return desiredHeight * cardRatio
                     }
-                    height: playArea.height * 0.4
+                    height: playArea.height * 0.38
                     value: modelData.value
                     suit: modelData.suit
+                    isAtout: modelData.isAtout
                     faceUp: true
 
                     // Flag pour savoir si cette carte doit animer
@@ -169,16 +185,12 @@ Rectangle {
                         // Decider MAINTENANT si c'est une nouvelle carte
                         var isNewCard = currentIndex === currentCount - 1 && currentCount > currentLastCount
 
-                        //console.log("Card " + currentIndex + ": isNewCard=" + isNewCard + " (index=" + currentIndex + ", count=" + currentCount + ", lastCount=" + currentLastCount + ")")
-
                         // Mettre a jour IMMEDIATEMENT pour les prochaines cartes
                         if (isNewCard) {
                             pliArea.lastCardCount = currentCount
-                            //console.log("  -> Updated lastCardCount to " + currentCount)
                         }
 
                         if (isNewCard) {
-                            //console.log("  -> Will ANIMATE (playerId=" + modelData.playerId + ")")
                             // IMPORTANT: Garder willAnimate = false pour le positionnement initial
                             willAnimate = false
                             opacity = 0
@@ -186,7 +198,6 @@ Rectangle {
                             // Lancer l'animation (qui positionnera la carte au bon endroit)
                             animationTimer.start()
                         } else {
-                            //console.log("  -> Will position DIRECTLY")
                             willAnimate = false
 
                             // Carte existante: positionner directement SANS animation
@@ -209,7 +220,6 @@ Rectangle {
                             var cardH = cardInPli.height
                             var areaW = pliArea.width
                             var areaH = pliArea.height
-                            //console.log("Timer: visualPos=" + visualPos + ", pliArea=" + areaW + "x" + areaH + ", card=" + cardW + "x" + cardH)
 
                             // Positionner hors ecran selon la position du joueur
                             switch (visualPos) {
@@ -217,25 +227,21 @@ Rectangle {
                                     cardInPli.x = areaW / 2 - cardW / 2
                                     cardInPli.y = areaH + cardH
                                     cardInPli.rotation = 180
-                                    //console.log("  Starting from BOTTOM: x=" + cardInPli.x + ", y=" + cardInPli.y)
                                     break
                                 case 1: // Ouest - vient de la gauche
                                     cardInPli.x = -cardW * 2
                                     cardInPli.y = areaH / 2 - cardH / 2
                                     cardInPli.rotation = 270
-                                    //console.log("  Starting from LEFT: x=" + cardInPli.x + ", y=" + cardInPli.y)
                                     break
                                 case 2: // Nord - vient du haut
                                     cardInPli.x = areaW / 2 - cardW / 2
                                     cardInPli.y = -cardH * 2
                                     cardInPli.rotation = 180
-                                    //console.log("  Starting from TOP: x=" + cardInPli.x + ", y=" + cardInPli.y)
                                     break
                                 case 3: // Est - vient de la droite
                                     cardInPli.x = areaW + cardW * 2
                                     cardInPli.y = areaH / 2 - cardH / 2
                                     cardInPli.rotation = -270
-                                    //console.log("  Starting from RIGHT: x=" + cardInPli.x + ", y=" + cardInPli.y)
                                     break
                             }
 
@@ -258,7 +264,6 @@ Rectangle {
                             cardInPli.y = cardInPli.finalY
                             cardInPli.rotation = cardInPli.finalRotation
                             cardInPli.opacity = 1
-                            //console.log("Animating to FINAL: x=" + cardInPli.finalX + ", y=" + cardInPli.finalY + ", rot=" + cardInPli.finalRotation)
                         }
                     }
 
@@ -308,7 +313,7 @@ Rectangle {
             id: playerSouthRow
             anchors.bottom: parent.bottom
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottomMargin: - parent.height * 0.075
+            anchors.bottomMargin: - parent.height * 0.07
             spacing: parent.width * 0.02
             height: rootArea.height * 0.3  // Hauteur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
 
@@ -347,7 +352,7 @@ Rectangle {
 
             Row {
                 id: playerSouth
-                spacing: - rootArea.height * 0.06
+                spacing: - rootArea.height * 0.12
                 Repeater {
                     model: {
                         switch (playerSouthRow.actualPlayerIndex) {
@@ -359,13 +364,14 @@ Rectangle {
                     }
                     Card {
                         width: {
-                            var desiredHeight = rootArea.height * 0.3
+                            var desiredHeight = rootArea.height * 0.35
                             return desiredHeight * cardRatio
                         }
-                        height: rootArea.height * 0.3
+                        height: rootArea.height * 0.35
                         value: model.value
                         suit: model.suit
                         faceUp: model.faceUp
+                        isAtout: model.isAtout
                         isPlayable: gameModel.biddingPhase || gameModel.currentPlayer !== playerSouthRow.actualPlayerIndex || model.isPlayable
                         enabled: !gameModel.biddingPhase && gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
 
@@ -383,54 +389,20 @@ Rectangle {
         // =====================
         // JOUEUR NORD (partenaire)
         // =====================
-        Column {
+        Item {
             id: playerNorthColumn
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.topMargin: - parent.height * 0.09
-            spacing: rootArea.height * 0.005
-            height: rootArea.height * 0.125  // Hauteur fixe pour eviter que playArea change de taille
+            anchors.topMargin: - parent.height * 0.01
+            width: parent.width * 0.5
+            height: rootArea.height * 0.22
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(2)
 
-            Row {
-                id: playerNorth
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: - rootArea.height * 0.05
-                height: rootArea.height * 0.125  // Hauteur minimale pour éviter que l'avatar bouge
-                Repeater {
-                    model: {
-                        switch (playerNorthColumn.actualPlayerIndex) {
-                            case 0: return gameModel.player0Hand
-                            case 1: return gameModel.player1Hand
-                            case 2: return gameModel.player2Hand
-                            case 3: return gameModel.player3Hand
-                        }
-                    }
-                    Card {
-                        width: {
-                            var desiredHeight = rootArea.height * 0.125
-                            return desiredHeight * cardRatio
-                        }
-                        height: rootArea.height * 0.125
-                        value: model.value
-                        suit: model.suit
-                        faceUp: model.faceUp
-                        isPlayable: model.isPlayable
-                        enabled: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex
-
-                        MouseArea {
-                            anchors.fill: parent
-                            enabled: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex && model.isPlayable
-                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                            onClicked: gameModel.playCard(index)
-                        }
-                    }
-                }
-            }
-
-            // Avatar et nom en-dessous des cartes
+            // Avatar et nom en bas (logiquement en premier pour ne pas bouger)
             Column {
+                id: northAvatar
+                anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: rootArea.height * 0.005
 
@@ -460,28 +432,17 @@ Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
             }
-        }
 
-        // =====================
-        // JOUEUR OUEST (adversaire)
-        // =====================
-        Row {
-            id: playerWestRow
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.leftMargin: - parent.width * 0.05
-            spacing: parent.height * 0.008
-            rotation: 0
-            width: rootArea.width * 0.0625 // Largeur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
-
-            property int actualPlayerIndex: rootArea.getActualPlayerIndex(1)
-
-            Column {
-                id: playerWest
-                spacing: - rootArea.height * 0.07
+            // Cartes au-dessus de l'avatar
+            Row {
+                id: playerNorth
+                anchors.bottom: northAvatar.top
+                anchors.bottomMargin: rootArea.height * 0.005
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: - rootArea.height * 0.05
                 Repeater {
                     model: {
-                        switch (playerWestRow.actualPlayerIndex) {
+                        switch (playerNorthColumn.actualPlayerIndex) {
                             case 0: return gameModel.player0Hand
                             case 1: return gameModel.player1Hand
                             case 2: return gameModel.player2Hand
@@ -494,22 +455,38 @@ Rectangle {
                             return desiredHeight * cardRatio
                         }
                         height: rootArea.height * 0.125
-                        rotation: 90
-                        faceUp: model.faceUp
                         value: model.value
                         suit: model.suit
+                        faceUp: model.faceUp
+                        isAtout: model.isAtout
                         isPlayable: model.isPlayable
-                        enabled: gameModel.currentPlayer === playerWestRow.actualPlayerIndex
+                        enabled: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex
 
                         MouseArea {
                             anchors.fill: parent
-                            enabled: gameModel.currentPlayer === playerWestRow.actualPlayerIndex && model.isPlayable
+                            enabled: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex && model.isPlayable
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
                             onClicked: gameModel.playCard(index)
                         }
                     }
                 }
             }
+        }
+
+        // =====================
+        // JOUEUR OUEST (adversaire)
+        // =====================
+        Row {
+            id: playerWestRow
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.leftMargin: parent.width * 0.04
+            spacing: parent.height * 0.008
+            rotation: 0
+            width: rootArea.width * 0.0625 // Largeur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
+            layoutDirection: Qt.RightToLeft  // Inverse l'ordre visuel pour que l'avatar reste fixe
+
+            property int actualPlayerIndex: rootArea.getActualPlayerIndex(1)
 
             // Avatar et nom a droite des cartes
             Column {
@@ -539,9 +516,45 @@ Rectangle {
                     color: gameModel.currentPlayer === playerWestRow.actualPlayerIndex ? "#ffff66" : "white"
                     font.pixelSize: rootArea.height * 0.018
                     font.bold: gameModel.currentPlayer === playerWestRow.actualPlayerIndex
+                    anchors.horizontalCenter: parent.horizontalCenter
                 }
             }
 
+            Column {
+                id: playerWest
+                spacing: - rootArea.height * 0.07
+                Repeater {
+                    model: {
+                        switch (playerWestRow.actualPlayerIndex) {
+                            case 0: return gameModel.player0Hand
+                            case 1: return gameModel.player1Hand
+                            case 2: return gameModel.player2Hand
+                            case 3: return gameModel.player3Hand
+                        }
+                    }
+                    Card {
+                        width: {
+                            var desiredHeight = rootArea.height * 0.125
+                            return desiredHeight * cardRatio
+                        }
+                        height: rootArea.height * 0.125
+                        rotation: 90
+                        faceUp: model.faceUp
+                        value: model.value
+                        suit: model.suit
+                        isAtout: model.isAtout
+                        isPlayable: model.isPlayable
+                        enabled: gameModel.currentPlayer === playerWestRow.actualPlayerIndex
+
+                        MouseArea {
+                            anchors.fill: parent
+                            enabled: gameModel.currentPlayer === playerWestRow.actualPlayerIndex && model.isPlayable
+                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                            onClicked: gameModel.playCard(index)
+                        }
+                    }
+                }
+            }
         }
 
         // =====================
@@ -584,6 +597,7 @@ Rectangle {
                     color: gameModel.currentPlayer === playerEastRow.actualPlayerIndex ? "#ffff66" : "white"
                     font.pixelSize: rootArea.height * 0.018
                     font.bold: gameModel.currentPlayer === playerEastRow.actualPlayerIndex
+                    anchors.horizontalCenter: parent.horizontalCenter
                 }
             }
 
@@ -609,6 +623,7 @@ Rectangle {
                         faceUp: model.faceUp
                         value: model.value
                         suit: model.suit
+                        isAtout: model.isAtout
                         isPlayable: model.isPlayable
                         enabled: gameModel.currentPlayer === playerEastRow.actualPlayerIndex
 
@@ -668,7 +683,7 @@ Rectangle {
             text: "Coinche"
 
             // Dimensions et position
-            width: rootArea.width * 0.10
+            width: rootArea.width * 0.08
             height: rootArea.height * 0.15
             anchors.bottom: parent.bottom
             anchors.right: parent.right
@@ -720,7 +735,7 @@ Rectangle {
             }
 
             onClicked: {
-                console.log("Bouton Coinche cliqué!")
+                console.log("Bouton Coinche clique!")
                 gameModel.coincheBid()
             }
         }
@@ -1157,5 +1172,185 @@ Rectangle {
             }
         }
         }
+
+    // =====================
+    // ANIMATION DE DISTRIBUTION
+    // =====================
+    Repeater {
+        id: distributionAnimation
+        model: {
+            if (gameModel.distributionPhase === 0) return 0
+            // Nombre total de cartes = (cartes par joueur) * 4 joueurs
+            if (gameModel.distributionPhase === 1) return 12  // 3 cartes * 4 joueurs
+            if (gameModel.distributionPhase === 2) return 8   // 2 cartes * 4 joueurs
+            if (gameModel.distributionPhase === 3) return 12  // 3 cartes * 4 joueurs
+            return 0
+        }
+
+        // Une carte animée par itération
+        Item {
+            id: flyingCard
+            width: rootArea.height * 0.2 * 0.7 // Taille de carte
+            height: rootArea.height * 0.2
+            x: rootArea.width  // Démarre hors écran à droite
+            y: rootArea.height / 2
+            z: 1000  // Au-dessus de tout
+
+            // Calculer à quel joueur cette carte est destinée (round-robin)
+            property int targetPlayer: index % 4
+            // Calculer quelle carte c'est pour ce joueur (0, 1, ou 2 pour phase 1/3, ou 0, 1 pour phase 2)
+            property int cardNumber: Math.floor(index / 4)
+            // Décalage dans le temps pour cette carte
+            property int cardDelay: cardNumber * 250  // 150ms entre chaque "tour" de distribution
+
+            Card {
+                anchors.fill: parent
+                faceUp: false  // Toujours face cachée pendant l'animation
+                value: 0
+                suit: 3
+                isPlayable: false
+            }
+
+            // Animation vers chaque joueur (on anime les 4 joueurs en parallèle)
+            ParallelAnimation {
+                id: toNorthAnimation
+                running: false
+                NumberAnimation {
+                    target: flyingCard
+                    property: "x"
+                    to: rootArea.width / 2
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: flyingCard
+                    property: "y"
+                    to: rootArea.height * 0.05
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: flyingCard
+                    property: "opacity"
+                    from: 1
+                    to: 0
+                    duration: 500
+                    easing.type: Easing.InQuad
+                }
+            }
+
+            ParallelAnimation {
+                id: toSouthAnimation
+                running: false
+                NumberAnimation {
+                    target: flyingCard
+                    property: "x"
+                    to: rootArea.width / 2
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: flyingCard
+                    property: "y"
+                    to: rootArea.height * 0.85
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: flyingCard
+                    property: "opacity"
+                    from: 1
+                    to: 0
+                    duration: 500
+                    easing.type: Easing.InQuad
+                }
+            }
+
+            ParallelAnimation {
+                id: toWestAnimation
+                running: false
+                NumberAnimation {
+                    target: flyingCard
+                    property: "x"
+                    to: rootArea.width * 0.05
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: flyingCard
+                    property: "y"
+                    to: rootArea.height / 2
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: flyingCard
+                    property: "opacity"
+                    from: 1
+                    to: 0
+                    duration: 500
+                    easing.type: Easing.InQuad
+                }
+            }
+
+            ParallelAnimation {
+                id: toEastAnimation
+                running: false
+                NumberAnimation {
+                    target: flyingCard
+                    property: "x"
+                    to: rootArea.width * 0.92
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: flyingCard
+                    property: "y"
+                    to: rootArea.height / 2
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: flyingCard
+                    property: "opacity"
+                    from: 1
+                    to: 0
+                    duration: 500
+                    easing.type: Easing.InQuad
+                }
+            }
+
+            // Démarrer l'animation vers le bon joueur après le délai
+            Timer {
+                interval: cardDelay
+                running: gameModel.distributionPhase > 0
+                repeat: false
+                onTriggered: {
+                    // Distribuer selon targetPlayer : 0=Sud, 1=Ouest, 2=Nord, 3=Est
+                    if (targetPlayer === 0) {
+                        toSouthAnimation.start()
+                    } else if (targetPlayer === 1) {
+                        toWestAnimation.start()
+                    } else if (targetPlayer === 2) {
+                        toNorthAnimation.start()
+                    } else {
+                        toEastAnimation.start()
+                    }
+                }
+            }
+
+            Component.onCompleted: {
+                opacity = 0  // Invisible au départ
+            }
+
+            onVisibleChanged: {
+                if (visible) {
+                    opacity = 1
+                    x = rootArea.width
+                    y = rootArea.height / 2
+                }
+            }
+        }
+    }
 }
 

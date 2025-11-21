@@ -14,6 +14,7 @@ Item {
     property bool selected: false
     property bool enabled: true
     property bool isPlayable: true
+    property bool isAtout: false  // Est-ce une carte d'atout ?
 
     // Fonction pour construire le chemin de l'image
     function getCardImagePath() {
@@ -73,7 +74,6 @@ Item {
         Image {
             id: cardFace
             anchors.fill: parent
-            //anchors.margins: 1
             source: root.faceUp ? root.getCardImagePath() : ""
             visible: root.faceUp
             fillMode: Image.PreserveAspectFit
@@ -84,6 +84,16 @@ Item {
                     root.cardRatio = implicitWidth / implicitHeight
                 }
             }
+        }
+
+        // Overlay rose pour les atouts
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 2
+            radius: cardBorder.radius
+            color: "red"  // Rose pâle
+            opacity: root.isAtout && root.faceUp ? 0.2 : 0
+            Behavior on opacity { NumberAnimation { duration: 200 } }
         }
 
 

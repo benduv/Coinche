@@ -31,6 +31,9 @@ public:
     // Définir quelles cartes sont jouables (indices reçus du serveur)
     void setPlayableCards(const QList<int>& playableIndices);
 
+    // Définir la couleur d'atout
+    void setAtoutCouleur(Carte::Couleur atoutCouleur);
+
     // Rafraîchir les données
     void refresh();
 
@@ -47,5 +50,6 @@ private:
     Player* m_player;
     bool m_faceUp;
     QList<int> m_playableIndices;  // Indices des cartes jouables (depuis le serveur)
+    Carte::Couleur m_atoutCouleur;  // Couleur d'atout actuelle
 };
 #endif

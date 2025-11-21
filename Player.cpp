@@ -300,6 +300,24 @@ void Player::sortHand()
     });
 }
 
+void Player::sortHandWithAtout(Carte::Couleur atout)
+{
+    std::sort(m_main.begin(), m_main.end(), [atout](Carte* a, Carte* b) {
+        bool aIsAtout = (a->getCouleur() == atout);
+        bool bIsAtout = (b->getCouleur() == atout);
+
+        // Les atouts viennent en premier
+        if (aIsAtout && !bIsAtout) return true;
+        if (!aIsAtout && bIsAtout) return false;
+
+        // Si les deux sont atouts ou les deux ne sont pas atouts, trier par couleur puis valeur
+        if (a->getCouleur() == b->getCouleur()) {
+            return *a < *b;
+        }
+        return a->getCouleur() < b->getCouleur();
+    });
+}
+
 bool Player::hasCouleur(const Carte::Couleur &couleur) const
 {
     bool haveCouleur = false;

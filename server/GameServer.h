@@ -487,12 +487,18 @@ private:
         }
 
         // Broadcast l'action à tous les joueurs avec les infos de la carte
+        qDebug() << "GameServer - Avant broadcast - Carte:"
+                 << "Valeur:" << static_cast<int>(cartePlayed->getChiffre())
+                 << "Couleur:" << static_cast<int>(cartePlayed->getCouleur());
+
         QJsonObject msg;
         msg["type"] = "cardPlayed";
         msg["playerIndex"] = playerIndex;
         msg["cardIndex"] = cardIndex;
         msg["cardValue"] = static_cast<int>(cartePlayed->getChiffre());
         msg["cardSuit"] = static_cast<int>(cartePlayed->getCouleur());
+
+        qDebug() << "GameServer - Message envoyé:" << msg;
         broadcastToRoom(roomId, msg);
 
         // Si le pli est complet (4 cartes)
@@ -547,6 +553,7 @@ private:
         }
 
         // Ajouter les cartes du pli à l'équipe gagnante et mettre à jour le score de manche
+        // Les cartes sont stockées dans plisTeam1/plisTeam2 dans l'ordre des plis gagnés
         // Équipe 1: joueurs 0 et 2, Équipe 2: joueurs 1 et 3
         if (gagnantIndex == 0 || gagnantIndex == 2) {
             // Équipe 1 gagne le pli
@@ -997,23 +1004,57 @@ private:
         // Réinitialiser les mains des joueurs
         for (auto& player : room->players) {
             // Vider la main actuelle
-            auto main = player->getMain();
-            main.clear();
+            player->clearHand();
         }
 
-        // Réinitialiser et mélanger le deck
-        room->deck = Deck();  // Crée un nouveau deck
-        room->deck.shuffleDeck();
+        // Préparer le deck pour la nouvelle manche
+        if (room->plisTeam1.empty() && room->plisTeam2.empty()) {
+            // Première manche : créer un nouveau deck
+            qDebug() << "GameServer - Première manche : création d'un nouveau deck";
+            room->deck.resetDeck();
+            room->deck.shuffleDeck();
+        } else {
+            // Manche suivante : reconstruire le deck avec les plis des équipes
+            qDebug() << "GameServer - Reconstruction du deck :";
+            qDebug() << "  Équipe 1:" << room->plisTeam1.size() << "cartes";
+            qDebug() << "  Équipe 2:" << room->plisTeam2.size() << "cartes";
 
-        // Redistribuer les cartes (8 cartes par joueur)
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 8; j++) {
-                Carte* carte = room->deck.drawCard();
-                if (carte) {
-                    room->players[i]->addCardToHand(carte);
-                }
+            // Rassembler toutes les cartes : équipe 1 d'abord, puis équipe 2
+            std::vector<Carte*> allCards;
+            for (const auto& pair : room->plisTeam1) {
+                allCards.push_back(pair.second);
             }
-            // Trier la main de chaque joueur pour maintenir la synchronisation avec les clients
+            for (const auto& pair : room->plisTeam2) {
+                allCards.push_back(pair.second);
+            }
+
+            room->deck.rebuildFromCards(allCards);
+
+            // Couper le deck (comme dans la vraie partie)
+            room->deck.cutDeck();
+            qDebug() << "GameServer - Deck coupé";
+        }
+
+        // Redistribuer les cartes en 3-2-3 (méthode réaliste)
+        std::vector<Carte*> main1, main2, main3, main4;
+        room->deck.distribute323(main1, main2, main3, main4);
+
+        // Ajouter les cartes aux mains des joueurs
+        for (Carte* carte : main1) {
+            room->players[0]->addCardToHand(carte);
+        }
+        for (Carte* carte : main2) {
+            room->players[1]->addCardToHand(carte);
+        }
+        for (Carte* carte : main3) {
+            room->players[2]->addCardToHand(carte);
+        }
+        for (Carte* carte : main4) {
+            room->players[3]->addCardToHand(carte);
+        }
+
+        // Trier les mains pour la synchronisation avec les clients
+        for (int i = 0; i < 4; i++) {
             room->players[i]->sortHand();
         }
 

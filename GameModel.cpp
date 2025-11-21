@@ -20,6 +20,7 @@ GameModel::GameModel(QObject *parent)
     , m_showSurcoincheAnimation(false)
     , m_showBeloteAnimation(false)
     , m_showRebeloteAnimation(false)
+    , m_distributionPhase(0)
 {
     // Créer les HandModels vides
     m_player0Hand = new HandModel(this);
@@ -88,9 +89,13 @@ QList<QVariant> GameModel::currentPli() const
         if (cdp.carte) {
             map["value"] = static_cast<int>(cdp.carte->getChiffre());
             map["suit"] = static_cast<int>(cdp.carte->getCouleur());
+            // Vérifier si c'est un atout
+            map["isAtout"] = (m_lastBidCouleur != Carte::COULEURINVALIDE &&
+                             cdp.carte->getCouleur() == m_lastBidCouleur);
         } else {
             map["value"] = -1;
             map["suit"] = -1;
+            map["isAtout"] = false;
         }
         pliList.append(map);
     }
@@ -202,14 +207,19 @@ bool GameModel::showRebeloteAnimation() const
 QList<QVariant> GameModel::lastPliCards() const
 {
     QList<QVariant> result;
-    for (const CarteDuPli& cdp : m_lastPliCards) {
+    for (const CarteDuPliSauvegardee& cdp : m_lastPliCards) {
         QVariantMap cardInfo;
         cardInfo["playerId"] = cdp.playerId;
-        cardInfo["value"] = static_cast<int>(cdp.carte->getChiffre());
-        cardInfo["suit"] = static_cast<int>(cdp.carte->getCouleur());
+        cardInfo["value"] = static_cast<int>(cdp.chiffre);
+        cardInfo["suit"] = static_cast<int>(cdp.couleur);
         result.append(cardInfo);
     }
     return result;
+}
+
+int GameModel::distributionPhase() const
+{
+    return m_distributionPhase;
 }
 
 void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents)
@@ -217,56 +227,48 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
     qDebug() << "Initialisation partie online - Position:" << myPosition;
     qDebug() << "Nombre de cartes reçues:" << myCards.size();
     qDebug() << "Nombre d'adversaires:" << opponents.size();
-    
+
     m_myPosition = myPosition;
-    
+
     // Nettoyer les anciens joueurs si existants
     qDeleteAll(m_onlinePlayers);
     m_onlinePlayers.clear();
-    
-    // Créer les cartes du joueur local
-    std::vector<Carte*> cartes;
+
+    // Créer les cartes du joueur local (sans les ajouter encore)
+    std::vector<Carte*> myNewCartes;
     for (const QJsonValue& val : myCards) {
         QJsonObject cardObj = val.toObject();
         Carte* carte = new Carte(
             static_cast<Carte::Couleur>(cardObj["suit"].toInt()),
             static_cast<Carte::Chiffre>(cardObj["value"].toInt())
         );
-        cartes.push_back(carte);
+        myNewCartes.push_back(carte);
     }
-    
-    // Créer le joueur local
-    Player* localPlayer = new Player("Moi", cartes, myPosition);
-    localPlayer->sortHand();
+
+    // Créer le joueur local avec une main vide initialement
+    Player* localPlayer = new Player("Moi", std::vector<Carte*>(), myPosition);
     m_onlinePlayers.append(localPlayer);
-    
-    qDebug() << "Joueur local créé avec" << localPlayer->getMain().size() << "cartes";
-    
+
+    qDebug() << "Joueur local créé (main vide pour animation)";
+
     // Associer à la bonne HandModel selon la position
     HandModel* myHand = getHandModelByPosition(myPosition);
     if (myHand) {
         myHand->setPlayer(localPlayer, true);  // Face visible
         qDebug() << "Main du joueur associée à HandModel position" << myPosition;
     }
-    
-    // Créer des joueurs "fantômes" pour les adversaires
+
+    // Créer des joueurs "fantômes" pour les adversaires (mains vides initialement)
     for (const QJsonValue& val : opponents) {
         QJsonObject oppObj = val.toObject();
         int position = oppObj["position"].toInt();
-        int cardCount = oppObj["cardCount"].toInt();
         QString name = oppObj["name"].toString();
-        
-        qDebug() << "Création adversaire:" << name << "position:" << position << "cartes:" << cardCount;
-        
-        // Créer des cartes "cachées" (factices)
-        std::vector<Carte*> dummyCards;
-        for (int i = 0; i < cardCount; i++) {
-            dummyCards.push_back(new Carte(Carte::COEUR, Carte::SEPT));
-        }
-        
-        Player* opponent = new Player(name.toStdString(), dummyCards, position);
+
+        qDebug() << "Création adversaire:" << name << "position:" << position;
+
+        Player* opponent = new Player(name.toStdString(), std::vector<Carte*>(), position);
         m_onlinePlayers.append(opponent);
-        
+
         HandModel* oppHand = getHandModelByPosition(position);
         if (oppHand) {
             oppHand->setPlayer(opponent, false);  // Face cachée
@@ -275,14 +277,45 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
 
     m_biddingPhase = true;
     m_biddingPlayer = 0; // Supposons que le joueur 0 commence  la partie
-    m_currentPlayer = m_biddingPlayer; 
+    m_currentPlayer = m_biddingPlayer;
     emit currentPlayerChanged();
     emit biddingPhaseChanged();
     emit biddingPlayerChanged();
-    
+
     emit myPositionChanged();
-    emit gameInitialized();
-    
+
+    // Animation de distribution 3-2-3
+    qDebug() << "Animation de distribution 3-2-3 démarrée (debut de partie)";
+
+    // Phase 1 : 3 cartes (apres 250ms)
+    QTimer::singleShot(250, this, [this, myNewCartes]() {
+        m_distributionPhase = 1;
+        emit distributionPhaseChanged();
+        distributeCards(0, 3, myNewCartes);
+
+        // Phase 2 : 2 cartes (après 1000ms supplémentaires)
+        QTimer::singleShot(1000, this, [this, myNewCartes]() {
+            m_distributionPhase = 2;
+            emit distributionPhaseChanged();
+            distributeCards(3, 5, myNewCartes);
+
+            // Phase 3 : 3 cartes (après 1000ms supplémentaires)
+            QTimer::singleShot(1000 , this, [this, myNewCartes]() {
+                m_distributionPhase = 3;
+                emit distributionPhaseChanged();
+                distributeCards(5, 8, myNewCartes);
+
+                // Fin de distribution (après 1000ms supplémentaires)
+                QTimer::singleShot(1000, this, [this]() {
+                    m_distributionPhase = 0;
+                    emit distributionPhaseChanged();
+                    qDebug() << "Partie initialisée - Distribution terminée";
+                    emit gameInitialized();
+                });
+            });
+        });
+    });
+
     qDebug() << "Partie initialisée avec" << m_onlinePlayers.size() << "joueurs";
 }
 
@@ -382,6 +415,23 @@ void GameModel::updateGameState(const QJsonObject& state)
                 m_currentPli.clear();
                 emit currentPliChanged();
                 qDebug() << "Début de la phase de jeu!";
+
+                // Re-trier les cartes avec l'atout en premier (ordre croissant)
+                if (m_lastBidCouleur != Carte::COULEURINVALIDE) {
+                    // Mettre à jour la couleur d'atout pour tous les HandModels
+                    m_player0Hand->setAtoutCouleur(m_lastBidCouleur);
+                    m_player1Hand->setAtoutCouleur(m_lastBidCouleur);
+                    m_player2Hand->setAtoutCouleur(m_lastBidCouleur);
+                    m_player3Hand->setAtoutCouleur(m_lastBidCouleur);
+                    qDebug() << "Re-tri des cartes avec atout:" << static_cast<int>(m_lastBidCouleur);
+                    Player* localPlayer = getPlayerByPosition(m_myPosition);
+                    if (localPlayer) {
+                        //localPlayer->sortHandWithAtout(m_lastBidCouleur);
+                        localPlayer->sortHand();
+                        HandModel* hand = getHandModelByPosition(m_myPosition);
+                        if (hand) hand->refresh();
+                    }
+                }
 
                 // Masquer toutes les animations Coinche/Surcoinche
                 m_showCoincheAnimation = false;
@@ -605,9 +655,21 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             qDebug() << "Nettoyage du pli";
 
             // Sauvegarder le pli courant comme dernier pli avant de le nettoyer
-            m_lastPliCards = m_currentPli;
+            // On copie les VALEURS des cartes, pas les pointeurs
+            m_lastPliCards.clear();
+            for (const CarteDuPli& cdp : m_currentPli) {
+                CarteDuPliSauvegardee saved;
+                saved.playerId = cdp.playerId;
+                saved.chiffre = cdp.carte->getChiffre();
+                saved.couleur = cdp.carte->getCouleur();
+                m_lastPliCards.append(saved);
+            }
             emit lastPliCardsChanged();
 
+            // Libérer la mémoire des cartes créées pour le pli
+            for (const CarteDuPli& cdp : m_currentPli) {
+                delete cdp.carte;
+            }
             m_currentPli.clear();
             emit currentPliChanged();
         });
@@ -659,6 +721,9 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         qDebug() << "  Nouvelles cartes:" << myCards.size();
 
         // Nettoyer le pli en cours
+        for (const CarteDuPli& cdp : m_currentPli) {
+            delete cdp.carte;
+        }
         m_currentPli.clear();
         emit currentPliChanged();
 
@@ -675,53 +740,101 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         emit lastBidChanged();
         emit lastBidderIndexChanged();
 
-        // Mettre à jour TOUS les joueurs
+        // Vider les mains d'abord
         for (int i = 0; i < 4; i++) {
             Player* player = getPlayerByPosition(i);
-            if (!player) continue;
-
-            // Vider la main actuelle
-            std::vector<Carte*> main = player->getMain();
-            main.clear();
-
-            if (i == m_myPosition) {
-                // Pour le joueur local: ajouter ses vraies cartes
-                std::vector<Carte*> newCartes;
-                for (const QJsonValue& val : myCards) {
-                    QJsonObject cardObj = val.toObject();
-                    Carte* carte = new Carte(
-                        static_cast<Carte::Couleur>(cardObj["suit"].toInt()),
-                        static_cast<Carte::Chiffre>(cardObj["value"].toInt())
-                    );
-                    newCartes.push_back(carte);
-                }
-
-                // Remplacer la main
-                for (Carte* carte : newCartes) {
-                    player->addCardToHand(carte);
-                }
-
-                // Trier la main
-                player->sortHand();
-            } else {
-                // Pour les autres joueurs: ajouter 8 cartes fantomes
-                for (int j = 0; j < 8; j++) {
-                    Carte* phantomCard = new Carte(
-                        Carte::COEUR,  // Couleur arbitraire
-                        Carte::SEPT    // Valeur arbitraire
-                    );
-                    player->addCardToHand(phantomCard);
-                }
-            }
-
-            // Rafraîchir l'affichage de tous les joueurs
-            HandModel* hand = getHandModelByPosition(i);
-            if (hand) {
-                hand->refresh();
+            if (player) {
+                player->clearHand();
+                HandModel* hand = getHandModelByPosition(i);
+                if (hand) hand->refresh();
             }
         }
 
-        qDebug() << "Nouvelle manche initialisee - Toutes les mains rafraichies";
+        // Préparer les cartes pour la distribution progressive
+        std::vector<Carte*> myNewCartes;
+        for (const QJsonValue& val : myCards) {
+            QJsonObject cardObj = val.toObject();
+            Carte* carte = new Carte(
+                static_cast<Carte::Couleur>(cardObj["suit"].toInt()),
+                static_cast<Carte::Chiffre>(cardObj["value"].toInt())
+            );
+            myNewCartes.push_back(carte);
+        }
+
+        // Animation de distribution 3-2-3
+        qDebug() << "Animation de distribution 3-2-3 démarrée";
+
+        // Phase 1 : 3 cartes (apres 250ms)
+    QTimer::singleShot(250, this, [this, myNewCartes]() {
+        m_distributionPhase = 1;
+        emit distributionPhaseChanged();
+        distributeCards(0, 3, myNewCartes);
+
+        // Phase 2 : 2 cartes (après 1000ms supplémentaires)
+        QTimer::singleShot(1000, this, [this, myNewCartes]() {
+            m_distributionPhase = 2;
+            emit distributionPhaseChanged();
+            distributeCards(3, 5, myNewCartes);
+
+            // Phase 3 : 3 cartes (après 1000ms supplémentaires)
+            QTimer::singleShot(1000 , this, [this, myNewCartes]() {
+                m_distributionPhase = 3;
+                emit distributionPhaseChanged();
+                distributeCards(5, 8, myNewCartes);
+
+                // Fin de distribution (après 1000ms supplémentaires)
+                QTimer::singleShot(1000, this, [this]() {
+                    m_distributionPhase = 0;
+                    emit distributionPhaseChanged();
+                    qDebug() << "Partie initialisée - Distribution terminée";
+                    emit gameInitialized();
+                });
+            });
+        });
+    });
+
+    }
+}
+
+void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Carte*>& myCards)
+{
+    qDebug() << "Distribution cartes" << startIdx << "à" << (endIdx - 1);
+
+    Player* localPlayer = getPlayerByPosition(m_myPosition);
+    if (!localPlayer) return;
+
+    // Distribuer les cartes une par une avec un délai
+    int numCards = endIdx - startIdx;
+    for (int cardOffset = 0; cardOffset < numCards; cardOffset++) {
+        int cardIndex = startIdx + cardOffset;
+        int delay = cardOffset * 250;  // 150ms entre chaque carte
+
+        // Distribuer au joueur local (avec délai)
+        QTimer::singleShot(delay, this, [this, localPlayer, cardIndex, myCards]() {
+            if (cardIndex < static_cast<int>(myCards.size())) {
+                localPlayer->addCardToHand(myCards[cardIndex]);
+                localPlayer->sortHand();
+
+                HandModel* hand = getHandModelByPosition(m_myPosition);
+                if (hand) hand->refresh();
+            }
+        });
+
+        // Distribuer cartes fantômes aux autres joueurs (avec même délai)
+        for (int playerPos = 0; playerPos < 4; playerPos++) {
+            if (playerPos == m_myPosition) continue;
+
+            QTimer::singleShot(delay, this, [this, playerPos]() {
+                Player* player = getPlayerByPosition(playerPos);
+                if (player) {
+                    Carte* phantomCard = new Carte(Carte::COEUR, Carte::SEPT);
+                    player->addCardToHand(phantomCard);
+
+                    HandModel* hand = getHandModelByPosition(playerPos);
+                    if (hand) hand->refresh();
+                }
+            });
+        }
     }
 }
 
