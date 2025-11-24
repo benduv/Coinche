@@ -39,6 +39,31 @@ Rectangle {
         return avatars[actualPlayerIndex]
     }
 
+    // Obtenir la valeur de l'annonce d'un joueur (80, 90, Passe, etc.)
+    function getPlayerBidValue(actualPlayerIndex) {
+        if (actualPlayerIndex >= 0 && actualPlayerIndex < gameModel.playerBids.length) {
+            return gameModel.playerBids[actualPlayerIndex].bidValue || ""
+        }
+        return ""
+    }
+
+    // Obtenir le symbole de la couleur de l'annonce
+    function getPlayerBidSymbol(actualPlayerIndex) {
+        if (actualPlayerIndex >= 0 && actualPlayerIndex < gameModel.playerBids.length) {
+            return gameModel.playerBids[actualPlayerIndex].suitSymbol || ""
+        }
+        return ""
+    }
+
+    // Obtenir la couleur du symbole (rouge pour coeur/carreau, blanc sinon)
+    function getPlayerBidSymbolColor(actualPlayerIndex) {
+        if (actualPlayerIndex >= 0 && actualPlayerIndex < gameModel.playerBids.length) {
+            var isRed = gameModel.playerBids[actualPlayerIndex].isRed || false
+            return isRed ? "#ff6666" : "black"
+        }
+        return "white"
+    }
+
     // =====================
     // ZONE CENTRALE DE JEU
     // =====================
@@ -107,6 +132,7 @@ Rectangle {
             anchors.fill: parent
             anchors.margins: parent.width * 0.09
             visible: gameModel.biddingPhase &&
+                     gameModel.distributionPhase === 0 &&    // Attendre fin de distribution
                      gameModel.biddingPlayer === gameModel.myPosition &&
                      !gameModel.showCoincheAnimation &&      // Masquer si animation Coinche
                      !gameModel.showSurcoincheAnimation &&   // Masquer si animation Surcoinche
@@ -319,34 +345,68 @@ Rectangle {
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(0)
 
-            // Avatar et nom à gauche du jeu
-            Column {
+            // Avatar, nom et annonce a gauche du jeu
+            Row {
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: rootArea.height * 0.005
+                spacing: rootArea.width * 0.01
 
-                Rectangle {
-                    width: rootArea.width * 0.075
-                    height: rootArea.width * 0.075
-                    radius: width / 2
-                    color: "#f0f0f0"
-                    border.color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "#888888"
-                    border.width: 3
+                Column {
+                    spacing: rootArea.height * 0.005
 
-                    Image {
-                        anchors.fill: parent
-                        anchors.margins: parent.width * 0.1
-                        source: rootArea.getPlayerAvatar(playerSouthRow.actualPlayerIndex)
-                        fillMode: Image.PreserveAspectFit
-                        smooth: true
+                    Rectangle {
+                        width: rootArea.width * 0.075
+                        height: rootArea.width * 0.075
+                        radius: width / 2
+                        color: "#f0f0f0"
+                        border.color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "#888888"
+                        border.width: 3
+
+                        Image {
+                            anchors.fill: parent
+                            anchors.margins: parent.width * 0.1
+                            source: rootArea.getPlayerAvatar(playerSouthRow.actualPlayerIndex)
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                        }
+                    }
+
+                    Text {
+                        text: rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
+                        color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "white"
+                        font.pixelSize: rootArea.height * 0.02
+                        font.bold: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
+                        anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
 
-                Text {
-                    text: rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
-                    color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "white"
-                    font.pixelSize: rootArea.height * 0.02
-                    font.bold: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
-                    anchors.horizontalCenter: parent.horizontalCenter
+                // Indicateur d'annonce (a droite)
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: bidRowSouth.width + rootArea.width * 0.02
+                    height: rootArea.height * 0.04
+                    radius: height / 4
+                    color: "#2a5a2a"
+                    border.color: "#4a8a4a"
+                    border.width: 1
+                    opacity: 0.4
+                    visible: rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) !== ""
+
+                    Row {
+                        id: bidRowSouth
+                        anchors.centerIn: parent
+                        Text {
+                            text: rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex)
+                            color: "white"
+                            font.pixelSize: rootArea.height * 0.025
+                            font.bold: true
+                        }
+                        Text {
+                            text: rootArea.getPlayerBidSymbol(playerSouthRow.actualPlayerIndex)
+                            color: rootArea.getPlayerBidSymbolColor(playerSouthRow.actualPlayerIndex)
+                            font.pixelSize: rootArea.height * 0.025
+                            font.bold: true
+                        }
+                    }
                 }
             }
 
@@ -399,37 +459,71 @@ Rectangle {
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(2)
 
-            // Avatar et nom en bas (logiquement en premier pour ne pas bouger)
-            Column {
+            // Avatar, nom et annonce en bas
+            Row {
                 id: northAvatar
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: rootArea.height * 0.005
+                spacing: rootArea.width * 0.01
 
-                Rectangle {
-                    width: rootArea.width * 0.075
-                    height: rootArea.width * 0.075
-                    radius: width / 2
-                    color: "#f0f0f0"
-                    border.color: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex ? "#ffff66" : "#888888"
-                    border.width: 2
-                    anchors.horizontalCenter: parent.horizontalCenter
+                Column {
+                    spacing: rootArea.height * 0.005
 
-                    Image {
-                        anchors.fill: parent
-                        anchors.margins: parent.width * 0.1
-                        source: rootArea.getPlayerAvatar(playerNorthColumn.actualPlayerIndex)
-                        fillMode: Image.PreserveAspectFit
-                        smooth: true
+                    Rectangle {
+                        width: rootArea.width * 0.075
+                        height: rootArea.width * 0.075
+                        radius: width / 2
+                        color: "#f0f0f0"
+                        border.color: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex ? "#ffff66" : "#888888"
+                        border.width: 2
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        Image {
+                            anchors.fill: parent
+                            anchors.margins: parent.width * 0.1
+                            source: rootArea.getPlayerAvatar(playerNorthColumn.actualPlayerIndex)
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                        }
+                    }
+
+                    Text {
+                        text: rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex)
+                        color: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex ? "#ffff66" : "white"
+                        font.pixelSize: rootArea.height * 0.018
+                        font.bold: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex
+                        anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
 
-                Text {
-                    text: rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex)
-                    color: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex ? "#ffff66" : "white"
-                    font.pixelSize: rootArea.height * 0.018
-                    font.bold: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex
-                    anchors.horizontalCenter: parent.horizontalCenter
+                // Indicateur d'annonce (a droite)
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: bidRowNorth.width + rootArea.width * 0.02
+                    height: rootArea.height * 0.035
+                    radius: height / 4
+                    color: "#2a5a2a"
+                    border.color: "#4a8a4a"
+                    border.width: 1
+                    opacity: 0.4
+                    visible: rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) !== ""
+
+                    Row {
+                        id: bidRowNorth
+                        anchors.centerIn: parent
+                        Text {
+                            text: rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex)
+                            color: "white"
+                            font.pixelSize: rootArea.height * 0.02
+                            font.bold: true
+                        }
+                        Text {
+                            text: rootArea.getPlayerBidSymbol(playerNorthColumn.actualPlayerIndex)
+                            color: rootArea.getPlayerBidSymbolColor(playerNorthColumn.actualPlayerIndex)
+                            font.pixelSize: rootArea.height * 0.02
+                            font.bold: true
+                        }
+                    }
                 }
             }
 
@@ -488,7 +582,7 @@ Rectangle {
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(1)
 
-            // Avatar et nom a droite des cartes
+            // Avatar, nom et annonce a droite des cartes
             Column {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: rootArea.height * 0.005
@@ -517,6 +611,36 @@ Rectangle {
                     font.pixelSize: rootArea.height * 0.018
                     font.bold: gameModel.currentPlayer === playerWestRow.actualPlayerIndex
                     anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                // Indicateur d'annonce (en dessous)
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: bidRowWest.width + rootArea.width * 0.015
+                    height: rootArea.height * 0.03
+                    radius: height / 4
+                    color: "#2a5a2a"
+                    border.color: "#4a8a4a"
+                    border.width: 1
+                    opacity: 0.4
+                    visible: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) !== ""
+
+                    Row {
+                        id: bidRowWest
+                        anchors.centerIn: parent
+                        Text {
+                            text: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex)
+                            color: "white"
+                            font.pixelSize: rootArea.height * 0.018
+                            font.bold: true
+                        }
+                        Text {
+                            text: rootArea.getPlayerBidSymbol(playerWestRow.actualPlayerIndex)
+                            color: rootArea.getPlayerBidSymbolColor(playerWestRow.actualPlayerIndex)
+                            font.pixelSize: rootArea.height * 0.018
+                            font.bold: true
+                        }
+                    }
                 }
             }
 
@@ -598,6 +722,36 @@ Rectangle {
                     font.pixelSize: rootArea.height * 0.018
                     font.bold: gameModel.currentPlayer === playerEastRow.actualPlayerIndex
                     anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                // Indicateur d'annonce (en dessous)
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: bidRowEast.width + rootArea.width * 0.02
+                    height: rootArea.height * 0.04
+                    radius: height / 4
+                    color: "#2a5a2a"
+                    border.color: "#4a8a4a"
+                    border.width: 1
+                    opacity: 0.4
+                    visible: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) !== ""
+
+                    Row {
+                        id: bidRowEast
+                        anchors.centerIn: parent
+                        Text {
+                            text: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex)
+                            color: "white"
+                            font.pixelSize: rootArea.height * 0.025
+                            font.bold: true
+                        }
+                        Text {
+                            text: rootArea.getPlayerBidSymbol(playerEastRow.actualPlayerIndex)
+                            color: rootArea.getPlayerBidSymbolColor(playerEastRow.actualPlayerIndex)
+                            font.pixelSize: rootArea.height * 0.025
+                            font.bold: true
+                        }
+                    }
                 }
             }
 

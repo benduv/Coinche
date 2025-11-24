@@ -271,8 +271,6 @@ private:
                         room->players[i]->addCardToHand(carte);
                     }
                 }
-                // Trier la main de chaque joueur pour maintenir la synchronisation avec les clients
-                room->players[i]->sortHand();
             }
 
             m_gameRooms[roomId] = room;  // Stock le pointeur
@@ -1053,11 +1051,6 @@ private:
             room->players[3]->addCardToHand(carte);
         }
 
-        // Trier les mains pour la synchronisation avec les clients
-        for (int i = 0; i < 4; i++) {
-            room->players[i]->sortHand();
-        }
-
         // Réinitialiser l'état de la partie pour les enchères
         room->gameState = "bidding";
         room->passedBidsCount = 0;
@@ -1085,7 +1078,7 @@ private:
         GameRoom* room = m_gameRooms.value(roomId);
         if (!room) return;
 
-        qDebug() << "Envoi des notifications de nouvelle manche à" << room->connectionIds.size() << "joueurs";
+        qDebug() << "Envoi des notifications de nouvelle manche a" << room->connectionIds.size() << "joueurs";
 
         for (int i = 0; i < room->connectionIds.size(); i++) {
             PlayerConnection *conn = m_connections[room->connectionIds[i]];
@@ -1152,7 +1145,7 @@ private:
             room->coinched = true;
             qDebug() << "GameServer - Joueur" << playerIndex << "COINCHE l'enchère!";
 
-            // Broadcast le COINCHE
+            // Broadcast COINCHE
             QJsonObject msg;
             msg["type"] = "bidMade";
             msg["playerIndex"] = playerIndex;
@@ -1166,9 +1159,9 @@ private:
         }
 
         if (annonce == Player::SURCOINCHE) {
-            // Vérifier qu'un COINCHE a été annoncé
+            // Vérifie que COINCHE a été annoncé
             if (!room->coinched) {
-                qDebug() << "GameServer - SURCOINCHE impossible: aucun COINCHE en cours";
+                qDebug() << "GameServer - SURCOINCHE impossible: aucune COINCHE en cours";
                 return;
             }
 
@@ -1191,7 +1184,7 @@ private:
             timeoutMsg["type"] = "surcoincheTimeout";
             broadcastToRoom(roomId, timeoutMsg);
 
-            // Broadcast le SURCOINCHE
+            // Broadcast la SURCOINCHE
             QJsonObject msg;
             msg["type"] = "bidMade";
             msg["playerIndex"] = playerIndex;
@@ -1206,7 +1199,7 @@ private:
                 if (!room) return;
 
                 // Fin des enchères, lancement phase de jeu
-                qDebug() << "GameServer - SURCOINCHE annoncé! Fin des enchères, lancement phase de jeu";
+                qDebug() << "GameServer - SURCOINCHE annoncé! Fin des encheres, lancement phase de jeu";
                 for (int i = 0; i < 4; i++) {
                     room->players[i]->setAtout(room->lastBidCouleur);
                 }
@@ -1236,13 +1229,17 @@ private:
         msg["suit"] = suit;
         broadcastToRoom(roomId, msg);
 
-        // Vérifie si phase d'enchères terminée
+        // Verifie si phase d'encheres terminee
         if (room->passedBidsCount >= 3 && room->lastBidAnnonce != Player::ANNONCEINVALIDE) {
             qDebug() << "GameServer - Fin des encheres! Lancement phase de jeu";
             for (int i = 0; i < 4; i++) {
                 room->players[i]->setAtout(room->lastBidCouleur);
             }
             startPlayingPhase(roomId);
+        } else if (room->passedBidsCount >= 4 && room->lastBidAnnonce == Player::ANNONCEINVALIDE) {
+            // Tous les joueurs ont passe sans annonce -> nouvelle manche
+            qDebug() << "GameServer - Tous les joueurs ont passe! Nouvelle manche";
+            startNewManche(roomId);
         } else {
             // Passe au joueur suivant
             room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
@@ -1345,6 +1342,11 @@ private:
         room->couleurAtout = room->lastBidCouleur;
         // Le joueur qui a commencé les enchères joue en premier
         room->currentPlayerIndex = room->firstPlayerIndex;
+
+        // Tri des cartes apres avoir defini l'atout
+        for (int i = 0; i < 4; i++) {
+            room->players[i]->sortHand();
+        }
 
         qDebug() << "Phase de jeu demarree - Atout:" << static_cast<int>(room->couleurAtout)
                  << "Premier joueur:" << room->currentPlayerIndex

@@ -88,7 +88,7 @@ int Carte::getOrdreCarteForte() const
             value = 2;
         else if (m_chiffre == ROI)
             value = 3;
-        else if (m_chiffre == 10)
+        else if (m_chiffre == DIX)
             value = 4;
         else if (m_chiffre == AS)
             value = 5;

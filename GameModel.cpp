@@ -27,6 +27,15 @@ GameModel::GameModel(QObject *parent)
     m_player1Hand = new HandModel(this);
     m_player2Hand = new HandModel(this);
     m_player3Hand = new HandModel(this);
+
+    // Initialiser les annonces des joueurs (4 joueurs, tous vides au depart)
+    for (int i = 0; i < 4; i++) {
+        QVariantMap bid;
+        bid["value"] = 0;
+        bid["suit"] = -1;
+        bid["text"] = "";
+        m_playerBids.append(bid);
+    }
     
     qDebug() << "GameModel créé en mode online";
 }
@@ -222,6 +231,15 @@ int GameModel::distributionPhase() const
     return m_distributionPhase;
 }
 
+QList<QVariant> GameModel::playerBids() const
+{
+    QList<QVariant> result;
+    for (const QVariantMap& bid : m_playerBids) {
+        result.append(bid);
+    }
+    return result;
+}
+
 void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents)
 {
     qDebug() << "Initialisation partie online - Position:" << myPosition;
@@ -275,8 +293,13 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         }
     }
 
+    // Marquer la distribution comme en cours AVANT de changer biddingPhase
+    // pour eviter que l'AnnoncesPanel s'affiche brievement
+    m_distributionPhase = 1;
+    emit distributionPhaseChanged();
+
     m_biddingPhase = true;
-    m_biddingPlayer = 0; // Supposons que le joueur 0 commence  la partie
+    m_biddingPlayer = 0; // Supposons que le joueur 0 commence la partie
     m_currentPlayer = m_biddingPlayer;
     emit currentPlayerChanged();
     emit biddingPhaseChanged();
@@ -285,12 +308,10 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
     emit myPositionChanged();
 
     // Animation de distribution 3-2-3
-    qDebug() << "Animation de distribution 3-2-3 démarrée (debut de partie)";
+    qDebug() << "Animation de distribution 3-2-3 demarree (debut de partie)";
 
     // Phase 1 : 3 cartes (apres 250ms)
     QTimer::singleShot(250, this, [this, myNewCartes]() {
-        m_distributionPhase = 1;
-        emit distributionPhaseChanged();
         distributeCards(0, 3, myNewCartes);
 
         // Phase 2 : 2 cartes (après 1000ms supplémentaires)
@@ -387,7 +408,7 @@ void GameModel::surcoincheBid()
 
 void GameModel::updateGameState(const QJsonObject& state)
 {
-    qDebug() << "Mise à jour état du jeu:" << state;
+    qDebug() << "Mise a jour etat du jeu:" << state;
 
     // Mettre à jour l'état global
     if (state.contains("currentPlayer")) {
@@ -395,7 +416,7 @@ void GameModel::updateGameState(const QJsonObject& state)
         if (m_currentPlayer != newCurrentPlayer) {
             m_currentPlayer = newCurrentPlayer;
             emit currentPlayerChanged();
-            qDebug() << "Joueur actuel changé:" << m_currentPlayer;
+            qDebug() << "Joueur actuel change:" << m_currentPlayer;
         }
     }
 
@@ -414,7 +435,7 @@ void GameModel::updateGameState(const QJsonObject& state)
             if (!m_biddingPhase) {
                 m_currentPli.clear();
                 emit currentPliChanged();
-                qDebug() << "Début de la phase de jeu!";
+                qDebug() << "Debut de la phase de jeu!";
 
                 // Re-trier les cartes avec l'atout en premier (ordre croissant)
                 if (m_lastBidCouleur != Carte::COULEURINVALIDE) {
@@ -426,7 +447,10 @@ void GameModel::updateGameState(const QJsonObject& state)
                     qDebug() << "Re-tri des cartes avec atout:" << static_cast<int>(m_lastBidCouleur);
                     Player* localPlayer = getPlayerByPosition(m_myPosition);
                     if (localPlayer) {
-                        //localPlayer->sortHandWithAtout(m_lastBidCouleur);
+                        // Marquer les cartes d'atout avant le tri
+                        for (Carte* carte : localPlayer->getMain()) {
+                            carte->setAtout(carte->getCouleur() == m_lastBidCouleur);
+                        }
                         localPlayer->sortHand();
                         HandModel* hand = getHandModelByPosition(m_myPosition);
                         if (hand) hand->refresh();
@@ -546,11 +570,58 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
     } else if (action == "makeBid") {
         QJsonObject bidData = data.toJsonObject();
         Player::Annonce annonce = static_cast<Player::Annonce>(bidData["value"].toInt());
+        int suit = bidData["suit"].toInt();
 
-        // Mettre à jour l'affichage de la dernière enchère pour l'UI
+        // Stocker l'annonce du joueur pour l'affichage (sauf Coinche/Surcoinche)
+        if (playerIndex >= 0 && playerIndex < 4) {
+            QVariantMap bid;
+            bid["value"] = static_cast<int>(annonce);
+            bid["suit"] = suit;
+
+            // Construire le texte de l'annonce (separe en valeur et symbole)
+            QString bidValue = "";
+            QString suitSymbol = "";
+            if (annonce == Player::PASSE) {
+                bidValue = "Passe";
+            } else if (annonce != Player::ANNONCEINVALIDE && annonce != Player::COINCHE && annonce != Player::SURCOINCHE) {
+                // Convertir la valeur de l'annonce en texte
+                switch (annonce) {
+                    case Player::QUATREVINGT: bidValue = "80"; break;
+                    case Player::QUATREVINGTDIX: bidValue = "90"; break;
+                    case Player::CENT: bidValue = "100"; break;
+                    case Player::CENTDIX: bidValue = "110"; break;
+                    case Player::CENTVINGT: bidValue = "120"; break;
+                    case Player::CENTTRENTE: bidValue = "130"; break;
+                    case Player::CENTQUARANTE: bidValue = "140"; break;
+                    case Player::CENTCINQUANTE: bidValue = "150"; break;
+                    case Player::CENTSOIXANTE: bidValue = "160"; break;
+                    case Player::CAPOT: bidValue = "Capot"; break;
+                    case Player::GENERALE: bidValue = "Generale"; break;
+                    default: bidValue = "?"; break;
+                }
+                // Symbole de la couleur
+                switch (suit) {
+                    case 3: suitSymbol = QString::fromUtf8("\u2665"); break; // Coeur
+                    case 4: suitSymbol = QString::fromUtf8("\u2663"); break; // Trefle
+                    case 5: suitSymbol = QString::fromUtf8("\u2666"); break; // Carreau
+                    case 6: suitSymbol = QString::fromUtf8("\u2660"); break; // Pique
+                }
+            }
+            // Ne pas afficher Coinche/Surcoinche dans l'indicateur
+            if (annonce != Player::COINCHE && annonce != Player::SURCOINCHE) {
+                bid["bidValue"] = bidValue;
+                bid["suitSymbol"] = suitSymbol;
+                // Coeur (3) et Carreau (5) sont rouges, Trefle (4) et Pique (6) sont noirs
+                bid["isRed"] = (suit == 3 || suit == 5);
+                m_playerBids[playerIndex] = bid;
+                emit playerBidsChanged();
+            }
+        }
+
+        // Mettre a jour l'affichage de la derniere enchere pour l'UI
         if (annonce != Player::PASSE && annonce != Player::COINCHE && annonce != Player::SURCOINCHE) {
             m_lastBidAnnonce = annonce;
-            m_lastBidCouleur = static_cast<Carte::Couleur>(bidData["suit"].toInt());
+            m_lastBidCouleur = static_cast<Carte::Couleur>(suit);
             m_lastBidderIndex = playerIndex;
             emit lastBidChanged();
             emit lastBidderIndexChanged();
@@ -727,13 +798,27 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_currentPli.clear();
         emit currentPliChanged();
 
-        // Réinitialiser les enchères
+        // Marquer la distribution comme en cours AVANT de changer biddingPhase
+        // pour eviter que l'AnnoncesPanel s'affiche brievement
+        m_distributionPhase = 1;
+        emit distributionPhaseChanged();
+
+        // Reinitialiser les encheres
         m_biddingPhase = true;
         m_biddingPlayer = biddingPlayer;
         m_currentPlayer = currentPlayer;
         m_lastBidAnnonce = Player::ANNONCEINVALIDE;
         m_lastBidCouleur = Carte::COULEURINVALIDE;
         m_lastBidderIndex = -1;
+
+        // Reinitialiser les annonces de chaque joueur
+        for (int i = 0; i < 4; i++) {
+            m_playerBids[i]["value"] = 0;
+            m_playerBids[i]["suit"] = -1;
+            m_playerBids[i]["text"] = "";
+        }
+        emit playerBidsChanged();
+
         emit biddingPhaseChanged();
         emit biddingPlayerChanged();
         emit currentPlayerChanged();
@@ -807,13 +892,12 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
     int numCards = endIdx - startIdx;
     for (int cardOffset = 0; cardOffset < numCards; cardOffset++) {
         int cardIndex = startIdx + cardOffset;
-        int delay = cardOffset * 250;  // 150ms entre chaque carte
+        int delay = cardOffset * 250;  // 250ms entre chaque carte
 
         // Distribuer au joueur local (avec délai)
         QTimer::singleShot(delay, this, [this, localPlayer, cardIndex, myCards]() {
             if (cardIndex < static_cast<int>(myCards.size())) {
                 localPlayer->addCardToHand(myCards[cardIndex]);
-                localPlayer->sortHand();
 
                 HandModel* hand = getHandModelByPosition(m_myPosition);
                 if (hand) hand->refresh();
@@ -836,6 +920,14 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
             });
         }
     }
+
+    // Trier les cartes APRÈS la dernière carte de cette phase
+    int sortDelay = numCards * 250;  // Après toutes les cartes de cette phase
+    QTimer::singleShot(sortDelay, this, [this, localPlayer]() {
+        localPlayer->sortHand();
+        HandModel* hand = getHandModelByPosition(m_myPosition);
+        if (hand) hand->refresh();
+    });
 }
 
 void GameModel::refreshAllHands()
