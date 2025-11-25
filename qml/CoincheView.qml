@@ -59,7 +59,7 @@ Rectangle {
     function getPlayerBidSymbolColor(actualPlayerIndex) {
         if (actualPlayerIndex >= 0 && actualPlayerIndex < gameModel.playerBids.length) {
             var isRed = gameModel.playerBids[actualPlayerIndex].isRed || false
-            return isRed ? "#ff6666" : "black"
+            return isRed ? "red" : "black"
         }
         return "white"
     }
@@ -335,83 +335,124 @@ Rectangle {
         // =====================
         // JOUEUR SUD (vous)
         // =====================
-        Row {
+        Item {
             id: playerSouthRow
             anchors.bottom: parent.bottom
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottomMargin: - parent.height * 0.07
-            spacing: parent.width * 0.02
+            anchors.bottomMargin: -rootArea.height * 0.03
+            width: parent.width
             height: rootArea.height * 0.3  // Hauteur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(0)
 
-            // Avatar, nom et annonce a gauche du jeu
-            Row {
+            // Avatar, nom et annonce a gauche (position absolue)
+            Column {
+                anchors.left: parent.left
+                anchors.leftMargin: parent.width * 0.1
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: rootArea.width * 0.01
+                spacing: rootArea.height * 0.003
 
-                Column {
-                    spacing: rootArea.height * 0.005
-
-                    Rectangle {
-                        width: rootArea.width * 0.075
-                        height: rootArea.width * 0.075
-                        radius: width / 2
-                        color: "#f0f0f0"
-                        border.color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "#888888"
-                        border.width: 3
-
-                        Image {
-                            anchors.fill: parent
-                            anchors.margins: parent.width * 0.1
-                            source: rootArea.getPlayerAvatar(playerSouthRow.actualPlayerIndex)
-                            fillMode: Image.PreserveAspectFit
-                            smooth: true
-                        }
-                    }
-
-                    Text {
-                        text: rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
-                        color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "white"
-                        font.pixelSize: rootArea.height * 0.02
-                        font.bold: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                }
-
-                // Indicateur d'annonce (a droite)
+                // Indicateur d'annonce (espace toujours reserve)
                 Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: bidRowSouth.width + rootArea.width * 0.02
-                    height: rootArea.height * 0.04
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: Math.max(bidRowSouth.width + rootArea.width * 0.02, rootArea.width * 0.08)
+                    height: rootArea.height * 0.045
                     radius: height / 4
-                    color: "#2a5a2a"
+                    color: "grey"
                     border.color: "#4a8a4a"
                     border.width: 1
-                    opacity: 0.4
-                    visible: rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) !== ""
+                    opacity: {
+                        if (rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "") return 0
+                        if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "Passe") return 0
+                        return 0.75
+                    }
+                    visible: true  // Toujours visible pour reserver l'espace
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 200 }
+                    }
 
                     Row {
                         id: bidRowSouth
                         anchors.centerIn: parent
+                        visible: rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) !== ""
                         Text {
                             text: rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex)
                             color: "white"
-                            font.pixelSize: rootArea.height * 0.025
+                            font.pixelSize: rootArea.height * 0.04
                             font.bold: true
                         }
                         Text {
                             text: rootArea.getPlayerBidSymbol(playerSouthRow.actualPlayerIndex)
                             color: rootArea.getPlayerBidSymbolColor(playerSouthRow.actualPlayerIndex)
-                            font.pixelSize: rootArea.height * 0.025
+                            font.pixelSize: rootArea.height * 0.045
                             font.bold: true
                         }
                     }
                 }
+
+                // Jauge de temps (visible uniquement pour le joueur courant)
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: rootArea.width * 0.075
+                    height: rootArea.height * 0.01
+                    color: "#333333"
+                    radius: height / 2
+                    visible: !gameModel.biddingPhase && gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
+
+                    Rectangle {
+                        width: parent.width * (gameModel.playTimeRemaining / gameModel.maxPlayTime)
+                        height: parent.height
+                        radius: parent.radius
+                        color: {
+                            if (gameModel.playTimeRemaining <= 3) return "#ff3333"
+                            if (gameModel.playTimeRemaining <= 7) return "#ffaa00"
+                            return "#00cc00"
+                        }
+
+                        Behavior on width {
+                            NumberAnimation { duration: 300 }
+                        }
+
+                        Behavior on color {
+                            ColorAnimation { duration: 300 }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    id: avatarSouth
+                    width: rootArea.width * 0.075
+                    height: rootArea.width * 0.075
+                    radius: width / 2
+                    color: "#f0f0f0"
+                    border.color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "#888888"
+                    border.width: 3
+                    anchors.horizontalCenter: parent.horizontalCenter
+
+                    Image {
+                        anchors.fill: parent
+                        anchors.margins: parent.width * 0.1
+                        source: rootArea.getPlayerAvatar(playerSouthRow.actualPlayerIndex)
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                    }
+                }
+
+                Text {
+                    text: rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
+                    color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "white"
+                    font.pixelSize: rootArea.height * 0.03
+                    font.bold: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
             }
 
+            // Cartes centrees
             Row {
                 id: playerSouth
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: - rootArea.height * 0.12
                 Repeater {
                     model: {
@@ -490,37 +531,46 @@ Rectangle {
                     Text {
                         text: rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex)
                         color: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex ? "#ffff66" : "white"
-                        font.pixelSize: rootArea.height * 0.018
+                        font.pixelSize: rootArea.height * 0.03
                         font.bold: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
 
-                // Indicateur d'annonce (a droite)
+                // Indicateur d'annonce (espace toujours reserve)
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: bidRowNorth.width + rootArea.width * 0.02
-                    height: rootArea.height * 0.035
+                    width: Math.max(bidRowNorth.width + rootArea.width * 0.02, rootArea.width * 0.08)
+                    height: rootArea.height * 0.045
                     radius: height / 4
-                    color: "#2a5a2a"
+                    color: "grey"
                     border.color: "#4a8a4a"
                     border.width: 1
-                    opacity: 0.4
-                    visible: rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) !== ""
+                    opacity: {
+                        if (rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "") return 0
+                        if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "Passe") return 0
+                        return 0.75
+                    }
+                    visible: true  // Toujours visible pour reserver l'espace
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 200 }
+                    }
 
                     Row {
                         id: bidRowNorth
                         anchors.centerIn: parent
+                        visible: rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) !== ""
                         Text {
                             text: rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex)
                             color: "white"
-                            font.pixelSize: rootArea.height * 0.02
+                            font.pixelSize: rootArea.height * 0.04
                             font.bold: true
                         }
                         Text {
                             text: rootArea.getPlayerBidSymbol(playerNorthColumn.actualPlayerIndex)
                             color: rootArea.getPlayerBidSymbolColor(playerNorthColumn.actualPlayerIndex)
-                            font.pixelSize: rootArea.height * 0.02
+                            font.pixelSize: rootArea.height * 0.045
                             font.bold: true
                         }
                     }
@@ -587,6 +637,45 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: rootArea.height * 0.005
 
+                // Indicateur d'annonce (espace toujours reserve)
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: Math.max(bidRowWest.width + rootArea.width * 0.015, rootArea.width * 0.08)
+                    height: rootArea.height * 0.045
+                    radius: height / 4
+                    color: "grey"
+                    border.color: "#4a8a4a"
+                    border.width: 1
+                    opacity: {
+                        if (rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "") return 0
+                        if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "Passe") return 0
+                        return 0.75
+                    }
+                    visible: true  // Toujours visible pour reserver l'espace
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 200 }
+                    }
+
+                    Row {
+                        id: bidRowWest
+                        anchors.centerIn: parent
+                        visible: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) !== ""
+                        Text {
+                            text: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex)
+                            color: "white"
+                            font.pixelSize: rootArea.height * 0.04
+                            font.bold: true
+                        }
+                        Text {
+                            text: rootArea.getPlayerBidSymbol(playerWestRow.actualPlayerIndex)
+                            color: rootArea.getPlayerBidSymbolColor(playerWestRow.actualPlayerIndex)
+                            font.pixelSize: rootArea.height * 0.045
+                            font.bold: true
+                        }
+                    }
+                }
+
                 Rectangle {
                     width: rootArea.width * 0.075
                     height: rootArea.width * 0.075
@@ -608,39 +697,9 @@ Rectangle {
                 Text {
                     text: rootArea.getPlayerName(playerWestRow.actualPlayerIndex)
                     color: gameModel.currentPlayer === playerWestRow.actualPlayerIndex ? "#ffff66" : "white"
-                    font.pixelSize: rootArea.height * 0.018
+                    font.pixelSize: rootArea.height * 0.03
                     font.bold: gameModel.currentPlayer === playerWestRow.actualPlayerIndex
                     anchors.horizontalCenter: parent.horizontalCenter
-                }
-
-                // Indicateur d'annonce (en dessous)
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: bidRowWest.width + rootArea.width * 0.015
-                    height: rootArea.height * 0.03
-                    radius: height / 4
-                    color: "#2a5a2a"
-                    border.color: "#4a8a4a"
-                    border.width: 1
-                    opacity: 0.4
-                    visible: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) !== ""
-
-                    Row {
-                        id: bidRowWest
-                        anchors.centerIn: parent
-                        Text {
-                            text: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex)
-                            color: "white"
-                            font.pixelSize: rootArea.height * 0.018
-                            font.bold: true
-                        }
-                        Text {
-                            text: rootArea.getPlayerBidSymbol(playerWestRow.actualPlayerIndex)
-                            color: rootArea.getPlayerBidSymbolColor(playerWestRow.actualPlayerIndex)
-                            font.pixelSize: rootArea.height * 0.018
-                            font.bold: true
-                        }
-                    }
                 }
             }
 
@@ -699,6 +758,45 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: rootArea.height * 0.005
 
+                // Indicateur d'annonce (espace toujours reserve)
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: Math.max(bidRowEast.width + rootArea.width * 0.02, rootArea.width * 0.08)
+                    height: rootArea.height * 0.045
+                    radius: height / 4
+                    color: "grey"
+                    border.color: "#4a8a4a"
+                    border.width: 1
+                    opacity: {
+                        if (rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "") return 0
+                        if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "Passe") return 0
+                        return 0.75
+                    }
+                    visible: true  // Toujours visible pour reserver l'espace
+
+                    Behavior on opacity {
+                        NumberAnimation { duration: 200 }
+                    }
+
+                    Row {
+                        id: bidRowEast
+                        anchors.centerIn: parent
+                        visible: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) !== ""
+                        Text {
+                            text: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex)
+                            color: "white"
+                            font.pixelSize: rootArea.height * 0.04
+                            font.bold: true
+                        }
+                        Text {
+                            text: rootArea.getPlayerBidSymbol(playerEastRow.actualPlayerIndex)
+                            color: rootArea.getPlayerBidSymbolColor(playerEastRow.actualPlayerIndex)
+                            font.pixelSize: rootArea.height * 0.045
+                            font.bold: true
+                        }
+                    }
+                }
+
                 Rectangle {
                     width: rootArea.width * 0.075
                     height: rootArea.width * 0.075
@@ -706,6 +804,7 @@ Rectangle {
                     color: "#f0f0f0"
                     border.color: gameModel.currentPlayer === playerEastRow.actualPlayerIndex ? "#ffff66" : "#888888"
                     border.width: 2
+                    anchors.horizontalCenter: parent.horizontalCenter
 
                     Image {
                         anchors.fill: parent
@@ -719,39 +818,9 @@ Rectangle {
                 Text {
                     text: rootArea.getPlayerName(playerEastRow.actualPlayerIndex)
                     color: gameModel.currentPlayer === playerEastRow.actualPlayerIndex ? "#ffff66" : "white"
-                    font.pixelSize: rootArea.height * 0.018
+                    font.pixelSize: rootArea.height * 0.03
                     font.bold: gameModel.currentPlayer === playerEastRow.actualPlayerIndex
                     anchors.horizontalCenter: parent.horizontalCenter
-                }
-
-                // Indicateur d'annonce (en dessous)
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: bidRowEast.width + rootArea.width * 0.02
-                    height: rootArea.height * 0.04
-                    radius: height / 4
-                    color: "#2a5a2a"
-                    border.color: "#4a8a4a"
-                    border.width: 1
-                    opacity: 0.4
-                    visible: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) !== ""
-
-                    Row {
-                        id: bidRowEast
-                        anchors.centerIn: parent
-                        Text {
-                            text: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex)
-                            color: "white"
-                            font.pixelSize: rootArea.height * 0.025
-                            font.bold: true
-                        }
-                        Text {
-                            text: rootArea.getPlayerBidSymbol(playerEastRow.actualPlayerIndex)
-                            color: rootArea.getPlayerBidSymbolColor(playerEastRow.actualPlayerIndex)
-                            font.pixelSize: rootArea.height * 0.025
-                            font.bold: true
-                        }
-                    }
                 }
             }
 
@@ -797,8 +866,8 @@ Rectangle {
         // =====================
         Rectangle {
             id: scorePanel
-            width: parent.width * 0.13
-            height: parent.height * 0.13
+            width: parent.width * 0.2
+            height: parent.height * 0.2
             anchors.top: parent.top
             anchors.right: parent.right
             anchors.margins: parent.width * 0.007
@@ -815,17 +884,71 @@ Rectangle {
                 rowSpacing: parent.height * 0.03
                 columnSpacing: parent.width * 0.02
 
-                Text { text: "Score"; color: "white"; font.pixelSize: parent.height * 0.13; font.bold: true }
-                Text { text: "Manche"; color: "white"; font.pixelSize: parent.height * 0.13; font.bold: true }
-                Text { text: "Total"; color: "white"; font.pixelSize: parent.height * 0.13; font.bold: true }
+                Text {
+                    text: ""
+                    color: "white"
+                    font.pixelSize: parent.height * 0.2
+                    font.bold: true
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                }
+                Text {
+                    text: "Manche"
+                    color: "white"
+                    font.pixelSize: parent.height * 0.2
+                    font.bold: true
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                }
+                Text {
+                    text: "Total"
+                    color: "white"
+                    font.pixelSize: parent.height * 0.2
+                    font.bold: true
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                }
 
-                Text { text: "Équipe 1:"; color: "white"; font.pixelSize: parent.height * 0.13 }
-                Text { text: gameModel.scoreTeam1; color: "white"; font.pixelSize: parent.height * 0.13 }
-                Text { text: gameModel.scoreTotalTeam1; color: "white"; font.pixelSize: parent.height * 0.13 }
+                Text {
+                    text: (gameModel.myPosition % 2 === 0) ? "Nous" : "Eux"
+                    color: "white"
+                    font.family: "Serif"
+                    font.italic: true
+                    font.weight: Font.DemiBold
+                    font.pixelSize: parent.height * 0.2
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                }
+                Text {
+                    text: gameModel.scoreTeam1
+                    color: "white"
+                    font.pixelSize: parent.height * 0.2
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                }
+                Text {
+                    text: gameModel.scoreTotalTeam1
+                    color: "white"
+                    font.pixelSize: parent.height * 0.2
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                }
 
-                Text { text: "Équipe 2:"; color: "white"; font.pixelSize: parent.height * 0.13 }
-                Text { text: gameModel.scoreTeam2; color: "white"; font.pixelSize: parent.height * 0.13 }
-                Text { text: gameModel.scoreTotalTeam2; color: "white"; font.pixelSize: parent.height * 0.13 }
+                Text {
+                    text: (gameModel.myPosition % 2 === 0) ? "Eux" : "Nous"
+                    color: "white"
+                    font.family: "Serif"
+                    font.italic: true
+                    font.weight: Font.DemiBold
+                    font.pixelSize: parent.height * 0.2
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                }
+                Text {
+                    text: gameModel.scoreTeam2
+                    color: "white"
+                    font.pixelSize: parent.height * 0.2
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                }
+                Text {
+                    text: gameModel.scoreTotalTeam2
+                    color: "white"
+                    font.pixelSize: parent.height * 0.2
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                }
             }
         }
 
@@ -837,7 +960,7 @@ Rectangle {
             text: "Coinche"
 
             // Dimensions et position
-            width: rootArea.width * 0.08
+            width: rootArea.width * 0.1
             height: rootArea.height * 0.15
             anchors.bottom: parent.bottom
             anchors.right: parent.right
@@ -1203,8 +1326,8 @@ Rectangle {
                     height: rootArea.height * 0.06
                     color: "white"
                     radius: 3
-                    border.color: "#aaaaaa"
-                    border.width: 1
+                    border.color: modelData.isWinner ? "#FFD700" : "#aaaaaa"
+                    border.width: modelData.isWinner ? 3 : 1
 
                     Text {
                         anchors.centerIn: parent
@@ -1214,6 +1337,15 @@ Rectangle {
                         color: lastPliDisplay.getTextColor(modelData.suit)
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
+                    }
+
+                    // Overlay rouge pour les cartes d'atout
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "#FF0000"
+                        opacity: 0.2
+                        radius: parent.radius
+                        visible: modelData.suit === gameModel.lastBidSuitValue
                     }
                 }
             }

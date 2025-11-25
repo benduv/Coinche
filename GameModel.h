@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QDebug>
+#include <QTimer>
 #include "HandModel.h"
 #include "Player.h"
 #include "Carte.h"
@@ -19,6 +20,7 @@ struct CarteDuPliSauvegardee {
     int playerId;
     Carte::Chiffre chiffre;
     Carte::Couleur couleur;
+    bool isWinner;  // Indique si cette carte a gagné le pli
 };
 
 class GameModel : public QObject {
@@ -36,6 +38,7 @@ class GameModel : public QObject {
     Q_PROPERTY(QString lastBid READ lastBid NOTIFY lastBidChanged)
     Q_PROPERTY(int lastBidValue READ lastBidValue NOTIFY lastBidChanged)
     Q_PROPERTY(QString lastBidSuit READ lastBidSuit NOTIFY lastBidChanged)
+    Q_PROPERTY(int lastBidSuitValue READ lastBidSuitValue NOTIFY lastBidChanged)
     Q_PROPERTY(int lastBidderIndex READ lastBidderIndex NOTIFY lastBidderIndexChanged)
     Q_PROPERTY(int playerIndex READ playerIndex NOTIFY myPositionChanged)
     Q_PROPERTY(int scoreTeam1 READ scoreTeam1 NOTIFY scoreTeam1Changed)
@@ -51,6 +54,8 @@ class GameModel : public QObject {
     Q_PROPERTY(QList<QVariant> lastPliCards READ lastPliCards NOTIFY lastPliCardsChanged)
     Q_PROPERTY(int distributionPhase READ distributionPhase NOTIFY distributionPhaseChanged)
     Q_PROPERTY(QList<QVariant> playerBids READ playerBids NOTIFY playerBidsChanged)
+    Q_PROPERTY(int playTimeRemaining READ playTimeRemaining NOTIFY playTimeRemainingChanged)
+    Q_PROPERTY(int maxPlayTime READ maxPlayTime CONSTANT)
 
 public:
     explicit GameModel(QObject *parent = nullptr);
@@ -76,6 +81,7 @@ public:
     int scoreTotalTeam2() const;
     QString lastBid() const;
     QString lastBidSuit() const;
+    int lastBidSuitValue() const;
     bool surcoincheAvailable() const;
     int surcoincheTimeLeft() const;
     bool showCoincheAnimation() const;
@@ -85,6 +91,8 @@ public:
     QList<QVariant> lastPliCards() const;
     int distributionPhase() const;
     QList<QVariant> playerBids() const;
+    int playTimeRemaining() const;
+    int maxPlayTime() const;
 
     // Initialiser la partie avec les données du serveur
     Q_INVOKABLE void initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents);
@@ -122,6 +130,7 @@ signals:
     void lastPliCardsChanged();
     void distributionPhaseChanged();
     void playerBidsChanged();
+    void playTimeRemainingChanged();
     void gameInitialized();
 
     // Signaux vers NetworkManager
@@ -133,6 +142,7 @@ private:
     Player* getPlayerByPosition(int position);
     void refreshHand(int playerIndex);
     void distributeCards(int startIdx, int endIdx, const std::vector<Carte*>& myCards);
+    void playRandomCard();
 
     HandModel* m_player0Hand;
     HandModel* m_player1Hand;
@@ -161,6 +171,10 @@ private:
     QList<CarteDuPliSauvegardee> m_lastPliCards;  // Cartes du dernier pli terminé (avec copie des valeurs)
     int m_distributionPhase;  // 0=pas de distribution, 1=3 cartes, 2=2 cartes, 3=3 cartes
     QList<QVariantMap> m_playerBids;  // Annonces de chaque joueur {value, suit, text}
+    int m_playTimeRemaining;  // Temps restant pour jouer (en secondes)
+    int m_maxPlayTime;  // Temps maximum pour jouer (15 secondes)
+    QTimer* m_playTimer;  // Timer pour le jeu
+    bool m_pliBeingCleared;  // Indique si le pli est en cours de nettoyage
 
     QList<Player*> m_onlinePlayers;  // Tous les joueurs de la partie
 };

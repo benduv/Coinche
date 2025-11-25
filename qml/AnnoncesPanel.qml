@@ -15,10 +15,40 @@ Rectangle {
     property real w: width
     property real h: height
 
+    // Timer pour l'annonce
+    property int timeRemaining: 20
+    property int maxTime: 20
+
+    Timer {
+        id: bidTimer
+        interval: 1000
+        repeat: true
+        running: root.visible
+        onTriggered: {
+            if (timeRemaining > 0) {
+                timeRemaining--
+            } else {
+                // Temps ecoule, passer automatiquement
+                gameModel.passBid()
+                stop()
+            }
+        }
+    }
+
+    // Reinitialiser le timer quand le panneau devient visible
+    onVisibleChanged: {
+        if (visible) {
+            timeRemaining = maxTime
+            bidTimer.restart()
+        } else {
+            bidTimer.stop()
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: w * 0.04
-        spacing: h * 0.04
+        spacing: h * 0.02
 
         // ========= Titre =========
         Text {
@@ -27,6 +57,49 @@ Rectangle {
             font.bold: true
             color: "#FFD700"
             Layout.alignment: Qt.AlignHCenter
+        }
+
+        // ========= Jauge de temps =========
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.preferredHeight: h * 0.12
+            spacing: h * 0.01
+
+            /*Text {
+                text: "Temps restant: " + timeRemaining + "s"
+                font.pixelSize: h * 0.05
+                color: timeRemaining <= 5 ? "#ff3333" : "white"
+                font.bold: timeRemaining <= 5
+                Layout.alignment: Qt.AlignHCenter
+            }*/
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: h * 0.04
+                color: "#333333"
+                radius: height / 2
+                border.color: "#FFD700"
+                border.width: 2
+
+                Rectangle {
+                    width: parent.width * (timeRemaining / maxTime)
+                    height: parent.height
+                    radius: parent.radius
+                    color: {
+                        if (timeRemaining <= 5) return "#ff3333"
+                        if (timeRemaining <= 10) return "#ffaa00"
+                        return "#00cc00"
+                    }
+
+                    Behavior on width {
+                        NumberAnimation { duration: 300 }
+                    }
+
+                    Behavior on color {
+                        ColorAnimation { duration: 300 }
+                    }
+                }
+            }
         }
 
         // ========= Dernière annonce =========
@@ -92,7 +165,17 @@ Rectangle {
             }*/
 
             // ---- Navigation avec fleches ----
-            property int currentBidIndex: 0
+            property int currentBidIndex: {
+                // Commencer a l'annonce suivant la derniere annonce faite
+                var lastBid = gameModel.lastBidValue
+                var startIndex = 0
+                for (var i = 0; i < allBids.length; i++) {
+                    if (allBids[i].value <= lastBid) {
+                        startIndex = i + 1
+                    }
+                }
+                return startIndex
+            }
             property var allBids: [
                 { value: 1, label: "80" },
                 { value: 2, label: "90" },
@@ -230,7 +313,10 @@ Rectangle {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            onClicked: gameModel.passBid()
+            onClicked: {
+                bidTimer.stop()
+                gameModel.passBid()
+            }
         }
 
         //Item { Layout.fillHeight: true }
@@ -268,7 +354,7 @@ Rectangle {
                     suitValue: 3
                     popupWidth: suitSelector.width
                     popupHeight: suitSelector.height
-                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 3); suitSelector.close() }
+                    onClicked: { bidTimer.stop(); gameModel.makeBid(suitSelector.selectedBidValue, 3); suitSelector.close() }
                 }
                 SuitButton {
                     text: "♣"
@@ -276,7 +362,7 @@ Rectangle {
                     suitValue: 4
                     popupWidth: suitSelector.width
                     popupHeight: suitSelector.height
-                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 4); suitSelector.close() }
+                    onClicked: { bidTimer.stop(); gameModel.makeBid(suitSelector.selectedBidValue, 4); suitSelector.close() }
                 }
                 SuitButton {
                     text: "♦"
@@ -284,7 +370,7 @@ Rectangle {
                     suitValue: 5
                     popupWidth: suitSelector.width
                     popupHeight: suitSelector.height
-                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 5); suitSelector.close() }
+                    onClicked: { bidTimer.stop(); gameModel.makeBid(suitSelector.selectedBidValue, 5); suitSelector.close() }
                 }
                 SuitButton {
                     text: "♠"
@@ -292,7 +378,7 @@ Rectangle {
                     suitValue: 6
                     popupWidth: suitSelector.width
                     popupHeight: suitSelector.height
-                    onClicked: { gameModel.makeBid(suitSelector.selectedBidValue, 6); suitSelector.close() }
+                    onClicked: { bidTimer.stop(); gameModel.makeBid(suitSelector.selectedBidValue, 6); suitSelector.close() }
                 }
             }
         }

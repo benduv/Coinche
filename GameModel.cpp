@@ -1,5 +1,6 @@
 #include "GameModel.h"
 #include <QTimer>
+#include <QRandomGenerator>
 
 GameModel::GameModel(QObject *parent)
     : QObject(parent)
@@ -21,6 +22,9 @@ GameModel::GameModel(QObject *parent)
     , m_showBeloteAnimation(false)
     , m_showRebeloteAnimation(false)
     , m_distributionPhase(0)
+    , m_playTimeRemaining(15)
+    , m_maxPlayTime(15)
+    , m_pliBeingCleared(false)
 {
     // Créer les HandModels vides
     m_player0Hand = new HandModel(this);
@@ -36,7 +40,21 @@ GameModel::GameModel(QObject *parent)
         bid["text"] = "";
         m_playerBids.append(bid);
     }
-    
+
+    // Creer le timer de jeu
+    m_playTimer = new QTimer(this);
+    m_playTimer->setInterval(1000); // 1 seconde
+    connect(m_playTimer, &QTimer::timeout, this, [this]() {
+        if (m_playTimeRemaining > 0) {
+            m_playTimeRemaining--;
+            emit playTimeRemainingChanged();
+        } else {
+            // Temps ecoule, jouer une carte aleatoire
+            m_playTimer->stop();
+            playRandomCard();
+        }
+    });
+
     qDebug() << "GameModel créé en mode online";
 }
 
@@ -183,6 +201,11 @@ QString GameModel::lastBidSuit() const
     }
 }
 
+int GameModel::lastBidSuitValue() const
+{
+    return static_cast<int>(m_lastBidCouleur);
+}
+
 bool GameModel::surcoincheAvailable() const
 {
     return m_surcoincheAvailable;
@@ -221,6 +244,7 @@ QList<QVariant> GameModel::lastPliCards() const
         cardInfo["playerId"] = cdp.playerId;
         cardInfo["value"] = static_cast<int>(cdp.chiffre);
         cardInfo["suit"] = static_cast<int>(cdp.couleur);
+        cardInfo["isWinner"] = cdp.isWinner;
         result.append(cardInfo);
     }
     return result;
@@ -238,6 +262,16 @@ QList<QVariant> GameModel::playerBids() const
         result.append(bid);
     }
     return result;
+}
+
+int GameModel::playTimeRemaining() const
+{
+    return m_playTimeRemaining;
+}
+
+int GameModel::maxPlayTime() const
+{
+    return m_maxPlayTime;
 }
 
 void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents)
@@ -343,29 +377,74 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
 void GameModel::playCard(int cardIndex)
 {
     qDebug() << "Tentative de jouer carte - Position:" << m_myPosition << "Index:" << cardIndex;
-    
+
+    // Vérifier que le pli précédent n'est pas en cours de nettoyage
+    if (m_pliBeingCleared) {
+        qDebug() << "Le pli precedent est en cours de nettoyage, impossible de jouer";
+        return;
+    }
+
     // Vérifier que c'est notre tour
     if (m_currentPlayer != m_myPosition) {
         qDebug() << "Ce n'est pas votre tour! Joueur actuel:" << m_currentPlayer;
         return;
     }
-    
+
     // Vérifier que l'index est valide
     Player* localPlayer = getPlayerByPosition(m_myPosition);
     if (!localPlayer) {
         qDebug() << "Erreur: joueur local non trouvé";
         return;
     }
-    
+
     if (cardIndex < 0 || cardIndex >= localPlayer->getMain().size()) {
         qDebug() << "Index de carte invalide:" << cardIndex;
         return;
     }
-    
+
+    // Arreter le timer
+    m_playTimer->stop();
+
     qDebug() << "Carte jouée localement, envoi au serveur";
-    
+
     // Émettre signal vers NetworkManager pour envoyer au serveur
     emit cardPlayedLocally(cardIndex);
+}
+
+void GameModel::playRandomCard()
+{
+    qDebug() << "Temps ecoule, jeu d'une carte aleatoire";
+
+    Player* localPlayer = getPlayerByPosition(m_myPosition);
+    if (!localPlayer) {
+        qDebug() << "Erreur: joueur local non trouve";
+        return;
+    }
+
+    HandModel* hand = getHandModelByPosition(m_myPosition);
+    if (!hand) {
+        qDebug() << "Erreur: main du joueur non trouvee";
+        return;
+    }
+
+    // Trouver toutes les cartes jouables
+    QList<int> playableIndices;
+    for (int i = 0; i < hand->rowCount(); i++) {
+        if (hand->data(hand->index(i), HandModel::IsPlayableRole).toBool()) {
+            playableIndices.append(i);
+        }
+    }
+
+    if (playableIndices.isEmpty()) {
+        qDebug() << "Aucune carte jouable trouvee";
+        return;
+    }
+
+    // Jouer une carte aleatoire parmi les cartes jouables
+    int randomIndex = playableIndices[QRandomGenerator::global()->bounded(playableIndices.size())];
+    qDebug() << "Carte aleatoire choisie a l'index:" << randomIndex;
+
+    playCard(randomIndex);
 }
 
 void GameModel::makeBid(int bidValue, int suitValue)
@@ -413,10 +492,25 @@ void GameModel::updateGameState(const QJsonObject& state)
     // Mettre à jour l'état global
     if (state.contains("currentPlayer")) {
         int newCurrentPlayer = state["currentPlayer"].toInt();
-        if (m_currentPlayer != newCurrentPlayer) {
+        bool playerChanged = (m_currentPlayer != newCurrentPlayer);
+
+        if (playerChanged) {
             m_currentPlayer = newCurrentPlayer;
             emit currentPlayerChanged();
             qDebug() << "Joueur actuel change:" << m_currentPlayer;
+        }
+
+        // Demarrer/arreter le timer selon si c'est le tour du joueur local
+        // On reinitialise le timer meme si c'est le meme joueur (cas du gagnant d'un pli)
+        if (!m_biddingPhase) {
+            if (newCurrentPlayer == m_myPosition) {
+                m_playTimeRemaining = m_maxPlayTime;
+                emit playTimeRemainingChanged();
+                m_playTimer->start();
+                qDebug() << "Timer de jeu demarre (joueur actuel:" << newCurrentPlayer << ")";
+            } else {
+                m_playTimer->stop();
+            }
         }
     }
 
@@ -436,6 +530,14 @@ void GameModel::updateGameState(const QJsonObject& state)
                 m_currentPli.clear();
                 emit currentPliChanged();
                 qDebug() << "Debut de la phase de jeu!";
+
+                // Si c'est notre tour, demarrer le timer
+                if (m_currentPlayer == m_myPosition) {
+                    m_playTimeRemaining = m_maxPlayTime;
+                    emit playTimeRemainingChanged();
+                    m_playTimer->start();
+                    qDebug() << "Timer de jeu demarre (fin des annonces)";
+                }
 
                 // Re-trier les cartes avec l'atout en premier (ordre croissant)
                 if (m_lastBidCouleur != Carte::COULEURINVALIDE) {
@@ -721,8 +823,11 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         emit scoreTeam1Changed();
         emit scoreTeam2Changed();
 
+        // Marquer que le pli est en cours de nettoyage pour bloquer les nouvelles cartes
+        m_pliBeingCleared = true;
+
         // Attendre un peu pour que l'utilisateur voie le pli, puis le nettoyer
-        QTimer::singleShot(2000, this, [this]() {
+        QTimer::singleShot(1500, this, [this, winnerId]() {
             qDebug() << "Nettoyage du pli";
 
             // Sauvegarder le pli courant comme dernier pli avant de le nettoyer
@@ -733,6 +838,7 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
                 saved.playerId = cdp.playerId;
                 saved.chiffre = cdp.carte->getChiffre();
                 saved.couleur = cdp.carte->getCouleur();
+                saved.isWinner = (cdp.playerId == winnerId);  // Marquer la carte gagnante
                 m_lastPliCards.append(saved);
             }
             emit lastPliCardsChanged();
@@ -743,6 +849,9 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             }
             m_currentPli.clear();
             emit currentPliChanged();
+
+            // Réinitialiser le flag pour autoriser de nouveau les cartes à être jouées
+            m_pliBeingCleared = false;
         });
     } else if (action == "mancheFinished") {
         QJsonObject scoreData = data.toJsonObject();
