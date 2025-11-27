@@ -309,7 +309,7 @@ private:
             msg["type"] = "gameFound";
             msg["roomId"] = roomId;
             msg["playerPosition"] = i;
-            
+
             // Envoi les cartes du joueur
             QJsonArray myCards;
             const auto& playerHand = room->players[i]->getMain();
@@ -589,8 +589,13 @@ private:
         }
 
         if (mancheTerminee) {
-            qDebug() << "GameServer - Manche terminee, calcul des scores...";
-            finishManche(roomId);
+            qDebug() << "GameServer - Manche terminee, attente de 1500ms avant de commencer la nouvelle manche...";
+
+            // Attendre 1500ms pour laisser les joueurs voir le dernier pli
+            QTimer::singleShot(1500, this, [this, roomId]() {
+                qDebug() << "GameServer - Calcul des scores de la manche...";
+                finishManche(roomId);
+            });
         } else {
             // Réinitialise pour le prochain pli
             room->currentPli.clear();
@@ -1404,6 +1409,59 @@ private:
         }
 
         broadcastToRoom(roomId, stateMsg);
+
+        // Si c'est le dernier pli (tous les joueurs n'ont qu'une carte), jouer automatiquement après un délai
+        Player* player = room->players[currentPlayer].get();
+        if (player && player->getMain().size() == 1) {
+            qDebug() << "GameServer - Dernier pli detecte, jeu automatique pour joueur" << currentPlayer;
+
+            // Si c'est le début du dernier pli (pli vide), attendre 2000ms pour laisser le temps au pli précédent d'être nettoyé
+            // Sinon, attendre seulement 400ms
+            int delay = room->currentPli.empty() ? 2000 : 400;
+
+            // Jouer automatiquement après le délai approprié
+            QTimer::singleShot(delay, this, [this, roomId, currentPlayer]() {
+                GameRoom* room = m_gameRooms.value(roomId);
+                if (!room || room->currentPlayerIndex != currentPlayer) return;
+
+                Player* player = room->players[currentPlayer].get();
+                if (!player || player->getMain().empty()) return;
+
+                // Simuler le jeu de la carte (index 0, la seule carte restante)
+                qDebug() << "GameServer - Jeu automatique de la dernière carte pour joueur" << currentPlayer;
+
+                Carte* cartePlayed = player->getMain()[0];
+
+                // Si c'est la première carte du pli, définir la couleur demandée
+                if (room->currentPli.empty()) {
+                    room->couleurDemandee = cartePlayed->getCouleur();
+                }
+
+                // Ajouter au pli courant
+                room->currentPli.push_back(std::make_pair(currentPlayer, cartePlayed));
+
+                // Retirer la carte de la main
+                player->removeCard(0);
+
+                // Broadcast l'action
+                QJsonObject msg;
+                msg["type"] = "cardPlayed";
+                msg["playerIndex"] = currentPlayer;
+                msg["cardIndex"] = 0;
+                msg["cardValue"] = static_cast<int>(cartePlayed->getChiffre());
+                msg["cardSuit"] = static_cast<int>(cartePlayed->getCouleur());
+                broadcastToRoom(roomId, msg);
+
+                // Si le pli est complet (4 cartes)
+                if (room->currentPli.size() == 4) {
+                    finishPli(roomId);
+                } else {
+                    // Passe au joueur suivant
+                    room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
+                    notifyPlayersWithPlayableCards(roomId);
+                }
+            });
+        }
     }
 
     QJsonArray calculatePlayableCards(GameRoom* room, int playerIndex) {

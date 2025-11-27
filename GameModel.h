@@ -56,6 +56,8 @@ class GameModel : public QObject {
     Q_PROPERTY(QList<QVariant> playerBids READ playerBids NOTIFY playerBidsChanged)
     Q_PROPERTY(int playTimeRemaining READ playTimeRemaining NOTIFY playTimeRemainingChanged)
     Q_PROPERTY(int maxPlayTime READ maxPlayTime CONSTANT)
+    Q_PROPERTY(int dealerPosition READ dealerPosition NOTIFY dealerPositionChanged)
+    Q_PROPERTY(int pliWinnerId READ pliWinnerId NOTIFY pliWinnerIdChanged)
 
 public:
     explicit GameModel(QObject *parent = nullptr);
@@ -93,6 +95,8 @@ public:
     QList<QVariant> playerBids() const;
     int playTimeRemaining() const;
     int maxPlayTime() const;
+    int dealerPosition() const;
+    int pliWinnerId() const;
 
     // Initialiser la partie avec les données du serveur
     Q_INVOKABLE void initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents);
@@ -131,6 +135,8 @@ signals:
     void distributionPhaseChanged();
     void playerBidsChanged();
     void playTimeRemainingChanged();
+    void dealerPositionChanged();
+    void pliWinnerIdChanged();
     void gameInitialized();
 
     // Signaux vers NetworkManager
@@ -155,6 +161,7 @@ private:
     QList<CarteDuPli> m_currentPli;
     bool m_biddingPhase;
     int m_biddingPlayer;
+    int m_firstPlayerIndex;  // Joueur qui commence les enchères (reste fixe pendant la manche)
     int m_scoreTeam1;          // Score de la manche en cours
     int m_scoreTeam2;          // Score de la manche en cours
     int m_scoreTotalTeam1;     // Score total de la partie
@@ -175,6 +182,7 @@ private:
     int m_maxPlayTime;  // Temps maximum pour jouer (15 secondes)
     QTimer* m_playTimer;  // Timer pour le jeu
     bool m_pliBeingCleared;  // Indique si le pli est en cours de nettoyage
+    int m_pliWinnerId;  // ID du gagnant du pli en cours de nettoyage (-1 si aucun)
 
     QList<Player*> m_onlinePlayers;  // Tous les joueurs de la partie
 };

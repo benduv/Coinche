@@ -8,6 +8,7 @@ GameModel::GameModel(QObject *parent)
     , m_currentPlayer(-1)
     , m_biddingPhase(false)
     , m_biddingPlayer(-1)
+    , m_firstPlayerIndex(0)
     , m_scoreTeam1(0)
     , m_scoreTeam2(0)
     , m_scoreTotalTeam1(0)
@@ -25,6 +26,7 @@ GameModel::GameModel(QObject *parent)
     , m_playTimeRemaining(15)
     , m_maxPlayTime(15)
     , m_pliBeingCleared(false)
+    , m_pliWinnerId(-1)
 {
     // Créer les HandModels vides
     m_player0Hand = new HandModel(this);
@@ -274,6 +276,20 @@ int GameModel::maxPlayTime() const
     return m_maxPlayTime;
 }
 
+int GameModel::dealerPosition() const
+{
+    // Le dealer est toujours le joueur à droite de celui qui commence (firstPlayerIndex)
+    // Si firstPlayerIndex = 0, dealer = 3
+    // Si firstPlayerIndex = 1, dealer = 0
+    // etc.
+    return (m_firstPlayerIndex + 3) % 4;
+}
+
+int GameModel::pliWinnerId() const
+{
+    return m_pliWinnerId;
+}
+
 void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents)
 {
     qDebug() << "Initialisation partie online - Position:" << myPosition;
@@ -281,6 +297,8 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
     qDebug() << "Nombre d'adversaires:" << opponents.size();
 
     m_myPosition = myPosition;
+    m_firstPlayerIndex = 0;  // Le joueur 0 commence la première manche
+    emit dealerPositionChanged();  // Initialiser le dealer au démarrage
 
     // Nettoyer les anciens joueurs si existants
     qDeleteAll(m_onlinePlayers);
@@ -625,6 +643,18 @@ void GameModel::updateGameState(const QJsonObject& state)
         if (hand) {
             hand->setPlayableCards(playableIndices);
         }
+
+        // Si c'est le dernier pli (une seule carte en main) et c'est notre tour, jouer automatiquement
+        if (currentPlayer == m_myPosition && !m_biddingPhase) {
+            Player* localPlayer = getPlayerByPosition(m_myPosition);
+            if (localPlayer && localPlayer->getMain().size() == 1) {
+                qDebug() << "Dernier pli détecté - Jeu automatique de la dernière carte";
+                // Jouer automatiquement après un court délai pour que ce soit visible
+                QTimer::singleShot(500, this, [this]() {
+                    playCard(0);  // La seule carte restante est à l'index 0
+                });
+            }
+        }
     }
 }
 
@@ -826,6 +856,12 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         // Marquer que le pli est en cours de nettoyage pour bloquer les nouvelles cartes
         m_pliBeingCleared = true;
 
+        // Attendre 700ms que la dernière carte arrive avant de lancer l'animation de sortie
+        QTimer::singleShot(700, this, [this, winnerId]() {
+            m_pliWinnerId = winnerId;
+            emit pliWinnerIdChanged();
+        });
+
         // Attendre un peu pour que l'utilisateur voie le pli, puis le nettoyer
         QTimer::singleShot(1500, this, [this, winnerId]() {
             qDebug() << "Nettoyage du pli";
@@ -852,6 +888,10 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
 
             // Réinitialiser le flag pour autoriser de nouveau les cartes à être jouées
             m_pliBeingCleared = false;
+
+            // Réinitialiser le gagnant après l'animation
+            m_pliWinnerId = -1;
+            emit pliWinnerIdChanged();
         });
     } else if (action == "mancheFinished") {
         QJsonObject scoreData = data.toJsonObject();
@@ -872,6 +912,8 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_scoreTeam2 = 0;
         emit scoreTeam1Changed();
         emit scoreTeam2Changed();
+
+        // Le dealer change automatiquement car il est calculé à partir de biddingPlayer
 
         // TODO: Afficher une popup ou notification pour les scores de la manche
     } else if (action == "gameOver") {
@@ -900,6 +942,10 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         qDebug() << "  Joueur qui commence les enchères:" << biddingPlayer;
         qDebug() << "  Nouvelles cartes:" << myCards.size();
 
+        // Le biddingPlayer au début de la manche est le firstPlayerIndex
+        m_firstPlayerIndex = biddingPlayer;
+        emit dealerPositionChanged();  // Le dealer change avec le nouveau firstPlayerIndex
+
         // Nettoyer le pli en cours
         for (const CarteDuPli& cdp : m_currentPli) {
             delete cdp.carte;
@@ -915,6 +961,7 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         // Reinitialiser les encheres
         m_biddingPhase = true;
         m_biddingPlayer = biddingPlayer;
+        emit dealerPositionChanged();  // Le dealer change avec le nouveau biddingPlayer
         m_currentPlayer = currentPlayer;
         m_lastBidAnnonce = Player::ANNONCEINVALIDE;
         m_lastBidCouleur = Carte::COULEURINVALIDE;

@@ -171,6 +171,7 @@ Rectangle {
 
                     // Flag pour savoir si cette carte doit animer
                     property bool willAnimate: false
+                    property bool exitAnimating: false  // Pour l'animation de sortie
 
                     // Position finale calculee
                     property real finalX: {
@@ -294,20 +295,53 @@ Rectangle {
                     }
 
                     Behavior on x {
-                        enabled: willAnimate
-                        NumberAnimation { duration: 600; easing.type: Easing.OutCubic }
+                        enabled: willAnimate || exitAnimating
+                        NumberAnimation { duration: exitAnimating ? 800 : 600; easing.type: exitAnimating ? Easing.InCubic : Easing.OutCubic }
                     }
                     Behavior on y {
-                        enabled: willAnimate
-                        NumberAnimation { duration: 600; easing.type: Easing.OutCubic }
+                        enabled: willAnimate || exitAnimating
+                        NumberAnimation { duration: exitAnimating ? 800 : 600; easing.type: exitAnimating ? Easing.InCubic : Easing.OutCubic }
                     }
                     Behavior on rotation {
                         enabled: willAnimate
                         NumberAnimation { duration: 600; easing.type: Easing.OutCubic }
                     }
                     Behavior on opacity {
-                        enabled: willAnimate
-                        NumberAnimation { duration: 400; easing.type: Easing.InOutQuad }
+                        enabled: willAnimate || exitAnimating
+                        NumberAnimation { duration: exitAnimating ? 800 : 400; easing.type: Easing.InOutQuad }
+                    }
+
+                    // Animation de sortie vers le gagnant
+                    Connections {
+                        target: gameModel
+                        function onPliWinnerIdChanged() {
+                            if (gameModel.pliWinnerId >= 0) {
+                                // Démarrer l'animation de sortie vers le gagnant
+                                var winnerVisualPos = rootArea.getVisualPosition(gameModel.pliWinnerId)
+                                cardInPli.exitAnimating = true
+
+                                // Calculer la position de sortie selon la position du gagnant
+                                switch (winnerVisualPos) {
+                                    case 0: // Sud - sortir par le bas
+                                        cardInPli.x = pliArea.width / 2 - cardInPli.width / 2
+                                        cardInPli.y = pliArea.height + cardInPli.height * 2
+                                        break
+                                    case 1: // Ouest - sortir par la gauche
+                                        cardInPli.x = -cardInPli.width * 2
+                                        cardInPli.y = pliArea.height / 2 - cardInPli.height / 2
+                                        break
+                                    case 2: // Nord - sortir par le haut
+                                        cardInPli.x = pliArea.width / 2 - cardInPli.width / 2
+                                        cardInPli.y = -cardInPli.height * 2
+                                        break
+                                    case 3: // Est - sortir par la droite
+                                        cardInPli.x = pliArea.width + cardInPli.width * 2
+                                        cardInPli.y = pliArea.height / 2 - cardInPli.height / 2
+                                        break
+                                }
+                                cardInPli.opacity = 0
+                            }
+                        }
                     }
                 }
 
@@ -446,6 +480,26 @@ Rectangle {
                     font.bold: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
+
+                // Jeton de dealer
+                Rectangle {
+                    width: rootArea.width * 0.03
+                    height: rootArea.width * 0.03
+                    radius: width / 2
+                    color: "#FFD700"
+                    border.color: "#8B7500"
+                    border.width: 2
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: gameModel.dealerPosition === playerSouthRow.actualPlayerIndex
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "D"
+                        font.pixelSize: parent.width * 0.6
+                        font.bold: true
+                        color: "#8B7500"
+                    }
+                }
             }
 
             // Cartes centrees
@@ -534,6 +588,26 @@ Rectangle {
                         font.pixelSize: rootArea.height * 0.03
                         font.bold: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex
                         anchors.horizontalCenter: parent.horizontalCenter
+                    }
+
+                    // Jeton de dealer
+                    Rectangle {
+                        width: rootArea.width * 0.03
+                        height: rootArea.width * 0.03
+                        radius: width / 2
+                        color: "#FFD700"
+                        border.color: "#8B7500"
+                        border.width: 2
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        visible: gameModel.dealerPosition === playerNorthColumn.actualPlayerIndex
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "D"
+                            font.pixelSize: parent.width * 0.6
+                            font.bold: true
+                            color: "#8B7500"
+                        }
                     }
                 }
 
@@ -701,6 +775,26 @@ Rectangle {
                     font.bold: gameModel.currentPlayer === playerWestRow.actualPlayerIndex
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
+
+                // Jeton de dealer
+                Rectangle {
+                    width: rootArea.width * 0.03
+                    height: rootArea.width * 0.03
+                    radius: width / 2
+                    color: "#FFD700"
+                    border.color: "#8B7500"
+                    border.width: 2
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: gameModel.dealerPosition === playerWestRow.actualPlayerIndex
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "D"
+                        font.pixelSize: parent.width * 0.6
+                        font.bold: true
+                        color: "#8B7500"
+                    }
+                }
             }
 
             Column {
@@ -821,6 +915,26 @@ Rectangle {
                     font.pixelSize: rootArea.height * 0.03
                     font.bold: gameModel.currentPlayer === playerEastRow.actualPlayerIndex
                     anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                // Jeton de dealer
+                Rectangle {
+                    width: rootArea.width * 0.03
+                    height: rootArea.width * 0.03
+                    radius: width / 2
+                    color: "#FFD700"
+                    border.color: "#8B7500"
+                    border.width: 2
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    visible: gameModel.dealerPosition === playerEastRow.actualPlayerIndex
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "D"
+                        font.pixelSize: parent.width * 0.6
+                        font.bold: true
+                        color: "#8B7500"
+                    }
                 }
             }
 
@@ -1478,18 +1592,37 @@ Rectangle {
             id: flyingCard
             width: rootArea.height * 0.2 * 0.7 // Taille de carte
             height: rootArea.height * 0.2
-            x: rootArea.width  // Démarre hors écran à droite
-            y: rootArea.height / 2
             z: 1000  // Au-dessus de tout
 
             // Calculer à quel joueur cette carte est destinée (round-robin)
-            property int targetPlayer: index % 4
-            // Calculer quelle carte c'est pour ce joueur (0, 1, ou 2 pour phase 1/3, ou 0, 1 pour phase 2)
-            property int cardNumber: Math.floor(index / 4)
+            // Commencer par le joueur après le dealer, finir par le dealer
+            // index % 4 donne 0,1,2,3,0,1,2,3... pour distribuer en séquence
+            property int targetPlayer: (gameModel.dealerPosition + 1 + (index % 4)) % 4
+
             // Décalage dans le temps pour cette carte
-            property int cardDelay: cardNumber * 250  // 150ms entre chaque "tour" de distribution
+            property int cardDelay: index * 300  // 300ms entre chaque carte
+
+            // Position de départ selon le dealer
+            Component.onCompleted: {
+                opacity = 0
+                // Positionner selon le dealer: 0=Sud(bas), 1=Ouest(gauche), 2=Nord(haut), 3=Est(droite)
+                if (gameModel.dealerPosition === 0) {
+                    x = rootArea.width / 2
+                    y = rootArea.height + height
+                } else if (gameModel.dealerPosition === 1) {
+                    x = -width
+                    y = rootArea.height / 2
+                } else if (gameModel.dealerPosition === 2) {
+                    x = rootArea.width / 2
+                    y = -height
+                } else {
+                    x = rootArea.width + width
+                    y = rootArea.height / 2
+                }
+            }
 
             Card {
+                id: firstCard
                 anchors.fill: parent
                 faceUp: false  // Toujours face cachée pendant l'animation
                 value: 0
@@ -1497,102 +1630,52 @@ Rectangle {
                 isPlayable: false
             }
 
-            // Animation vers chaque joueur (on anime les 4 joueurs en parallèle)
-            ParallelAnimation {
-                id: toNorthAnimation
-                running: false
-                NumberAnimation {
-                    target: flyingCard
-                    property: "x"
-                    to: rootArea.width / 2
-                    duration: 500
-                    easing.type: Easing.OutCubic
-                }
-                NumberAnimation {
-                    target: flyingCard
-                    property: "y"
-                    to: rootArea.height * 0.05
-                    duration: 500
-                    easing.type: Easing.OutCubic
-                }
-                NumberAnimation {
-                    target: flyingCard
-                    property: "opacity"
-                    from: 1
-                    to: 0
-                    duration: 500
-                    easing.type: Easing.InQuad
-                }
+            Card {
+                id: secondCard
+                width: firstCard.width
+                height: firstCard.height
+                anchors.left: firstCard.right
+                anchors.leftMargin: -rootArea.width * 0.02
+                faceUp: false  // Toujours face cachée pendant l'animation
+                value: 0
+                suit: 3
+                isPlayable: false
             }
 
-            ParallelAnimation {
-                id: toSouthAnimation
-                running: false
-                NumberAnimation {
-                    target: flyingCard
-                    property: "x"
-                    to: rootArea.width / 2
-                    duration: 500
-                    easing.type: Easing.OutCubic
-                }
-                NumberAnimation {
-                    target: flyingCard
-                    property: "y"
-                    to: rootArea.height * 0.85
-                    duration: 500
-                    easing.type: Easing.OutCubic
-                }
-                NumberAnimation {
-                    target: flyingCard
-                    property: "opacity"
-                    from: 1
-                    to: 0
-                    duration: 500
-                    easing.type: Easing.InQuad
-                }
+            Card {
+                width: secondCard.width
+                height: secondCard.height
+                anchors.left: secondCard.right
+                anchors.leftMargin: -rootArea.width * 0.02
+                faceUp: false  // Toujours face cachée pendant l'animation
+                value: 0
+                suit: 3
+                isPlayable: false
+                visible: gameModel.distributionPhase !== 2
             }
 
-            ParallelAnimation {
-                id: toWestAnimation
-                running: false
-                NumberAnimation {
-                    target: flyingCard
-                    property: "x"
-                    to: rootArea.width * 0.05
-                    duration: 500
-                    easing.type: Easing.OutCubic
-                }
-                NumberAnimation {
-                    target: flyingCard
-                    property: "y"
-                    to: rootArea.height / 2
-                    duration: 500
-                    easing.type: Easing.OutCubic
-                }
-                NumberAnimation {
-                    target: flyingCard
-                    property: "opacity"
-                    from: 1
-                    to: 0
-                    duration: 500
-                    easing.type: Easing.InQuad
-                }
-            }
+            // Animation vers chaque joueur
+            property real startX: 0
+            property real startY: 0
+            property real targetX: 0
+            property real targetY: 0
 
             ParallelAnimation {
-                id: toEastAnimation
+                id: cardAnimation
                 running: false
                 NumberAnimation {
                     target: flyingCard
                     property: "x"
-                    to: rootArea.width * 0.92
+                    from: flyingCard.startX
+                    to: flyingCard.targetX
                     duration: 500
                     easing.type: Easing.OutCubic
                 }
                 NumberAnimation {
                     target: flyingCard
                     property: "y"
-                    to: rootArea.height / 2
+                    from: flyingCard.startY
+                    to: flyingCard.targetY
                     duration: 500
                     easing.type: Easing.OutCubic
                 }
@@ -1612,28 +1695,61 @@ Rectangle {
                 running: gameModel.distributionPhase > 0
                 repeat: false
                 onTriggered: {
-                    // Distribuer selon targetPlayer : 0=Sud, 1=Ouest, 2=Nord, 3=Est
-                    if (targetPlayer === 0) {
-                        toSouthAnimation.start()
-                    } else if (targetPlayer === 1) {
-                        toWestAnimation.start()
-                    } else if (targetPlayer === 2) {
-                        toNorthAnimation.start()
+                    // Convertir la position absolue du dealer en position relative par rapport au joueur local
+                    var dealerVisualPosition = rootArea.getVisualPosition(gameModel.dealerPosition)
+                    console.log("Animation carte", index, "- Dealer absolu:", gameModel.dealerPosition, "- Dealer visuel:", dealerVisualPosition, "- Target player:", targetPlayer)
+
+                    // Positionner physiquement la carte à la position VISUELLE du dealer : 0=Sud(bas), 1=Ouest(gauche), 2=Nord(haut), 3=Est(droite)
+                    if (dealerVisualPosition === 0) {
+                        flyingCard.x = rootArea.width / 2
+                        flyingCard.y = rootArea.height + flyingCard.height
+                        flyingCard.startX = rootArea.width / 2
+                        flyingCard.startY = rootArea.height + flyingCard.height
+                    } else if (dealerVisualPosition === 1) {
+                        flyingCard.x = -flyingCard.width
+                        flyingCard.y = rootArea.height / 2
+                        flyingCard.startX = -flyingCard.width
+                        flyingCard.startY = rootArea.height / 2
+                    } else if (dealerVisualPosition === 2) {
+                        flyingCard.x = rootArea.width / 2
+                        flyingCard.y = -flyingCard.height
+                        flyingCard.startX = rootArea.width / 2
+                        flyingCard.startY = -flyingCard.height
                     } else {
-                        toEastAnimation.start()
+                        flyingCard.x = rootArea.width + flyingCard.width
+                        flyingCard.y = rootArea.height / 2
+                        flyingCard.startX = rootArea.width + flyingCard.width
+                        flyingCard.startY = rootArea.height / 2
                     }
-                }
-            }
 
-            Component.onCompleted: {
-                opacity = 0  // Invisible au départ
-            }
+                    // Rendre visible
+                    flyingCard.opacity = 1
 
-            onVisibleChanged: {
-                if (visible) {
-                    opacity = 1
-                    x = rootArea.width
-                    y = rootArea.height / 2
+                    // Convertir la position absolue du targetPlayer en position relative
+                    var targetVisualPosition = rootArea.getVisualPosition(targetPlayer)
+                    console.log("Target player absolu:", targetPlayer, "- Target visuel:", targetVisualPosition)
+
+                    // Définir la position cible selon targetVisualPosition : 0=Sud, 1=Ouest, 2=Nord, 3=Est
+                    if (targetVisualPosition === 0) {
+                        // Sud
+                        flyingCard.targetX = rootArea.width / 2
+                        flyingCard.targetY = rootArea.height * 0.85
+                    } else if (targetVisualPosition === 1) {
+                        // Ouest
+                        flyingCard.targetX = rootArea.width * 0.05
+                        flyingCard.targetY = rootArea.height / 2
+                    } else if (targetVisualPosition === 2) {
+                        // Nord
+                        flyingCard.targetX = rootArea.width / 2
+                        flyingCard.targetY = rootArea.height * 0.05
+                    } else {
+                        // Est
+                        flyingCard.targetX = rootArea.width * 0.92
+                        flyingCard.targetY = rootArea.height / 2
+                    }
+
+                    // Démarrer l'animation
+                    cardAnimation.start()
                 }
             }
         }
