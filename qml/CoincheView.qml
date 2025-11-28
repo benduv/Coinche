@@ -23,9 +23,8 @@ Rectangle {
 
     // Obtenir le nom d'un joueur par son index reel
     function getPlayerName(actualPlayerIndex) {
-        // TODO: A remplacer par les vrais noms des joueurs quand disponibles
-        var names = ["Joueur 1", "Joueur 2", "Joueur 3", "Joueur 4"]
-        return names[actualPlayerIndex]
+        // Récupérer le vrai nom du joueur depuis GameModel
+        return gameModel.getPlayerName(actualPlayerIndex)
     }
 
     // Obtenir l'avatar d'un joueur par son index reel

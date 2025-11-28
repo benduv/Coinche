@@ -6,6 +6,7 @@
         <file>qml/AnnoncesPanel.qml</file>
         <file>qml/MatchMakingView.qml</file>
         <file>qml/MainMenu.qml</file>
+        <file>qml/LoginView.qml</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>

@@ -97,6 +97,7 @@ public:
     int maxPlayTime() const;
     int dealerPosition() const;
     int pliWinnerId() const;
+    Q_INVOKABLE QString getPlayerName(int position) const;
 
     // Initialiser la partie avec les données du serveur
     Q_INVOKABLE void initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents);

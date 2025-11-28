@@ -37,9 +37,9 @@ GameModel::GameModel(QObject *parent)
     // Initialiser les annonces des joueurs (4 joueurs, tous vides au depart)
     for (int i = 0; i < 4; i++) {
         QVariantMap bid;
-        bid["value"] = 0;
-        bid["suit"] = -1;
-        bid["text"] = "";
+        bid["bidValue"] = "";
+        bid["suitSymbol"] = "";
+        bid["isRed"] = false;
         m_playerBids.append(bid);
     }
 
@@ -57,7 +57,7 @@ GameModel::GameModel(QObject *parent)
         }
     });
 
-    qDebug() << "GameModel créé en mode online";
+    qDebug() << "GameModel cree en mode online";
 }
 
 GameModel::~GameModel()
@@ -66,7 +66,7 @@ GameModel::~GameModel()
     qDeleteAll(m_onlinePlayers);
     m_onlinePlayers.clear();
     
-    qDebug() << "GameModel détruit";
+    qDebug() << "GameModel detruit";
 }
 
 HandModel* GameModel::player0Hand() const
@@ -290,6 +290,15 @@ int GameModel::pliWinnerId() const
     return m_pliWinnerId;
 }
 
+QString GameModel::getPlayerName(int position) const
+{
+    Player* player = const_cast<GameModel*>(this)->getPlayerByPosition(position);
+    if (player) {
+        return QString::fromStdString(player->getName());
+    }
+    return QString("Joueur %1").arg(position + 1);
+}
+
 void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents)
 {
     qDebug() << "Initialisation partie online - Position:" << myPosition;
@@ -319,13 +328,13 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
     Player* localPlayer = new Player("Moi", std::vector<Carte*>(), myPosition);
     m_onlinePlayers.append(localPlayer);
 
-    qDebug() << "Joueur local créé (main vide pour animation)";
+    qDebug() << "Joueur local cree (main vide pour animation)";
 
     // Associer à la bonne HandModel selon la position
     HandModel* myHand = getHandModelByPosition(myPosition);
     if (myHand) {
         myHand->setPlayer(localPlayer, true);  // Face visible
-        qDebug() << "Main du joueur associée à HandModel position" << myPosition;
+        qDebug() << "Main du joueur associee à HandModel position" << myPosition;
     }
 
     // Créer des joueurs "fantômes" pour les adversaires (mains vides initialement)
@@ -334,7 +343,7 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         int position = oppObj["position"].toInt();
         QString name = oppObj["name"].toString();
 
-        qDebug() << "Création adversaire:" << name << "position:" << position;
+        qDebug() << "Creation adversaire:" << name << "position:" << position;
 
         Player* opponent = new Player(name.toStdString(), std::vector<Carte*>(), position);
         m_onlinePlayers.append(opponent);
@@ -382,14 +391,14 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
                 QTimer::singleShot(1000, this, [this]() {
                     m_distributionPhase = 0;
                     emit distributionPhaseChanged();
-                    qDebug() << "Partie initialisée - Distribution terminée";
+                    qDebug() << "Partie initialisee - Distribution terminée";
                     emit gameInitialized();
                 });
             });
         });
     });
 
-    qDebug() << "Partie initialisée avec" << m_onlinePlayers.size() << "joueurs";
+    qDebug() << "Partie initialisee avec" << m_onlinePlayers.size() << "joueurs";
 }
 
 void GameModel::playCard(int cardIndex)
@@ -423,7 +432,7 @@ void GameModel::playCard(int cardIndex)
     // Arreter le timer
     m_playTimer->stop();
 
-    qDebug() << "Carte jouée localement, envoi au serveur";
+    qDebug() << "Carte jouee localement, envoi au serveur";
 
     // Émettre signal vers NetworkManager pour envoyer au serveur
     emit cardPlayedLocally(cardIndex);
@@ -596,12 +605,12 @@ void GameModel::updateGameState(const QJsonObject& state)
 
     if (state.contains("atout")) {
         m_lastBidCouleur = static_cast<Carte::Couleur>(state["atout"].toInt());
-        qDebug() << "Atout défini:" << static_cast<int>(m_lastBidCouleur);
+        qDebug() << "Atout defini:" << static_cast<int>(m_lastBidCouleur);
     }
 
     if (state.contains("biddingWinnerId")) {
         int winnerId = state["biddingWinnerId"].toInt();
-        qDebug() << "Gagnant des enchères: joueur" << winnerId;
+        qDebug() << "Gagnant des encheres: joueur" << winnerId;
     }
 
     if (state.contains("biddingWinnerAnnonce")) {
@@ -648,7 +657,7 @@ void GameModel::updateGameState(const QJsonObject& state)
         if (currentPlayer == m_myPosition && !m_biddingPhase) {
             Player* localPlayer = getPlayerByPosition(m_myPosition);
             if (localPlayer && localPlayer->getMain().size() == 1) {
-                qDebug() << "Dernier pli détecté - Jeu automatique de la dernière carte";
+                qDebug() << "Dernier pli detecte - Jeu automatique de la dernière carte";
                 // Jouer automatiquement après un court délai pour que ce soit visible
                 QTimer::singleShot(500, this, [this]() {
                     playCard(0);  // La seule carte restante est à l'index 0
@@ -922,8 +931,8 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         int scoreTeam1 = gameOverData["scoreTeam1"].toInt();
         int scoreTeam2 = gameOverData["scoreTeam2"].toInt();
 
-        qDebug() << "GameModel::receivePlayerAction - Partie terminée!";
-        qDebug() << "  Gagnant: Équipe" << winner;
+        qDebug() << "GameModel::receivePlayerAction - Partie terminee!";
+        qDebug() << "  Gagnant: Equipe" << winner;
         qDebug() << "  Scores finaux: Team1 =" << scoreTeam1 << ", Team2 =" << scoreTeam2;
 
         m_scoreTeam1 = scoreTeam1;
@@ -969,9 +978,9 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
 
         // Reinitialiser les annonces de chaque joueur
         for (int i = 0; i < 4; i++) {
-            m_playerBids[i]["value"] = 0;
-            m_playerBids[i]["suit"] = -1;
-            m_playerBids[i]["text"] = "";
+            m_playerBids[i]["bidValue"] = "";
+            m_playerBids[i]["suitSymbol"] = "";
+            m_playerBids[i]["isRed"] = false;
         }
         emit playerBidsChanged();
 
@@ -1027,7 +1036,7 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
                 QTimer::singleShot(1000, this, [this]() {
                     m_distributionPhase = 0;
                     emit distributionPhaseChanged();
-                    qDebug() << "Partie initialisée - Distribution terminée";
+                    qDebug() << "Partie initialisee - Distribution terminee";
                     emit gameInitialized();
                 });
             });
@@ -1039,7 +1048,7 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
 
 void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Carte*>& myCards)
 {
-    qDebug() << "Distribution cartes" << startIdx << "à" << (endIdx - 1);
+    qDebug() << "Distribution cartes" << startIdx << "a" << (endIdx - 1);
 
     Player* localPlayer = getPlayerByPosition(m_myPosition);
     if (!localPlayer) return;

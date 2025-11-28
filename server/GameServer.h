@@ -14,6 +14,7 @@
 #include "Deck.h"
 #include "Carte.h"
 #include "GameModel.h"
+#include "DatabaseManager.h"
 
 // Connexion réseau d'un joueur (pas la logique métier)
 struct PlayerConnection {
@@ -89,13 +90,19 @@ public:
         : QObject(parent)
         , m_server(new QWebSocketServer("CoinchServer", QWebSocketServer::NonSecureMode, this))
         , m_nextRoomId(1)
+        , m_dbManager(new DatabaseManager(this))
     {
+        // Initialiser la base de donnees
+        if (!m_dbManager->initialize("coinche.db")) {
+            qCritical() << "Echec de l'initialisation de la base de donnees";
+        }
+
         if (m_server->listen(QHostAddress::Any, port)) {
             qDebug() << "Serveur demarre sur le port" << port;
             connect(m_server, &QWebSocketServer::newConnection,
                     this, &GameServer::onNewConnection);
         } else {
-            qDebug() << "Erreur: impossible de démarrer le serveur";
+            qDebug() << "Erreur: impossible de demarrer le serveur";
         }
     }
 
@@ -139,6 +146,10 @@ private slots:
 
         if (type == "register") {
             handleRegister(sender, obj);
+        } else if (type == "registerAccount") {
+            handleRegisterAccount(sender, obj);
+        } else if (type == "loginAccount") {
+            handleLoginAccount(sender, obj);
         } else if (type == "joinMatchmaking") {
             handleJoinMatchmaking(sender);
         } else if (type == "leaveMatchmaking") {
@@ -200,6 +211,56 @@ private:
         sendMessage(socket, response);
 
         qDebug() << "Joueur enregistre:" << playerName << "ID:" << connectionId;
+    }
+
+    void handleRegisterAccount(QWebSocket *socket, const QJsonObject &data) {
+        QString pseudo = data["pseudo"].toString();
+        QString email = data["email"].toString();
+        QString password = data["password"].toString();
+
+        qDebug() << "GameServer - Tentative creation compte:" << pseudo << email;
+
+        QString errorMsg;
+        if (m_dbManager->createAccount(pseudo, email, password, errorMsg)) {
+            // Succes
+            QJsonObject response;
+            response["type"] = "registerAccountSuccess";
+            response["playerName"] = pseudo;
+            sendMessage(socket, response);
+            qDebug() << "Compte cree avec succes:" << pseudo;
+        } else {
+            // Echec
+            QJsonObject response;
+            response["type"] = "registerAccountFailed";
+            response["error"] = errorMsg;
+            sendMessage(socket, response);
+            qDebug() << "Echec creation compte:" << errorMsg;
+        }
+    }
+
+    void handleLoginAccount(QWebSocket *socket, const QJsonObject &data) {
+        QString email = data["email"].toString();
+        QString password = data["password"].toString();
+
+        qDebug() << "GameServer - Tentative connexion:" << email;
+
+        QString pseudo;
+        QString errorMsg;
+        if (m_dbManager->authenticateUser(email, password, pseudo, errorMsg)) {
+            // Succes
+            QJsonObject response;
+            response["type"] = "loginAccountSuccess";
+            response["playerName"] = pseudo;
+            sendMessage(socket, response);
+            qDebug() << "Connexion reussie:" << pseudo;
+        } else {
+            // Echec
+            QJsonObject response;
+            response["type"] = "loginAccountFailed";
+            response["error"] = errorMsg;
+            sendMessage(socket, response);
+            qDebug() << "Echec connexion:" << errorMsg;
+        }
     }
 
     void handleJoinMatchmaking(QWebSocket *socket) {
@@ -1019,8 +1080,8 @@ private:
         } else {
             // Manche suivante : reconstruire le deck avec les plis des équipes
             qDebug() << "GameServer - Reconstruction du deck :";
-            qDebug() << "  Équipe 1:" << room->plisTeam1.size() << "cartes";
-            qDebug() << "  Équipe 2:" << room->plisTeam2.size() << "cartes";
+            qDebug() << "  Equipe 1:" << room->plisTeam1.size() << "cartes";
+            qDebug() << "  Equipe 2:" << room->plisTeam2.size() << "cartes";
 
             // Rassembler toutes les cartes : équipe 1 d'abord, puis équipe 2
             std::vector<Carte*> allCards;
@@ -1411,8 +1472,9 @@ private:
         broadcastToRoom(roomId, stateMsg);
 
         // Si c'est le dernier pli (tous les joueurs n'ont qu'une carte), jouer automatiquement après un délai
+        // IMPORTANT: Ne jouer automatiquement que si on est bien dans la phase de jeu
         Player* player = room->players[currentPlayer].get();
-        if (player && player->getMain().size() == 1) {
+        if (player && player->getMain().size() == 1 && room->gameState == "playing") {
             qDebug() << "GameServer - Dernier pli detecte, jeu automatique pour joueur" << currentPlayer;
 
             // Si c'est le début du dernier pli (pli vide), attendre 2000ms pour laisser le temps au pli précédent d'être nettoyé
@@ -1422,7 +1484,7 @@ private:
             // Jouer automatiquement après le délai approprié
             QTimer::singleShot(delay, this, [this, roomId, currentPlayer]() {
                 GameRoom* room = m_gameRooms.value(roomId);
-                if (!room || room->currentPlayerIndex != currentPlayer) return;
+                if (!room || room->currentPlayerIndex != currentPlayer || room->gameState != "playing") return;
 
                 Player* player = room->players[currentPlayer].get();
                 if (!player || player->getMain().empty()) return;
@@ -1568,6 +1630,7 @@ private:
     QQueue<QString> m_matchmakingQueue;
     QMap<int, GameRoom*> m_gameRooms;
     int m_nextRoomId;
+    DatabaseManager *m_dbManager;
 };
 
 #endif // GAMESERVER_H

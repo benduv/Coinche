@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(Coinche)
 
 # Find Qt packages
-find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Qml WebSockets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Qml WebSockets Network Sql)
 
 # Compiler flags
 set(CMAKE_CXX_STANDARD 17)
@@ -93,6 +93,8 @@ target_link_libraries(coinche PRIVATE
 add_executable(server
     server/server_main.cpp
     server/GameServer.h  # Header-only, mis directement dans le serveur
+    server/DatabaseManager.h
+    server/DatabaseManager.cpp
 )
 
 target_include_directories(server PRIVATE
@@ -105,6 +107,7 @@ target_link_libraries(server PRIVATE
     Qt6::Core
     Qt6::Network
     Qt6::WebSockets
+    Qt6::Sql
 )
 
 # ========================================

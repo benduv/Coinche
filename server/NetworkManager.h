@@ -50,9 +50,9 @@ public:
     QJsonArray opponents() const { return m_opponents; }
     GameModel* gameModel() const { return m_gameModel; }
 
-    // ⭐ Nouvelle méthode pour créer le GameModel
+    // Nouvelle méthode pour créer le GameModel
     Q_INVOKABLE void createGameModel(int position, const QJsonArray& cards, const QJsonArray& opps) {
-        qDebug() << "Création du GameModel en C++";
+        qDebug() << "Creation du GameModel en C++";
         
         // Supprimer l'ancien si existant
         if (m_gameModel) {
@@ -76,7 +76,7 @@ public:
         // Initialiser avec les données
         m_gameModel->initOnlineGame(position, cards, opps);
         
-        qDebug() << "GameModel créé et initialisé";
+        qDebug() << "GameModel cree et initialise";
         
         // Émettre signal pour que QML navigue vers CoincheView
         emit gameModelReady();
@@ -121,6 +121,23 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void registerAccount(const QString &pseudo, const QString &email, const QString &password) {
+        QJsonObject msg;
+        msg["type"] = "registerAccount";
+        msg["pseudo"] = pseudo;
+        msg["email"] = email;
+        msg["password"] = password;
+        sendMessage(msg);
+    }
+
+    Q_INVOKABLE void loginAccount(const QString &email, const QString &password) {
+        QJsonObject msg;
+        msg["type"] = "loginAccount";
+        msg["email"] = email;
+        msg["password"] = password;
+        sendMessage(msg);
+    }
+
 signals:
     void connectedChanged();
     void matchmakingStatusChanged();
@@ -132,16 +149,20 @@ signals:
     void bidMade(QString playerId, int bidValue, int suit);
     void playerDisconnected(QString playerId);
     void errorOccurred(QString error);
+    void registerSuccess(QString playerName);
+    void registerFailed(QString error);
+    void loginSuccess(QString playerName);
+    void loginFailed(QString error);
 
 private slots:
     void onConnected() {
-        qDebug() << "Connecté au serveur";
+        qDebug() << "Connecte au serveur";
         m_connected = true;
         emit connectedChanged();
     }
 
     void onDisconnected() {
-        qDebug() << "Déconnecté du serveur";
+        qDebug() << "Deconnecte du serveur";
         m_connected = false;
         emit connectedChanged();
     }
@@ -155,7 +176,7 @@ private slots:
 
         if (type == "registered") {
             m_playerId = obj["connectionId"].toString();
-            qDebug() << "Enregistré avec ID:" << m_playerId;
+            qDebug() << "Enregistre avec ID:" << m_playerId;
         }
         else if (type == "matchmakingStatus") {
             m_matchmakingStatus = obj["status"].toString();
@@ -177,7 +198,7 @@ private slots:
             emit gameDataChanged();
             emit gameFound(m_myPosition, m_opponents);
             
-            qDebug() << "Signal gameFound émis";
+            qDebug() << "Signal gameFound emis";
         }
         else if (type == "cardPlayed") {
             int playerIndex = obj["playerIndex"].toInt();
@@ -213,7 +234,7 @@ private slots:
             // Transmettre l'état du jeu au GameModel
             if (m_gameModel) {
                 m_gameModel->updateGameState(obj);
-                qDebug() << "NetworkManager - État du jeu mis à jour";
+                qDebug() << "NetworkManager - Etat du jeu mis à jour";
             }
         }
         else if (type == "pliFinished") {
@@ -221,7 +242,7 @@ private slots:
             int scoreMancheTeam1 = obj["scoreMancheTeam1"].toInt();
             int scoreMancheTeam2 = obj["scoreMancheTeam2"].toInt();
 
-            qDebug() << "NetworkManager - Pli terminé, gagnant:" << winnerId;
+            qDebug() << "NetworkManager - Pli termine, gagnant:" << winnerId;
             qDebug() << "  Scores de manche: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
 
             // Transmettre au GameModel pour nettoyer le pli et mettre à jour les scores de manche
@@ -253,7 +274,7 @@ private slots:
             int scoreTeam1 = obj["scoreTeam1"].toInt();
             int scoreTeam2 = obj["scoreTeam2"].toInt();
 
-            qDebug() << "NetworkManager - Partie terminée! Gagnant: Équipe" << winner;
+            qDebug() << "NetworkManager - Partie terminee! Gagnant: Equipe" << winner;
             qDebug() << "  Scores finaux: Team1 =" << scoreTeam1 << ", Team2 =" << scoreTeam2;
 
             // Transmettre au GameModel
@@ -320,7 +341,7 @@ private slots:
         }
         else if (type == "belote") {
             int playerIndex = obj["playerIndex"].toInt();
-            qDebug() << "NetworkManager - BELOTE annoncée par joueur" << playerIndex;
+            qDebug() << "NetworkManager - BELOTE annoncee par joueur" << playerIndex;
 
             if (m_gameModel) {
                 m_gameModel->receivePlayerAction(playerIndex, "belote", QJsonObject());
@@ -328,15 +349,35 @@ private slots:
         }
         else if (type == "rebelote") {
             int playerIndex = obj["playerIndex"].toInt();
-            qDebug() << "NetworkManager - REBELOTE annoncée par joueur" << playerIndex;
+            qDebug() << "NetworkManager - REBELOTE annoncee par joueur" << playerIndex;
 
             if (m_gameModel) {
                 m_gameModel->receivePlayerAction(playerIndex, "rebelote", QJsonObject());
             }
         }
+        else if (type == "registerAccountSuccess") {
+            QString playerName = obj["playerName"].toString();
+            qDebug() << "NetworkManager - Compte cree avec succès:" << playerName;
+            emit registerSuccess(playerName);
+        }
+        else if (type == "registerAccountFailed") {
+            QString error = obj["error"].toString();
+            qDebug() << "NetworkManager - Echec creation compte:" << error;
+            emit registerFailed(error);
+        }
+        else if (type == "loginAccountSuccess") {
+            QString playerName = obj["playerName"].toString();
+            qDebug() << "NetworkManager - Connexion reussie:" << playerName;
+            emit loginSuccess(playerName);
+        }
+        else if (type == "loginAccountFailed") {
+            QString error = obj["error"].toString();
+            qDebug() << "NetworkManager - Echec connexion:" << error;
+            emit loginFailed(error);
+        }
         else if (type == "error") {
             QString errorMsg = obj["message"].toString();
-            qDebug() << "NetworkManager - Erreur reçue:" << errorMsg;
+            qDebug() << "NetworkManager - Erreur recue:" << errorMsg;
             emit errorOccurred(errorMsg);
         }
         else if (type == "playerDisconnected") {
@@ -348,7 +389,7 @@ private slots:
 private:
     void sendMessage(const QJsonObject &message) {
         if (!m_connected) {
-            qDebug() << "Erreur: non connecté au serveur";
+            qDebug() << "Erreur: non connecte au serveur";
             return;
         }
 
@@ -366,7 +407,7 @@ private:
     int m_myPosition;
     QJsonArray m_opponents;
     
-    GameModel* m_gameModel;  // ⭐ Le GameModel géré par NetworkManager
+    GameModel* m_gameModel;  // Le GameModel géré par NetworkManager
 };
 
 #endif // NETWORKMANAGER_H

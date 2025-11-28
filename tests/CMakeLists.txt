@@ -49,6 +49,7 @@ target_link_libraries(test_capot_generale PRIVATE
     Qt6::Core
     Qt6::Network
     Qt6::WebSockets
+    Qt6::Sql
 )
 
 # Découvrir automatiquement les tests Google Test
@@ -73,6 +74,7 @@ target_link_libraries(test_coinche PRIVATE
     Qt6::Core
     Qt6::Network
     Qt6::WebSockets
+    Qt6::Sql
 )
 
 # Découvrir automatiquement les tests Google Test
