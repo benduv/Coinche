@@ -102,6 +102,34 @@ ApplicationWindow {
                         }
                     }
 
+                    // Bouton Statistiques (uniquement pour les comptes enregistrés)
+                    Button {
+                        Layout.preferredWidth: 300 * mainWindow.widthRatio
+                        Layout.preferredHeight: 120 * mainWindow.heightRatio
+                        Layout.alignment: Qt.AlignHCenter
+                        visible: mainWindow.accountType !== "guest"
+
+                        background: Rectangle {
+                            color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
+                            radius: 10 * mainWindow.minRatio
+                            border.color: "#FFD700"
+                            border.width: 2 * mainWindow.minRatio
+                        }
+
+                        contentItem: Text {
+                            text: "Statistiques de jeu"
+                            font.pixelSize: 48 * mainWindow.minRatio
+                            font.bold: true
+                            color: "white"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: {
+                            stackView.push(statsViewComponent)
+                        }
+                    }
+
                     // Afficher le nom du joueur et le type de compte
                     Text {
                         text: "Connecté en tant que: " + mainWindow.loggedInPlayerName +
@@ -140,6 +168,18 @@ ApplicationWindow {
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
+                }
+            }
+        }
+
+        Component {
+            id: statsViewComponent
+
+            StatsView {
+                playerName: mainWindow.loggedInPlayerName
+
+                onBackToMenu: {
+                    stackView.pop()
                 }
             }
         }

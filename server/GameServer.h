@@ -50,6 +50,7 @@ struct GameRoom {
     bool surcoinched = false;  // True si SURCOINCHE a été annoncé
     QTimer* surcoincheTimer = nullptr;  // Timer pour le timeout de surcoinche
     int surcoincheTimeLeft = 0;  // Temps restant en secondes
+    int coinchePlayerIndex = -1;  // Index du joueur qui a coinché
 
     // Pli en cours
     std::vector<std::pair<int, Carte*>> currentPli;  // pair<playerIndex, carte>
@@ -150,6 +151,8 @@ private slots:
             handleRegisterAccount(sender, obj);
         } else if (type == "loginAccount") {
             handleLoginAccount(sender, obj);
+        } else if (type == "getStats") {
+            handleGetStats(sender, obj);
         } else if (type == "joinMatchmaking") {
             handleJoinMatchmaking(sender);
         } else if (type == "leaveMatchmaking") {
@@ -261,6 +264,25 @@ private:
             sendMessage(socket, response);
             qDebug() << "Echec connexion:" << errorMsg;
         }
+    }
+
+    void handleGetStats(QWebSocket *socket, const QJsonObject &data) {
+        QString pseudo = data["pseudo"].toString();
+
+        qDebug() << "GameServer - Demande de stats pour:" << pseudo;
+
+        DatabaseManager::PlayerStats stats = m_dbManager->getPlayerStats(pseudo);
+
+        QJsonObject response;
+        response["type"] = "statsData";
+        response["gamesPlayed"] = stats.gamesPlayed;
+        response["gamesWon"] = stats.gamesWon;
+        response["winRatio"] = stats.winRatio;
+        response["coincheAttempts"] = stats.coincheAttempts;
+        response["coincheSuccess"] = stats.coincheSuccess;
+
+        sendMessage(socket, response);
+        qDebug() << "Stats envoyees pour:" << pseudo;
     }
 
     void handleJoinMatchmaking(QWebSocket *socket) {
@@ -993,49 +1015,65 @@ private:
         broadcastToRoom(roomId, scoreMsg);
 
         // Vérifier si une équipe a atteint 1000 points
-        bool team1Won = room->scoreTeam1 >= 1000;
-        bool team2Won = room->scoreTeam2 >= 1000;
+        bool team1Won = room->scoreTeam1 >= 100;
+        bool team2Won = room->scoreTeam2 >= 100;
 
         if (team1Won || team2Won) {
             // Une ou les deux équipes ont dépassé 1000 points
+            int winner = 0;
             if (team1Won && team2Won) {
                 // Les deux équipes ont dépassé 1000, celle avec le plus de points gagne
-                int winner = (room->scoreTeam1 > room->scoreTeam2) ? 1 : 2;
+                winner = (room->scoreTeam1 > room->scoreTeam2) ? 1 : 2;
                 qDebug() << "GameServer - Les deux equipes ont depasse 1000 points!";
                 qDebug() << "GameServer - Equipe" << winner << "gagne avec"
                          << ((winner == 1) ? room->scoreTeam1 : room->scoreTeam2) << "points";
-
-                QJsonObject gameOverMsg;
-                gameOverMsg["type"] = "gameOver";
-                gameOverMsg["winner"] = winner;
-                gameOverMsg["scoreTeam1"] = room->scoreTeam1;
-                gameOverMsg["scoreTeam2"] = room->scoreTeam2;
-                broadcastToRoom(roomId, gameOverMsg);
-
-                room->gameState = "finished";
             } else if (team1Won) {
+                winner = 1;
                 qDebug() << "GameServer - Equipe 1 gagne avec" << room->scoreTeam1 << "points!";
-
-                QJsonObject gameOverMsg;
-                gameOverMsg["type"] = "gameOver";
-                gameOverMsg["winner"] = 1;
-                gameOverMsg["scoreTeam1"] = room->scoreTeam1;
-                gameOverMsg["scoreTeam2"] = room->scoreTeam2;
-                broadcastToRoom(roomId, gameOverMsg);
-
-                room->gameState = "finished";
             } else {
+                winner = 2;
                 qDebug() << "GameServer - Equipe 2 gagne avec" << room->scoreTeam2 << "points!";
-
-                QJsonObject gameOverMsg;
-                gameOverMsg["type"] = "gameOver";
-                gameOverMsg["winner"] = 2;
-                gameOverMsg["scoreTeam1"] = room->scoreTeam1;
-                gameOverMsg["scoreTeam2"] = room->scoreTeam2;
-                broadcastToRoom(roomId, gameOverMsg);
-
-                room->gameState = "finished";
             }
+
+            // Mettre à jour les statistiques pour tous les joueurs enregistrés
+            for (int i = 0; i < room->connectionIds.size(); i++) {
+                PlayerConnection* conn = m_connections[room->connectionIds[i]];
+                if (!conn || conn->playerName.isEmpty()) continue;
+
+                // Vérifier si ce joueur est dans l'équipe gagnante
+                int playerTeam = (i % 2 == 0) ? 1 : 2;  // Équipe 1: joueurs 0 et 2, Équipe 2: joueurs 1 et 3
+                bool won = (playerTeam == winner);
+
+                // Mettre à jour les stats de partie
+                m_dbManager->updateGameStats(conn->playerName, won);
+                qDebug() << "Stats de partie mises a jour pour" << conn->playerName << "Won:" << won;
+            }
+
+            // Vérifier si une coinche a réussi
+            if (room->coinched && room->coinchePlayerIndex != -1) {
+                // Une coinche a été faite, vérifier si elle a réussi
+                // La coinche réussit si l'équipe qui a coinché gagne
+                int coinchePlayerTeam = (room->coinchePlayerIndex % 2 == 0) ? 1 : 2;
+                bool coincheSuccess = (coinchePlayerTeam == winner);
+
+                if (coincheSuccess) {
+                    // Mettre à jour les stats de coinche réussie
+                    PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
+                    if (coincheConn && !coincheConn->playerName.isEmpty()) {
+                        m_dbManager->updateCoincheStats(coincheConn->playerName, false, true);
+                        qDebug() << "Coinche reussie pour" << coincheConn->playerName;
+                    }
+                }
+            }
+
+            QJsonObject gameOverMsg;
+            gameOverMsg["type"] = "gameOver";
+            gameOverMsg["winner"] = winner;
+            gameOverMsg["scoreTeam1"] = room->scoreTeam1;
+            gameOverMsg["scoreTeam2"] = room->scoreTeam2;
+            broadcastToRoom(roomId, gameOverMsg);
+
+            room->gameState = "finished";
         } else {
             // Aucune équipe n'a atteint 1000 points, on démarre une nouvelle manche
             qDebug() << "GameServer - Demarrage d'une nouvelle manche...";
@@ -1126,6 +1164,7 @@ private:
         room->couleurAtout = Carte::COULEURINVALIDE;
         room->coinched = false;
         room->surcoinched = false;
+        room->coinchePlayerIndex = -1;
         room->currentPli.clear();
         room->couleurDemandee = Carte::COULEURINVALIDE;
 
@@ -1209,7 +1248,14 @@ private:
             }
 
             room->coinched = true;
+            room->coinchePlayerIndex = playerIndex;  // Enregistrer qui a coinché
             qDebug() << "GameServer - Joueur" << playerIndex << "COINCHE l'enchère!";
+
+            // Enregistrer la tentative de coinche dans les stats (si joueur enregistré)
+            PlayerConnection* coincheConn = m_connections[room->connectionIds[playerIndex]];
+            if (coincheConn && !coincheConn->playerName.isEmpty()) {
+                m_dbManager->updateCoincheStats(coincheConn->playerName, true, false);
+            }
 
             // Broadcast COINCHE
             QJsonObject msg;

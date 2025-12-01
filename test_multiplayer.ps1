@@ -11,13 +11,18 @@ Start-Process -FilePath ".\build\server.exe" -WindowStyle Normal
 # Attendre que le serveur démarre
 Start-Sleep -Seconds 2
 
-# Noms des joueurs
-$playerNames = @("Alice", "Bob", "Charlie", "David")
+# Identifiants des joueurs (email, password)
+$players = @(
+    @{Email = "aaa@aaa.fr"; Password = "aaaaaa"},
+    @{Email = "bbb@bbb.fr"; Password = "bbbbbb"},
+    @{Email = "ccc@ccc.fr"; Password = "cccccc"},
+    @{Email = "ddd@ddd.fr"; Password = "dddddd"}
+)
 
-# Lancer les 4 clients (le positionnement est automatique via WindowPositioner)
-foreach ($name in $playerNames) {
-    Write-Host "Lancement du client: $name" -ForegroundColor Cyan
-    Start-Process -FilePath ".\build\coinche.exe" -ArgumentList "--name", $name -WindowStyle Normal
+# Lancer les 4 clients avec auto-login (le positionnement est automatique via WindowPositioner)
+foreach ($player in $players) {
+    Write-Host "Lancement du client: $($player.Email)" -ForegroundColor Cyan
+    Start-Process -FilePath ".\build\coinche.exe" -ArgumentList "--email", $player.Email, "--password", $player.Password -WindowStyle Normal
     Start-Sleep -Milliseconds 800
 }
 

@@ -32,6 +32,25 @@ public:
     // Vérifier si un pseudo existe déjà
     bool pseudoExists(const QString &pseudo);
 
+    // Récupérer l'ID d'un utilisateur par son pseudo
+    int getUserIdByPseudo(const QString &pseudo);
+
+    // Mettre à jour les statistiques de jeu après une partie
+    bool updateGameStats(const QString &pseudo, bool won);
+
+    // Mettre à jour les statistiques de coinche
+    bool updateCoincheStats(const QString &pseudo, bool attempt, bool success);
+
+    // Récupérer les statistiques d'un joueur
+    struct PlayerStats {
+        int gamesPlayed;
+        int gamesWon;
+        double winRatio;
+        int coincheAttempts;
+        int coincheSuccess;
+    };
+    PlayerStats getPlayerStats(const QString &pseudo);
+
 private:
     QSqlDatabase m_db;
 

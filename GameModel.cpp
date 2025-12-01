@@ -940,7 +940,8 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         emit scoreTeam1Changed();
         emit scoreTeam2Changed();
 
-        // TODO: Afficher un écran de victoire
+        // Emettre le signal de fin de partie
+        emit gameOver(winner, scoreTeam1, scoreTeam2);
     } else if (action == "newManche") {
         QJsonObject newMancheData = data.toJsonObject();
         int biddingPlayer = newMancheData["biddingPlayer"].toInt();

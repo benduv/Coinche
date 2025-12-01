@@ -15,6 +15,41 @@ Rectangle {
     property real heightRatio: height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
 
+    // Auto-login si les credentials sont fournis
+    property bool autoLoginPending: false
+
+    Component.onCompleted: {
+        if (autoLoginEmail !== "" && autoLoginPassword !== "") {
+            console.log("Auto-login préparé pour:", autoLoginEmail)
+            autoLoginPending = true
+        }
+    }
+
+    function performAutoLogin() {
+        if (autoLoginPending && networkManager.connected) {
+            console.log("Exécution auto-login avec:", autoLoginEmail)
+            networkManager.loginAccount(autoLoginEmail, autoLoginPassword)
+            autoLoginPending = false
+        }
+    }
+
+    Connections {
+        target: networkManager
+
+        function onConnectedChanged() {
+            if (networkManager.connected && autoLoginPending) {
+                performAutoLogin()
+            }
+        }
+
+        function onLoginSuccess(playerName) {
+            loginRoot.loginSuccess(playerName, "account")
+        }
+        function onLoginFailed(error) {
+            console.error("Erreur auto-login:", error)
+        }
+    }
+
     StackView {
         id: loginStack
         anchors.fill: parent

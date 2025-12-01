@@ -24,11 +24,33 @@ int main(int argc, char *argv[])
         "Joueur" + QString::number(QRandomGenerator::global()->bounded(1000))
     );
     parser.addOption(playerNameOption);
-    
+
+    QCommandLineOption emailOption(
+        QStringList() << "e" << "email",
+        "Email pour connexion automatique",
+        "email",
+        ""
+    );
+    parser.addOption(emailOption);
+
+    QCommandLineOption passwordOption(
+        QStringList() << "p" << "password",
+        "Mot de passe pour connexion automatique",
+        "password",
+        ""
+    );
+    parser.addOption(passwordOption);
+
     parser.process(app);
-    
+
     QString playerName = parser.value(playerNameOption);
+    QString autoLoginEmail = parser.value(emailOption);
+    QString autoLoginPassword = parser.value(passwordOption);
+
     qDebug() << "Nom du joueur:" << playerName;
+    if (!autoLoginEmail.isEmpty()) {
+        qDebug() << "Auto-login activé pour:" << autoLoginEmail;
+    }
 
     QQuickStyle::setStyle("Material");
     
@@ -38,6 +60,8 @@ int main(int argc, char *argv[])
     NetworkManager networkManager;
     engine.rootContext()->setContextProperty("networkManager", &networkManager);
     engine.rootContext()->setContextProperty("defaultPlayerName", playerName);
+    engine.rootContext()->setContextProperty("autoLoginEmail", autoLoginEmail);
+    engine.rootContext()->setContextProperty("autoLoginPassword", autoLoginPassword);
 
     // WindowPositioner pour positionner automatiquement les fenêtres
     WindowPositioner windowPositioner;

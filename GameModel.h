@@ -139,6 +139,7 @@ signals:
     void dealerPositionChanged();
     void pliWinnerIdChanged();
     void gameInitialized();
+    void gameOver(int winner, int scoreTeam1, int scoreTeam2);
 
     // Signaux vers NetworkManager
     void cardPlayedLocally(int cardIndex);

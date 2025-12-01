@@ -60,6 +60,26 @@ bool DatabaseManager::createTables()
     }
 
     qDebug() << "Table 'users' creee/verifiee";
+
+    // Table des statistiques
+    QString createStatsTable = R"(
+        CREATE TABLE IF NOT EXISTS stats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            games_played INTEGER DEFAULT 0,
+            games_won INTEGER DEFAULT 0,
+            coinche_attempts INTEGER DEFAULT 0,
+            coinche_success INTEGER DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    )";
+
+    if (!query.exec(createStatsTable)) {
+        qCritical() << "Erreur creation table stats:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Table 'stats' creee/verifiee";
     return true;
 }
 
@@ -173,6 +193,16 @@ bool DatabaseManager::createAccount(const QString &pseudo, const QString &email,
         return false;
     }
 
+    // Créer l'entrée de statistiques pour ce nouvel utilisateur
+    int userId = query.lastInsertId().toInt();
+    QSqlQuery statsQuery(m_db);
+    statsQuery.prepare("INSERT INTO stats (user_id) VALUES (:user_id)");
+    statsQuery.bindValue(":user_id", userId);
+
+    if (!statsQuery.exec()) {
+        qWarning() << "Erreur creation stats pour utilisateur:" << statsQuery.lastError().text();
+    }
+
     qDebug() << "Compte cree avec succès pour:" << pseudo;
     return true;
 }
@@ -222,4 +252,107 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
     pseudo = storedPseudo;
     qDebug() << "Authentification reussie pour:" << pseudo;
     return true;
+}
+
+int DatabaseManager::getUserIdByPseudo(const QString &pseudo)
+{
+    QSqlQuery query(m_db);
+    query.prepare("SELECT id FROM users WHERE pseudo = :pseudo");
+    query.bindValue(":pseudo", pseudo);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur recuperation user_id:" << query.lastError().text();
+        return -1;
+    }
+
+    if (query.next()) {
+        return query.value(0).toInt();
+    }
+
+    return -1;
+}
+
+bool DatabaseManager::updateGameStats(const QString &pseudo, bool won)
+{
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour mise a jour stats:" << pseudo;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    if (won) {
+        query.prepare("UPDATE stats SET games_played = games_played + 1, games_won = games_won + 1 WHERE user_id = :user_id");
+    } else {
+        query.prepare("UPDATE stats SET games_played = games_played + 1 WHERE user_id = :user_id");
+    }
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur mise a jour stats de jeu:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Stats de jeu mises a jour pour:" << pseudo << "Won:" << won;
+    return true;
+}
+
+bool DatabaseManager::updateCoincheStats(const QString &pseudo, bool attempt, bool success)
+{
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour mise a jour coinche stats:" << pseudo;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    if (attempt && success) {
+        query.prepare("UPDATE stats SET coinche_attempts = coinche_attempts + 1, coinche_success = coinche_success + 1 WHERE user_id = :user_id");
+    } else if (attempt) {
+        query.prepare("UPDATE stats SET coinche_attempts = coinche_attempts + 1 WHERE user_id = :user_id");
+    } else {
+        return true; // Rien à faire
+    }
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur mise a jour coinche stats:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Stats de coinche mises a jour pour:" << pseudo << "Attempt:" << attempt << "Success:" << success;
+    return true;
+}
+
+DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseudo)
+{
+    PlayerStats stats = {0, 0, 0.0, 0, 0};
+
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour recuperation stats:" << pseudo;
+        return stats;
+    }
+
+    QSqlQuery query(m_db);
+    query.prepare("SELECT games_played, games_won, coinche_attempts, coinche_success FROM stats WHERE user_id = :user_id");
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur recuperation stats:" << query.lastError().text();
+        return stats;
+    }
+
+    if (query.next()) {
+        stats.gamesPlayed = query.value(0).toInt();
+        stats.gamesWon = query.value(1).toInt();
+        stats.coincheAttempts = query.value(2).toInt();
+        stats.coincheSuccess = query.value(3).toInt();
+
+        if (stats.gamesPlayed > 0) {
+            stats.winRatio = (double)stats.gamesWon / (double)stats.gamesPlayed;
+        }
+    }
+
+    return stats;
 }

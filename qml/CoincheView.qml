@@ -7,6 +7,20 @@ Rectangle {
     anchors.fill: parent
     color: "#2d5016"
 
+    // Propriétés pour la popup de fin de partie
+    property bool showGameOverPopup: false
+    property int gameOverWinner: 1
+    property int gameOverScoreTeam1: 0
+    property int gameOverScoreTeam2: 0
+
+    // Fonction pour retourner au menu principal
+    function returnToMainMenu() {
+        var stackView = rootArea.StackView.view
+        if (stackView) {
+            stackView.pop(null)  // Pop jusqu'à l'initialItem (MainMenu)
+        }
+    }
+
     // Fonction pour calculer la position visuelle d'un joueur
     // Retourne l'index visuel (0=sud, 1=ouest, 2=nord, 3=est)
     function getVisualPosition(actualPlayerIndex) {
@@ -362,6 +376,18 @@ Rectangle {
                     }
                 }
             }
+        }
+    }
+
+    // Connexion pour afficher la popup de fin de partie
+    Connections {
+        target: gameModel
+        function onGameOver(winner, scoreTeam1, scoreTeam2) {
+            console.log("Game Over! Winner: Team", winner, "Scores:", scoreTeam1, scoreTeam2)
+            rootArea.gameOverWinner = winner
+            rootArea.gameOverScoreTeam1 = scoreTeam1
+            rootArea.gameOverScoreTeam2 = scoreTeam2
+            rootArea.showGameOverPopup = true
         }
     }
 
@@ -1750,6 +1776,24 @@ Rectangle {
                     // Démarrer l'animation
                     cardAnimation.start()
                 }
+            }
+        }
+    }
+
+    // Popup de fin de partie
+    Loader {
+        id: gameOverLoader
+        anchors.fill: parent
+        active: rootArea.showGameOverPopup
+        z: 1000
+
+        sourceComponent: GameOverPopup {
+            winnerTeam: rootArea.gameOverWinner
+            scoreTeam1: rootArea.gameOverScoreTeam1
+            scoreTeam2: rootArea.gameOverScoreTeam2
+
+            onReturnToMenu: {
+                rootArea.returnToMainMenu()
             }
         }
     }
