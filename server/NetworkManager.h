@@ -138,6 +138,13 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void requestStats(const QString &pseudo) {
+        QJsonObject msg;
+        msg["type"] = "getStats";
+        msg["pseudo"] = pseudo;
+        sendMessage(msg);
+    }
+
 signals:
     void connectedChanged();
     void matchmakingStatusChanged();
@@ -153,6 +160,7 @@ signals:
     void registerFailed(QString error);
     void loginSuccess(QString playerName);
     void loginFailed(QString error);
+    void messageReceived(QString message);  // Pour que QML puisse écouter tous les messages
 
 private slots:
     void onConnected() {
@@ -173,6 +181,9 @@ private slots:
         QString type = obj["type"].toString();
 
         qDebug() << "NetWorkManager - Message recu:" << type;
+
+        // Émettre le message pour que QML puisse l'écouter (ex: StatsView)
+        emit messageReceived(message);
 
         if (type == "registered") {
             m_playerId = obj["connectionId"].toString();

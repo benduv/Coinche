@@ -17,7 +17,11 @@ Rectangle {
     function returnToMainMenu() {
         var stackView = rootArea.StackView.view
         if (stackView) {
-            stackView.pop(null)  // Pop jusqu'à l'initialItem (MainMenu)
+            // Pop jusqu'au menu principal (depth 2: LoginView + MainMenu)
+            // On veut rester au MainMenu, donc on pop jusqu'à depth 2
+            while (stackView.depth > 2) {
+                stackView.pop()
+            }
         }
     }
 
@@ -1055,7 +1059,7 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
-                    text: gameModel.scoreTeam1
+                    text: /*gameModel.biddingPhase ? gameModel.scoreRoundTeam1 : */gameModel.scoreTeam1
                     color: "white"
                     font.pixelSize: parent.height * 0.2
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
@@ -1077,7 +1081,7 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
-                    text: gameModel.scoreTeam2
+                    text: /*gameModel.biddingPhase ? gameModel.scoreRoundTeam2 :*/ gameModel.scoreTeam2
                     color: "white"
                     font.pixelSize: parent.height * 0.2
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
@@ -1417,7 +1421,6 @@ Rectangle {
             id: lastPliDisplay
             anchors.top: parent.top
             anchors.left: parent.left
-            //anchors.margins: parent.width * 0.01
             anchors.topMargin: parent.height * 0.02
             anchors.leftMargin: parent.width * 0.075
             spacing: parent.width * 0.005
@@ -1551,8 +1554,8 @@ Rectangle {
                 Button {
                     id: surcoincheButton
                     text: "SURCOINCHE"
-                    Layout.preferredWidth: parent.width * 0.8
-                    Layout.preferredHeight: parent.height * 0.8
+                    Layout.preferredWidth: parent.width * 0.9
+                    Layout.preferredHeight: parent.height * 0.65
                     Layout.alignment: Qt.AlignHCenter
 
                     background: Rectangle {
@@ -1586,13 +1589,33 @@ Rectangle {
                     }
                 }
 
-                // Compte à rebours
-                Text {
-                    text: gameModel.surcoincheTimeLeft + "s restantes"
-                    font.pixelSize: parent.height * 0.1
-                    color: gameModel.surcoincheTimeLeft <= 3 ? "#ff0000" : "white"
-                    Layout.alignment: Qt.AlignHCenter
-                    horizontalAlignment: Text.AlignHCenter
+                // Barre de progression du temps restant
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: parent.height * 0.08
+                    color: "#333333"
+                    radius: height / 2
+                    border.color: "#FFD700"
+                    border.width: 2
+
+                    Rectangle {
+                        width: parent.width * (gameModel.surcoincheTimeLeft / 10)
+                        height: parent.height
+                        radius: parent.radius
+                        color: {
+                            if (gameModel.surcoincheTimeLeft <= 3) return "#ff3333"
+                            if (gameModel.surcoincheTimeLeft <= 6) return "#ffaa00"
+                            return "#00cc00"
+                        }
+
+                        Behavior on width {
+                            NumberAnimation { duration: 300 }
+                        }
+
+                        Behavior on color {
+                            ColorAnimation { duration: 300 }
+                        }
+                    }
                 }
             }
         }
@@ -1791,6 +1814,13 @@ Rectangle {
             winnerTeam: rootArea.gameOverWinner
             scoreTeam1: rootArea.gameOverScoreTeam1
             scoreTeam2: rootArea.gameOverScoreTeam2
+            myPosition: gameModel.myPosition
+            playerNames: [
+                rootArea.getPlayerName(0),
+                rootArea.getPlayerName(1),
+                rootArea.getPlayerName(2),
+                rootArea.getPlayerName(3)
+            ]
 
             onReturnToMenu: {
                 rootArea.returnToMainMenu()

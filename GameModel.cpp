@@ -13,6 +13,8 @@ GameModel::GameModel(QObject *parent)
     , m_scoreTeam2(0)
     , m_scoreTotalTeam1(0)
     , m_scoreTotalTeam2(0)
+    , m_scoreRoundTeam1(0)
+    , m_scoreRoundTeam2(0)
     , m_lastBidAnnonce(Player::ANNONCEINVALIDE)
     , m_lastBidCouleur(Carte::COULEURINVALIDE)
     , m_lastBidderIndex(-1)
@@ -169,6 +171,16 @@ int GameModel::scoreTotalTeam1() const
 int GameModel::scoreTotalTeam2() const
 {
     return m_scoreTotalTeam2;
+}
+
+int GameModel::scoreRoundTeam1() const
+{
+    return m_scoreRoundTeam1;
+}
+
+int GameModel::scoreRoundTeam2() const
+{
+    return m_scoreRoundTeam2;
 }
 
 QString GameModel::lastBid() const
@@ -558,6 +570,12 @@ void GameModel::updateGameState(const QJsonObject& state)
                 emit currentPliChanged();
                 qDebug() << "Debut de la phase de jeu!";
 
+                // Réinitialiser les scores de manche (ils seront recalculés au prochain pli)
+                m_scoreTeam1 = 0;
+                m_scoreTeam2 = 0;
+                emit scoreTeam1Changed();
+                emit scoreTeam2Changed();
+
                 // Si c'est notre tour, demarrer le timer
                 if (m_currentPlayer == m_myPosition) {
                     m_playTimeRemaining = m_maxPlayTime;
@@ -906,9 +924,12 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         QJsonObject scoreData = data.toJsonObject();
         int scoreTotalTeam1 = scoreData["scoreTotalTeam1"].toInt();
         int scoreTotalTeam2 = scoreData["scoreTotalTeam2"].toInt();
+        int scoreRoundTeam1 = scoreData["scoreRoundTeam1"].toInt();
+        int scoreRoundTeam2 = scoreData["scoreRoundTeam2"].toInt();
 
         qDebug() << "GameModel::receivePlayerAction - Manche terminee";
         qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
+        qDebug() << "  Scores de la manche: Team1 =" << scoreRoundTeam1 << ", Team2 =" << scoreRoundTeam2;
 
         // Mettre à jour les scores totaux
         m_scoreTotalTeam1 = scoreTotalTeam1;
@@ -916,11 +937,13 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         emit scoreTotalTeam1Changed();
         emit scoreTotalTeam2Changed();
 
-        // Réinitialiser les scores de manche (ils seront recalculés au prochain pli)
-        m_scoreTeam1 = 0;
-        m_scoreTeam2 = 0;
-        emit scoreTeam1Changed();
-        emit scoreTeam2Changed();
+        // Mettre à jour les scores de la manche (restent affichés jusqu'à la fin de la phase d'annonce suivante)
+        // m_scoreRoundTeam1 = scoreRoundTeam1;
+        // m_scoreRoundTeam2 = scoreRoundTeam2;
+        // emit scoreRoundTeam1Changed();
+        // emit scoreRoundTeam2Changed();
+
+
 
         // Le dealer change automatiquement car il est calculé à partir de biddingPlayer
 
@@ -976,6 +999,10 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_lastBidAnnonce = Player::ANNONCEINVALIDE;
         m_lastBidCouleur = Carte::COULEURINVALIDE;
         m_lastBidderIndex = -1;
+
+        // Note: On ne réinitialise PAS scoreRoundTeam1/2 ici
+        // Ces scores doivent rester affichés pendant toute la phase d'annonces
+        // et seront réinitialisés au début de la phase de jeu (quand biddingPhase passe à false)
 
         // Reinitialiser les annonces de chaque joueur
         for (int i = 0; i < 4; i++) {

@@ -70,6 +70,11 @@ bool DatabaseManager::createTables()
             games_won INTEGER DEFAULT 0,
             coinche_attempts INTEGER DEFAULT 0,
             coinche_success INTEGER DEFAULT 0,
+            capot_realises INTEGER DEFAULT 0,
+            capot_annonces_realises INTEGER DEFAULT 0,
+            capot_annonces_tentes INTEGER DEFAULT 0,
+            generale_attempts INTEGER DEFAULT 0,
+            generale_success INTEGER DEFAULT 0,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     )";
@@ -80,6 +85,97 @@ bool DatabaseManager::createTables()
     }
 
     qDebug() << "Table 'stats' creee/verifiee";
+
+    // Ajouter les colonnes si elles n'existent pas déjà (pour migration)
+    QSqlQuery checkQuery(m_db);
+    checkQuery.exec("PRAGMA table_info(stats)");
+
+    bool hasCapotRealises = false;
+    bool hasCapotAnnoncesRealises = false;
+    bool hasCapotAnnoncesTentes = false;
+    bool hasGeneraleAttempts = false;
+    bool hasGeneraleSuccess = false;
+    bool hasAnnoncesCoinchees = false;
+    bool hasAnnoncesCoincheesgagnees = false;
+    bool hasSurcoincheAttempts = false;
+    bool hasSurcoincheSuccess = false;
+
+    while (checkQuery.next()) {
+        QString columnName = checkQuery.value(1).toString();
+        if (columnName == "capot_realises") hasCapotRealises = true;
+        if (columnName == "capot_annonces_realises") hasCapotAnnoncesRealises = true;
+        if (columnName == "capot_annonces_tentes") hasCapotAnnoncesTentes = true;
+        if (columnName == "generale_attempts") hasGeneraleAttempts = true;
+        if (columnName == "generale_success") hasGeneraleSuccess = true;
+        if (columnName == "annonces_coinchees") hasAnnoncesCoinchees = true;
+        if (columnName == "annonces_coinchees_gagnees") hasAnnoncesCoincheesgagnees = true;
+        if (columnName == "surcoinche_attempts") hasSurcoincheAttempts = true;
+        if (columnName == "surcoinche_success") hasSurcoincheSuccess = true;
+    }
+
+    if (!hasCapotRealises) {
+        qDebug() << "Ajout de la colonne capot_realises";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN capot_realises INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne capot_realises:" << query.lastError().text();
+        }
+    }
+
+    if (!hasCapotAnnoncesRealises) {
+        qDebug() << "Ajout de la colonne capot_annonces_realises";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN capot_annonces_realises INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne capot_annonces_realises:" << query.lastError().text();
+        }
+    }
+
+    if (!hasCapotAnnoncesTentes) {
+        qDebug() << "Ajout de la colonne capot_annonces_tentes";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN capot_annonces_tentes INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne capot_annonces_tentes:" << query.lastError().text();
+        }
+    }
+
+    if (!hasGeneraleAttempts) {
+        qDebug() << "Ajout de la colonne generale_attempts";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN generale_attempts INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne generale_attempts:" << query.lastError().text();
+        }
+    }
+
+    if (!hasGeneraleSuccess) {
+        qDebug() << "Ajout de la colonne generale_success";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN generale_success INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne generale_success:" << query.lastError().text();
+        }
+    }
+
+    if (!hasAnnoncesCoinchees) {
+        qDebug() << "Ajout de la colonne annonces_coinchees";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN annonces_coinchees INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne annonces_coinchees:" << query.lastError().text();
+        }
+    }
+
+    if (!hasAnnoncesCoincheesgagnees) {
+        qDebug() << "Ajout de la colonne annonces_coinchees_gagnees";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN annonces_coinchees_gagnees INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne annonces_coinchees_gagnees:" << query.lastError().text();
+        }
+    }
+
+    if (!hasSurcoincheAttempts) {
+        qDebug() << "Ajout de la colonne surcoinche_attempts";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN surcoinche_attempts INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne surcoinche_attempts:" << query.lastError().text();
+        }
+    }
+
+    if (!hasSurcoincheSuccess) {
+        qDebug() << "Ajout de la colonne surcoinche_success";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN surcoinche_success INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne surcoinche_success:" << query.lastError().text();
+        }
+    }
+
     return true;
 }
 
@@ -307,11 +403,17 @@ bool DatabaseManager::updateCoincheStats(const QString &pseudo, bool attempt, bo
 
     QSqlQuery query(m_db);
     if (attempt && success) {
+        // Nouvelle tentative réussie
         query.prepare("UPDATE stats SET coinche_attempts = coinche_attempts + 1, coinche_success = coinche_success + 1 WHERE user_id = :user_id");
-    } else if (attempt) {
+    } else if (attempt && !success) {
+        // Nouvelle tentative échouée
         query.prepare("UPDATE stats SET coinche_attempts = coinche_attempts + 1 WHERE user_id = :user_id");
+    } else if (!attempt && success) {
+        // Marquer une coinche existante comme réussie (sans incrémenter les tentatives)
+        query.prepare("UPDATE stats SET coinche_success = coinche_success + 1 WHERE user_id = :user_id");
     } else {
-        return true; // Rien à faire
+        // attempt = false, success = false : rien à faire
+        return true;
     }
     query.bindValue(":user_id", userId);
 
@@ -326,7 +428,7 @@ bool DatabaseManager::updateCoincheStats(const QString &pseudo, bool attempt, bo
 
 DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseudo)
 {
-    PlayerStats stats = {0, 0, 0.0, 0, 0};
+    PlayerStats stats = {0, 0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     int userId = getUserIdByPseudo(pseudo);
     if (userId == -1) {
@@ -335,7 +437,7 @@ DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseu
     }
 
     QSqlQuery query(m_db);
-    query.prepare("SELECT games_played, games_won, coinche_attempts, coinche_success FROM stats WHERE user_id = :user_id");
+    query.prepare("SELECT games_played, games_won, coinche_attempts, coinche_success, capot_realises, capot_annonces_realises, capot_annonces_tentes, generale_attempts, generale_success, annonces_coinchees, annonces_coinchees_gagnees, surcoinche_attempts, surcoinche_success FROM stats WHERE user_id = :user_id");
     query.bindValue(":user_id", userId);
 
     if (!query.exec()) {
@@ -348,6 +450,15 @@ DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseu
         stats.gamesWon = query.value(1).toInt();
         stats.coincheAttempts = query.value(2).toInt();
         stats.coincheSuccess = query.value(3).toInt();
+        stats.capotRealises = query.value(4).toInt();
+        stats.capotAnnoncesRealises = query.value(5).toInt();
+        stats.capotAnnoncesTentes = query.value(6).toInt();
+        stats.generaleAttempts = query.value(7).toInt();
+        stats.generaleSuccess = query.value(8).toInt();
+        stats.annoncesCoinchees = query.value(9).toInt();
+        stats.annoncesCoincheesgagnees = query.value(10).toInt();
+        stats.surcoincheAttempts = query.value(11).toInt();
+        stats.surcoincheSuccess = query.value(12).toInt();
 
         if (stats.gamesPlayed > 0) {
             stats.winRatio = (double)stats.gamesWon / (double)stats.gamesPlayed;
@@ -355,4 +466,137 @@ DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseu
     }
 
     return stats;
+}
+
+bool DatabaseManager::updateCapotStats(const QString &pseudo, bool annonceCapot)
+{
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour mise a jour capot stats:" << pseudo;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    if (annonceCapot) {
+        // Capot annoncé et réalisé
+        query.prepare("UPDATE stats SET capot_realises = capot_realises + 1, capot_annonces_realises = capot_annonces_realises + 1 WHERE user_id = :user_id");
+    } else {
+        // Capot réalisé sans annonce
+        query.prepare("UPDATE stats SET capot_realises = capot_realises + 1 WHERE user_id = :user_id");
+    }
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur mise a jour capot stats:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Stats de capot mises a jour pour:" << pseudo << "Annonce:" << annonceCapot;
+    return true;
+}
+
+bool DatabaseManager::updateCapotAnnonceTente(const QString &pseudo)
+{
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour mise a jour capot annonce tente:" << pseudo;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE stats SET capot_annonces_tentes = capot_annonces_tentes + 1 WHERE user_id = :user_id");
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur mise a jour capot annonce tente:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Stats de capot annonce tente mises a jour pour:" << pseudo;
+    return true;
+}
+
+bool DatabaseManager::updateGeneraleStats(const QString &pseudo, bool success)
+{
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour mise a jour generale stats:" << pseudo;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    if (success) {
+        query.prepare("UPDATE stats SET generale_attempts = generale_attempts + 1, generale_success = generale_success + 1 WHERE user_id = :user_id");
+    } else {
+        query.prepare("UPDATE stats SET generale_attempts = generale_attempts + 1 WHERE user_id = :user_id");
+    }
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur mise a jour generale stats:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Stats de generale mises a jour pour:" << pseudo << "Success:" << success;
+    return true;
+}
+
+bool DatabaseManager::updateAnnonceCoinchee(const QString &pseudo, bool won)
+{
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour mise a jour annonce coinchee:" << pseudo;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    if (won) {
+        // L'annonce a été coinchée mais le joueur a quand même gagné la manche
+        query.prepare("UPDATE stats SET annonces_coinchees = annonces_coinchees + 1, annonces_coinchees_gagnees = annonces_coinchees_gagnees + 1 WHERE user_id = :user_id");
+    } else {
+        // L'annonce a été coinchée et le joueur a perdu la manche
+        query.prepare("UPDATE stats SET annonces_coinchees = annonces_coinchees + 1 WHERE user_id = :user_id");
+    }
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur mise a jour annonce coinchee:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Stats annonce coinchee mises a jour pour:" << pseudo << "Gagnee:" << won;
+    return true;
+}
+
+bool DatabaseManager::updateSurcoincheStats(const QString &pseudo, bool attempt, bool success)
+{
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour mise a jour surcoinche stats:" << pseudo;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    if (attempt && success) {
+        // Nouvelle tentative réussie
+        query.prepare("UPDATE stats SET surcoinche_attempts = surcoinche_attempts + 1, surcoinche_success = surcoinche_success + 1 WHERE user_id = :user_id");
+    } else if (attempt && !success) {
+        // Nouvelle tentative échouée
+        query.prepare("UPDATE stats SET surcoinche_attempts = surcoinche_attempts + 1 WHERE user_id = :user_id");
+    } else if (!attempt && success) {
+        // Marquer une surcoinche existante comme réussie (sans incrémenter les tentatives)
+        query.prepare("UPDATE stats SET surcoinche_success = surcoinche_success + 1 WHERE user_id = :user_id");
+    } else {
+        // attempt = false, success = false : rien à faire
+        return true;
+    }
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur mise a jour surcoinche stats:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Stats de surcoinche mises a jour pour:" << pseudo << "Attempt:" << attempt << "Success:" << success;
+    return true;
 }

@@ -117,7 +117,7 @@ ApplicationWindow {
                         }
 
                         contentItem: Text {
-                            text: "Statistiques de jeu"
+                            text: "Statistiques"
                             font.pixelSize: 48 * mainWindow.minRatio
                             font.bold: true
                             color: "white"

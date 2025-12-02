@@ -51,6 +51,7 @@ struct GameRoom {
     QTimer* surcoincheTimer = nullptr;  // Timer pour le timeout de surcoinche
     int surcoincheTimeLeft = 0;  // Temps restant en secondes
     int coinchePlayerIndex = -1;  // Index du joueur qui a coinché
+    int surcoinchePlayerIndex = -1;  // Index du joueur qui a surcoinché
 
     // Pli en cours
     std::vector<std::pair<int, Carte*>> currentPli;  // pair<playerIndex, carte>
@@ -280,9 +281,25 @@ private:
         response["winRatio"] = stats.winRatio;
         response["coincheAttempts"] = stats.coincheAttempts;
         response["coincheSuccess"] = stats.coincheSuccess;
+        response["capotRealises"] = stats.capotRealises;
+        response["capotAnnoncesRealises"] = stats.capotAnnoncesRealises;
+        response["capotAnnoncesTentes"] = stats.capotAnnoncesTentes;
+        response["generaleAttempts"] = stats.generaleAttempts;
+        response["generaleSuccess"] = stats.generaleSuccess;
+        response["annoncesCoinchees"] = stats.annoncesCoinchees;
+        response["annoncesCoincheesgagnees"] = stats.annoncesCoincheesgagnees;
+        response["surcoincheAttempts"] = stats.surcoincheAttempts;
+        response["surcoincheSuccess"] = stats.surcoincheSuccess;
+
+        qDebug() << "Stats envoyees pour:" << pseudo
+                 << "- Parties:" << stats.gamesPlayed
+                 << "Victoires:" << stats.gamesWon
+                 << "Ratio:" << stats.winRatio
+                 << "Capots:" << stats.capotRealises
+                 << "Generales:" << stats.generaleSuccess
+                 << "Annonces coinchées:" << stats.annoncesCoinchees;
 
         sendMessage(socket, response);
-        qDebug() << "Stats envoyees pour:" << pseudo;
     }
 
     void handleJoinMatchmaking(QWebSocket *socket) {
@@ -900,13 +917,24 @@ private:
 
             if (team1HasBid) {
                 // Team1 a annoncé, vérifie si elle réussit
-                if (pointsRealisesTeam1 >= valeurContrat) {
+                bool contractReussi = (pointsRealisesTeam1 >= valeurContrat);
+
+                if (contractReussi) {
                     // Contrat réussi: (valeurContrat + pointsRealisés) × multiplicateur
                     scoreToAddTeam1 = (valeurContrat + pointsRealisesTeam1) * multiplicateur;
                     scoreToAddTeam2 = 0;
                     qDebug() << "GameServer - Equipe 1 reussit son contrat COINCHE!";
                     qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "((" << valeurContrat << "+" << pointsRealisesTeam1 << ")*" << multiplicateur << ")";
                     qDebug() << "  Team2 marque: 0";
+
+                    // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
+                    if (room->surcoinched && room->surcoinchePlayerIndex != -1) {
+                        PlayerConnection* surcoincheConn = m_connections[room->connectionIds[room->surcoinchePlayerIndex]];
+                        if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
+                            m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, false, true);
+                            qDebug() << "Stats surcoinche réussie pour:" << surcoincheConn->playerName;
+                        }
+                    }
                 } else {
                     // Contrat échoué: équipe adverse marque (valeurContrat + 160) × multiplicateur
                     scoreToAddTeam1 = 0;
@@ -914,16 +942,52 @@ private:
                     qDebug() << "GameServer - Equipe 1 echoue son contrat COINCHE!";
                     qDebug() << "  Team1 marque: 0";
                     qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((" << valeurContrat << "+160)*" << multiplicateur << ")";
+
+                    // Mettre à jour les stats de coinche réussie (le contrat a échoué, donc la coinche a réussi)
+                    if (room->coinched && room->coinchePlayerIndex != -1) {
+                        PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
+                        if (coincheConn && !coincheConn->playerName.isEmpty()) {
+                            m_dbManager->updateCoincheStats(coincheConn->playerName, false, true);
+                            qDebug() << "Stats coinche réussie pour:" << coincheConn->playerName;
+                        }
+                    }
+
+                    // Note: La surcoinche n'est PAS réussie ici car le contrat a échoué
+                    // (la surcoinche est faite par l'équipe qui annonce, donc si elle échoue son contrat, la surcoinche échoue aussi)
+                }
+
+                // Mettre à jour les stats d'annonces coinchées pour les joueurs de l'équipe 1
+                for (int i = 0; i < room->connectionIds.size(); i++) {
+                    PlayerConnection* conn = m_connections[room->connectionIds[i]];
+                    if (!conn || conn->playerName.isEmpty()) continue;
+
+                    int playerTeam = (i % 2 == 0) ? 1 : 2;
+                    if (playerTeam == 1) {
+                        // Ce joueur fait partie de l'équipe 1 qui a fait l'annonce coinchée
+                        m_dbManager->updateAnnonceCoinchee(conn->playerName, contractReussi);
+                        qDebug() << "Stats annonce coinchée pour:" << conn->playerName << "Réussie:" << contractReussi;
+                    }
                 }
             } else {
                 // Team2 a annoncé, vérifie si elle réussit
-                if (pointsRealisesTeam2 >= valeurContrat) {
+                bool contractReussi = (pointsRealisesTeam2 >= valeurContrat);
+
+                if (contractReussi) {
                     // Contrat réussi: (valeurContrat + pointsRealisés) × multiplicateur
                     scoreToAddTeam1 = 0;
                     scoreToAddTeam2 = (valeurContrat + pointsRealisesTeam2) * multiplicateur;
                     qDebug() << "GameServer - Equipe 2 reussit son contrat COINCHE!";
                     qDebug() << "  Team1 marque: 0";
                     qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((" << valeurContrat << "+" << pointsRealisesTeam2 << ")*" << multiplicateur << ")";
+
+                    // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
+                    if (room->surcoinched && room->surcoinchePlayerIndex != -1) {
+                        PlayerConnection* surcoincheConn = m_connections[room->connectionIds[room->surcoinchePlayerIndex]];
+                        if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
+                            m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, false, true);
+                            qDebug() << "Stats surcoinche réussie pour:" << surcoincheConn->playerName;
+                        }
+                    }
                 } else {
                     // Contrat échoué: équipe adverse marque (valeurContrat + 160) × multiplicateur
                     scoreToAddTeam1 = (valeurContrat + 160) * multiplicateur;
@@ -931,6 +995,31 @@ private:
                     qDebug() << "GameServer - Equipe 2 echoue son contrat COINCHE!";
                     qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "((" << valeurContrat << "+160)*" << multiplicateur << ")";
                     qDebug() << "  Team2 marque: 0";
+
+                    // Mettre à jour les stats de coinche réussie (le contrat a échoué, donc la coinche a réussi)
+                    if (room->coinched && room->coinchePlayerIndex != -1) {
+                        PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
+                        if (coincheConn && !coincheConn->playerName.isEmpty()) {
+                            m_dbManager->updateCoincheStats(coincheConn->playerName, false, true);
+                            qDebug() << "Stats coinche réussie pour:" << coincheConn->playerName;
+                        }
+                    }
+
+                    // Note: La surcoinche n'est PAS réussie ici car le contrat a échoué
+                    // (la surcoinche est faite par l'équipe qui annonce, donc si elle échoue son contrat, la surcoinche échoue aussi)
+                }
+
+                // Mettre à jour les stats d'annonces coinchées pour les joueurs de l'équipe 2
+                for (int i = 0; i < room->connectionIds.size(); i++) {
+                    PlayerConnection* conn = m_connections[room->connectionIds[i]];
+                    if (!conn || conn->playerName.isEmpty()) continue;
+
+                    int playerTeam = (i % 2 == 0) ? 1 : 2;
+                    if (playerTeam == 2) {
+                        // Ce joueur fait partie de l'équipe 2 qui a fait l'annonce coinchée
+                        m_dbManager->updateAnnonceCoinchee(conn->playerName, contractReussi);
+                        qDebug() << "Stats annonce coinchée pour:" << conn->playerName << "Réussie:" << contractReussi;
+                    }
                 }
             }
         } else if (team1HasBid) {
@@ -1007,6 +1096,53 @@ private:
         qDebug() << "  Equipe 1:" << room->scoreTeam1;
         qDebug() << "  Equipe 2:" << room->scoreTeam2;
 
+        // Mettre à jour les statistiques de capot et générale
+        if (isCapotAnnonce) {
+            // Un capot a été annoncé, mettre à jour les stats pour les joueurs de l'équipe qui a annoncé
+            for (int i = 0; i < room->connectionIds.size(); i++) {
+                PlayerConnection* conn = m_connections[room->connectionIds[i]];
+                if (!conn || conn->playerName.isEmpty()) continue;
+
+                int playerTeam = (i % 2 == 0) ? 1 : 2;
+                bool isPlayerInBiddingTeam = (team1HasBid && playerTeam == 1) || (!team1HasBid && playerTeam == 2);
+
+                if (isPlayerInBiddingTeam) {
+                    // Ce joueur fait partie de l'équipe qui a annoncé le capot
+                    m_dbManager->updateCapotAnnonceTente(conn->playerName);
+                    if (capotReussi) {
+                        m_dbManager->updateCapotStats(conn->playerName, true);  // Capot annoncé réussi
+                        qDebug() << "Stats capot annoncé réussi pour:" << conn->playerName;
+                    }
+                }
+            }
+        } else if (capotReussi) {
+            // Capot réalisé mais non annoncé
+            for (int i = 0; i < room->connectionIds.size(); i++) {
+                PlayerConnection* conn = m_connections[room->connectionIds[i]];
+                if (!conn || conn->playerName.isEmpty()) continue;
+
+                int playerTeam = (i % 2 == 0) ? 1 : 2;
+                int plisTeamRealisateur = (playerTeam == 1) ? (room->plisCountPlayer0 + room->plisCountPlayer2) : (room->plisCountPlayer1 + room->plisCountPlayer3);
+
+                if (plisTeamRealisateur == 8) {
+                    // Ce joueur fait partie de l'équipe qui a réalisé le capot
+                    m_dbManager->updateCapotStats(conn->playerName, false);  // Capot non annoncé
+                    qDebug() << "Stats capot non annoncé pour:" << conn->playerName;
+                }
+            }
+        }
+
+        if (isGeneraleAnnonce) {
+            // Une générale a été annoncée, mettre à jour les stats pour le joueur qui l'a annoncée
+            if (room->lastBidderIndex >= 0 && room->lastBidderIndex < room->connectionIds.size()) {
+                PlayerConnection* conn = m_connections[room->connectionIds[room->lastBidderIndex]];
+                if (conn && !conn->playerName.isEmpty()) {
+                    m_dbManager->updateGeneraleStats(conn->playerName, generaleReussie);
+                    qDebug() << "Stats générale pour:" << conn->playerName << "(joueur" << room->lastBidderIndex << ") - Réussite:" << generaleReussie;
+                }
+            }
+        }
+
         // Envoi les scores aux clients
         QJsonObject scoreMsg;
         scoreMsg["type"] = "mancheFinished";
@@ -1015,8 +1151,8 @@ private:
         broadcastToRoom(roomId, scoreMsg);
 
         // Vérifier si une équipe a atteint 1000 points
-        bool team1Won = room->scoreTeam1 >= 100;
-        bool team2Won = room->scoreTeam2 >= 100;
+        bool team1Won = room->scoreTeam1 >= 1000;
+        bool team2Won = room->scoreTeam2 >= 1000;
 
         if (team1Won || team2Won) {
             // Une ou les deux équipes ont dépassé 1000 points
@@ -1049,22 +1185,6 @@ private:
                 qDebug() << "Stats de partie mises a jour pour" << conn->playerName << "Won:" << won;
             }
 
-            // Vérifier si une coinche a réussi
-            if (room->coinched && room->coinchePlayerIndex != -1) {
-                // Une coinche a été faite, vérifier si elle a réussi
-                // La coinche réussit si l'équipe qui a coinché gagne
-                int coinchePlayerTeam = (room->coinchePlayerIndex % 2 == 0) ? 1 : 2;
-                bool coincheSuccess = (coinchePlayerTeam == winner);
-
-                if (coincheSuccess) {
-                    // Mettre à jour les stats de coinche réussie
-                    PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
-                    if (coincheConn && !coincheConn->playerName.isEmpty()) {
-                        m_dbManager->updateCoincheStats(coincheConn->playerName, false, true);
-                        qDebug() << "Coinche reussie pour" << coincheConn->playerName;
-                    }
-                }
-            }
 
             QJsonObject gameOverMsg;
             gameOverMsg["type"] = "gameOver";
@@ -1265,6 +1385,13 @@ private:
             msg["suit"] = suit;
             broadcastToRoom(roomId, msg);
 
+            // Mettre à jour l'état: plus personne n'est en train d'annoncer
+            QJsonObject stateMsg;
+            stateMsg["type"] = "gameState";
+            stateMsg["biddingPlayer"] = -1;  // Plus personne n'annonce
+            stateMsg["biddingPhase"] = true;  // Toujours en phase d'enchères (pour coinche/surcoinche)
+            broadcastToRoom(roomId, stateMsg);
+
             // Démarrer le timer de 10 secondes pour permettre la surcoinche
             startSurcoincheTimer(roomId);
             return;
@@ -1286,7 +1413,14 @@ private:
             }
 
             room->surcoinched = true;
+            room->surcoinchePlayerIndex = playerIndex;
             qDebug() << "GameServer - Joueur" << playerIndex << "SURCOINCHE l'enchère!";
+
+            // Enregistrer la tentative de surcoinche dans les stats (si joueur enregistré)
+            PlayerConnection* surcoincheConn = m_connections[room->connectionIds[playerIndex]];
+            if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
+                m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, true, false);
+            }
 
             // Arrêter le timer de surcoinche
             stopSurcoincheTimer(roomId);

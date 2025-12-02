@@ -48,8 +48,32 @@ public:
         double winRatio;
         int coincheAttempts;
         int coincheSuccess;
+        int capotRealises;
+        int capotAnnoncesRealises;
+        int capotAnnoncesTentes;
+        int generaleAttempts;
+        int generaleSuccess;
+        int annoncesCoinchees;
+        int annoncesCoincheesgagnees;
+        int surcoincheAttempts;
+        int surcoincheSuccess;
     };
     PlayerStats getPlayerStats(const QString &pseudo);
+
+    // Mettre à jour les statistiques de capot
+    bool updateCapotStats(const QString &pseudo, bool annonceCapot);
+
+    // Mettre à jour les statistiques de capot annoncé (tenté)
+    bool updateCapotAnnonceTente(const QString &pseudo);
+
+    // Mettre à jour les statistiques de générale
+    bool updateGeneraleStats(const QString &pseudo, bool success);
+
+    // Mettre à jour les statistiques d'annonces coinchées
+    bool updateAnnonceCoinchee(const QString &pseudo, bool won);
+
+    // Mettre à jour les statistiques de surcoinche
+    bool updateSurcoincheStats(const QString &pseudo, bool attempt, bool success);
 
 private:
     QSqlDatabase m_db;

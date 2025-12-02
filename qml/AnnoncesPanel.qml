@@ -28,7 +28,10 @@ Rectangle {
             if (timeRemaining > 0) {
                 timeRemaining--
             } else {
-                // Temps ecoule, passer automatiquement
+                // Temps ecoule, fermer la popup si ouverte et passer automatiquement
+                if (suitSelector.opened) {
+                    suitSelector.close()
+                }
                 gameModel.passBid()
                 stop()
             }
@@ -330,7 +333,7 @@ Rectangle {
         height: parent.height * 0.9
         modal: true
         focus: true
-        closePolicy: Popup.CloseOnEscape
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         property int selectedBidValue: 0
 
         background: Rectangle {

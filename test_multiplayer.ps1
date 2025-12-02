@@ -1,7 +1,7 @@
 # test_multiplayer.ps1
 
 # Réinitialiser le compteur de fenêtres dans le registre Qt
-Write-Host "Réinitialisation du compteur de fenêtres..." -ForegroundColor Cyan
+Write-Host "Reinitialisation du compteur de fenetres..." -ForegroundColor Cyan
 Remove-ItemProperty -Path "HKCU:\Software\Coinche\WindowCounter" -Name "windowCount" -ErrorAction SilentlyContinue
 
 # Lancer le serveur en arrière-plan avec console visible
@@ -26,7 +26,7 @@ foreach ($player in $players) {
     Start-Sleep -Milliseconds 800
 }
 
-Write-Host "`nTous les clients sont lancés et positionnés!" -ForegroundColor Green
+Write-Host "`nTous les clients sont lances et positionnes!" -ForegroundColor Green
 Write-Host "Appuyez sur une touche pour tout fermer..." -ForegroundColor Yellow
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 
@@ -34,4 +34,4 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 Write-Host "`nFermeture des processus..." -ForegroundColor Yellow
 Get-Process coinche* -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-Process server* -ErrorAction SilentlyContinue | Stop-Process -Force
-Write-Host "Tous les processus sont fermés." -ForegroundColor Red
+Write-Host "Tous les processus sont fermes." -ForegroundColor Red
