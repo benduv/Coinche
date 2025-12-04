@@ -49,6 +49,7 @@ bool DatabaseManager::createTables()
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             salt TEXT NOT NULL,
+            avatar TEXT DEFAULT 'avataaars1.svg',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP
         )
@@ -85,6 +86,23 @@ bool DatabaseManager::createTables()
     }
 
     qDebug() << "Table 'stats' creee/verifiee";
+
+    // Migration: Ajouter la colonne avatar à la table users si elle n'existe pas
+    QSqlQuery checkUsersQuery(m_db);
+    checkUsersQuery.exec("PRAGMA table_info(users)");
+
+    bool hasAvatar = false;
+    while (checkUsersQuery.next()) {
+        QString columnName = checkUsersQuery.value(1).toString();
+        if (columnName == "avatar") hasAvatar = true;
+    }
+
+    if (!hasAvatar) {
+        qDebug() << "Ajout de la colonne avatar dans la table users";
+        if (!query.exec("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT 'avataaars1.svg'")) {
+            qWarning() << "Erreur ajout colonne avatar:" << query.lastError().text();
+        }
+    }
 
     // Ajouter les colonnes si elles n'existent pas déjà (pour migration)
     QSqlQuery checkQuery(m_db);
@@ -236,7 +254,7 @@ bool DatabaseManager::pseudoExists(const QString &pseudo)
     return false;
 }
 
-bool DatabaseManager::createAccount(const QString &pseudo, const QString &email, const QString &password, QString &errorMsg)
+bool DatabaseManager::createAccount(const QString &pseudo, const QString &email, const QString &password, const QString &avatar, QString &errorMsg)
 {
     // Validations
     if (pseudo.isEmpty() || email.isEmpty() || password.isEmpty()) {
@@ -275,13 +293,17 @@ bool DatabaseManager::createAccount(const QString &pseudo, const QString &email,
     QString salt = generateSalt();
     QString passwordHash = hashPassword(password, salt);
 
+    // Utiliser un avatar par défaut si non fourni
+    QString avatarToUse = avatar.isEmpty() ? "avataaars1.svg" : avatar;
+
     // Insérer le nouvel utilisateur
     QSqlQuery query(m_db);
-    query.prepare("INSERT INTO users (pseudo, email, password_hash, salt) VALUES (:pseudo, :email, :password_hash, :salt)");
+    query.prepare("INSERT INTO users (pseudo, email, password_hash, salt, avatar) VALUES (:pseudo, :email, :password_hash, :salt, :avatar)");
     query.bindValue(":pseudo", pseudo);
     query.bindValue(":email", email);
     query.bindValue(":password_hash", passwordHash);
     query.bindValue(":salt", salt);
+    query.bindValue(":avatar", avatarToUse);
 
     if (!query.exec()) {
         errorMsg = "Erreur lors de la création du compte: " + query.lastError().text();
@@ -303,16 +325,16 @@ bool DatabaseManager::createAccount(const QString &pseudo, const QString &email,
     return true;
 }
 
-bool DatabaseManager::authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &errorMsg)
+bool DatabaseManager::authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &avatar, QString &errorMsg)
 {
     if (email.isEmpty() || password.isEmpty()) {
         errorMsg = "Email et mot de passe requis";
         return false;
     }
 
-    // Récupérer le salt et le hash pour cet email
+    // Récupérer le salt, le hash et l'avatar pour cet email
     QSqlQuery query(m_db);
-    query.prepare("SELECT pseudo, password_hash, salt FROM users WHERE email = :email");
+    query.prepare("SELECT pseudo, password_hash, salt, avatar FROM users WHERE email = :email");
     query.bindValue(":email", email);
 
     if (!query.exec()) {
@@ -329,6 +351,7 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
     QString storedPseudo = query.value(0).toString();
     QString storedHash = query.value(1).toString();
     QString salt = query.value(2).toString();
+    QString storedAvatar = query.value(3).toString();
 
     // Hasher le mot de passe fourni avec le salt
     QString providedHash = hashPassword(password, salt);
@@ -346,7 +369,8 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
     updateQuery.exec();
 
     pseudo = storedPseudo;
-    qDebug() << "Authentification reussie pour:" << pseudo;
+    avatar = storedAvatar;
+    qDebug() << "Authentification reussie pour:" << pseudo << "avec avatar:" << avatar;
     return true;
 }
 

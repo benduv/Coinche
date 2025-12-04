@@ -41,15 +41,24 @@ int main(int argc, char *argv[])
     );
     parser.addOption(passwordOption);
 
+    QCommandLineOption avatarOption(
+        QStringList() << "a" << "avatar",
+        "Avatar pour connexion automatique",
+        "avatar",
+        "avataaars1.svg"
+    );
+    parser.addOption(avatarOption);
+
     parser.process(app);
 
     QString playerName = parser.value(playerNameOption);
     QString autoLoginEmail = parser.value(emailOption);
     QString autoLoginPassword = parser.value(passwordOption);
+    QString autoLoginAvatar = parser.value(avatarOption);
 
     qDebug() << "Nom du joueur:" << playerName;
     if (!autoLoginEmail.isEmpty()) {
-        qDebug() << "Auto-login activé pour:" << autoLoginEmail;
+        qDebug() << "Auto-login activé pour:" << autoLoginEmail << "avec avatar:" << autoLoginAvatar;
     }
 
     QQuickStyle::setStyle("Material");
@@ -62,6 +71,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("defaultPlayerName", playerName);
     engine.rootContext()->setContextProperty("autoLoginEmail", autoLoginEmail);
     engine.rootContext()->setContextProperty("autoLoginPassword", autoLoginPassword);
+    engine.rootContext()->setContextProperty("autoLoginAvatar", autoLoginAvatar);
 
     // WindowPositioner pour positionner automatiquement les fenêtres
     WindowPositioner windowPositioner;

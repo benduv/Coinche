@@ -21,10 +21,10 @@ public:
     bool initialize(const QString &dbPath = "coinche.db");
 
     // Créer un compte utilisateur
-    bool createAccount(const QString &pseudo, const QString &email, const QString &password, QString &errorMsg);
+    bool createAccount(const QString &pseudo, const QString &email, const QString &password, const QString &avatar, QString &errorMsg);
 
     // Vérifier les identifiants de connexion
-    bool authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &errorMsg);
+    bool authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &avatar, QString &errorMsg);
 
     // Vérifier si un email existe déjà
     bool emailExists(const QString &email);

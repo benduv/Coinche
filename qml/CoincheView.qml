@@ -47,13 +47,8 @@ Rectangle {
 
     // Obtenir l'avatar d'un joueur par son index reel
     function getPlayerAvatar(actualPlayerIndex) {
-        var avatars = [
-            "qrc:/resources/avatar/animal-1293181.svg",
-            "qrc:/resources/avatar/bee-24633.svg",
-            "qrc:/resources/avatar/cartoon-1294036.svg",
-            "qrc:/resources/avatar/warrior-149098.svg"
-        ]
-        return avatars[actualPlayerIndex]
+        var avatarName = gameModel.getPlayerAvatar(actualPlayerIndex)
+        return "qrc:/resources/avatar/" + avatarName
     }
 
     // Obtenir la valeur de l'annonce d'un joueur (80, 90, Passe, etc.)
@@ -1059,7 +1054,7 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
-                    text: /*gameModel.biddingPhase ? gameModel.scoreRoundTeam1 : */gameModel.scoreTeam1
+                    text: gameModel.scoreTeam1
                     color: "white"
                     font.pixelSize: parent.height * 0.2
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
@@ -1081,7 +1076,7 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
-                    text: /*gameModel.biddingPhase ? gameModel.scoreRoundTeam2 :*/ gameModel.scoreTeam2
+                    text: gameModel.scoreTeam2
                     color: "white"
                     font.pixelSize: parent.height * 0.2
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter

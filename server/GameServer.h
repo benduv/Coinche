@@ -21,6 +21,7 @@ struct PlayerConnection {
     QWebSocket* socket;
     QString connectionId;      // ID unique WebSocket
     QString playerName;
+    QString avatar;            // Avatar du joueur
     int gameRoomId;
     int playerIndex;           // Position dans la partie (0-3)
 };
@@ -198,11 +199,14 @@ private:
     void handleRegister(QWebSocket *socket, const QJsonObject &data) {
         QString connectionId = QUuid::createUuid().toString();
         QString playerName = data["playerName"].toString();
+        QString avatar = data["avatar"].toString();
+        if (avatar.isEmpty()) avatar = "avataaars1.svg";
 
         PlayerConnection *conn = new PlayerConnection{
-            socket, 
-            connectionId, 
-            playerName, 
+            socket,
+            connectionId,
+            playerName,
+            avatar,
             -1,    // Pas encore en partie
             -1     // Pas encore de position
         };
@@ -214,22 +218,24 @@ private:
         response["playerName"] = playerName;
         sendMessage(socket, response);
 
-        qDebug() << "Joueur enregistre:" << playerName << "ID:" << connectionId;
+        qDebug() << "Joueur enregistre:" << playerName << "Avatar:" << avatar << "ID:" << connectionId;
     }
 
     void handleRegisterAccount(QWebSocket *socket, const QJsonObject &data) {
         QString pseudo = data["pseudo"].toString();
         QString email = data["email"].toString();
         QString password = data["password"].toString();
+        QString avatar = data["avatar"].toString();
 
-        qDebug() << "GameServer - Tentative creation compte:" << pseudo << email;
+        qDebug() << "GameServer - Tentative creation compte:" << pseudo << email << "avatar:" << avatar;
 
         QString errorMsg;
-        if (m_dbManager->createAccount(pseudo, email, password, errorMsg)) {
+        if (m_dbManager->createAccount(pseudo, email, password, avatar, errorMsg)) {
             // Succes
             QJsonObject response;
             response["type"] = "registerAccountSuccess";
             response["playerName"] = pseudo;
+            response["avatar"] = avatar;
             sendMessage(socket, response);
             qDebug() << "Compte cree avec succes:" << pseudo;
         } else {
@@ -249,14 +255,16 @@ private:
         qDebug() << "GameServer - Tentative connexion:" << email;
 
         QString pseudo;
+        QString avatar;
         QString errorMsg;
-        if (m_dbManager->authenticateUser(email, password, pseudo, errorMsg)) {
+        if (m_dbManager->authenticateUser(email, password, pseudo, avatar, errorMsg)) {
             // Succes
             QJsonObject response;
             response["type"] = "loginAccountSuccess";
             response["playerName"] = pseudo;
+            response["avatar"] = avatar;
             sendMessage(socket, response);
-            qDebug() << "Connexion reussie:" << pseudo;
+            qDebug() << "Connexion reussie:" << pseudo << "avatar:" << avatar;
         } else {
             // Echec
             QJsonObject response;
@@ -432,6 +440,7 @@ private:
                     QJsonObject opp;
                     opp["position"] = j;
                     opp["name"] = m_connections[connectionIds[j]]->playerName;
+                    opp["avatar"] = m_connections[connectionIds[j]]->avatar;
                     opp["cardCount"] = int(room->players[j]->getMain().size());
                     opponents.append(opp);
                 }
@@ -459,6 +468,12 @@ private:
 
         int playerIndex = conn->playerIndex;
         int cardIndex = data["cardIndex"].toInt();
+
+        // Check que le jeu est en phase de jeu (pas d'annonces)
+        if (room->gameState != "playing") {
+            qDebug() << "GameServer - Erreur: tentative de jouer une carte pendant la phase d'annonces";
+            return;
+        }
 
         // Check que c'est bien le tour du joueur
         if (room->currentPlayerIndex != playerIndex) {
@@ -671,14 +686,6 @@ private:
         qDebug() << "GameServer - Scores de manche: Team1 =" << room->scoreMancheTeam1
                  << ", Team2 =" << room->scoreMancheTeam2;
 
-        // Notifie le gagnant du pli avec les scores de manche mis à jour
-        QJsonObject pliFinishedMsg;
-        pliFinishedMsg["type"] = "pliFinished";
-        pliFinishedMsg["winnerId"] = gagnantIndex;
-        pliFinishedMsg["scoreMancheTeam1"] = room->scoreMancheTeam1;
-        pliFinishedMsg["scoreMancheTeam2"] = room->scoreMancheTeam2;
-        broadcastToRoom(roomId, pliFinishedMsg);
-
         // Vérifier si la manche est terminée (tous les joueurs n'ont plus de cartes)
         bool mancheTerminee = true;
         for (const auto& player : room->players) {
@@ -687,6 +694,26 @@ private:
                 break;
             }
         }
+
+        // Si c'est le dernier pli, ajouter le bonus de 10 points AVANT d'envoyer pliFinished
+        if (mancheTerminee) {
+            if (gagnantIndex == 0 || gagnantIndex == 2) {
+                room->scoreMancheTeam1 += 10;
+            } else {
+                room->scoreMancheTeam2 += 10;
+            }
+            qDebug() << "GameServer - Dernier pli, ajout du bonus +10 points";
+            qDebug() << "GameServer - Scores de manche finaux: Team1 =" << room->scoreMancheTeam1
+                     << ", Team2 =" << room->scoreMancheTeam2;
+        }
+
+        // Notifie le gagnant du pli avec les scores de manche mis à jour
+        QJsonObject pliFinishedMsg;
+        pliFinishedMsg["type"] = "pliFinished";
+        pliFinishedMsg["winnerId"] = gagnantIndex;
+        pliFinishedMsg["scoreMancheTeam1"] = room->scoreMancheTeam1;
+        pliFinishedMsg["scoreMancheTeam2"] = room->scoreMancheTeam2;
+        broadcastToRoom(roomId, pliFinishedMsg);
 
         if (mancheTerminee) {
             qDebug() << "GameServer - Manche terminee, attente de 1500ms avant de commencer la nouvelle manche...";
@@ -712,14 +739,7 @@ private:
         if (!room) return;
 
         // Les scores de manche ont déjà été calculés pendant les plis
-        // On ajoute juste le bonus du dernier pli (+10 points)
-        int lastWinner = room->currentPlayerIndex; // C'est le gagnant du dernier pli
-        if (lastWinner == 0 || lastWinner == 2) {
-            room->scoreMancheTeam1 += 10;
-        } else {
-            room->scoreMancheTeam2 += 10;
-        }
-
+        // Le bonus du dernier pli (+10 points) a déjà été ajouté dans finishPli()
         int pointsRealisesTeam1 = room->scoreMancheTeam1;
         int pointsRealisesTeam2 = room->scoreMancheTeam2;
 

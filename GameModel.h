@@ -6,6 +6,7 @@
 #include <QJsonObject>
 #include <QDebug>
 #include <QTimer>
+#include <QMap>
 #include "HandModel.h"
 #include "Player.h"
 #include "Carte.h"
@@ -45,8 +46,6 @@ class GameModel : public QObject {
     Q_PROPERTY(int scoreTeam2 READ scoreTeam2 NOTIFY scoreTeam2Changed)
     Q_PROPERTY(int scoreTotalTeam1 READ scoreTotalTeam1 NOTIFY scoreTotalTeam1Changed)
     Q_PROPERTY(int scoreTotalTeam2 READ scoreTotalTeam2 NOTIFY scoreTotalTeam2Changed)
-    Q_PROPERTY(int scoreRoundTeam1 READ scoreRoundTeam1 NOTIFY scoreRoundTeam1Changed)
-    Q_PROPERTY(int scoreRoundTeam2 READ scoreRoundTeam2 NOTIFY scoreRoundTeam2Changed)
     Q_PROPERTY(bool surcoincheAvailable READ surcoincheAvailable NOTIFY surcoincheAvailableChanged)
     Q_PROPERTY(int surcoincheTimeLeft READ surcoincheTimeLeft NOTIFY surcoincheTimeLeftChanged)
     Q_PROPERTY(bool showCoincheAnimation READ showCoincheAnimation NOTIFY showCoincheAnimationChanged)
@@ -83,8 +82,6 @@ public:
     int scoreTeam2() const;
     int scoreTotalTeam1() const;
     int scoreTotalTeam2() const;
-    int scoreRoundTeam1() const;
-    int scoreRoundTeam2() const;
     QString lastBid() const;
     QString lastBidSuit() const;
     int lastBidSuitValue() const;
@@ -102,6 +99,8 @@ public:
     int dealerPosition() const;
     int pliWinnerId() const;
     Q_INVOKABLE QString getPlayerName(int position) const;
+    Q_INVOKABLE QString getPlayerAvatar(int position) const;
+    Q_INVOKABLE void setPlayerAvatar(int position, const QString& avatar);
 
     // Initialiser la partie avec les données du serveur
     Q_INVOKABLE void initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents);
@@ -130,8 +129,6 @@ signals:
     void scoreTeam2Changed();
     void scoreTotalTeam1Changed();
     void scoreTotalTeam2Changed();
-    void scoreRoundTeam1Changed();
-    void scoreRoundTeam2Changed();
     void surcoincheAvailableChanged();
     void surcoincheTimeLeftChanged();
     void showCoincheAnimationChanged();
@@ -174,8 +171,6 @@ private:
     int m_scoreTeam2;          // Score de la manche en cours
     int m_scoreTotalTeam1;     // Score total de la partie
     int m_scoreTotalTeam2;     // Score total de la partie
-    int m_scoreRoundTeam1;     // Score gagné dans la dernière manche (affiché jusqu'à fin de phase d'annonce)
-    int m_scoreRoundTeam2;     // Score gagné dans la dernière manche (affiché jusqu'à fin de phase d'annonce)
     Player::Annonce m_lastBidAnnonce;
     Carte::Couleur m_lastBidCouleur;
     int m_lastBidderIndex;
@@ -195,6 +190,7 @@ private:
     int m_pliWinnerId;  // ID du gagnant du pli en cours de nettoyage (-1 si aucun)
 
     QList<Player*> m_onlinePlayers;  // Tous les joueurs de la partie
+    QMap<int, QString> m_playerAvatars;  // Avatars des joueurs par position
 };
 
 #endif // GAMEMODEL_H

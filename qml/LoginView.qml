@@ -200,7 +200,48 @@ Rectangle {
             id: registerScreen
 
             Rectangle {
+                id: registerScreenRec
                 color: "#1a1a1a"
+
+                // Variable pour stocker l'avatar sélectionné
+                property string selectedAvatar: "avataaars1.svg"
+
+                // Bouton retour en haut à gauche
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.margins: 40 * loginRoot.minRatio
+                    width: 100 * loginRoot.minRatio
+                    height: 100 * loginRoot.minRatio
+                    color: "transparent"
+                    z: 100
+
+                    Image {
+                        anchors.fill: parent
+                        source: "qrc:/resources/back-square-svgrepo-com.svg"
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            loginStack.pop()
+                        }
+                        onEntered: {
+                            parent.scale = 1.1
+                        }
+                        onExited: {
+                            parent.scale = 1.0
+                        }
+                    }
+
+                    Behavior on scale {
+                        NumberAnimation { duration: 150 }
+                    }
+                }
 
                 ColumnLayout {
                     anchors.centerIn: parent
@@ -336,6 +377,204 @@ Rectangle {
                         }
                     }
 
+                    // Bouton pour ouvrir la sélection d'avatar
+                    Button {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 100 * loginRoot.heightRatio
+
+                        background: Rectangle {
+                            color: parent.down ? "#555555" : (parent.hovered ? "#666666" : "#444444")
+                            radius: 8 * loginRoot.minRatio
+                            border.color: "#FFD700"
+                            border.width: 2 * loginRoot.minRatio
+                        }
+
+                        contentItem: Row {
+                            spacing: 15 * loginRoot.minRatio
+                            anchors.centerIn: parent
+
+                            // Aperçu de l'avatar sélectionné
+                            Rectangle {
+                                width: 50 * loginRoot.minRatio
+                                height: 50 * loginRoot.minRatio
+                                radius: 25 * loginRoot.minRatio
+                                color: "#2a2a2a"
+                                border.color: "#FFD700"
+                                border.width: 2 * loginRoot.minRatio
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                Image {
+                                    anchors.fill: parent
+                                    anchors.margins: 3 * loginRoot.minRatio
+                                    source: "qrc:/resources/avatar/" + registerScreenRec.selectedAvatar
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
+                                }
+                            }
+
+                            Text {
+                                text: "Choisir un avatar"
+                                font.pixelSize: 32 * loginRoot.minRatio
+                                font.bold: true
+                                color: "white"
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        onClicked: {
+                            registerAvatarPopup.open()
+                        }
+                    }
+
+                    // Popup de sélection d'avatar
+                    Popup {
+                        id: registerAvatarPopup
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width, 700 * loginRoot.widthRatio)
+                        height: Math.min(parent.height, 600 * loginRoot.heightRatio)
+                        modal: true
+                        focus: true
+                        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+                        background: Rectangle {
+                            color: "#1a1a1a"
+                            radius: 15 * loginRoot.minRatio
+                            border.color: "#FFD700"
+                            border.width: 3 * loginRoot.minRatio
+                        }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.topMargin: 15 * loginRoot.minRatio
+                            anchors.bottomMargin: 1 * loginRoot.minRatio
+                            anchors.leftMargin: 15 * loginRoot.minRatio
+                            anchors.rightMargin: 15 * loginRoot.minRatio
+                            spacing: 20 * loginRoot.minRatio
+
+                            /*Text {
+                                text: "Choisissez votre avatar"
+                                font.pixelSize: 32 * loginRoot.minRatio
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                            }*/
+
+                            ScrollView {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+                                contentWidth: availableWidth
+
+                                GridLayout {
+                                    id: avatarGrid
+                                    width: parent.parent.width - 20 * loginRoot.minRatio
+                                    columns: 3
+                                    rowSpacing: 20 * loginRoot.minRatio
+                                    columnSpacing: 20 * loginRoot.minRatio
+
+                                    // Calcul de la taille optimale pour que 3 colonnes remplissent exactement la largeur
+                                    property real avatarSize: (width - columnSpacing * (columns - 1)) / columns
+
+                                    Repeater {
+                                        model: [
+                                            "avataaars1.svg",
+                                            "avataaars2.svg",
+                                            "avataaars3.svg",
+                                            "avataaars4.svg",
+                                            "avataaars5.svg",
+                                            "avataaars6.svg",
+                                            "avataaars7.svg",
+                                            "avataaars8.svg",
+                                            "avataaars9.svg",
+                                            "avataaars10.svg",
+                                            "avataaars11.svg",
+                                            "avataaars12.svg",
+                                            "avataaars13.svg",
+                                            "avataaars14.svg",
+                                            "avataaars15.svg",
+                                            "avataaars16.svg",
+                                            "avataaars17.svg",
+                                            "avataaars18.svg",
+                                            "avataaars19.svg",
+                                            "avataaars20.svg",
+                                            "avataaars21.svg",
+                                            "avataaars22.svg",
+                                            "avataaars23.svg",
+                                            "avataaars24.svg"
+                                        ]
+
+                                        delegate: Rectangle {
+                                            Layout.preferredWidth: avatarGrid.avatarSize
+                                            Layout.preferredHeight: avatarGrid.avatarSize
+                                            color: registerScreenRec.selectedAvatar === modelData ? "#FFD700" : "#2a2a2a"
+                                            radius: 15 * loginRoot.minRatio
+                                            border.color: registerScreenRec.selectedAvatar === modelData ? "#FFFFFF" : "#666666"
+                                            border.width: registerScreenRec.selectedAvatar === modelData ? 4 * loginRoot.minRatio : 2 * loginRoot.minRatio
+
+                                            Image {
+                                                anchors.fill: parent
+                                                anchors.margins: 10 * loginRoot.minRatio
+                                                source: "qrc:/resources/avatar/" + modelData
+                                                fillMode: Image.PreserveAspectFit
+                                                smooth: true
+                                            }
+
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+
+                                                onClicked: {
+                                                    registerScreenRec.selectedAvatar = modelData
+                                                    registerAvatarPopup.close()
+                                                }
+
+                                                onEntered: {
+                                                    parent.scale = 1.1
+                                                }
+
+                                                onExited: {
+                                                    parent.scale = 1.0
+                                                }
+                                            }
+
+                                            Behavior on scale {
+                                                NumberAnimation { duration: 150 }
+                                            }
+
+                                            Behavior on color {
+                                                ColorAnimation { duration: 200 }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Button {
+                                Layout.alignment: Qt.AlignHCenter
+                                Layout.preferredWidth: 200 * loginRoot.widthRatio
+                                Layout.preferredHeight: 100 * loginRoot.heightRatio
+
+                                background: Rectangle {
+                                    color: parent.down ? "#666666" : (parent.hovered ? "#888888" : "#777777")
+                                    radius: 8 * loginRoot.minRatio
+                                }
+
+                                contentItem: Text {
+                                    text: "Fermer"
+                                    font.pixelSize: 36 * loginRoot.minRatio
+                                    color: "white"
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                onClicked: {
+                                    registerAvatarPopup.close()
+                                }
+                            }
+                        }
+                    }
+
                     // Message d'erreur
                     Text {
                         id: registerError
@@ -346,8 +585,6 @@ Rectangle {
                         visible: true
                         opacity: text === "" ? 0 : 1
                     }
-
-                    //Item { height: 10 * loginRoot.minRatio }
 
                     // Bouton créer
                     Button {
@@ -374,40 +611,16 @@ Rectangle {
                                 return
                             }
 
-                            // TODO: Envoyer la requête au serveur
-                            networkManager.registerAccount(registerPseudo.text, registerEmail.text, registerPassword.text)
-                        }
-                    }
-
-                    // Bouton retour
-                    Button {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 100 * loginRoot.heightRatio
-
-                        background: Rectangle {
-                            color: "transparent"
-                            border.color: "#555555"
-                            border.width: 2 * loginRoot.minRatio
-                            radius: 8 * loginRoot.minRatio
-                        }
-
-                        contentItem: Text {
-                            text: "Retour"
-                            font.pixelSize: 32 * loginRoot.minRatio
-                            color: "#aaaaaa"
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-
-                        onClicked: {
-                            loginStack.pop()
+                            // Envoyer la requête au serveur avec l'avatar sélectionné
+                            //var registerRect = parent.parent.parent
+                            networkManager.registerAccount(registerPseudo.text, registerEmail.text, registerPassword.text, registerScreenRec.selectedAvatar)
                         }
                     }
                 }
 
                 Connections {
                     target: networkManager
-                    function onRegisterSuccess(playerName) {
+                    function onRegisterSuccess(playerName, avatar) {
                         loginRoot.loginSuccess(playerName, "account")
                     }
                     function onRegisterFailed(error) {
@@ -423,6 +636,43 @@ Rectangle {
 
             Rectangle {
                 color: "#1a1a1a"
+
+                // Bouton retour en haut à gauche
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.margins: 40 * loginRoot.minRatio
+                    width: 100 * loginRoot.minRatio
+                    height: 100 * loginRoot.minRatio
+                    color: "transparent"
+                    z: 100
+
+                    Image {
+                        anchors.fill: parent
+                        source: "qrc:/resources/back-square-svgrepo-com.svg"
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            loginStack.pop()
+                        }
+                        onEntered: {
+                            parent.scale = 1.1
+                        }
+                        onExited: {
+                            parent.scale = 1.0
+                        }
+                    }
+
+                    Behavior on scale {
+                        NumberAnimation { duration: 150 }
+                    }
+                }
 
                 ColumnLayout {
                     anchors.centerIn: parent
@@ -560,36 +810,11 @@ Rectangle {
                             networkManager.loginAccount(loginEmail.text, loginPassword.text)
                         }
                     }
-
-                    // Bouton retour
-                    Button {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 100 * loginRoot.heightRatio
-
-                        background: Rectangle {
-                            color: "transparent"
-                            border.color: "#555555"
-                            border.width: 2 * loginRoot.minRatio
-                            radius: 8 * loginRoot.minRatio
-                        }
-
-                        contentItem: Text {
-                            text: "Retour"
-                            font.pixelSize: 32 * loginRoot.minRatio
-                            color: "#aaaaaa"
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-
-                        onClicked: {
-                            loginStack.pop()
-                        }
-                    }
                 }
 
                 Connections {
                     target: networkManager
-                    function onLoginSuccess(playerName) {
+                    function onLoginSuccess(playerName, avatar) {
                         loginRoot.loginSuccess(playerName, "account")
                     }
                     function onLoginFailed(error) {
@@ -604,7 +829,48 @@ Rectangle {
             id: guestScreen
 
             Rectangle {
+                id: guestScreenRect
                 color: "#1a1a1a"
+
+                // Variable pour stocker l'avatar sélectionné
+                property string selectedAvatar: "avataaars1.svg"
+
+                // Bouton retour en haut à gauche
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.margins: 40 * loginRoot.minRatio
+                    width: 100 * loginRoot.minRatio
+                    height: 100 * loginRoot.minRatio
+                    color: "transparent"
+                    z: 100
+
+                    Image {
+                        anchors.fill: parent
+                        source: "qrc:/resources/back-square-svgrepo-com.svg"
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            loginStack.pop()
+                        }
+                        onEntered: {
+                            parent.scale = 1.1
+                        }
+                        onExited: {
+                            parent.scale = 1.0
+                        }
+                    }
+
+                    Behavior on scale {
+                        NumberAnimation { duration: 150 }
+                    }
+                }
 
                 ColumnLayout {
                     anchors.centerIn: parent
@@ -661,6 +927,201 @@ Rectangle {
                         }
                     }
 
+                    // Bouton pour ouvrir la sélection d'avatar
+                    Button {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 100 * loginRoot.heightRatio
+
+                        background: Rectangle {
+                            color: parent.down ? "#555555" : (parent.hovered ? "#666666" : "#444444")
+                            radius: 8 * loginRoot.minRatio
+                            border.color: "#FFD700"
+                            border.width: 2 * loginRoot.minRatio
+                        }
+
+                        contentItem: Row {
+                            spacing: 15 * loginRoot.minRatio
+                            anchors.centerIn: parent
+
+                            // Aperçu de l'avatar sélectionné
+                            Rectangle {
+                                width: 50 * loginRoot.minRatio
+                                height: 50 * loginRoot.minRatio
+                                radius: 25 * loginRoot.minRatio
+                                color: "#2a2a2a"
+                                border.color: "#FFD700"
+                                border.width: 2 * loginRoot.minRatio
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                Image {
+                                    anchors.fill: parent
+                                    anchors.margins: 3 * loginRoot.minRatio
+                                    source: "qrc:/resources/avatar/" + guestScreenRect.selectedAvatar
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
+                                }
+                            }
+
+                            Text {
+                                text: "Choisir un avatar"
+                                font.pixelSize: 32 * loginRoot.minRatio
+                                font.bold: true
+                                color: "white"
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        onClicked: {
+                            guestAvatarPopup.open()
+                        }
+                    }
+
+                    // Popup de sélection d'avatar
+                    Popup {
+                        id: guestAvatarPopup
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width, 700 * loginRoot.widthRatio)
+                        height: Math.min(parent.height, 600 * loginRoot.heightRatio)
+                        modal: true
+                        focus: true
+                        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+                        background: Rectangle {
+                            color: "#1a1a1a"
+                            radius: 15 * loginRoot.minRatio
+                            border.color: "#FFD700"
+                            border.width: 3 * loginRoot.minRatio
+                        }
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 20 * loginRoot.minRatio
+                            spacing: 15 * loginRoot.minRatio
+
+                            Text {
+                                text: "Choisissez votre avatar"
+                                font.pixelSize: 32 * loginRoot.minRatio
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+
+                            ScrollView {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+                                contentWidth: availableWidth
+
+                                GridLayout {
+                                    id: guestAvatarGrid
+                                    width: parent.parent.width - 20 * loginRoot.minRatio
+                                    columns: 3
+                                    rowSpacing: 20 * loginRoot.minRatio
+                                    columnSpacing: 20 * loginRoot.minRatio
+
+                                    // Calcul de la taille optimale pour que 3 colonnes remplissent exactement la largeur
+                                    property real avatarSize: (width - columnSpacing * (columns - 1)) / columns
+
+                                    Repeater {
+                                        model: [
+                                            "avataaars1.svg",
+                                            "avataaars2.svg",
+                                            "avataaars3.svg",
+                                            "avataaars4.svg",
+                                            "avataaars5.svg",
+                                            "avataaars6.svg",
+                                            "avataaars7.svg",
+                                            "avataaars8.svg",
+                                            "avataaars9.svg",
+                                            "avataaars10.svg",
+                                            "avataaars11.svg",
+                                            "avataaars12.svg",
+                                            "avataaars13.svg",
+                                            "avataaars14.svg",
+                                            "avataaars15.svg",
+                                            "avataaars16.svg",
+                                            "avataaars17.svg",
+                                            "avataaars18.svg",
+                                            "avataaars19.svg",
+                                            "avataaars20.svg",
+                                            "avataaars21.svg",
+                                            "avataaars22.svg",
+                                            "avataaars23.svg",
+                                            "avataaars24.svg"
+                                        ]
+
+                                        delegate: Rectangle {
+                                            Layout.preferredWidth: guestAvatarGrid.avatarSize
+                                            Layout.preferredHeight: guestAvatarGrid.avatarSize
+                                            color: guestScreenRect.selectedAvatar === modelData ? "#FFD700" : "#2a2a2a"
+                                            radius: 15 * loginRoot.minRatio
+                                            border.color: guestScreenRect.selectedAvatar === modelData ? "#FFFFFF" : "#666666"
+                                            border.width: guestScreenRect.selectedAvatar === modelData ? 4 * loginRoot.minRatio : 2 * loginRoot.minRatio
+
+                                            Image {
+                                                anchors.fill: parent
+                                                anchors.margins: 10 * loginRoot.minRatio
+                                                source: "qrc:/resources/avatar/" + modelData
+                                                fillMode: Image.PreserveAspectFit
+                                                smooth: true
+                                            }
+
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+
+                                                onClicked: {
+                                                    guestScreenRect.selectedAvatar = modelData
+                                                    guestAvatarPopup.close()
+                                                }
+
+                                                onEntered: {
+                                                    parent.scale = 1.1
+                                                }
+
+                                                onExited: {
+                                                    parent.scale = 1.0
+                                                }
+                                            }
+
+                                            Behavior on scale {
+                                                NumberAnimation { duration: 150 }
+                                            }
+
+                                            Behavior on color {
+                                                ColorAnimation { duration: 200 }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Button {
+                                Layout.alignment: Qt.AlignHCenter
+                                Layout.preferredWidth: 200 * loginRoot.widthRatio
+                                Layout.preferredHeight: 100 * loginRoot.heightRatio
+
+                                background: Rectangle {
+                                    color: parent.down ? "#666666" : (parent.hovered ? "#888888" : "#777777")
+                                    radius: 8 * loginRoot.minRatio
+                                }
+
+                                contentItem: Text {
+                                    text: "Fermer"
+                                    font.pixelSize: 36 * loginRoot.minRatio
+                                    color: "white"
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                onClicked: {
+                                    guestAvatarPopup.close()
+                                }
+                            }
+                        }
+                    }
+
                     Text {
                         text: "En tant qu'invité, votre progression ne sera pas sauvegardée"
                         font.pixelSize: 24 * loginRoot.minRatio
@@ -697,32 +1158,10 @@ Rectangle {
                                 return
                             }
 
+                            // Récupérer l'avatar sélectionné et enregistrer l'invité avec son avatar
+                            var guestRect = registerScreenRec
+                            networkManager.registerPlayer(guestPseudo.text, registerScreenRec.selectedAvatar)
                             loginRoot.loginSuccess(guestPseudo.text, "guest")
-                        }
-                    }
-
-                    // Bouton retour
-                    Button {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 100 * loginRoot.heightRatio
-
-                        background: Rectangle {
-                            color: "transparent"
-                            border.color: "#555555"
-                            border.width: 2 * loginRoot.minRatio
-                            radius: 8 * loginRoot.minRatio
-                        }
-
-                        contentItem: Text {
-                            text: "Retour"
-                            font.pixelSize: 32 * loginRoot.minRatio
-                            color: "#aaaaaa"
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-
-                        onClicked: {
-                            loginStack.pop()
                         }
                     }
                 }

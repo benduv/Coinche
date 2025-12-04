@@ -13,8 +13,6 @@ GameModel::GameModel(QObject *parent)
     , m_scoreTeam2(0)
     , m_scoreTotalTeam1(0)
     , m_scoreTotalTeam2(0)
-    , m_scoreRoundTeam1(0)
-    , m_scoreRoundTeam2(0)
     , m_lastBidAnnonce(Player::ANNONCEINVALIDE)
     , m_lastBidCouleur(Carte::COULEURINVALIDE)
     , m_lastBidderIndex(-1)
@@ -173,16 +171,6 @@ int GameModel::scoreTotalTeam2() const
     return m_scoreTotalTeam2;
 }
 
-int GameModel::scoreRoundTeam1() const
-{
-    return m_scoreRoundTeam1;
-}
-
-int GameModel::scoreRoundTeam2() const
-{
-    return m_scoreRoundTeam2;
-}
-
 QString GameModel::lastBid() const
 {
     if (m_lastBidAnnonce == Player::ANNONCEINVALIDE) return "Aucune annonce";
@@ -311,6 +299,20 @@ QString GameModel::getPlayerName(int position) const
     return QString("Joueur %1").arg(position + 1);
 }
 
+QString GameModel::getPlayerAvatar(int position) const
+{
+    if (m_playerAvatars.contains(position)) {
+        return m_playerAvatars[position];
+    }
+    return "avataaars1.svg";  // Avatar par défaut
+}
+
+void GameModel::setPlayerAvatar(int position, const QString& avatar)
+{
+    m_playerAvatars[position] = avatar;
+    qDebug() << "Avatar défini pour position" << position << ":" << avatar;
+}
+
 void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents)
 {
     qDebug() << "Initialisation partie online - Position:" << myPosition;
@@ -324,6 +326,7 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
     // Nettoyer les anciens joueurs si existants
     qDeleteAll(m_onlinePlayers);
     m_onlinePlayers.clear();
+    m_playerAvatars.clear();
 
     // Créer les cartes du joueur local (sans les ajouter encore)
     std::vector<Carte*> myNewCartes;
@@ -340,6 +343,10 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
     Player* localPlayer = new Player("Moi", std::vector<Carte*>(), myPosition);
     m_onlinePlayers.append(localPlayer);
 
+    // Stocker l'avatar du joueur local (récupéré depuis networkManager)
+    // Pour l'instant on utilise un avatar par défaut, il sera mis à jour par le serveur
+    m_playerAvatars[myPosition] = "avatar1.svg";
+
     qDebug() << "Joueur local cree (main vide pour animation)";
 
     // Associer à la bonne HandModel selon la position
@@ -354,11 +361,16 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         QJsonObject oppObj = val.toObject();
         int position = oppObj["position"].toInt();
         QString name = oppObj["name"].toString();
+        QString avatar = oppObj["avatar"].toString();
+        if (avatar.isEmpty()) avatar = "avatar1.svg";
 
-        qDebug() << "Creation adversaire:" << name << "position:" << position;
+        qDebug() << "Creation adversaire:" << name << "position:" << position << "avatar:" << avatar;
 
         Player* opponent = new Player(name.toStdString(), std::vector<Carte*>(), position);
         m_onlinePlayers.append(opponent);
+
+        // Stocker l'avatar de l'adversaire
+        m_playerAvatars[position] = avatar;
 
         HandModel* oppHand = getHandModelByPosition(position);
         if (oppHand) {
@@ -417,6 +429,12 @@ void GameModel::playCard(int cardIndex)
 {
     qDebug() << "Tentative de jouer carte - Position:" << m_myPosition << "Index:" << cardIndex;
 
+    // Vérifier que l'on n'est pas en phase d'annonces
+    if (m_biddingPhase) {
+        qDebug() << "Impossible de jouer une carte pendant la phase d'annonces";
+        return;
+    }
+
     // Vérifier que le pli précédent n'est pas en cours de nettoyage
     if (m_pliBeingCleared) {
         qDebug() << "Le pli precedent est en cours de nettoyage, impossible de jouer";
@@ -453,6 +471,12 @@ void GameModel::playCard(int cardIndex)
 void GameModel::playRandomCard()
 {
     qDebug() << "Temps ecoule, jeu d'une carte aleatoire";
+
+    // Ne pas jouer de carte si on est en phase d'annonces
+    if (m_biddingPhase) {
+        qDebug() << "Erreur: tentative de jouer une carte pendant la phase d'annonces";
+        return;
+    }
 
     Player* localPlayer = getPlayerByPosition(m_myPosition);
     if (!localPlayer) {
@@ -924,26 +948,15 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         QJsonObject scoreData = data.toJsonObject();
         int scoreTotalTeam1 = scoreData["scoreTotalTeam1"].toInt();
         int scoreTotalTeam2 = scoreData["scoreTotalTeam2"].toInt();
-        int scoreRoundTeam1 = scoreData["scoreRoundTeam1"].toInt();
-        int scoreRoundTeam2 = scoreData["scoreRoundTeam2"].toInt();
 
         qDebug() << "GameModel::receivePlayerAction - Manche terminee";
         qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
-        qDebug() << "  Scores de la manche: Team1 =" << scoreRoundTeam1 << ", Team2 =" << scoreRoundTeam2;
 
         // Mettre à jour les scores totaux
         m_scoreTotalTeam1 = scoreTotalTeam1;
         m_scoreTotalTeam2 = scoreTotalTeam2;
         emit scoreTotalTeam1Changed();
         emit scoreTotalTeam2Changed();
-
-        // Mettre à jour les scores de la manche (restent affichés jusqu'à la fin de la phase d'annonce suivante)
-        // m_scoreRoundTeam1 = scoreRoundTeam1;
-        // m_scoreRoundTeam2 = scoreRoundTeam2;
-        // emit scoreRoundTeam1Changed();
-        // emit scoreRoundTeam2Changed();
-
-
 
         // Le dealer change automatiquement car il est calculé à partir de biddingPlayer
 
@@ -991,6 +1004,9 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_distributionPhase = 1;
         emit distributionPhaseChanged();
 
+        // Arrêter le timer de jeu (on passe en phase d'annonces)
+        m_playTimer->stop();
+
         // Reinitialiser les encheres
         m_biddingPhase = true;
         m_biddingPlayer = biddingPlayer;
@@ -999,10 +1015,6 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_lastBidAnnonce = Player::ANNONCEINVALIDE;
         m_lastBidCouleur = Carte::COULEURINVALIDE;
         m_lastBidderIndex = -1;
-
-        // Note: On ne réinitialise PAS scoreRoundTeam1/2 ici
-        // Ces scores doivent rester affichés pendant toute la phase d'annonces
-        // et seront réinitialisés au début de la phase de jeu (quand biddingPhase passe à false)
 
         // Reinitialiser les annonces de chaque joueur
         for (int i = 0; i < 4; i++) {

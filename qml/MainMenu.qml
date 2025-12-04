@@ -97,7 +97,7 @@ ApplicationWindow {
                         }
 
                         onClicked: {
-                            networkManager.registerPlayer(mainWindow.loggedInPlayerName)
+                            networkManager.registerPlayer(mainWindow.loggedInPlayerName, networkManager.playerAvatar)
                             stackView.push("qrc:/qml/MatchMakingView.qml")
                         }
                     }
@@ -130,13 +130,38 @@ ApplicationWindow {
                         }
                     }
 
-                    // Afficher le nom du joueur et le type de compte
-                    Text {
-                        text: "Connecté en tant que: " + mainWindow.loggedInPlayerName +
-                              (mainWindow.accountType === "guest" ? " (Invité)" : "")
-                        font.pixelSize: 16 * mainWindow.minRatio
-                        color: "#aaaaaa"
+                    // Afficher l'avatar et le nom du joueur
+                    Row {
                         Layout.alignment: Qt.AlignHCenter
+                        spacing: 15 * mainWindow.minRatio
+
+                        // Avatar du joueur
+                        Rectangle {
+                            width: 60 * mainWindow.minRatio
+                            height: 60 * mainWindow.minRatio
+                            radius: 30 * mainWindow.minRatio
+                            color: "#444444"
+                            border.color: "#FFD700"
+                            border.width: 2 * mainWindow.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Image {
+                                anchors.fill: parent
+                                anchors.margins: 5 * mainWindow.minRatio
+                                source: "qrc:/resources/avatar/" + networkManager.playerAvatar
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                            }
+                        }
+
+                        Text {
+                            text: mainWindow.loggedInPlayerName +
+                                  (mainWindow.accountType === "guest" ? " (Invité)" : "")
+                            font.pixelSize: 20 * mainWindow.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
 
                     Item { height: 20 * mainWindow.minRatio }

@@ -18,6 +18,7 @@ class NetworkManager : public QObject {
     Q_PROPERTY(QJsonArray myCards READ myCards NOTIFY gameDataChanged)
     Q_PROPERTY(int myPosition READ myPosition NOTIFY gameDataChanged)
     Q_PROPERTY(QJsonArray opponents READ opponents NOTIFY gameDataChanged)
+    Q_PROPERTY(QString playerAvatar READ playerAvatar NOTIFY playerAvatarChanged)
 
 public:
     explicit NetworkManager(QObject *parent = nullptr)
@@ -27,6 +28,7 @@ public:
         , m_playersInQueue(0)
         , m_myPosition(-1)
         , m_gameModel(nullptr)
+        , m_playerAvatar("avataaars1.svg")
     {
         connect(m_socket, &QWebSocket::connected, this, &NetworkManager::onConnected);
         connect(m_socket, &QWebSocket::disconnected, this, &NetworkManager::onDisconnected);
@@ -49,6 +51,7 @@ public:
     int myPosition() const { return m_myPosition; }
     QJsonArray opponents() const { return m_opponents; }
     GameModel* gameModel() const { return m_gameModel; }
+    QString playerAvatar() const { return m_playerAvatar; }
 
     // Nouvelle méthode pour créer le GameModel
     Q_INVOKABLE void createGameModel(int position, const QJsonArray& cards, const QJsonArray& opps) {
@@ -75,9 +78,12 @@ public:
         
         // Initialiser avec les données
         m_gameModel->initOnlineGame(position, cards, opps);
-        
-        qDebug() << "GameModel cree et initialise";
-        
+
+        // Définir l'avatar du joueur local
+        m_gameModel->setPlayerAvatar(position, m_playerAvatar);
+
+        qDebug() << "GameModel cree et initialise avec avatar:" << m_playerAvatar;
+
         // Émettre signal pour que QML navigue vers CoincheView
         emit gameModelReady();
     }
@@ -87,10 +93,11 @@ public:
         m_socket->open(QUrl(url));
     }
 
-    Q_INVOKABLE void registerPlayer(const QString &playerName) {
+    Q_INVOKABLE void registerPlayer(const QString &playerName, const QString &avatar = "avataaars1.svg") {
         QJsonObject msg;
         msg["type"] = "register";
         msg["playerName"] = playerName;
+        msg["avatar"] = avatar;
         sendMessage(msg);
     }
 
@@ -121,12 +128,13 @@ public:
         sendMessage(msg);
     }
 
-    Q_INVOKABLE void registerAccount(const QString &pseudo, const QString &email, const QString &password) {
+    Q_INVOKABLE void registerAccount(const QString &pseudo, const QString &email, const QString &password, const QString &avatar = "avataaars1.svg") {
         QJsonObject msg;
         msg["type"] = "registerAccount";
         msg["pseudo"] = pseudo;
         msg["email"] = email;
         msg["password"] = password;
+        msg["avatar"] = avatar;
         sendMessage(msg);
     }
 
@@ -156,11 +164,12 @@ signals:
     void bidMade(QString playerId, int bidValue, int suit);
     void playerDisconnected(QString playerId);
     void errorOccurred(QString error);
-    void registerSuccess(QString playerName);
+    void registerSuccess(QString playerName, QString avatar);
     void registerFailed(QString error);
-    void loginSuccess(QString playerName);
+    void loginSuccess(QString playerName, QString avatar);
     void loginFailed(QString error);
     void messageReceived(QString message);  // Pour que QML puisse écouter tous les messages
+    void playerAvatarChanged();
 
 private slots:
     void onConnected() {
@@ -368,8 +377,12 @@ private slots:
         }
         else if (type == "registerAccountSuccess") {
             QString playerName = obj["playerName"].toString();
-            qDebug() << "NetworkManager - Compte cree avec succès:" << playerName;
-            emit registerSuccess(playerName);
+            QString avatar = obj["avatar"].toString();
+            if (avatar.isEmpty()) avatar = "avataaars1.svg";
+            m_playerAvatar = avatar;
+            qDebug() << "NetworkManager - Compte cree avec succès:" << playerName << "Avatar:" << avatar;
+            emit playerAvatarChanged();
+            emit registerSuccess(playerName, avatar);
         }
         else if (type == "registerAccountFailed") {
             QString error = obj["error"].toString();
@@ -378,8 +391,12 @@ private slots:
         }
         else if (type == "loginAccountSuccess") {
             QString playerName = obj["playerName"].toString();
-            qDebug() << "NetworkManager - Connexion reussie:" << playerName;
-            emit loginSuccess(playerName);
+            QString avatar = obj["avatar"].toString();
+            if (avatar.isEmpty()) avatar = "avataaars1.svg";
+            m_playerAvatar = avatar;
+            qDebug() << "NetworkManager - Connexion reussie:" << playerName << "Avatar:" << avatar;
+            emit playerAvatarChanged();
+            emit loginSuccess(playerName, avatar);
         }
         else if (type == "loginAccountFailed") {
             QString error = obj["error"].toString();
@@ -417,8 +434,9 @@ private:
     QJsonArray m_myCards;
     int m_myPosition;
     QJsonArray m_opponents;
-    
+
     GameModel* m_gameModel;  // Le GameModel géré par NetworkManager
+    QString m_playerAvatar;
 };
 
 #endif // NETWORKMANAGER_H

@@ -9,6 +9,7 @@
         <file>qml/LoginView.qml</file>
         <file>qml/StatsView.qml</file>
         <file>qml/GameOverPopup.qml</file>
+        <file>qml/AvatarSelector.qml</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>
@@ -43,9 +44,30 @@
         <file>resources/cards/trefle_roi.png</file>
         <file>resources/cards/trefle_as.png</file>
         <file>resources/Tapis poker3.jpg</file>
-        <file>resources/avatar/animal-1293181.svg</file>
-        <file>resources/avatar/bee-24633.svg</file>
-        <file>resources/avatar/cartoon-1294036.svg</file>
-        <file>resources/avatar/warrior-149098.svg</file>
+        <file>resources/back-square-svgrepo-com.svg</file>
+        <file>resources/avatar/avataaars1.svg</file>
+        <file>resources/avatar/avataaars2.svg</file>
+        <file>resources/avatar/avataaars3.svg</file>
+        <file>resources/avatar/avataaars4.svg</file>
+        <file>resources/avatar/avataaars5.svg</file>
+        <file>resources/avatar/avataaars6.svg</file>
+        <file>resources/avatar/avataaars7.svg</file>
+        <file>resources/avatar/avataaars8.svg</file>
+        <file>resources/avatar/avataaars9.svg</file>
+        <file>resources/avatar/avataaars10.svg</file>
+        <file>resources/avatar/avataaars11.svg</file>
+        <file>resources/avatar/avataaars12.svg</file>
+        <file>resources/avatar/avataaars13.svg</file>
+        <file>resources/avatar/avataaars14.svg</file>
+        <file>resources/avatar/avataaars15.svg</file>
+        <file>resources/avatar/avataaars16.svg</file>
+        <file>resources/avatar/avataaars17.svg</file>
+        <file>resources/avatar/avataaars18.svg</file>
+        <file>resources/avatar/avataaars19.svg</file>
+        <file>resources/avatar/avataaars20.svg</file>
+        <file>resources/avatar/avataaars21.svg</file>
+        <file>resources/avatar/avataaars22.svg</file>
+        <file>resources/avatar/avataaars23.svg</file>
+        <file>resources/avatar/avataaars24.svg</file>
     </qresource>
 </RCC>

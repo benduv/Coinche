@@ -405,7 +405,7 @@ Rectangle {
 
             // Section Annonces Coinchées (coinches subies)
             Text {
-                text: "🛡️ ANNONCES COINCHÉES"
+                text: "🛡️ COINCHES SUBIES"
                 font.pixelSize: Math.min(28 * minRatio, 24)
                 font.bold: true
                 color: "#9966ff"
