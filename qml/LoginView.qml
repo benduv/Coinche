@@ -1159,8 +1159,8 @@ Rectangle {
                             }
 
                             // Récupérer l'avatar sélectionné et enregistrer l'invité avec son avatar
-                            var guestRect = registerScreenRec
-                            networkManager.registerPlayer(guestPseudo.text, registerScreenRec.selectedAvatar)
+                            //var guestRect = registerScreenRec
+                            networkManager.registerPlayer(guestPseudo.text, guestScreenRect.selectedAvatar)
                             loginRoot.loginSuccess(guestPseudo.text, "guest")
                         }
                     }

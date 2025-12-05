@@ -9,26 +9,31 @@ Rectangle {
 
     signal cancelClicked()
 
+    // Ratios pour le responsive
+    property real widthRatio: width / 1920
+    property real heightRatio: height / 1080
+    property real minRatio: Math.min(widthRatio, heightRatio)
+
     ColumnLayout {
         anchors.centerIn: parent
-        spacing: 40
+        spacing: 40 * root.minRatio
 
         // Animation de recherche
         Item {
-            Layout.preferredWidth: 200
-            Layout.preferredHeight: 200
+            Layout.preferredWidth: 300 * root.minRatio
+            Layout.preferredHeight: 300 * root.minRatio
             Layout.alignment: Qt.AlignHCenter
 
             // Cercles animés
             Repeater {
                 model: 3
                 Rectangle {
-                    width: 180 - (index * 40)
+                    width: (270 - (index * 60)) * root.minRatio
                     height: width
                     radius: width / 2
                     color: "transparent"
                     border.color: "#00cc00"
-                    border.width: 3
+                    border.width: 5 * root.minRatio
                     anchors.centerIn: parent
                     opacity: 0
 
@@ -53,9 +58,9 @@ Rectangle {
             // Icône centrale
             Text {
                 text: "🎴"
-                font.pixelSize: 80
+                font.pixelSize: 120 * root.minRatio
                 anchors.centerIn: parent
-                
+
                 RotationAnimation on rotation {
                     from: 0
                     to: 360
@@ -68,7 +73,7 @@ Rectangle {
         // Texte de statut
         Text {
             text: "Recherche de joueurs..."
-            font.pixelSize: 32
+            font.pixelSize: 32 * root.minRatio
             font.bold: true
             color: "#FFD700"
             Layout.alignment: Qt.AlignHCenter
@@ -76,21 +81,21 @@ Rectangle {
 
         // Nombre de joueurs
         Rectangle {
-            Layout.preferredWidth: 400
-            Layout.preferredHeight: 100
+            Layout.preferredWidth: 800 * root.widthRatio
+            Layout.preferredHeight: 200 * root.heightRatio
             Layout.alignment: Qt.AlignHCenter
             color: "#2a2a2a"
-            radius: 10
+            radius: 10 * root.minRatio
             border.color: "#00cc00"
-            border.width: 2
+            border.width: 3 * root.minRatio
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 10
+                spacing: 20 * root.minRatio
 
                 Text {
                     text: networkManager.playersInQueue + " / 4 joueurs"
-                    font.pixelSize: 36
+                    font.pixelSize: 48 * root.minRatio
                     font.bold: true
                     color: "#00ff00"
                     Layout.alignment: Qt.AlignHCenter
@@ -98,11 +103,11 @@ Rectangle {
 
                 // Barre de progression
                 Rectangle {
-                    Layout.preferredWidth: 300
-                    Layout.preferredHeight: 10
+                    Layout.preferredWidth: 600 * root.widthRatio
+                    Layout.preferredHeight: 20 * root.heightRatio
                     Layout.alignment: Qt.AlignHCenter
                     color: "#444444"
-                    radius: 5
+                    radius: 5 * root.minRatio
 
                     Rectangle {
                         width: parent.width * (networkManager.playersInQueue / 4.0)
@@ -121,17 +126,17 @@ Rectangle {
         // Indicateurs de joueurs
         Row {
             Layout.alignment: Qt.AlignHCenter
-            spacing: 20
+            spacing: 20 * root.minRatio
 
             Repeater {
                 model: 4
                 Rectangle {
-                    width: 60
-                    height: 60
-                    radius: 30
+                    width: 120 * root.minRatio
+                    height: 120 * root.minRatio
+                    radius: 60 * root.minRatio
                     color: index < networkManager.playersInQueue ? "#00cc00" : "#333333"
                     border.color: "#FFD700"
-                    border.width: 2
+                    border.width: 2 * root.minRatio
 
                     Behavior on color {
                         ColorAnimation { duration: 300 }
@@ -140,30 +145,28 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: index < networkManager.playersInQueue ? "✓" : "?"
-                        font.pixelSize: 30
+                        font.pixelSize: 60 * root.minRatio
                         color: "white"
                     }
                 }
             }
         }
 
-        Item { height: 20 }
-
         // Bouton Annuler
         Button {
-            Layout.preferredWidth: 200
-            Layout.preferredHeight: 50
+            Layout.preferredWidth: 250 * root.widthRatio
+            Layout.preferredHeight: 120 * root.heightRatio
             Layout.alignment: Qt.AlignHCenter
 
             background: Rectangle {
                 color: parent.down ? "#cc0000" : (parent.hovered ? "#ff3333" : "#ff0000")
-                radius: 5
+                radius: 5 * root.minRatio
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
 
             contentItem: Text {
                 text: "Annuler"
-                font.pixelSize: 18
+                font.pixelSize: 36 * root.minRatio
                 color: "white"
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
@@ -171,7 +174,7 @@ Rectangle {
 
             onClicked: {
                 networkManager.leaveMatchmaking()
-                root.cancelClicked()
+                stackView.pop()  // Retour au MainMenu
             }
         }
     }
@@ -193,54 +196,6 @@ Rectangle {
             stackView.push("qrc:/qml/CoincheView.qml")
         }
     }
-
-
-            // Créer le GameModel
-            /*var gameModel = gameModelComponent.createObject(root)
-
-            if (!gameModel) {
-                console.error("ERREUR: Impossible de créer GameModel!")
-                return
-            }
-
-            console.log("GameModel créé")
-
-            // Initialiser avec les données du serveur
-            gameModel.initOnlineGame(
-                networkManager.myPosition,
-                networkManager.myCards,
-                networkManager.opponents
-            )
-
-            // Connecter les signaux
-            gameModel.cardPlayedLocally.connect(function(cardIndex) {
-                networkManager.playCard(cardIndex)
-            })
-
-            gameModel.bidMadeLocally.connect(function(bidValue, suitValue) {
-                networkManager.makeBid(bidValue, suitValue)
-            })
-
-            networkManager.cardPlayed.connect(function(playerId, cardIndex) {
-                gameModel.receivePlayerAction(playerId, "playCard", cardIndex)
-            })
-
-            networkManager.bidMade.connect(function(playerId, bidValue, suit) {
-                var bidData = { "value": bidValue, "suit": suit }
-                gameModel.receivePlayerAction(playerId, "makeBid", bidData)
-            })
-
-            // Naviguer vers la vue de jeu
-            stackView.push("qrc:/qml/CoincheView.qml", {
-                "gameModel": gameModel
-            })
-        }
-    }
-
-    Component {
-        id: gameModelComponent
-        GameModel {}
-    }*/
 
     Component.onCompleted: {
         if (networkManager.connected) {

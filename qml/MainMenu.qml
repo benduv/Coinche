@@ -50,9 +50,127 @@ ApplicationWindow {
                 anchors.fill: parent
                 color: "#1a1a1a"
 
+                // Animations de fond - Colonnes de symboles de cartes
+                // Colonne 1 (gauche) - Coeurs montant
+                Column {
+                    id: heartsColumn
+                    x: parent.width * 0.08
+                    y: -parent.height
+                    spacing: 80 * mainWindow.minRatio
+                    z: 0
+                    opacity: 0.15
+
+                    Repeater {
+                        model: 15
+                        Text {
+                            text: "♥"
+                            font.pixelSize: 60 * mainWindow.minRatio
+                            color: "#FF0000"
+                        }
+                    }
+
+                    SequentialAnimation on y {
+                        running: true
+                        loops: Animation.Infinite
+                        NumberAnimation {
+                            from: parent.height
+                            to: -heartsColumn.height
+                            duration: 15000
+                        }
+                    }
+                }
+
+                // Colonne 2 (gauche-centre) - Trèfles descendant
+                Column {
+                    id: clubsColumn
+                    x: parent.width * 0.23
+                    y: -parent.height
+                    spacing: 80 * mainWindow.minRatio
+                    z: 0
+                    opacity: 0.15
+
+                    Repeater {
+                        model: 15
+                        Text {
+                            text: "♣"
+                            font.pixelSize: 60 * mainWindow.minRatio
+                            color: "#000000"
+                        }
+                    }
+
+                    SequentialAnimation on y {
+                        running: true
+                        loops: Animation.Infinite
+                        NumberAnimation {
+                            from: -clubsColumn.height
+                            to: parent.height
+                            duration: 18000
+                        }
+                    }
+                }
+
+                // Colonne 3 (droite-centre) - Carreaux descendant
+                Column {
+                    id: diamondsColumn
+                    x: parent.width * 0.77
+                    y: -parent.height
+                    spacing: 80 * mainWindow.minRatio
+                    z: 0
+                    opacity: 0.15
+
+                    Repeater {
+                        model: 15
+                        Text {
+                            text: "♦"
+                            font.pixelSize: 60 * mainWindow.minRatio
+                            color: "#FF0000"
+                        }
+                    }
+
+                    SequentialAnimation on y {
+                        running: true
+                        loops: Animation.Infinite
+                        NumberAnimation {
+                            from: -diamondsColumn.height
+                            to: parent.height
+                            duration: 16000
+                        }
+                    }
+                }
+
+                // Colonne 4 (droite) - Piques montant
+                Column {
+                    id: spadesColumn
+                    x: parent.width * 0.92
+                    y: -parent.height
+                    spacing: 80 * mainWindow.minRatio
+                    z: 0
+                    opacity: 0.15
+
+                    Repeater {
+                        model: 15
+                        Text {
+                            text: "♠"
+                            font.pixelSize: 60 * mainWindow.minRatio
+                            color: "#000000"
+                        }
+                    }
+
+                    SequentialAnimation on y {
+                        running: true
+                        loops: Animation.Infinite
+                        NumberAnimation {
+                            from: parent.height
+                            to: -spadesColumn.height
+                            duration: 17000
+                        }
+                    }
+                }
+
                 ColumnLayout {
                     anchors.centerIn: parent
                     spacing: 30 * mainWindow.minRatio
+                    z: 1
 
                     Text {
                         text: "COINCHE"
@@ -63,13 +181,47 @@ ApplicationWindow {
                     }
 
                     Text {
-                        text: "Jeu de cartes multijoueur"
-                        font.pixelSize: 20 * mainWindow.minRatio
+                        text: "Bienvenue !"
+                        font.pixelSize: 36 * mainWindow.minRatio
                         color: "#aaaaaa"
                         Layout.alignment: Qt.AlignHCenter
                     }
 
-                    Item { height: 40 * mainWindow.minRatio }
+                    // Afficher l'avatar et le nom du joueur
+                    Row {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 15 * mainWindow.minRatio
+
+                        // Avatar du joueur
+                        Rectangle {
+                            width: 120 * mainWindow.minRatio
+                            height: 120 * mainWindow.minRatio
+                            radius: 60 * mainWindow.minRatio
+                            color: "#444444"
+                            border.color: "#FFD700"
+                            border.width: 2 * mainWindow.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Image {
+                                anchors.fill: parent
+                                anchors.margins: 15 * mainWindow.minRatio
+                                source: "qrc:/resources/avatar/" + networkManager.playerAvatar
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                            }
+                        }
+
+                        Text {
+                            text: mainWindow.loggedInPlayerName +
+                                  (mainWindow.accountType === "guest" ? " (Invité)" : "")
+                            font.pixelSize: 42 * mainWindow.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    //Item { height: 10 * mainWindow.minRatio }
 
                     // Bouton Jouer
                     Button {
@@ -130,42 +282,6 @@ ApplicationWindow {
                         }
                     }
 
-                    // Afficher l'avatar et le nom du joueur
-                    Row {
-                        Layout.alignment: Qt.AlignHCenter
-                        spacing: 15 * mainWindow.minRatio
-
-                        // Avatar du joueur
-                        Rectangle {
-                            width: 60 * mainWindow.minRatio
-                            height: 60 * mainWindow.minRatio
-                            radius: 30 * mainWindow.minRatio
-                            color: "#444444"
-                            border.color: "#FFD700"
-                            border.width: 2 * mainWindow.minRatio
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Image {
-                                anchors.fill: parent
-                                anchors.margins: 5 * mainWindow.minRatio
-                                source: "qrc:/resources/avatar/" + networkManager.playerAvatar
-                                fillMode: Image.PreserveAspectFit
-                                smooth: true
-                            }
-                        }
-
-                        Text {
-                            text: mainWindow.loggedInPlayerName +
-                                  (mainWindow.accountType === "guest" ? " (Invité)" : "")
-                            font.pixelSize: 20 * mainWindow.minRatio
-                            font.bold: true
-                            color: "#FFD700"
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    Item { height: 20 * mainWindow.minRatio }
-
                     // Statut connexion
                     Row {
                         Layout.alignment: Qt.AlignHCenter
@@ -188,7 +304,7 @@ ApplicationWindow {
 
                         Text {
                             text: networkManager.connected ? "Connecté" : "Déconnecté"
-                            font.pixelSize: 14 * mainWindow.minRatio
+                            font.pixelSize: 20 * mainWindow.minRatio
                             color: networkManager.connected ? "#00ff00" : "#ff6666"
                             anchors.verticalCenter: parent.verticalCenter
                         }

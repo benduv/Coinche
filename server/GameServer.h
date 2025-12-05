@@ -171,27 +171,45 @@ private slots:
         if (!socket) return;
 
         qDebug() << "Client deconnecte";
-        
+
         // Trouve la connexion
         QString connectionId;
+        bool wasInQueue = false;
         for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
             if (it.value()->socket == socket) {
                 connectionId = it.key();
-                
-                // Retire de la file d'attente
+
+                // Retire de la file d'attente et note si le joueur était en attente
+                wasInQueue = m_matchmakingQueue.contains(connectionId);
                 m_matchmakingQueue.removeAll(connectionId);
-                
+
                 // Notifie la room si le joueur était en partie
                 if (it.value()->gameRoomId != -1) {
                     handlePlayerDisconnect(connectionId);
                 }
-                
+
                 delete it.value();
                 m_connections.erase(it);
                 break;
             }
         }
-        
+
+        // Si le joueur était dans la queue, notifier les autres joueurs
+        if (wasInQueue) {
+            qDebug() << "Joueur deconnecte etait dans la queue. Queue size:" << m_matchmakingQueue.size();
+
+            QJsonObject updateResponse;
+            updateResponse["type"] = "matchmakingStatus";
+            updateResponse["status"] = "searching";
+            updateResponse["playersInQueue"] = m_matchmakingQueue.size();
+
+            for (const QString &queuedConnectionId : m_matchmakingQueue) {
+                if (m_connections.contains(queuedConnectionId)) {
+                    sendMessage(m_connections[queuedConnectionId]->socket, updateResponse);
+                }
+            }
+        }
+
         socket->deleteLater();
     }
 
@@ -316,14 +334,21 @@ private:
 
         if (!m_matchmakingQueue.contains(connectionId)) {
             m_matchmakingQueue.enqueue(connectionId);
-            qDebug() << "Joueur en attente:" << connectionId 
+            qDebug() << "Joueur en attente:" << connectionId
                      << "Queue size:" << m_matchmakingQueue.size();
 
+            // Notifier TOUS les joueurs en attente du nombre de joueurs
             QJsonObject response;
             response["type"] = "matchmakingStatus";
             response["status"] = "searching";
             response["playersInQueue"] = m_matchmakingQueue.size();
-            sendMessage(socket, response);
+
+            // Envoyer à tous les joueurs dans la queue
+            for (const QString &queuedConnectionId : m_matchmakingQueue) {
+                if (m_connections.contains(queuedConnectionId)) {
+                    sendMessage(m_connections[queuedConnectionId]->socket, response);
+                }
+            }
 
             // Essaye de créer une partie si 4 joueurs
             tryCreateGame();
@@ -335,11 +360,26 @@ private:
         if (connectionId.isEmpty()) return;
 
         m_matchmakingQueue.removeAll(connectionId);
+        qDebug() << "Joueur quitte la queue:" << connectionId
+                 << "Queue size:" << m_matchmakingQueue.size();
 
+        // Notifier le joueur qui quitte
         QJsonObject response;
         response["type"] = "matchmakingStatus";
         response["status"] = "left";
         sendMessage(socket, response);
+
+        // Notifier TOUS les joueurs restants du nouveau nombre de joueurs
+        QJsonObject updateResponse;
+        updateResponse["type"] = "matchmakingStatus";
+        updateResponse["status"] = "searching";
+        updateResponse["playersInQueue"] = m_matchmakingQueue.size();
+
+        for (const QString &queuedConnectionId : m_matchmakingQueue) {
+            if (m_connections.contains(queuedConnectionId)) {
+                sendMessage(m_connections[queuedConnectionId]->socket, updateResponse);
+            }
+        }
     }
 
     void tryCreateGame() {

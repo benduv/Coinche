@@ -345,7 +345,7 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
 
     // Stocker l'avatar du joueur local (récupéré depuis networkManager)
     // Pour l'instant on utilise un avatar par défaut, il sera mis à jour par le serveur
-    m_playerAvatars[myPosition] = "avatar1.svg";
+    m_playerAvatars[myPosition] = "avataaars1.svg";
 
     qDebug() << "Joueur local cree (main vide pour animation)";
 
@@ -362,7 +362,7 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         int position = oppObj["position"].toInt();
         QString name = oppObj["name"].toString();
         QString avatar = oppObj["avatar"].toString();
-        if (avatar.isEmpty()) avatar = "avatar1.svg";
+        if (avatar.isEmpty()) avatar = "avataaars1.svg";
 
         qDebug() << "Creation adversaire:" << name << "position:" << position << "avatar:" << avatar;
 
@@ -563,17 +563,13 @@ void GameModel::updateGameState(const QJsonObject& state)
             qDebug() << "Joueur actuel change:" << m_currentPlayer;
         }
 
-        // Demarrer/arreter le timer selon si c'est le tour du joueur local
+        // Demarrer le timer pour tous les joueurs (pas seulement le joueur local)
         // On reinitialise le timer meme si c'est le meme joueur (cas du gagnant d'un pli)
         if (!m_biddingPhase) {
-            if (newCurrentPlayer == m_myPosition) {
-                m_playTimeRemaining = m_maxPlayTime;
-                emit playTimeRemainingChanged();
-                m_playTimer->start();
-                qDebug() << "Timer de jeu demarre (joueur actuel:" << newCurrentPlayer << ")";
-            } else {
-                m_playTimer->stop();
-            }
+            m_playTimeRemaining = m_maxPlayTime;
+            emit playTimeRemainingChanged();
+            m_playTimer->start();
+            qDebug() << "Timer de jeu demarre (joueur actuel:" << newCurrentPlayer << ")";
         }
     }
 
@@ -600,13 +596,12 @@ void GameModel::updateGameState(const QJsonObject& state)
                 emit scoreTeam1Changed();
                 emit scoreTeam2Changed();
 
-                // Si c'est notre tour, demarrer le timer
-                if (m_currentPlayer == m_myPosition) {
-                    m_playTimeRemaining = m_maxPlayTime;
-                    emit playTimeRemainingChanged();
-                    m_playTimer->start();
-                    qDebug() << "Timer de jeu demarre (fin des annonces)";
-                }
+                // Demarrer le timer pour le joueur actuel (quel qu'il soit)
+                m_playTimeRemaining = m_maxPlayTime;
+                emit playTimeRemainingChanged();
+                m_playTimer->start();
+                qDebug() << "Timer de jeu demarre (fin des annonces)";
+
 
                 // Re-trier les cartes avec l'atout en premier (ordre croissant)
                 if (m_lastBidCouleur != Carte::COULEURINVALIDE) {
