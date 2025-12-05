@@ -1,0 +1,43 @@
+# Android Build Files
+build/
+.gradle/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Android Studio
+.idea/
+*.iml
+.externalNativeBuild
+.cxx/
+
+# Keystore (NEVER commit your keystore!)
+*.keystore
+*.jks
+keystore.properties
+
+# Generated files
+bin/
+gen/
+out/
+captures/
+
+# Gradle
+.gradle
+gradle-app.setting
+!gradle-wrapper.jar
+
+# NDK
+obj/
+libs/armeabi/
+libs/armeabi-v7a/
+libs/arm64-v8a/
+libs/x86/
+libs/x86_64/
+
+# Qt Android
+android-build/
+*-deployment-settings.json
+libcoinche*.so

@@ -1,0 +1,35 @@
+{
+    "description": "Configuration Qt pour déploiement Android - Jeu de Coinche",
+    "qt": "6.5",
+    "sdk": "android-34",
+    "sdkBuildToolsRevision": "34.0.0",
+    "ndk": "26.1.10909125",
+    "toolchain-prefix": "llvm",
+    "tool-prefix": "llvm",
+    "useLLVM": true,
+    "ndk-host": "windows-x86_64",
+    "target-architecture": "arm64-v8a",
+    "android-package-source-directory": "./android",
+    "qml-root-path": "./qml",
+    "qml-importscanner-binary": "",
+    "rcc-binary": "",
+    "application-binary": "coinche",
+    "android-app-name": "Coinche",
+    "android-package-name": "com.coinche.game",
+    "android-version-name": "1.0.0",
+    "android-version-code": "1",
+    "android-min-sdk-version": "26",
+    "android-target-sdk-version": "34",
+    "stdcpp-path": "",
+    "deployment-dependencies": [],
+    "android-extra-plugins": [],
+    "android-extra-libs": [],
+    "android-system-libs-prefix": "/system/lib/",
+    "architectures": {
+        "arm64-v8a": "aarch64-linux-android",
+        "armeabi-v7a": "arm-linux-androideabi"
+    },
+    "qml-import-paths": [
+        "./qml"
+    ]
+}

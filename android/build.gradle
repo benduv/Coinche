@@ -1,0 +1,112 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.0'
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+apply plugin: 'com.android.application'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+}
+
+android {
+    /*******************************************************
+     * Configuration de base
+     *******************************************************/
+    namespace 'com.coinche.game'
+    compileSdkVersion 34
+    buildToolsVersion '34.0.0'
+
+    ndkVersion '26.1.10909125'
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = [qt6AndroidDir + '/src', 'src', 'java']
+            aidl.srcDirs = [qt6AndroidDir + '/src', 'src', 'aidl']
+            res.srcDirs = [qt6AndroidDir + '/res', 'res']
+            resources.srcDirs = ['resources']
+            renderscript.srcDirs = ['src']
+            assets.srcDirs = ['assets']
+            jniLibs.srcDirs = ['libs']
+       }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.incremental = true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        minSdkVersion = 26
+        targetSdkVersion = 34
+        versionCode 1
+        versionName "1.0.0"
+
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
+    }
+
+    lintOptions {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
+    /*******************************************************
+     * Configuration de signature (pour release)
+     *******************************************************/
+    signingConfigs {
+        release {
+            // À configurer avec votre propre keystore
+            // storeFile file("path/to/your.keystore")
+            // storePassword "your_store_password"
+            // keyAlias "your_key_alias"
+            // keyPassword "your_key_password"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // signingConfig signingConfigs.release
+        }
+        debug {
+            debuggable true
+            jniDebuggable true
+        }
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def versionName = variant.versionName
+            def versionCode = variant.versionCode
+            def buildType = variant.buildType.name
+            def abi = output.getFilter(com.android.build.OutputFile.ABI)
+
+            outputFileName = "coinche-${versionName}-${versionCode}-${buildType}-${abi}.apk"
+        }
+    }
+}

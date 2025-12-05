@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(Coinche)
+project(Coinche VERSION 1.0.0)
 
 # Find Qt packages
 find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Qml WebSockets Network Sql)
@@ -10,6 +10,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+
+# Configuration Android
+if(ANDROID)
+    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android" CACHE INTERNAL "")
+    set(ANDROID_MIN_SDK_VERSION 26)
+    set(ANDROID_TARGET_SDK_VERSION 34)
+    set(ANDROID_VERSION_CODE 1)
+    set(ANDROID_VERSION_NAME "1.0.0")
+
+    # Architectures Android supportées
+    if(NOT ANDROID_ABI)
+        set(ANDROID_ABI "arm64-v8a")
+    endif()
+endif()
 
 # ========================================
 # Bibliothèque commune (logique de jeu)
@@ -88,29 +102,31 @@ target_link_libraries(coinche PRIVATE
 )
 
 # ========================================
-# Exécutable SERVEUR (server)
+# Exécutable SERVEUR (server) - Desktop uniquement
 # ========================================
-add_executable(server
-    server/server_main.cpp
-    server/GameServer.h  # Header-only, mis directement dans le serveur
-    server/DatabaseManager.h
-    server/DatabaseManager.cpp
-)
+if(NOT ANDROID)
+    add_executable(server
+        server/server_main.cpp
+        server/GameServer.h  # Header-only, mis directement dans le serveur
+        server/DatabaseManager.h
+        server/DatabaseManager.cpp
+    )
 
-target_include_directories(server PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
+    target_include_directories(server PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
 
-# Le serveur utilise seulement la logique commune, PAS NetworkManager
-target_link_libraries(server PRIVATE
-    coinche_common  # Seulement Carte, Player, Deck
-    Qt6::Core
-    Qt6::Network
-    Qt6::WebSockets
-    Qt6::Sql
-)
+    # Le serveur utilise seulement la logique commune, PAS NetworkManager
+    target_link_libraries(server PRIVATE
+        coinche_common  # Seulement Carte, Player, Deck
+        Qt6::Core
+        Qt6::Network
+        Qt6::WebSockets
+        Qt6::Sql
+    )
 
-# ========================================
-# Tests
-# ========================================
-add_subdirectory(tests)
+    # ========================================
+    # Tests - Desktop uniquement
+    # ========================================
+    add_subdirectory(tests)
+endif()
