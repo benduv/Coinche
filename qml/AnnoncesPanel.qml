@@ -105,67 +105,10 @@ Rectangle {
             }
         }
 
-        // ========= Dernière annonce =========
-        /*Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: h * 0.20
-            color: "#1a1a1a"
-            radius: 8
-            border.color: "#FFD700"
-            border.width: 2
-
-            ColumnLayout {
-                anchors.centerIn: parent
-                spacing: h * 0.01
-
-                Text {
-                    text: "Dernière annonce"
-                    font.pixelSize: h * 0.03
-                    color: "#aaaaaa"
-                    Layout.alignment: Qt.AlignHCenter
-                }
-
-                Text {
-                    text: gameModel.lastBid
-                    font.pixelSize: h * 0.1
-                    font.bold: true
-                    color: "#FFD700"
-                    Layout.alignment: Qt.AlignHCenter
-                }
-
-                Text {
-                    text: gameModel.lastBidSuit
-                    font.pixelSize: h * 0.05
-                    color: "#ffffff"
-                    Layout.alignment: Qt.AlignHCenter
-                    visible: gameModel.lastBidValue > 0
-                }
-            }
-        }*/
-
-        // ========= Tour du joueur =========
-        /*Text {
-            text: gameModel.biddingPlayer === 0 ?
-                  "À vous d'annoncer !" :
-                  "Joueur " + (gameModel.biddingPlayer + 1) + " annonce..."
-            font.pixelSize: h * 0.035
-            color: gameModel.biddingPlayer === 0 ? "#00ff00" : "#ffffff"
-            Layout.alignment: Qt.AlignHCenter
-        }*/
-
-        //Item { Layout.fillHeight: true }
-
         // ========= Choix des annonces =========
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: h * 0.02
-
-            /*Text {
-                text: "Choisissez votre annonce :"
-                font.pixelSize: h * 0.05
-                color: "#ffffff"
-                Layout.alignment: Qt.AlignHCenter
-            }*/
 
             // ---- Navigation avec fleches ----
             property int currentBidIndex: {
@@ -275,22 +218,6 @@ Rectangle {
                     }
                 }
             }
-
-            // Indicateur de position
-            /*Row {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: w * 0.01
-
-                Repeater {
-                    model: Math.ceil(parent.parent.allBids.length / 3)
-                    Rectangle {
-                        width: w * 0.015
-                        height: w * 0.015
-                        radius: width / 2
-                        color: Math.floor(parent.parent.parent.currentBidIndex / 3) === index ? "#FFD700" : "#555555"
-                    }
-                }
-            }*/
         }
 
         // ========= Bouton "Passer" =========
@@ -321,8 +248,6 @@ Rectangle {
                 gameModel.passBid()
             }
         }
-
-        //Item { Layout.fillHeight: true }
     }
 
     // ========= POPUP SELECTION COULEUR =========
