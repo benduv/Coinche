@@ -10,6 +10,7 @@
         <file>qml/StatsView.qml</file>
         <file>qml/GameOverPopup.qml</file>
         <file>qml/AvatarSelector.qml</file>
+        <file>qml/ExitGamePopup.qml</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>
@@ -45,6 +46,9 @@
         <file>resources/cards/trefle_as.png</file>
         <file>resources/Tapis poker3.jpg</file>
         <file>resources/back-square-svgrepo-com.svg</file>
+        <file>resources/right-arrow-next-svgrepo-com.svg</file>
+        <file>resources/left-arrow-next-svgrepo-com.svg</file>
+        <file>resources/exit-svgrepo-com.svg</file>
         <file>resources/avatar/avataaars1.svg</file>
         <file>resources/avatar/avataaars2.svg</file>
         <file>resources/avatar/avataaars3.svg</file>

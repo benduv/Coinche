@@ -548,6 +548,17 @@ void GameModel::surcoincheBid()
     emit surcoincheTimeLeftChanged();
 }
 
+void GameModel::forfeit()
+{
+    qDebug() << "GameModel - Forfeit (abandon de partie)";
+
+    // Arrêter le timer de jeu
+    m_playTimer->stop();
+
+    // Émettre signal vers NetworkManager pour envoyer au serveur
+    emit forfeitLocally();
+}
+
 void GameModel::updateGameState(const QJsonObject& state)
 {
     qDebug() << "Mise a jour etat du jeu:" << state;

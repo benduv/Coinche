@@ -75,7 +75,12 @@ public:
             qDebug() << "Envoi makeBid au serveur:" << bidValue << suitValue;
             makeBid(bidValue, suitValue);
         });
-        
+
+        connect(m_gameModel, &GameModel::forfeitLocally, this, [this]() {
+            qDebug() << "Envoi forfeit au serveur";
+            forfeitGame();
+        });
+
         // Initialiser avec les données
         m_gameModel->initOnlineGame(position, cards, opps);
 
@@ -150,6 +155,12 @@ public:
         QJsonObject msg;
         msg["type"] = "getStats";
         msg["pseudo"] = pseudo;
+        sendMessage(msg);
+    }
+
+    Q_INVOKABLE void forfeitGame() {
+        QJsonObject msg;
+        msg["type"] = "forfeit";
         sendMessage(msg);
     }
 

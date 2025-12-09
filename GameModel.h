@@ -111,7 +111,8 @@ public:
     Q_INVOKABLE void passBid();
     Q_INVOKABLE void coincheBid();
     Q_INVOKABLE void surcoincheBid();
-    
+    Q_INVOKABLE void forfeit();
+
     // Recevoir les mises à jour du serveur
     Q_INVOKABLE void updateGameState(const QJsonObject& state);
     Q_INVOKABLE void receivePlayerAction(int playerIndex, const QString& action, const QVariant& data);
@@ -147,6 +148,7 @@ signals:
     // Signaux vers NetworkManager
     void cardPlayedLocally(int cardIndex);
     void bidMadeLocally(int bidValue, int suitValue);
+    void forfeitLocally();
 
 private:
     HandModel* getHandModelByPosition(int position);

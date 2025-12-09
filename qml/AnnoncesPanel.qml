@@ -148,19 +148,20 @@ Rectangle {
 
                     background: Rectangle {
                         color: parent.enabled
-                               ? (parent.down ? "#555555" : (parent.hovered ? "#666666" : "#444444"))
+                               ? (parent.down ? "#888888" : (parent.hovered ? "#777777" : "#999999"))
                                : "#222222"
                         radius: 6
                         border.color: parent.enabled ? "#FFD700" : "#333333"
                         border.width: 2
                     }
 
-                    contentItem: Text {
-                        text: "◀  "
-                        font.pixelSize: h * 0.1
-                        color: parent.enabled ? "#FFD700" : "#555555"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                    contentItem: Image {
+                        source: "qrc:/resources/left-arrow-next-svgrepo-com.svg"
+                        fillMode: Image.PreserveAspectFit
+                        sourceSize.width: parent.width * 0.5
+                        sourceSize.height: parent.height * 0.5
+                        opacity: parent.enabled ? 1.0 : 0.3
+                        anchors.centerIn: parent
                     }
 
                     onClicked: {
@@ -196,19 +197,20 @@ Rectangle {
 
                     background: Rectangle {
                         color: parent.enabled
-                               ? (parent.down ? "#555555" : (parent.hovered ? "#666666" : "#444444"))
+                               ? (parent.down ? "#888888" : (parent.hovered ? "#777777" : "#999999"))
                                : "#222222"
                         radius: 6
                         border.color: parent.enabled ? "#FFD700" : "#333333"
-                        border.width: 2
+                        border.width: 3
                     }
 
-                    contentItem: Text {
-                        text: "  ▶"
-                        font.pixelSize: h * 0.1
-                        color: parent.enabled ? "#FFD700" : "#555555"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                    contentItem: Image {
+                        source: "qrc:/resources/right-arrow-next-svgrepo-com.svg"
+                        fillMode: Image.PreserveAspectFit
+                        sourceSize.width: parent.width * 0.5
+                        sourceSize.height: parent.height * 0.5
+                        opacity: parent.enabled ? 1.0 : 0.3
+                        anchors.centerIn: parent
                     }
 
                     onClicked: {

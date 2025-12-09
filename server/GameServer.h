@@ -10,6 +10,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QTimer>
+#include <QRandomGenerator>
 #include "Player.h"
 #include "Deck.h"
 #include "Carte.h"
@@ -29,11 +30,14 @@ struct PlayerConnection {
 // Une partie de jeu avec la vraie logique
 struct GameRoom {
     int roomId;
-    QList<QString> connectionIds;  // IDs des connexions WebSocket
+    QList<QString> connectionIds;  // IDs des connexions WebSocket actuelles
+    QList<QString> originalConnectionIds;  // IDs originaux pour reconnexion
+    QList<QString> playerNames;  // Noms des joueurs pour reconnexion
     QString gameState; // "waiting", "bidding", "playing", "finished"
 
     // Les objets de jeu réels
     std::vector<std::unique_ptr<Player>> players;  // Les 4 joueurs
+    std::vector<bool> isBot;  // true si le joueur à cet index est un bot
     Deck deck;
 
     // État de la partie
@@ -163,6 +167,8 @@ private slots:
             handlePlayCard(sender, obj);
         } else if (type == "makeBid") {
             handleMakeBid(sender, obj);
+        } else if (type == "forfeit") {
+            handleForfeit(sender);
         }
     }
 
@@ -237,6 +243,123 @@ private:
         sendMessage(socket, response);
 
         qDebug() << "Joueur enregistre:" << playerName << "Avatar:" << avatar << "ID:" << connectionId;
+
+        // Vérifier si le joueur peut se reconnecter à une partie en cours
+        if (m_playerNameToRoomId.contains(playerName)) {
+            int roomId = m_playerNameToRoomId[playerName];
+            GameRoom* room = m_gameRooms.value(roomId);
+
+            if (room && room->gameState != "finished") {
+                // Trouver l'index du joueur dans la partie
+                int playerIndex = -1;
+                for (int i = 0; i < room->playerNames.size(); i++) {
+                    if (room->playerNames[i] == playerName) {
+                        playerIndex = i;
+                        break;
+                    }
+                }
+
+                if (playerIndex != -1 && room->isBot[playerIndex]) {
+                    qDebug() << "Reconnexion detectee pour" << playerName << "a la partie" << roomId << "position" << playerIndex;
+                    handleReconnection(connectionId, roomId, playerIndex);
+                }
+            }
+        }
+    }
+
+    void handleReconnection(const QString& connectionId, int roomId, int playerIndex) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        PlayerConnection* conn = m_connections[connectionId];
+        if (!conn) return;
+
+        qDebug() << "GameServer - Reconnexion du joueur" << playerIndex << "(" << conn->playerName << ") a la partie" << roomId;
+
+        // Mettre à jour la connexion
+        conn->gameRoomId = roomId;
+        conn->playerIndex = playerIndex;
+
+        // Remplacer l'ID de connexion dans la room
+        room->connectionIds[playerIndex] = connectionId;
+
+        // Le joueur n'est plus un bot
+        room->isBot[playerIndex] = false;
+
+        // Préparer les données de l'état actuel de la partie pour le joueur qui se reconnecte
+        QJsonObject reconnectMsg;
+        reconnectMsg["type"] = "gameFound";  // Même message que pour démarrer une partie
+        reconnectMsg["roomId"] = roomId;
+        reconnectMsg["playerPosition"] = playerIndex;
+        reconnectMsg["reconnection"] = true;  // Marquer comme reconnexion
+
+        // Envoyer les cartes actuelles du joueur
+        QJsonArray myCards;
+        const auto& playerHand = room->players[playerIndex]->getMain();
+        for (const auto* carte : playerHand) {
+            if (carte) {
+                QJsonObject cardObj;
+                cardObj["value"] = static_cast<int>(carte->getChiffre());
+                cardObj["suit"] = static_cast<int>(carte->getCouleur());
+                myCards.append(cardObj);
+            }
+        }
+        reconnectMsg["myCards"] = myCards;
+
+        // Infos sur les adversaires
+        QJsonArray opponents;
+        for (int j = 0; j < room->connectionIds.size(); j++) {
+            if (playerIndex != j) {
+                QJsonObject opp;
+                opp["position"] = j;
+                opp["name"] = room->playerNames[j];
+                opp["cardCount"] = int(room->players[j]->getMain().size());
+                opponents.append(opp);
+            }
+        }
+        reconnectMsg["opponents"] = opponents;
+
+        sendMessage(conn->socket, reconnectMsg);
+
+        // Notifier tous les autres joueurs de la reconnexion
+        QJsonObject playerReconnectedMsg;
+        playerReconnectedMsg["type"] = "playerReconnected";
+        playerReconnectedMsg["playerIndex"] = playerIndex;
+        playerReconnectedMsg["playerName"] = conn->playerName;
+        broadcastToRoom(roomId, playerReconnectedMsg, connectionId);
+
+        qDebug() << "GameServer - Joueur" << playerIndex << "reconnecte avec succes";
+
+        // Annuler la défaite enregistrée lors de la déconnexion
+        if (!conn->playerName.isEmpty()) {
+            // Ajouter une victoire pour compenser la défaite automatique
+            // (cela ramène le compteur au même niveau qu'avant la déconnexion)
+            m_dbManager->updateGameStats(conn->playerName, true);  // true = victoire
+            qDebug() << "Stats corrigees pour" << conn->playerName << "- Defaite annulee";
+        }
+
+        // Si c'est le tour du joueur reconnecté et qu'on est en phase de jeu, envoyer les cartes jouables
+        if (room->currentPlayerIndex == playerIndex) {
+            if (room->gameState == "bidding") {
+                QJsonObject stateMsg;
+                stateMsg["type"] = "gameState";
+                stateMsg["currentPlayer"] = room->currentPlayerIndex;
+                stateMsg["biddingPlayer"] = room->biddingPlayer;
+                stateMsg["biddingPhase"] = true;
+                sendMessage(conn->socket, stateMsg);
+            } else if (room->gameState == "playing") {
+                // Envoyer l'état de jeu avec les cartes jouables
+                QJsonArray playableCards = calculatePlayableCards(room, playerIndex);
+
+                QJsonObject stateMsg;
+                stateMsg["type"] = "gameState";
+                stateMsg["biddingPhase"] = false;
+                stateMsg["currentPlayer"] = playerIndex;
+                stateMsg["atout"] = static_cast<int>(room->couleurAtout);
+                stateMsg["playableCards"] = playableCards;
+                sendMessage(conn->socket, stateMsg);
+            }
+        }
     }
 
     void handleRegisterAccount(QWebSocket *socket, const QJsonObject &data) {
@@ -393,14 +516,19 @@ private:
             GameRoom* room = new GameRoom();  // Créé sur le heap
             room->roomId = roomId;
             room->connectionIds = connectionIds;
+            room->originalConnectionIds = connectionIds;  // Sauvegarder les IDs originaux
             room->gameState = "waiting";
-            
+
             // Crée les joueurs du jeu
             for (int i = 0; i < 4; i++) {
                 PlayerConnection* conn = m_connections[connectionIds[i]];
                 conn->gameRoomId = roomId;
                 conn->playerIndex = i;
-                
+
+                // Sauvegarder le nom du joueur pour reconnexion
+                room->playerNames.append(conn->playerName);
+                m_playerNameToRoomId[conn->playerName] = roomId;
+
                 std::vector<Carte*> emptyHand;
                 auto player = std::make_unique<Player>(
                     conn->playerName.toStdString(),
@@ -408,6 +536,7 @@ private:
                     i
                 );
                 room->players.push_back(std::move(player));
+                room->isBot.push_back(false);  // Initialement, aucun joueur n'est un bot
             }
             
             // Distribue les cartes
@@ -1254,6 +1383,11 @@ private:
             broadcastToRoom(roomId, gameOverMsg);
 
             room->gameState = "finished";
+
+            // Nettoyer la map de reconnexion pour cette partie terminée
+            for (const QString& playerName : room->playerNames) {
+                m_playerNameToRoomId.remove(playerName);
+            }
         } else {
             // Aucune équipe n'a atteint 1000 points, on démarre une nouvelle manche
             qDebug() << "GameServer - Demarrage d'une nouvelle manche...";
@@ -1557,6 +1691,249 @@ private:
             stateMsg["biddingPlayer"] = room->biddingPlayer;
             stateMsg["biddingPhase"] = true;
             broadcastToRoom(roomId, stateMsg);
+
+            // Si le prochain joueur est un bot, le faire jouer
+            if (room->isBot[room->currentPlayerIndex]) {
+                QTimer::singleShot(800, this, [this, roomId]() {
+                    GameRoom* room = m_gameRooms.value(roomId);
+                    if (room && room->gameState == "bidding") {
+                        playBotBid(roomId, room->currentPlayerIndex);
+                    }
+                });
+            }
+        }
+    }
+
+    void handleForfeit(QWebSocket *socket) {
+        QString connectionId = getConnectionIdBySocket(socket);
+        if (connectionId.isEmpty()) return;
+
+        PlayerConnection* conn = m_connections[connectionId];
+        int roomId = conn->gameRoomId;
+        if (roomId == -1) return;
+
+        GameRoom* room = m_gameRooms[roomId];
+        if (!room) return;
+
+        int playerIndex = conn->playerIndex;
+        qDebug() << "GameServer - Joueur" << playerIndex << "(" << conn->playerName << ") abandonne la partie";
+
+        // Incrémenter le compteur de parties jouées (défaite) pour ce joueur
+        if (!conn->playerName.isEmpty()) {
+            m_dbManager->updateGameStats(conn->playerName, false);  // false = défaite
+            qDebug() << "Stats mises à jour pour" << conn->playerName << "- Défaite enregistrée";
+        }
+
+        // Remplacer le joueur par un bot
+        room->isBot[playerIndex] = true;
+        qDebug() << "Joueur" << playerIndex << "remplacé par un bot";
+
+        // Notifier tous les joueurs qu'un joueur a abandonné et a été remplacé par un bot
+        QJsonObject forfeitMsg;
+        forfeitMsg["type"] = "playerForfeited";
+        forfeitMsg["playerIndex"] = playerIndex;
+        forfeitMsg["playerName"] = conn->playerName;
+        broadcastToRoom(roomId, forfeitMsg);
+
+        // Si c'est le tour du joueur qui abandonne, faire jouer le bot immédiatement
+        if (room->currentPlayerIndex == playerIndex) {
+            if (room->gameState == "bidding") {
+                // Phase d'enchères : passer automatiquement
+                QTimer::singleShot(500, this, [this, roomId, playerIndex]() {
+                    playBotBid(roomId, playerIndex);
+                });
+            } else if (room->gameState == "playing") {
+                // Phase de jeu : jouer une carte aléatoire
+                QTimer::singleShot(500, this, [this, roomId, playerIndex]() {
+                    playBotCard(roomId, playerIndex);
+                });
+            }
+        }
+    }
+
+    void playBotBid(int roomId, int playerIndex) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room || room->currentPlayerIndex != playerIndex) return;
+
+        // Le bot passe toujours
+        qDebug() << "GameServer - Bot joueur" << playerIndex << "passe";
+
+        room->passedBidsCount++;
+
+        // Broadcast l'enchère à tous
+        QJsonObject msg;
+        msg["type"] = "bidMade";
+        msg["playerIndex"] = playerIndex;
+        msg["bidValue"] = static_cast<int>(Player::PASSE);
+        msg["suit"] = 0;
+        broadcastToRoom(roomId, msg);
+
+        // Vérifier si phase d'enchères terminée
+        if (room->passedBidsCount >= 3 && room->lastBidAnnonce != Player::ANNONCEINVALIDE) {
+            qDebug() << "GameServer - Fin des encheres! Lancement phase de jeu";
+            for (int i = 0; i < 4; i++) {
+                room->players[i]->setAtout(room->lastBidCouleur);
+            }
+            startPlayingPhase(roomId);
+        } else if (room->passedBidsCount >= 4 && room->lastBidAnnonce == Player::ANNONCEINVALIDE) {
+            // Tous les joueurs ont passé sans annonce -> nouvelle manche
+            qDebug() << "GameServer - Tous les joueurs ont passe! Nouvelle manche";
+            startNewManche(roomId);
+        } else {
+            // Passer au joueur suivant
+            room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
+            room->biddingPlayer = room->currentPlayerIndex;
+
+            QJsonObject stateMsg;
+            stateMsg["type"] = "gameState";
+            stateMsg["currentPlayer"] = room->currentPlayerIndex;
+            stateMsg["biddingPlayer"] = room->biddingPlayer;
+            stateMsg["biddingPhase"] = true;
+            broadcastToRoom(roomId, stateMsg);
+
+            // Si le prochain joueur est aussi un bot, le faire jouer
+            if (room->isBot[room->currentPlayerIndex]) {
+                QTimer::singleShot(800, this, [this, roomId]() {
+                    GameRoom* room = m_gameRooms.value(roomId);
+                    if (room && room->gameState == "bidding") {
+                        playBotBid(roomId, room->currentPlayerIndex);
+                    }
+                });
+            }
+        }
+    }
+
+    void playBotCard(int roomId, int playerIndex) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room || room->currentPlayerIndex != playerIndex || room->gameState != "playing") return;
+
+        Player* player = room->players[playerIndex].get();
+        if (!player || player->getMain().empty()) return;
+
+        // Calculer les cartes jouables
+        Carte* carteGagnante = nullptr;
+        int idxPlayerWinning = -1;
+        if (!room->currentPli.empty()) {
+            carteGagnante = room->currentPli[0].second;
+            idxPlayerWinning = room->currentPli[0].first;
+
+            for (size_t i = 1; i < room->currentPli.size(); i++) {
+                Carte* c = room->currentPli[i].second;
+                if (*carteGagnante < *c) {
+                    carteGagnante = c;
+                    idxPlayerWinning = room->currentPli[i].first;
+                }
+            }
+        }
+
+        // Trouver toutes les cartes jouables
+        std::vector<int> playableIndices;
+        const auto& main = player->getMain();
+        for (size_t i = 0; i < main.size(); i++) {
+            bool isPlayable = player->isCartePlayable(
+                static_cast<int>(i),
+                room->couleurDemandee,
+                room->couleurAtout,
+                carteGagnante,
+                idxPlayerWinning
+            );
+
+            if (isPlayable) {
+                playableIndices.push_back(static_cast<int>(i));
+            }
+        }
+
+        if (playableIndices.empty()) {
+            qDebug() << "GameServer - Bot joueur" << playerIndex << "n'a aucune carte jouable!";
+            return;
+        }
+
+        // Choisir une carte aléatoire parmi les cartes jouables
+        int randomIdx = QRandomGenerator::global()->bounded(static_cast<int>(playableIndices.size()));
+        int cardIndex = playableIndices[randomIdx];
+
+        qDebug() << "GameServer - Bot joueur" << playerIndex << "joue la carte à l'index" << cardIndex;
+
+        Carte* cartePlayed = player->getMain()[cardIndex];
+
+        // Si c'est la première carte du pli, définir la couleur demandée
+        if (room->currentPli.empty()) {
+            room->couleurDemandee = cartePlayed->getCouleur();
+        }
+
+        // Ajouter au pli courant
+        room->currentPli.push_back(std::make_pair(playerIndex, cartePlayed));
+
+        // Retirer la carte de la main
+        player->removeCard(cardIndex);
+
+        qDebug() << "GameServer - Bot a joué la carte, main contient maintenant" << player->getMain().size() << "cartes";
+
+        // Vérifier si c'est une carte de la belote (Roi ou Dame de l'atout)
+        bool isRoi = (cartePlayed->getChiffre() == Carte::ROI);
+        bool isDame = (cartePlayed->getChiffre() == Carte::DAME);
+        bool isAtout = (cartePlayed->getCouleur() == room->couleurAtout);
+
+        if (isAtout && (isRoi || isDame)) {
+            int teamIndex = playerIndex % 2;
+            bool hasBelote = (teamIndex == 0) ? room->beloteTeam1 : room->beloteTeam2;
+
+            if (hasBelote) {
+                if (!room->beloteRoiJoue && !room->beloteDameJouee) {
+                    // Première carte de la belote
+                    if (isRoi) {
+                        room->beloteRoiJoue = true;
+                    } else {
+                        room->beloteDameJouee = true;
+                    }
+
+                    QJsonObject beloteMsg;
+                    beloteMsg["type"] = "belote";
+                    beloteMsg["playerIndex"] = playerIndex;
+                    broadcastToRoom(roomId, beloteMsg);
+
+                } else if ((isRoi && room->beloteDameJouee) || (isDame && room->beloteRoiJoue)) {
+                    // Deuxième carte de la belote
+                    if (isRoi) {
+                        room->beloteRoiJoue = true;
+                    } else {
+                        room->beloteDameJouee = true;
+                    }
+
+                    QJsonObject rebeloteMsg;
+                    rebeloteMsg["type"] = "rebelote";
+                    rebeloteMsg["playerIndex"] = playerIndex;
+                    broadcastToRoom(roomId, rebeloteMsg);
+                }
+            }
+        }
+
+        // Broadcast l'action
+        QJsonObject msg;
+        msg["type"] = "cardPlayed";
+        msg["playerIndex"] = playerIndex;
+        msg["cardIndex"] = cardIndex;
+        msg["cardValue"] = static_cast<int>(cartePlayed->getChiffre());
+        msg["cardSuit"] = static_cast<int>(cartePlayed->getCouleur());
+        broadcastToRoom(roomId, msg);
+
+        // Si le pli est complet (4 cartes)
+        if (room->currentPli.size() == 4) {
+            finishPli(roomId);
+        } else {
+            // Passer au joueur suivant
+            room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
+            notifyPlayersWithPlayableCards(roomId);
+
+            // Si le prochain joueur est aussi un bot, le faire jouer
+            if (room->isBot[room->currentPlayerIndex]) {
+                QTimer::singleShot(800, this, [this, roomId]() {
+                    GameRoom* room = m_gameRooms.value(roomId);
+                    if (room && room->gameState == "playing") {
+                        playBotCard(roomId, room->currentPlayerIndex);
+                    }
+                });
+            }
         }
     }
 
@@ -1711,6 +2088,17 @@ private:
 
         broadcastToRoom(roomId, stateMsg);
 
+        // Si le joueur actuel est un bot, le faire jouer immédiatement
+        if (room->isBot[currentPlayer]) {
+            QTimer::singleShot(800, this, [this, roomId]() {
+                GameRoom* room = m_gameRooms.value(roomId);
+                if (room && room->gameState == "playing") {
+                    playBotCard(roomId, room->currentPlayerIndex);
+                }
+            });
+            return;  // Ne pas exécuter le code du dernier pli automatique ci-dessous
+        }
+
         // Si c'est le dernier pli (tous les joueurs n'ont qu'une carte), jouer automatiquement après un délai
         // IMPORTANT: Ne jouer automatiquement que si on est bien dans la phase de jeu
         Player* player = room->players[currentPlayer].get();
@@ -1822,17 +2210,42 @@ private:
         int roomId = conn->gameRoomId;
         if (roomId == -1) return;
 
-        // Notifie les autres joueurs
-        QJsonObject msg;
-        msg["type"] = "playerDisconnected";
-        msg["playerIndex"] = conn->playerIndex;
-        broadcastToRoom(roomId, msg, connectionId);
-
-        // Termine la partie et libére la mémoire
         GameRoom* room = m_gameRooms.value(roomId);
-        if (room) {
-            delete room;  // Libére la GameRoom
-            m_gameRooms.remove(roomId);
+        if (!room) return;
+
+        int playerIndex = conn->playerIndex;
+        qDebug() << "GameServer - Joueur" << playerIndex << "(" << conn->playerName << ") déconnecté";
+
+        // Incrémenter le compteur de parties jouées (défaite) pour ce joueur
+        if (!conn->playerName.isEmpty()) {
+            m_dbManager->updateGameStats(conn->playerName, false);  // false = défaite
+            qDebug() << "Stats mises à jour pour" << conn->playerName << "- Défaite enregistrée (déconnexion)";
+        }
+
+        // Remplacer le joueur par un bot
+        room->isBot[playerIndex] = true;
+        qDebug() << "Joueur" << playerIndex << "remplacé par un bot (déconnexion)";
+
+        // Notifier tous les joueurs qu'un joueur s'est déconnecté et a été remplacé par un bot
+        QJsonObject dcMsg;
+        dcMsg["type"] = "playerDisconnected";
+        dcMsg["playerIndex"] = playerIndex;
+        dcMsg["playerName"] = conn->playerName;
+        broadcastToRoom(roomId, dcMsg, connectionId);
+
+        // Si c'est le tour du joueur déconnecté, faire jouer le bot immédiatement
+        if (room->currentPlayerIndex == playerIndex) {
+            if (room->gameState == "bidding") {
+                // Phase d'enchères : passer automatiquement
+                QTimer::singleShot(500, this, [this, roomId, playerIndex]() {
+                    playBotBid(roomId, playerIndex);
+                });
+            } else if (room->gameState == "playing") {
+                // Phase de jeu : jouer une carte aléatoire
+                QTimer::singleShot(500, this, [this, roomId, playerIndex]() {
+                    playBotCard(roomId, playerIndex);
+                });
+            }
         }
     }
 
@@ -1869,6 +2282,7 @@ private:
     QMap<QString, PlayerConnection*> m_connections; // connectionId → PlayerConnection
     QQueue<QString> m_matchmakingQueue;
     QMap<int, GameRoom*> m_gameRooms;
+    QMap<QString, int> m_playerNameToRoomId;  // playerName → roomId pour reconnexion
     int m_nextRoomId;
     DatabaseManager *m_dbManager;
 };

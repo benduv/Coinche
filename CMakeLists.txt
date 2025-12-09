@@ -91,6 +91,7 @@ qt_add_qml_module(coinche
     RESOURCE_PREFIX "/"
 )
 
+#QML_FILES qml/AvatarSelector.qml qml/Card.qml qml/CoincheView.qml qml/GameOverPopup.qml qml/LoginView.qml qml/MatchMakingView.qml qml/StatsView.qml
 target_link_libraries(coinche PRIVATE
     coinche_client  # Contient GameModel + HandModel
     Qt6::Core

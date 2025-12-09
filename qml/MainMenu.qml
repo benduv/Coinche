@@ -39,7 +39,9 @@ ApplicationWindow {
                 }
 
                 Component.onCompleted: {
-                    networkManager.connectToServer("ws://10.0.2.2:1234")                }
+                    networkManager.connectToServer("ws://localhost:1234")
+                    //networkManager.connectToServer("ws://10.0.2.2:1234")
+                }
             }
         }
 

@@ -62,7 +62,6 @@ Item {
     Rectangle {
         id: cardBorder
         anchors.fill: parent
-        anchors.margins: 3
         color: root.isPlayable ? "white" : "grey"
         border.color: selected ? "#FFD700" : "#000000"
         border.width: selected ? 3 : 1
