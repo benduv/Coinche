@@ -38,6 +38,9 @@ public:
     // Mettre à jour les statistiques de jeu après une partie
     bool updateGameStats(const QString &pseudo, bool won);
 
+    // Annuler une défaite (décrémenter gamesPlayed)
+    bool cancelDefeat(const QString &pseudo);
+
     // Mettre à jour les statistiques de coinche
     bool updateCoincheStats(const QString &pseudo, bool attempt, bool success);
 

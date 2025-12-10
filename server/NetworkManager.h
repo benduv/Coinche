@@ -403,8 +403,13 @@ private slots:
         else if (type == "loginAccountSuccess") {
             QString playerName = obj["playerName"].toString();
             QString avatar = obj["avatar"].toString();
+            QString connectionId = obj["connectionId"].toString();
             if (avatar.isEmpty()) avatar = "avataaars1.svg";
             m_playerAvatar = avatar;
+            if (!connectionId.isEmpty()) {
+                m_playerId = connectionId;
+                qDebug() << "NetworkManager - ConnectionId enregistre:" << connectionId;
+            }
             qDebug() << "NetworkManager - Connexion reussie:" << playerName << "Avatar:" << avatar;
             emit playerAvatarChanged();
             emit loginSuccess(playerName, avatar);

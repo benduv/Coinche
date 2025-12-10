@@ -33,6 +33,7 @@ struct GameRoom {
     QList<QString> connectionIds;  // IDs des connexions WebSocket actuelles
     QList<QString> originalConnectionIds;  // IDs originaux pour reconnexion
     QList<QString> playerNames;  // Noms des joueurs pour reconnexion
+    QList<QString> playerAvatars;  // Avatars des joueurs pour reconnexion
     QString gameState; // "waiting", "bidding", "playing", "finished"
 
     // Les objets de jeu réels
@@ -313,6 +314,7 @@ private:
                 QJsonObject opp;
                 opp["position"] = j;
                 opp["name"] = room->playerNames[j];
+                opp["avatar"] = room->playerAvatars[j];
                 opp["cardCount"] = int(room->players[j]->getMain().size());
                 opponents.append(opp);
             }
@@ -332,33 +334,34 @@ private:
 
         // Annuler la défaite enregistrée lors de la déconnexion
         if (!conn->playerName.isEmpty()) {
-            // Ajouter une victoire pour compenser la défaite automatique
-            // (cela ramène le compteur au même niveau qu'avant la déconnexion)
-            m_dbManager->updateGameStats(conn->playerName, true);  // true = victoire
+            // Décrémenter le compteur de parties jouées (annule la défaite)
+            m_dbManager->cancelDefeat(conn->playerName);
             qDebug() << "Stats corrigees pour" << conn->playerName << "- Defaite annulee";
         }
 
-        // Si c'est le tour du joueur reconnecté et qu'on est en phase de jeu, envoyer les cartes jouables
-        if (room->currentPlayerIndex == playerIndex) {
-            if (room->gameState == "bidding") {
-                QJsonObject stateMsg;
-                stateMsg["type"] = "gameState";
-                stateMsg["currentPlayer"] = room->currentPlayerIndex;
-                stateMsg["biddingPlayer"] = room->biddingPlayer;
-                stateMsg["biddingPhase"] = true;
-                sendMessage(conn->socket, stateMsg);
-            } else if (room->gameState == "playing") {
-                // Envoyer l'état de jeu avec les cartes jouables
-                QJsonArray playableCards = calculatePlayableCards(room, playerIndex);
+        // Envoyer l'état actuel du jeu
+        if (room->gameState == "bidding") {
+            QJsonObject stateMsg;
+            stateMsg["type"] = "gameState";
+            stateMsg["currentPlayer"] = room->currentPlayerIndex;
+            stateMsg["biddingPlayer"] = room->biddingPlayer;
+            stateMsg["biddingPhase"] = true;
+            sendMessage(conn->socket, stateMsg);
+        } else if (room->gameState == "playing") {
+            // Envoyer l'état de jeu avec l'atout et les cartes jouables si c'est son tour
+            QJsonObject stateMsg;
+            stateMsg["type"] = "gameState";
+            stateMsg["biddingPhase"] = false;
+            stateMsg["currentPlayer"] = room->currentPlayerIndex;
+            stateMsg["atout"] = static_cast<int>(room->couleurAtout);
 
-                QJsonObject stateMsg;
-                stateMsg["type"] = "gameState";
-                stateMsg["biddingPhase"] = false;
-                stateMsg["currentPlayer"] = playerIndex;
-                stateMsg["atout"] = static_cast<int>(room->couleurAtout);
+            // Si c'est le tour du joueur, envoyer aussi les cartes jouables
+            if (room->currentPlayerIndex == playerIndex) {
+                QJsonArray playableCards = calculatePlayableCards(room, playerIndex);
                 stateMsg["playableCards"] = playableCards;
-                sendMessage(conn->socket, stateMsg);
             }
+
+            sendMessage(conn->socket, stateMsg);
         }
     }
 
@@ -399,13 +402,48 @@ private:
         QString avatar;
         QString errorMsg;
         if (m_dbManager->authenticateUser(email, password, pseudo, avatar, errorMsg)) {
-            // Succes
+            // Succès - Créer une connexion et enregistrer le joueur
+            QString connectionId = QUuid::createUuid().toString();
+
+            PlayerConnection *conn = new PlayerConnection{
+                socket,
+                connectionId,
+                pseudo,
+                avatar,
+                -1,    // Pas encore en partie
+                -1     // Pas encore de position
+            };
+            m_connections[connectionId] = conn;
+
             QJsonObject response;
             response["type"] = "loginAccountSuccess";
             response["playerName"] = pseudo;
             response["avatar"] = avatar;
+            response["connectionId"] = connectionId;
             sendMessage(socket, response);
-            qDebug() << "Connexion reussie:" << pseudo << "avatar:" << avatar;
+            qDebug() << "Connexion reussie:" << pseudo << "avatar:" << avatar << "ID:" << connectionId;
+
+            // Vérifier si le joueur peut se reconnecter à une partie en cours
+            if (m_playerNameToRoomId.contains(pseudo)) {
+                int roomId = m_playerNameToRoomId[pseudo];
+                GameRoom* room = m_gameRooms.value(roomId);
+
+                if (room && room->gameState != "finished") {
+                    // Trouver l'index du joueur dans la partie
+                    int playerIndex = -1;
+                    for (int i = 0; i < room->playerNames.size(); i++) {
+                        if (room->playerNames[i] == pseudo) {
+                            playerIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (playerIndex != -1 && room->isBot[playerIndex]) {
+                        qDebug() << "Reconnexion detectee pour" << pseudo << "a la partie" << roomId << "position" << playerIndex;
+                        handleReconnection(connectionId, roomId, playerIndex);
+                    }
+                }
+            }
         } else {
             // Echec
             QJsonObject response;
@@ -525,8 +563,9 @@ private:
                 conn->gameRoomId = roomId;
                 conn->playerIndex = i;
 
-                // Sauvegarder le nom du joueur pour reconnexion
+                // Sauvegarder le nom et avatar du joueur pour reconnexion
                 room->playerNames.append(conn->playerName);
+                room->playerAvatars.append(conn->avatar);
                 m_playerNameToRoomId[conn->playerName] = roomId;
 
                 std::vector<Carte*> emptyHand;
@@ -564,6 +603,16 @@ private:
             notifyGameStart(roomId, connectionIds);
 
             qDebug() << "Notifications gameFound envoyees à" << connectionIds.size() << "joueurs";
+
+            // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
+            if (room->isBot[room->currentPlayerIndex]) {
+                QTimer::singleShot(800, this, [this, roomId]() {
+                    GameRoom* room = m_gameRooms.value(roomId);
+                    if (room && room->gameState == "bidding") {
+                        playBotBid(roomId, room->currentPlayerIndex);
+                    }
+                });
+            }
 
         }
     }
@@ -615,12 +664,12 @@ private:
                 }
             }
             msg["opponents"] = opponents;
-            qDebug() << "Envoi gameFound à" << conn->playerName << "position" << i;
+            qDebug() << "Envoi gameFound a" << conn->playerName << "position" << i;
 
 
             sendMessage(conn->socket, msg);
         }
-        qDebug() << "Toutes les notifications envoyées";
+        qDebug() << "Toutes les notifications envoyees";
 
     }
 
@@ -1117,7 +1166,7 @@ private:
                     qDebug() << "  Team2 marque: 0";
 
                     // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
-                    if (room->surcoinched && room->surcoinchePlayerIndex != -1) {
+                    if (room->surcoinched && room->surcoinchePlayerIndex != -1 && !room->isBot[room->surcoinchePlayerIndex]) {
                         PlayerConnection* surcoincheConn = m_connections[room->connectionIds[room->surcoinchePlayerIndex]];
                         if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
                             m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, false, true);
@@ -1133,7 +1182,7 @@ private:
                     qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((" << valeurContrat << "+160)*" << multiplicateur << ")";
 
                     // Mettre à jour les stats de coinche réussie (le contrat a échoué, donc la coinche a réussi)
-                    if (room->coinched && room->coinchePlayerIndex != -1) {
+                    if (room->coinched && room->coinchePlayerIndex != -1 && !room->isBot[room->coinchePlayerIndex]) {
                         PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
                         if (coincheConn && !coincheConn->playerName.isEmpty()) {
                             m_dbManager->updateCoincheStats(coincheConn->playerName, false, true);
@@ -1147,6 +1196,7 @@ private:
 
                 // Mettre à jour les stats d'annonces coinchées pour les joueurs de l'équipe 1
                 for (int i = 0; i < room->connectionIds.size(); i++) {
+                    if (room->isBot[i]) continue;  // Skip bots
                     PlayerConnection* conn = m_connections[room->connectionIds[i]];
                     if (!conn || conn->playerName.isEmpty()) continue;
 
@@ -1170,7 +1220,7 @@ private:
                     qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((" << valeurContrat << "+" << pointsRealisesTeam2 << ")*" << multiplicateur << ")";
 
                     // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
-                    if (room->surcoinched && room->surcoinchePlayerIndex != -1) {
+                    if (room->surcoinched && room->surcoinchePlayerIndex != -1 && !room->isBot[room->surcoinchePlayerIndex]) {
                         PlayerConnection* surcoincheConn = m_connections[room->connectionIds[room->surcoinchePlayerIndex]];
                         if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
                             m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, false, true);
@@ -1186,7 +1236,7 @@ private:
                     qDebug() << "  Team2 marque: 0";
 
                     // Mettre à jour les stats de coinche réussie (le contrat a échoué, donc la coinche a réussi)
-                    if (room->coinched && room->coinchePlayerIndex != -1) {
+                    if (room->coinched && room->coinchePlayerIndex != -1 && !room->isBot[room->coinchePlayerIndex]) {
                         PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
                         if (coincheConn && !coincheConn->playerName.isEmpty()) {
                             m_dbManager->updateCoincheStats(coincheConn->playerName, false, true);
@@ -1200,6 +1250,7 @@ private:
 
                 // Mettre à jour les stats d'annonces coinchées pour les joueurs de l'équipe 2
                 for (int i = 0; i < room->connectionIds.size(); i++) {
+                    if (room->isBot[i]) continue;  // Skip bots
                     PlayerConnection* conn = m_connections[room->connectionIds[i]];
                     if (!conn || conn->playerName.isEmpty()) continue;
 
@@ -1323,7 +1374,7 @@ private:
 
         if (isGeneraleAnnonce) {
             // Une générale a été annoncée, mettre à jour les stats pour le joueur qui l'a annoncée
-            if (room->lastBidderIndex >= 0 && room->lastBidderIndex < room->connectionIds.size()) {
+            if (room->lastBidderIndex >= 0 && room->lastBidderIndex < room->connectionIds.size() && !room->isBot[room->lastBidderIndex]) {
                 PlayerConnection* conn = m_connections[room->connectionIds[room->lastBidderIndex]];
                 if (conn && !conn->playerName.isEmpty()) {
                     m_dbManager->updateGeneraleStats(conn->playerName, generaleReussie);
@@ -1491,6 +1542,16 @@ private:
 
         // Notifier tous les joueurs de la nouvelle manche avec leurs nouvelles cartes
         notifyNewManche(roomId);
+
+        // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
+        if (room->isBot[room->currentPlayerIndex]) {
+            QTimer::singleShot(800, this, [this, roomId]() {
+                GameRoom* room = m_gameRooms.value(roomId);
+                if (room && room->gameState == "bidding") {
+                    playBotBid(roomId, room->currentPlayerIndex);
+                }
+            });
+        }
     }
 
     void notifyNewManche(int roomId) {
@@ -1500,6 +1561,7 @@ private:
         qDebug() << "Envoi des notifications de nouvelle manche a" << room->connectionIds.size() << "joueurs";
 
         for (int i = 0; i < room->connectionIds.size(); i++) {
+            if (room->isBot[i]) continue;  // Skip bots
             PlayerConnection *conn = m_connections[room->connectionIds[i]];
             if (!conn) continue;
 
@@ -1566,9 +1628,11 @@ private:
             qDebug() << "GameServer - Joueur" << playerIndex << "COINCHE l'enchère!";
 
             // Enregistrer la tentative de coinche dans les stats (si joueur enregistré)
-            PlayerConnection* coincheConn = m_connections[room->connectionIds[playerIndex]];
-            if (coincheConn && !coincheConn->playerName.isEmpty()) {
-                m_dbManager->updateCoincheStats(coincheConn->playerName, true, false);
+            if (!room->isBot[playerIndex]) {
+                PlayerConnection* coincheConn = m_connections[room->connectionIds[playerIndex]];
+                if (coincheConn && !coincheConn->playerName.isEmpty()) {
+                    m_dbManager->updateCoincheStats(coincheConn->playerName, true, false);
+                }
             }
 
             // Broadcast COINCHE
@@ -1611,9 +1675,11 @@ private:
             qDebug() << "GameServer - Joueur" << playerIndex << "SURCOINCHE l'enchère!";
 
             // Enregistrer la tentative de surcoinche dans les stats (si joueur enregistré)
-            PlayerConnection* surcoincheConn = m_connections[room->connectionIds[playerIndex]];
-            if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
-                m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, true, false);
+            if (!room->isBot[playerIndex]) {
+                PlayerConnection* surcoincheConn = m_connections[room->connectionIds[playerIndex]];
+                if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
+                    m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, true, false);
+                }
             }
 
             // Arrêter le timer de surcoinche
@@ -2088,9 +2154,13 @@ private:
 
         broadcastToRoom(roomId, stateMsg);
 
-        // Si le joueur actuel est un bot, le faire jouer immédiatement
+        // Si le joueur actuel est un bot, le faire jouer
         if (room->isBot[currentPlayer]) {
-            QTimer::singleShot(800, this, [this, roomId]() {
+            // Si c'est le début d'un nouveau pli (pli vide), attendre plus longtemps
+            // pour laisser le temps au pli précédent d'être nettoyé côté client
+            int delay = room->currentPli.empty() ? 2000 : 800;
+
+            QTimer::singleShot(delay, this, [this, roomId]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (room && room->gameState == "playing") {
                     playBotCard(roomId, room->currentPlayerIndex);

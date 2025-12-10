@@ -411,7 +411,7 @@ Rectangle {
             // Avatar, nom et annonce a gauche (position absolue)
             Column {
                 anchors.left: parent.left
-                anchors.leftMargin: parent.width * 0.065
+                anchors.leftMargin: parent.width * 0.055
                 anchors.top : parent.top
                 anchors.topMargin: - parent.height * 0.055
                 spacing: rootArea.height * 0.003
@@ -430,7 +430,7 @@ Rectangle {
                         border.color: "#8B7500"
                         border.width: 2
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: gameModel.dealerPosition === playerSouthRow.actualPlayerIndex
+                        opacity: gameModel.dealerPosition === playerSouthRow.actualPlayerIndex ? 1 : 0
 
                         Text {
                             anchors.centerIn: parent
@@ -457,7 +457,7 @@ Rectangle {
                             opacity: {
                                 if (rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "") return 0
                                 if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "Passe") return 0
-                                return 0.75
+                                return 0.85
                             }
                             visible: true  // Toujours visible pour reserver l'espace
 
@@ -595,7 +595,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.topMargin: - parent.height * 0.01
             width: parent.width * 0.5
-            height: rootArea.height * 0.24
+            height: rootArea.height * 0.23
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(2)
 
@@ -606,27 +606,7 @@ Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: rootArea.width * 0.01
 
-                // Jeton de dealer à gauche
-                Rectangle {
-                    width: rootArea.width * 0.03
-                    height: rootArea.width * 0.03
-                    radius: width / 2
-                    color: "#FFD700"
-                    border.color: "#8B7500"
-                    border.width: 2
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: gameModel.dealerPosition === playerNorthColumn.actualPlayerIndex
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "D"
-                        font.pixelSize: parent.width * 0.6
-                        font.bold: true
-                        color: "#8B7500"
-                    }
-                }
-
-                // Column pour avatar + nom + annonce (centré ensemble)
+                // Column pour avatar + nom (empilés verticalement)
                 Column {
                     spacing: rootArea.height * 0.005
 
@@ -689,8 +669,34 @@ Rectangle {
                         font.bold: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
+                }
 
-                    // Indicateur d'annonce (espace toujours reserve)
+                // Column pour jeton dealer + indicateur d'annonce à droite de l'avatar
+                Column {
+                    spacing: rootArea.height * 0.005
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    // Jeton de dealer en haut
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: rootArea.width * 0.03
+                        height: rootArea.width * 0.03
+                        radius: width / 2
+                        color: "#FFD700"
+                        border.color: "#8B7500"
+                        border.width: 2
+                        opacity: gameModel.dealerPosition === playerNorthColumn.actualPlayerIndex ? 1 : 0
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "D"
+                            font.pixelSize: parent.width * 0.6
+                            font.bold: true
+                            color: "#8B7500"
+                        }
+                    }
+
+                    // Indicateur d'annonce en bas
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: Math.max(bidRowNorth.width + rootArea.width * 0.02, rootArea.width * 0.08)
@@ -702,9 +708,9 @@ Rectangle {
                         opacity: {
                             if (rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "") return 0
                             if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "Passe") return 0
-                            return 0.75
+                            return 0.85
                         }
-                        visible: true  // Toujours visible pour reserver l'espace
+                        //visible: opacity > 0
 
                         Behavior on opacity {
                             NumberAnimation { duration: 200 }
@@ -803,7 +809,7 @@ Rectangle {
                     opacity: {
                         if (rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "") return 0
                         if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "Passe") return 0
-                        return 0.75
+                        return 0.85
                     }
                     visible: true  // Toujours visible pour reserver l'espace
 
@@ -977,7 +983,7 @@ Rectangle {
                     opacity: {
                         if (rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "") return 0
                         if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "Passe") return 0
-                        return 0.75
+                        return 0.85
                     }
                     visible: true  // Toujours visible pour reserver l'espace
 
@@ -1534,77 +1540,111 @@ Rectangle {
         // =====================
         // DERNIER PLI (en haut à gauche)
         // =====================
+        // ZONE EN HAUT À GAUCHE : Bouton Exit + Miniatures dernier pli
+        // =====================
         Row {
-            id: lastPliDisplay
+            id: topLeftRow
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.topMargin: parent.height * 0.02
-            anchors.leftMargin: parent.width * 0.075
-            spacing: parent.width * 0.005
-            visible: gameModel.lastPliCards.length > 0
-            z: 50
+            anchors.leftMargin: parent.width * 0.02
+            spacing: parent.width * 0.02
+            z: 500
 
-            // Fonction pour obtenir le symbole de la couleur
-            function getSuitSymbol(suitValue) {
-                switch (suitValue) {
-                    case 3: return "♥"  // COEUR
-                    case 4: return "♣"  // TREFLE
-                    case 5: return "♦"  // CARREAU
-                    case 6: return "♠"  // PIQUE
-                    default: return ""
-                }
-            }
+            // Bouton Exit
+            Button {
+                id: exitButton
+                width: rootArea.height * 0.10
+                height: rootArea.height * 0.12
 
-            // Fonction pour obtenir la couleur du texte selon la couleur de carte
-            function getTextColor(suitValue) {
-                // Rouge pour coeur (3) et carreau (5)
-                // Noir pour trèfle (4) et pique (6)
-                return (suitValue === 3 || suitValue === 5) ? "#FF0000" : "#000000"
-            }
+                background: Rectangle {
+                    color: parent.down ? "#aa0000" : (parent.hovered ? "#cc0000" : "#ff3333")
+                    radius: 5
+                    border.color: "#ff6666"
+                    border.width: 2
 
-            // Fonction pour obtenir le texte de la valeur
-            function getValueText(cardValue) {
-                switch (cardValue) {
-                    case 7: return "7"
-                    case 8: return "8"
-                    case 9: return "9"
-                    case 10: return "10"
-                    case 11: return "V"   // Valet
-                    case 12: return "D"   // Dame
-                    case 13: return "R"   // Roi
-                    case 14: return "A"   // As
-                    default: return "?"
-                }
-            }
-
-            Repeater {
-                model: gameModel.lastPliCards
-
-                Rectangle {
-                    width: rootArea.width * 0.04
-                    height: rootArea.height * 0.06
-                    color: "white"
-                    radius: 3
-                    border.color: modelData.isWinner ? "#FFD700" : "#aaaaaa"
-                    border.width: modelData.isWinner ? 3 : 1
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: lastPliDisplay.getValueText(modelData.value) + lastPliDisplay.getSuitSymbol(modelData.suit)
-                        font.pixelSize: parent.height * 0.5
-                        font.bold: true
-                        color: lastPliDisplay.getTextColor(modelData.suit)
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    // Overlay rouge pour les cartes d'atout
-                    Rectangle {
+                    Image {
+                        source: "qrc:/resources/exit-svgrepo-com.svg"
                         anchors.fill: parent
-                        color: "#FF0000"
-                        opacity: 0.2
-                        radius: parent.radius
-                        visible: modelData.suit === gameModel.lastBidSuitValue
+                        anchors.margins: parent.width * 0.2
+                        fillMode: Image.PreserveAspectFit
+                    }
+                }
+
+                onClicked: {
+                    exitPopup.visible = true
+                }
+            }
+
+            // Miniatures du dernier pli
+            Row {
+                id: lastPliDisplay
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: parent.width * 0.008
+                visible: gameModel.lastPliCards.length > 0
+
+                // Fonction pour obtenir le symbole de la couleur
+                function getSuitSymbol(suitValue) {
+                    switch (suitValue) {
+                        case 3: return "♥"  // COEUR
+                        case 4: return "♣"  // TREFLE
+                        case 5: return "♦"  // CARREAU
+                        case 6: return "♠"  // PIQUE
+                        default: return ""
+                    }
+                }
+
+                // Fonction pour obtenir la couleur du texte selon la couleur de carte
+                function getTextColor(suitValue) {
+                    // Rouge pour coeur (3) et carreau (5)
+                    // Noir pour trèfle (4) et pique (6)
+                    return (suitValue === 3 || suitValue === 5) ? "#FF0000" : "#000000"
+                }
+
+                // Fonction pour obtenir le texte de la valeur
+                function getValueText(cardValue) {
+                    switch (cardValue) {
+                        case 7: return "7"
+                        case 8: return "8"
+                        case 9: return "9"
+                        case 10: return "10"
+                        case 11: return "V"   // Valet
+                        case 12: return "D"   // Dame
+                        case 13: return "R"   // Roi
+                        case 14: return "A"   // As
+                        default: return "?"
+                    }
+                }
+
+                Repeater {
+                    model: gameModel.lastPliCards
+
+                    Rectangle {
+                        width: rootArea.width * 0.05
+                        height: rootArea.width * 0.05
+                        color: "white"
+                        radius: 3
+                        border.color: modelData.isWinner ? "#FFD700" : "#aaaaaa"
+                        border.width: modelData.isWinner ? 3 : 1
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: lastPliDisplay.getValueText(modelData.value) + lastPliDisplay.getSuitSymbol(modelData.suit)
+                            font.pixelSize: parent.height * 0.5
+                            font.bold: true
+                            color: lastPliDisplay.getTextColor(modelData.suit)
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        // Overlay rouge pour les cartes d'atout
+                        Rectangle {
+                            anchors.fill: parent
+                            color: "#FF0000"
+                            opacity: 0.2
+                            radius: parent.radius
+                            visible: modelData.suit === gameModel.lastBidSuitValue
+                        }
                     }
                 }
             }
@@ -1942,35 +1982,6 @@ Rectangle {
             onReturnToMenu: {
                 rootArea.returnToMainMenu()
             }
-        }
-    }
-
-    // Bouton Exit en haut à gauche
-    Button {
-        id: exitButton
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.margins: rootArea.width * 0.02
-        width: rootArea.width * 0.05
-        height: rootArea.width * 0.05
-        z: 500
-
-        background: Rectangle {
-            color: parent.down ? "#aa0000" : (parent.hovered ? "#cc0000" : "#ff3333")
-            radius: 5
-            border.color: "#ff6666"
-            border.width: 2
-
-            Image {
-                source: "qrc:/resources/exit-svgrepo-com.svg"
-                anchors.fill: parent
-                anchors.margins: parent.width * 0.2
-                fillMode: Image.PreserveAspectFit
-            }
-        }
-
-        onClicked: {
-            exitPopup.visible = true
         }
     }
 

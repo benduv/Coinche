@@ -65,7 +65,7 @@ Item {
         color: root.isPlayable ? "white" : "grey"
         border.color: selected ? "#FFD700" : "#000000"
         border.width: selected ? 3 : 1
-        radius: 5
+        radius: 3
         Behavior on border.color { ColorAnimation { duration: 100 } }
         Behavior on border.width { NumberAnimation { duration: 100 } }
 

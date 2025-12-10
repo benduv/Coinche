@@ -417,6 +417,27 @@ bool DatabaseManager::updateGameStats(const QString &pseudo, bool won)
     return true;
 }
 
+bool DatabaseManager::cancelDefeat(const QString &pseudo)
+{
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour annulation defaite:" << pseudo;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE stats SET games_played = games_played - 1 WHERE user_id = :user_id AND games_played > 0");
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur annulation defaite:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Defaite annulee pour:" << pseudo;
+    return true;
+}
+
 bool DatabaseManager::updateCoincheStats(const QString &pseudo, bool attempt, bool success)
 {
     int userId = getUserIdByPseudo(pseudo);

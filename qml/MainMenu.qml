@@ -23,6 +23,25 @@ ApplicationWindow {
     property real heightRatio: height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
 
+    // Écouter le signal gameFound pour créer le GameModel lors de la reconnexion
+    Connections {
+        target: networkManager
+
+        function onGameFound(playerPosition, opponents) {
+            console.log("MainMenu - gameFound reçu! Position:", playerPosition)
+            networkManager.createGameModel(
+                networkManager.myPosition,
+                networkManager.myCards,
+                networkManager.opponents
+            )
+        }
+
+        function onGameModelReady() {
+            console.log("MainMenu - gameModelReady reçu, navigation vers CoincheView")
+            stackView.push(coincheViewComponent)
+        }
+    }
+
     StackView {
         id: stackView
         anchors.fill: parent
@@ -39,8 +58,8 @@ ApplicationWindow {
                 }
 
                 Component.onCompleted: {
-                    networkManager.connectToServer("ws://localhost:1234")
-                    //networkManager.connectToServer("ws://10.0.2.2:1234")
+                    //networkManager.connectToServer("ws://localhost:1234")
+                    networkManager.connectToServer("ws://10.0.2.2:1234")
                 }
             }
         }
@@ -324,6 +343,11 @@ ApplicationWindow {
                     stackView.pop()
                 }
             }
+        }
+
+        Component {
+            id: coincheViewComponent
+            CoincheView {}
         }
     }
 }

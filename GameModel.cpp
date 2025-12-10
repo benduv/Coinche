@@ -652,8 +652,31 @@ void GameModel::updateGameState(const QJsonObject& state)
     }
 
     if (state.contains("atout")) {
-        m_lastBidCouleur = static_cast<Carte::Couleur>(state["atout"].toInt());
+        Carte::Couleur newAtout = static_cast<Carte::Couleur>(state["atout"].toInt());
+        bool atoutChanged = (m_lastBidCouleur != newAtout);
+        m_lastBidCouleur = newAtout;
         qDebug() << "Atout defini:" << static_cast<int>(m_lastBidCouleur);
+
+        // Si l'atout vient d'être défini ou change, trier et highlighter les cartes
+        if (atoutChanged && m_lastBidCouleur != Carte::COULEURINVALIDE) {
+            // Mettre à jour la couleur d'atout pour tous les HandModels
+            m_player0Hand->setAtoutCouleur(m_lastBidCouleur);
+            m_player1Hand->setAtoutCouleur(m_lastBidCouleur);
+            m_player2Hand->setAtoutCouleur(m_lastBidCouleur);
+            m_player3Hand->setAtoutCouleur(m_lastBidCouleur);
+            qDebug() << "Tri et highlight des cartes avec atout:" << static_cast<int>(m_lastBidCouleur);
+
+            Player* localPlayer = getPlayerByPosition(m_myPosition);
+            if (localPlayer) {
+                // Marquer les cartes d'atout avant le tri
+                for (Carte* carte : localPlayer->getMain()) {
+                    carte->setAtout(carte->getCouleur() == m_lastBidCouleur);
+                }
+                localPlayer->sortHand();
+                HandModel* hand = getHandModelByPosition(m_myPosition);
+                if (hand) hand->refresh();
+            }
+        }
     }
 
     if (state.contains("biddingWinnerId")) {
