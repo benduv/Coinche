@@ -24,7 +24,7 @@ Rectangle {
         id: popup
         anchors.centerIn: parent
         width: Math.min(parent.width * 0.8, 500)
-        height: Math.min(parent.height * 0.4, 300)
+        height: Math.min(parent.height * 0.5, 300)
         color: "#1a1a1a"
         radius: 15
         border.color: "#FFD700"
@@ -41,7 +41,7 @@ Rectangle {
                 spacing: 15
 
                 Image {
-                    source: "qrc:/resources/exit-svgrepo-com.svg.svg"
+                    source: "qrc:/resources/exit-svgrepo-com.svg"
                     width: 40
                     height: 40
                     fillMode: Image.PreserveAspectFit
@@ -58,7 +58,16 @@ Rectangle {
 
             // Message
             Text {
-                text: "Êtes-vous sûr de vouloir quitter ?\n\nCela comptera comme une défaite."
+                text: "Êtes-vous sûr de vouloir quitter ?"
+                font.pixelSize: popup.height * 0.08
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+            }
+            Text {
+                text: "Cela comptera comme une défaite."
                 font.pixelSize: popup.height * 0.08
                 color: "white"
                 horizontalAlignment: Text.AlignHCenter
@@ -77,7 +86,7 @@ Rectangle {
                 // Bouton Non
                 Button {
                     width: popup.width * 0.3
-                    height: popup.height * 0.15
+                    height: popup.height * 0.25
 
                     background: Rectangle {
                         color: parent.down ? "#555555" : (parent.hovered ? "#666666" : "#777777")
@@ -104,7 +113,7 @@ Rectangle {
                 // Bouton Oui
                 Button {
                     width: popup.width * 0.3
-                    height: popup.height * 0.15
+                    height: popup.height * 0.25
 
                     background: Rectangle {
                         color: parent.down ? "#aa0000" : (parent.hovered ? "#cc0000" : "#ff3333")

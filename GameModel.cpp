@@ -718,16 +718,21 @@ void GameModel::updateGameState(const QJsonObject& state)
 
         qDebug() << "Cartes jouables reçues pour joueur" << currentPlayer << ":" << playableIndices;
 
-        // Mettre à jour le HandModel du joueur actuel
-        HandModel* hand = getHandModelByPosition(currentPlayer);
-        if (hand) {
-            hand->setPlayableCards(playableIndices);
+        // Mettre à jour le HandModel SEULEMENT si c'est le joueur local
+        if (currentPlayer == m_myPosition) {
+            HandModel* hand = getHandModelByPosition(currentPlayer);
+            if (hand) {
+                hand->setPlayableCards(playableIndices);
+            }
         }
 
         // Si c'est le dernier pli (une seule carte en main) et c'est notre tour, jouer automatiquement
         if (currentPlayer == m_myPosition && !m_biddingPhase) {
             Player* localPlayer = getPlayerByPosition(m_myPosition);
-            if (localPlayer && localPlayer->getMain().size() == 1) {
+            int handSize = localPlayer ? localPlayer->getMain().size() : -1;
+            qDebug() << "Vérification jeu auto - Position:" << m_myPosition << "Taille main:" << handSize;
+
+            if (localPlayer && handSize == 1) {
                 qDebug() << "Dernier pli detecte - Jeu automatique de la dernière carte";
                 // Jouer automatiquement après un court délai pour que ce soit visible
                 QTimer::singleShot(500, this, [this]() {

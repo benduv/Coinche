@@ -362,6 +362,26 @@ private:
             }
 
             sendMessage(conn->socket, stateMsg);
+
+            // Envoyer les cartes déjà jouées dans le pli en cours
+            if (!room->currentPli.empty()) {
+                qDebug() << "GameServer - Reconnexion: Envoi des" << room->currentPli.size()
+                         << "cartes du pli en cours au joueur" << playerIndex;
+
+                for (const auto& cardPlay : room->currentPli) {
+                    int playedPlayerIndex = cardPlay.first;
+                    const Carte* playedCard = cardPlay.second;
+
+                    QJsonObject cardPlayedMsg;
+                    cardPlayedMsg["type"] = "cardPlayed";
+                    cardPlayedMsg["playerIndex"] = playedPlayerIndex;
+                    cardPlayedMsg["cardIndex"] = -1;  // Index non pertinent pour la reconnexion
+                    cardPlayedMsg["cardValue"] = static_cast<int>(playedCard->getChiffre());
+                    cardPlayedMsg["cardSuit"] = static_cast<int>(playedCard->getCouleur());
+
+                    sendMessage(conn->socket, cardPlayedMsg);
+                }
+            }
         }
     }
 
@@ -942,13 +962,21 @@ private:
                 finishManche(roomId);
             });
         } else {
-            // Réinitialise pour le prochain pli
-            room->currentPli.clear();
-            room->couleurDemandee = Carte::COULEURINVALIDE;
-            room->currentPlayerIndex = gagnantIndex;  // Le gagnant commence le prochain pli
+            qDebug() << "GameServer - Pli termine, attente de 1500ms avant le prochain pli...";
 
-            // Notifie avec les cartes jouables pour le nouveau pli
-            notifyPlayersWithPlayableCards(roomId);
+            // Attendre 1500ms pour laisser les joueurs voir le pli gagné
+            QTimer::singleShot(1500, this, [this, roomId, gagnantIndex]() {
+                GameRoom* room = m_gameRooms.value(roomId);
+                if (!room) return;
+
+                // Réinitialise pour le prochain pli
+                room->currentPli.clear();
+                room->couleurDemandee = Carte::COULEURINVALIDE;
+                room->currentPlayerIndex = gagnantIndex;  // Le gagnant commence le prochain pli
+
+                // Notifie avec les cartes jouables pour le nouveau pli
+                notifyPlayersWithPlayableCards(roomId);
+            });
         }
     }
 
@@ -1870,8 +1898,15 @@ private:
     }
 
     void playBotCard(int roomId, int playerIndex) {
+        qDebug() << "===== playBotCard appele pour joueur" << playerIndex << "isBot:" << (m_gameRooms.value(roomId) ? m_gameRooms.value(roomId)->isBot[playerIndex] : false);
+
         GameRoom* room = m_gameRooms.value(roomId);
-        if (!room || room->currentPlayerIndex != playerIndex || room->gameState != "playing") return;
+        if (!room || room->currentPlayerIndex != playerIndex || room->gameState != "playing") {
+            qDebug() << "playBotCard - Verification echouee: room=" << (room != nullptr)
+                     << "currentPlayer=" << (room ? room->currentPlayerIndex : -1)
+                     << "expected=" << playerIndex;
+            return;
+        }
 
         Player* player = room->players[playerIndex].get();
         if (!player || player->getMain().empty()) return;
@@ -1989,17 +2024,11 @@ private:
         } else {
             // Passer au joueur suivant
             room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
-            notifyPlayersWithPlayableCards(roomId);
+            qDebug() << "playBotCard - Prochain joueur:" << room->currentPlayerIndex
+                     << "isBot:" << room->isBot[room->currentPlayerIndex];
 
-            // Si le prochain joueur est aussi un bot, le faire jouer
-            if (room->isBot[room->currentPlayerIndex]) {
-                QTimer::singleShot(800, this, [this, roomId]() {
-                    GameRoom* room = m_gameRooms.value(roomId);
-                    if (room && room->gameState == "playing") {
-                        playBotCard(roomId, room->currentPlayerIndex);
-                    }
-                });
-            }
+            // notifyPlayersWithPlayableCards gère déjà le scheduling des bots
+            notifyPlayersWithPlayableCards(roomId);
         }
     }
 
@@ -2156,6 +2185,7 @@ private:
 
         // Si le joueur actuel est un bot, le faire jouer
         if (room->isBot[currentPlayer]) {
+            qDebug() << "notifyPlayersWithPlayableCards - Joueur" << currentPlayer << "est un bot, planification playBotCard";
             // Si c'est le début d'un nouveau pli (pli vide), attendre plus longtemps
             // pour laisser le temps au pli précédent d'être nettoyé côté client
             int delay = room->currentPli.empty() ? 2000 : 800;
@@ -2172,6 +2202,9 @@ private:
         // Si c'est le dernier pli (tous les joueurs n'ont qu'une carte), jouer automatiquement après un délai
         // IMPORTANT: Ne jouer automatiquement que si on est bien dans la phase de jeu
         Player* player = room->players[currentPlayer].get();
+        qDebug() << "notifyPlayersWithPlayableCards - Verification dernier pli pour joueur" << currentPlayer
+                 << "taille main:" << (player ? player->getMain().size() : -1)
+                 << "isBot:" << room->isBot[currentPlayer];
         if (player && player->getMain().size() == 1 && room->gameState == "playing") {
             qDebug() << "GameServer - Dernier pli detecte, jeu automatique pour joueur" << currentPlayer;
 
