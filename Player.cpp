@@ -162,19 +162,20 @@ int Player::convertAnnonceEnPoint(const Annonce &annonce)
     }
 }
 
-bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee, 
-                     const Carte::Couleur &couleurAtout, Carte* carteAtout, 
-                     int idxPlayerWinning) const {
+bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee,
+                     const Carte::Couleur &couleurAtout, Carte* carteAtout,
+                     int idxPlayerWinning, bool isToutAtout) const {
 
     std::cout << "Verification si la carte est jouable pour le jouer: " << m_name << " et carteIdx = " << carteIdx << std::endl;
     std::cout << "******************************************************* " << std::endl;
-    std::cout << "*****************************idxPlayerWinning: " << idxPlayerWinning << " m_index: " << m_index << std::endl; 
-    
+    std::cout << "*****************************idxPlayerWinning: " << idxPlayerWinning << " m_index: " << m_index << std::endl;
+    std::cout << "Mode Tout Atout: " << (isToutAtout ? "OUI" : "NON") << std::endl;
+
     if (carteIdx < 0 || carteIdx >= m_main.size()) {
         return false;
         std::cout << "Index de carte invalide." << std::endl;
     }
-    
+
     const Carte* carte = m_main[carteIdx];
     carte->printCarte();
 
@@ -186,10 +187,12 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
         return true;
     }
     
-    // Si la carte est de la couleur demandée, toujours jouable
+    // Si la carte est de la couleur demandée
     if (carte->getCouleur() == couleurDemandee) {
         //std::cout << "Carte de la couleur demandee, carte jouable. Carte couleur : " << carte->getCouleur() << " carte chiffre : " << carte->getChiffre() << std::endl;
-        if(carte->getCouleur() == couleurAtout) {
+
+        // En mode TA ou si la couleur demandée est l'atout, vérifier si on peut monter
+        if(isToutAtout || carte->getCouleur() == couleurAtout) {
             //std::cout << "C'est aussi un atout." << std::endl;
             if(carteAtout != nullptr) {
                 if(*carteAtout < *carte) {
@@ -211,13 +214,15 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
     if(m_main[carteIdx]->getCouleur() != couleurDemandee && hasCouleur(couleurDemandee)) {
         //std::cout << "Vous avez la couleur demandee, veuillez selectionner une carte de cette couleur..." << std::endl;
         return false;
-    } 
-    else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
+    }
+    else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) &&
             (idxPlayerWinning + 2)%4 == m_index) {
         // Si pas la couleur demandée mais que son partenaire tient le pli, alors le joueur peut se defausser
         return true;
     }
-    else if(m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) && 
+    // En mode Tout Atout, pas de contrainte d'atout spécifique (toutes les cartes sont atouts)
+    else if(!isToutAtout &&
+            m_main[carteIdx]->getCouleur() != couleurDemandee && !hasCouleur(couleurDemandee) &&
             m_main[carteIdx]->getCouleur() != couleurAtout && hasCouleur(couleurAtout) ) {
         //std::cout << "Vous avez de l'atout, veuillez selectionner une carte de cette couleur..." << std::endl;
         return false;
@@ -253,6 +258,22 @@ void Player::setAtout(const Carte::Couleur &couleurAtout)
     if(hasBelotte(couleurAtout)) {
         std::cout << "Le joueur " << m_name << " a la belote!" << std::endl;
         m_hasBelotte = true;
+    }
+}
+
+void Player::setAllCardsAsAtout()
+{
+    // Mode Tout Atout: toutes les cartes sont des atouts
+    for(auto &carte : m_main) {
+        carte->setAtout(true);
+    }
+}
+
+void Player::setNoAtout()
+{
+    // Mode Sans Atout: aucune carte n'est atout
+    for(auto &carte : m_main) {
+        carte->setAtout(false);
     }
 }
 
@@ -315,6 +336,49 @@ void Player::sortHandWithAtout(Carte::Couleur atout)
             return *a < *b;
         }
         return a->getCouleur() < b->getCouleur();
+    });
+}
+
+void Player::sortHandToutAtout()
+{
+    std::cout << "sortHandToutAtout - Tri des cartes en mode Tout Atout pour " << m_name << std::endl;
+
+    // Afficher l'ordre des cartes avant tri
+    std::cout << "Avant tri:" << std::endl;
+    for (auto carte : m_main) {
+        carte->printCarte();
+        std::cout << "  Ordre: " << carte->getOrdreCarteForte() << std::endl;
+    }
+
+    // En mode Tout Atout, trier d'abord par couleur, puis par force de carte (toutes sont atouts)
+    std::sort(m_main.begin(), m_main.end(), [](Carte* a, Carte* b) {
+        // Trier par couleur d'abord
+        if (a->getCouleur() != b->getCouleur()) {
+            return a->getCouleur() < b->getCouleur();
+        }
+        // Puis par force de carte en mode atout (7 < 8 < D < R < 10 < A < 9 < V)
+        return a->getOrdreCarteForte() < b->getOrdreCarteForte();
+    });
+
+    // Afficher l'ordre des cartes après tri
+    std::cout << "Après tri:" << std::endl;
+    for (auto carte : m_main) {
+        carte->printCarte();
+    }
+}
+
+void Player::sortHandSansAtout()
+{
+    std::cout << "sortHandSansAtout - Tri des cartes en mode Sans Atout pour " << m_name << std::endl;
+
+    // En mode Sans Atout, trier par couleur, puis par force (7 < 8 < 9 < V < D < R < 10 < As)
+    std::sort(m_main.begin(), m_main.end(), [](Carte* a, Carte* b) {
+        // Trier par couleur d'abord
+        if (a->getCouleur() != b->getCouleur()) {
+            return a->getCouleur() < b->getCouleur();
+        }
+        // Puis par force de carte en mode normal (getOrdreCarteForte avec isAtout=false)
+        return a->getOrdreCarteForte() < b->getOrdreCarteForte();
     });
 }
 

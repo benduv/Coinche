@@ -42,11 +42,15 @@ class Player
 
         void sortHandWithAtout(Carte::Couleur atout);
 
+        void sortHandToutAtout();  // Pour le mode Tout Atout
+
+        void sortHandSansAtout();  // Pour le mode Sans Atout
+
         void addCardToHand(Carte* carte);
 
-        bool isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee, 
-                     const Carte::Couleur &couleurAtout, Carte* carteAtout, 
-                     int idxPlayerWinning) const;
+        bool isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee,
+                     const Carte::Couleur &couleurAtout, Carte* carteAtout,
+                     int idxPlayerWinning, bool isToutAtout = false) const;
 
         // Carte* playCarte(int carteIdx);
         // Carte* playCarte(const Carte::Couleur &couleurDemandee, const Carte::Couleur &couleurAtout, Carte* carteAtout, int idxPlayerWinning);
@@ -64,6 +68,8 @@ class Player
         static int getContractValue(Annonce annonce);
 
         void setAtout(const Carte::Couleur &couleurAtout);
+        void setAllCardsAsAtout();  // Pour le mode Tout Atout
+        void setNoAtout();  // Pour le mode Sans Atout
 
         bool hasBelotte(const Carte::Couleur &couleurAtout) const;
         bool getHasBelotte() const;

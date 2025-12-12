@@ -17,6 +17,7 @@ ApplicationWindow {
     // Variable pour stocker le nom du joueur connecté
     property string loggedInPlayerName: ""
     property string accountType: ""
+    property bool shouldLoadCoincheView: false
 
     // Ratio responsive pour adapter la taille des composants
     property real widthRatio: width / 1024
@@ -38,7 +39,21 @@ ApplicationWindow {
 
         function onGameModelReady() {
             console.log("MainMenu - gameModelReady reçu, navigation vers CoincheView")
-            stackView.push(coincheViewComponent)
+            mainWindow.shouldLoadCoincheView = false
+            stackView.push(coincheViewLoaderComponent)
+            // Activer le chargement après un court délai pour éviter les TypeErrors
+            loadDelayTimer.start()
+        }
+    }
+
+    // Timer pour retarder légèrement l'activation du Loader
+    Timer {
+        id: loadDelayTimer
+        interval: 2000
+        repeat: false
+        onTriggered: {
+            console.log("Activation du chargement de CoincheView")
+            mainWindow.shouldLoadCoincheView = true
         }
     }
 
@@ -346,8 +361,109 @@ ApplicationWindow {
         }
 
         Component {
-            id: coincheViewComponent
-            CoincheView {}
+            id: coincheViewLoaderComponent
+
+            Rectangle {
+                anchors.fill: parent
+                color: "#1a472a"
+
+                // Indicateur de chargement
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 30 * mainWindow.minRatio
+                    visible: !coincheLoader.active
+
+                    // Icône de joueurs trouvés (4 cercles représentant les joueurs)
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 15 * mainWindow.minRatio
+
+                        Repeater {
+                            model: 4
+                            Rectangle {
+                                width: 50 * mainWindow.minRatio
+                                height: 50 * mainWindow.minRatio
+                                radius: 25 * mainWindow.minRatio
+                                color: "#444444"
+                                border.color: "#FFD700"
+                                border.width: 3 * mainWindow.minRatio
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "✓"
+                                    font.pixelSize: 30 * mainWindow.minRatio
+                                    color: "#00ff00"
+                                    font.bold: true
+                                }
+
+                                // Animation de pulsation
+                                SequentialAnimation on scale {
+                                    running: true
+                                    loops: Animation.Infinite
+                                    NumberAnimation { to: 1.1; duration: 500; easing.type: Easing.InOutQuad }
+                                    NumberAnimation { to: 1.0; duration: 500; easing.type: Easing.InOutQuad }
+                                    PauseAnimation { duration: index * 200 }
+                                }
+                            }
+                        }
+                    }
+
+                    Text {
+                        text: "Joueurs trouvés !"
+                        font.pixelSize: 36 * mainWindow.minRatio
+                        font.bold: true
+                        color: "#FFD700"
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+
+                    Text {
+                        text: "Lancement de la partie..."
+                        font.pixelSize: 28 * mainWindow.minRatio
+                        color: "#aaaaaa"
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+
+                    // Points de suspension animés
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 8 * mainWindow.minRatio
+
+                        Repeater {
+                            model: 3
+                            Rectangle {
+                                width: 10 * mainWindow.minRatio
+                                height: 10 * mainWindow.minRatio
+                                radius: 5 * mainWindow.minRatio
+                                color: "#FFD700"
+
+                                SequentialAnimation on opacity {
+                                    running: true
+                                    loops: Animation.Infinite
+                                    PauseAnimation { duration: index * 200 }
+                                    NumberAnimation { to: 0.3; duration: 400 }
+                                    NumberAnimation { to: 1.0; duration: 400 }
+                                    PauseAnimation { duration: (2 - index) * 200 }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Loader qui ne charge CoincheView que lorsque shouldLoadCoincheView est true
+                Loader {
+                    id: coincheLoader
+                    anchors.fill: parent
+                    active: mainWindow.shouldLoadCoincheView
+
+                    sourceComponent: Component {
+                        CoincheView {}
+                    }
+
+                    onLoaded: {
+                        console.log("CoincheView chargé avec succès!")
+                    }
+                }
+            }
         }
     }
 }

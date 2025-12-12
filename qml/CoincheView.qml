@@ -33,6 +33,7 @@ Rectangle {
     // Fonction pour calculer la position visuelle d'un joueur
     // Retourne l'index visuel (0=sud, 1=ouest, 2=nord, 3=est)
     function getVisualPosition(actualPlayerIndex) {
+        if (!gameModel) return 0
         var myPos = gameModel.myPosition
         var relativePos = (actualPlayerIndex - myPos + 4) % 4
         return relativePos
@@ -40,24 +41,28 @@ Rectangle {
 
     // Fonction inverse: obtenir l'index reel d'un joueur a partir de sa position visuelle
     function getActualPlayerIndex(visualPosition) {
+        if (!gameModel) return 0
         var myPos = gameModel.myPosition
         return (visualPosition + myPos) % 4
     }
 
     // Obtenir le nom d'un joueur par son index reel
     function getPlayerName(actualPlayerIndex) {
+        if (!gameModel) return ""
         // Récupérer le vrai nom du joueur depuis GameModel
         return gameModel.getPlayerName(actualPlayerIndex)
     }
 
     // Obtenir l'avatar d'un joueur par son index reel
     function getPlayerAvatar(actualPlayerIndex) {
+        if (!gameModel) return "qrc:/resources/avatar/avataaars1.svg"
         var avatarName = gameModel.getPlayerAvatar(actualPlayerIndex)
         return "qrc:/resources/avatar/" + avatarName
     }
 
     // Obtenir la valeur de l'annonce d'un joueur (80, 90, Passe, etc.)
     function getPlayerBidValue(actualPlayerIndex) {
+        if (!gameModel || !gameModel.playerBids) return ""
         if (actualPlayerIndex >= 0 && actualPlayerIndex < gameModel.playerBids.length) {
             return gameModel.playerBids[actualPlayerIndex].bidValue || ""
         }
@@ -66,6 +71,7 @@ Rectangle {
 
     // Obtenir le symbole de la couleur de l'annonce
     function getPlayerBidSymbol(actualPlayerIndex) {
+        if (!gameModel || !gameModel.playerBids) return ""
         if (actualPlayerIndex >= 0 && actualPlayerIndex < gameModel.playerBids.length) {
             return gameModel.playerBids[actualPlayerIndex].suitSymbol || ""
         }
@@ -74,6 +80,7 @@ Rectangle {
 
     // Obtenir la couleur du symbole (rouge pour coeur/carreau, blanc sinon)
     function getPlayerBidSymbolColor(actualPlayerIndex) {
+        if (!gameModel || !gameModel.playerBids) return "white"
         if (actualPlayerIndex >= 0 && actualPlayerIndex < gameModel.playerBids.length) {
             var isRed = gameModel.playerBids[actualPlayerIndex].isRed || false
             return isRed ? "red" : "black"

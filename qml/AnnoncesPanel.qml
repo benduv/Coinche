@@ -68,14 +68,6 @@ Rectangle {
             Layout.preferredHeight: h * 0.12
             spacing: h * 0.01
 
-            /*Text {
-                text: "Temps restant: " + timeRemaining + "s"
-                font.pixelSize: h * 0.05
-                color: timeRemaining <= 5 ? "#ff3333" : "white"
-                font.bold: timeRemaining <= 5
-                Layout.alignment: Qt.AlignHCenter
-            }*/
-
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: h * 0.04
@@ -256,8 +248,8 @@ Rectangle {
     Popup {
         id: suitSelector
         anchors.centerIn: parent
-        width: parent.width * 0.9
-        height: parent.height * 0.9
+        width: parent.width * 0.95
+        height: parent.height * 0.65
         modal: true
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -276,7 +268,7 @@ Rectangle {
 
             Row {
                 anchors.centerIn: parent
-                spacing: parent.width * 0.05
+                spacing: parent.width * 0.035
 
                 SuitButton {
                     text: "♥"
@@ -309,6 +301,63 @@ Rectangle {
                     popupWidth: suitSelector.width
                     popupHeight: suitSelector.height
                     onClicked: { bidTimer.stop(); gameModel.makeBid(suitSelector.selectedBidValue, 6); suitSelector.close() }
+                }
+                // Bouton Tout Atout
+                Button {
+                    width: suitSelector.width * 0.13
+                    height: suitSelector.height * 0.45
+
+                    background: Rectangle {
+                        color: parent.down ? "#444444" :
+                               (parent.hovered ? "#555555" : "#333333")
+                        radius: 10
+                        border.color: "#FFD700"
+                        border.width: 3
+                    }
+
+                    contentItem: Text {
+                        text: "TA"
+                        font.pixelSize: suitSelector.height * 0.21
+                        font.bold: true
+                        color: "#FFD700"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    onClicked: {
+                        bidTimer.stop();
+                        gameModel.makeBid(suitSelector.selectedBidValue, 7);  // 7 = Tout Atout
+                        suitSelector.close()
+                    }
+                }
+
+                // Bouton Sans Atout
+                Button {
+                    width: suitSelector.width * 0.13
+                    height: suitSelector.height * 0.45
+
+                    background: Rectangle {
+                        color: parent.down ? "#444444" :
+                               (parent.hovered ? "#555555" : "#333333")
+                        radius: 10
+                        border.color: "#FFD700"
+                        border.width: 3
+                    }
+
+                    contentItem: Text {
+                        text: "SA"
+                        font.pixelSize: suitSelector.height * 0.21
+                        font.bold: true
+                        color: "#FFD700"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    onClicked: {
+                        bidTimer.stop();
+                        gameModel.makeBid(suitSelector.selectedBidValue, 8);  // 8 = Sans Atout
+                        suitSelector.close()
+                    }
                 }
             }
         }
@@ -350,8 +399,8 @@ Rectangle {
         property real popupWidth: 100
         property real popupHeight: 100
 
-        width: popupWidth * 0.18
-        height: popupHeight * 0.6
+        width: popupWidth * 0.13
+        height: popupHeight * 0.45
 
         background: Rectangle {
             color: parent.down ? "#444444" :

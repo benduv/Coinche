@@ -43,6 +43,8 @@ struct GameRoom {
 
     // État de la partie
     Carte::Couleur couleurAtout = Carte::COULEURINVALIDE;
+    bool isToutAtout = false;  // Mode Tout Atout : toutes les cartes sont des atouts
+    bool isSansAtout = false;  // Mode Sans Atout : aucune carte n'est atout
     int currentPlayerIndex = 0;
     int biddingPlayer = 0;
     int firstPlayerIndex = 0;  // Joueur qui commence les enchères ET qui jouera en premier
@@ -221,6 +223,42 @@ private slots:
     }
 
 private:
+    // Calcule la valeur d'une carte en mode Tout Atout
+    int getCardValueToutAtout(Carte* carte) const {
+        if (!carte) return 0;
+
+        Carte::Chiffre chiffre = carte->getChiffre();
+        switch (chiffre) {
+            case Carte::SEPT:   return 0;
+            case Carte::HUIT:   return 0;
+            case Carte::DAME:   return 1;  // Dame vaut 1 point en TA
+            case Carte::ROI:    return 3;
+            case Carte::DIX:    return 5;
+            case Carte::AS:     return 6;  // As vaut 6 points en TA
+            case Carte::NEUF:   return 9;
+            case Carte::VALET:  return 14;
+            default:            return 0;
+        }
+    }
+
+    // Calcule la valeur d'une carte en mode Sans Atout
+    int getCardValueSansAtout(Carte* carte) const {
+        if (!carte) return 0;
+
+        Carte::Chiffre chiffre = carte->getChiffre();
+        switch (chiffre) {
+            case Carte::SEPT:   return 0;
+            case Carte::HUIT:   return 0;
+            case Carte::NEUF:   return 0;
+            case Carte::VALET:  return 2;
+            case Carte::DAME:   return 3;
+            case Carte::ROI:    return 4;
+            case Carte::DIX:    return 10;
+            case Carte::AS:     return 19;
+            default:            return 0;
+        }
+    }
+
     void handleRegister(QWebSocket *socket, const QJsonObject &data) {
         QString connectionId = QUuid::createUuid().toString();
         QString playerName = data["playerName"].toString();
@@ -354,6 +392,8 @@ private:
             stateMsg["biddingPhase"] = false;
             stateMsg["currentPlayer"] = room->currentPlayerIndex;
             stateMsg["atout"] = static_cast<int>(room->couleurAtout);
+            stateMsg["isToutAtout"] = room->isToutAtout;
+            stateMsg["isSansAtout"] = room->isSansAtout;
 
             // Si c'est le tour du joueur, envoyer aussi les cartes jouables
             if (room->currentPlayerIndex == playerIndex) {
@@ -900,7 +940,16 @@ private:
         int pointsPli = 0;
         for (const auto& pair : room->currentPli) {
             Carte* carte = pair.second;
-            pointsPli += carte->getValeurDeLaCarte();
+            if (room->isToutAtout) {
+                // Mode Tout Atout: valeurs spéciales
+                pointsPli += getCardValueToutAtout(carte);
+            } else if (room->isSansAtout) {
+                // Mode Sans Atout: valeurs spéciales
+                pointsPli += getCardValueSansAtout(carte);
+            } else {
+                // Mode normal
+                pointsPli += carte->getValeurDeLaCarte();
+            }
         }
 
         // Ajouter les cartes du pli à l'équipe gagnante et mettre à jour le score de manche
@@ -1735,7 +1784,13 @@ private:
                 // Fin des enchères, lancement phase de jeu
                 qDebug() << "GameServer - SURCOINCHE annoncé! Fin des encheres, lancement phase de jeu";
                 for (int i = 0; i < 4; i++) {
-                    room->players[i]->setAtout(room->lastBidCouleur);
+                    if (room->isToutAtout) {
+                        room->players[i]->setAllCardsAsAtout();
+                    } else if (room->isSansAtout) {
+                        room->players[i]->setNoAtout();
+                    } else {
+                        room->players[i]->setAtout(room->lastBidCouleur);
+                    }
                 }
                 startPlayingPhase(roomId);
             });
@@ -1749,10 +1804,29 @@ private:
                      << room->passedBidsCount << "/3 passes)";
         } else {
             room->lastBidAnnonce = annonce;
-            room->lastBidCouleur = static_cast<Carte::Couleur>(suit);
+
+            // Gérer les modes spéciaux: Tout Atout (suit == 7) et Sans Atout (suit == 8)
+            if (suit == 7) {
+                room->isToutAtout = true;
+                room->isSansAtout = false;
+                // En mode TA, utiliser COULEURINVALIDE pour ne pas highlighter une couleur spécifique
+                room->lastBidCouleur = Carte::COULEURINVALIDE;
+                qDebug() << "GameServer - Mode TOUT ATOUT active!";
+            } else if (suit == 8) {
+                room->isToutAtout = false;
+                room->isSansAtout = true;
+                // En mode SA, utiliser COULEURINVALIDE pour ne pas highlighter une couleur spécifique
+                room->lastBidCouleur = Carte::COULEURINVALIDE;
+                qDebug() << "GameServer - Mode SANS ATOUT active!";
+            } else {
+                room->isToutAtout = false;
+                room->isSansAtout = false;
+                room->lastBidCouleur = static_cast<Carte::Couleur>(suit);
+            }
+
             room->lastBidderIndex = playerIndex;
             room->passedBidsCount = 0;  // Reset le compteur
-            qDebug() << "GameServer - Nouvelle enchère:" << bidValue << "couleur:" << suit;
+            qDebug() << "GameServer - Nouvelle enchere:" << bidValue << "couleur:" << suit;
         }
 
         // Broadcast l'enchère à tous
@@ -1767,7 +1841,13 @@ private:
         if (room->passedBidsCount >= 3 && room->lastBidAnnonce != Player::ANNONCEINVALIDE) {
             qDebug() << "GameServer - Fin des encheres! Lancement phase de jeu";
             for (int i = 0; i < 4; i++) {
-                room->players[i]->setAtout(room->lastBidCouleur);
+                if (room->isToutAtout) {
+                    room->players[i]->setAllCardsAsAtout();
+                } else if (room->isSansAtout) {
+                    room->players[i]->setNoAtout();
+                } else {
+                    room->players[i]->setAtout(room->lastBidCouleur);
+                }
             }
             startPlayingPhase(roomId);
         } else if (room->passedBidsCount >= 4 && room->lastBidAnnonce == Player::ANNONCEINVALIDE) {
@@ -1866,7 +1946,13 @@ private:
         if (room->passedBidsCount >= 3 && room->lastBidAnnonce != Player::ANNONCEINVALIDE) {
             qDebug() << "GameServer - Fin des encheres! Lancement phase de jeu";
             for (int i = 0; i < 4; i++) {
-                room->players[i]->setAtout(room->lastBidCouleur);
+                if (room->isToutAtout) {
+                    room->players[i]->setAllCardsAsAtout();
+                } else if (room->isSansAtout) {
+                    room->players[i]->setNoAtout();
+                } else {
+                    room->players[i]->setAtout(room->lastBidCouleur);
+                }
             }
             startPlayingPhase(roomId);
         } else if (room->passedBidsCount >= 4 && room->lastBidAnnonce == Player::ANNONCEINVALIDE) {
@@ -2100,7 +2186,13 @@ private:
 
             // Lancer la phase de jeu
             for (int i = 0; i < 4; i++) {
-                room->players[i]->setAtout(room->lastBidCouleur);
+                if (room->isToutAtout) {
+                    room->players[i]->setAllCardsAsAtout();
+                } else if (room->isSansAtout) {
+                    room->players[i]->setNoAtout();
+                } else {
+                    room->players[i]->setAtout(room->lastBidCouleur);
+                }
             }
             startPlayingPhase(roomId);
         } else {
@@ -2123,7 +2215,13 @@ private:
 
         // Tri des cartes apres avoir defini l'atout
         for (int i = 0; i < 4; i++) {
-            room->players[i]->sortHand();
+            if (room->isToutAtout) {
+                room->players[i]->sortHandToutAtout();
+            } else if (room->isSansAtout) {
+                room->players[i]->sortHandSansAtout();
+            } else {
+                room->players[i]->sortHand();
+            }
         }
 
         qDebug() << "Phase de jeu demarree - Atout:" << static_cast<int>(room->couleurAtout)
@@ -2173,6 +2271,8 @@ private:
         stateMsg["biddingPhase"] = false;
         stateMsg["currentPlayer"] = currentPlayer;
         stateMsg["atout"] = static_cast<int>(room->couleurAtout);
+        stateMsg["isToutAtout"] = room->isToutAtout;
+        stateMsg["isSansAtout"] = room->isSansAtout;
         stateMsg["playableCards"] = playableCards;  // Liste des indices des cartes jouables
 
         // Si on est au début de la phase de jeu, inclure les infos d'enchères
@@ -2286,13 +2386,15 @@ private:
 
         // Vérifie chaque carte
         const auto& main = player->getMain();
+
         for (size_t i = 0; i < main.size(); i++) {
             bool isPlayable = player->isCartePlayable(
                 static_cast<int>(i),
                 room->couleurDemandee,
                 room->couleurAtout,
                 carteGagnante,
-                idxPlayerWinning
+                idxPlayerWinning,
+                room->isToutAtout  // Passer explicitement le flag isToutAtout
             );
 
             if (isPlayable) {

@@ -655,11 +655,20 @@ void GameModel::updateGameState(const QJsonObject& state)
         Carte::Couleur newAtout = static_cast<Carte::Couleur>(state["atout"].toInt());
         bool atoutChanged = (m_lastBidCouleur != newAtout);
         m_lastBidCouleur = newAtout;
-        qDebug() << "Atout defini:" << static_cast<int>(m_lastBidCouleur);
+
+        // Vérifier si on est en mode Tout Atout ou Sans Atout
+        bool isToutAtout = state.contains("isToutAtout") ? state["isToutAtout"].toBool() : false;
+        bool isSansAtout = state.contains("isSansAtout") ? state["isSansAtout"].toBool() : false;
+        qDebug() << "Atout defini:" << static_cast<int>(m_lastBidCouleur)
+                 << "Mode Tout Atout:" << isToutAtout
+                 << "Mode Sans Atout:" << isSansAtout
+                 << "atoutChanged:" << atoutChanged;
 
         // Si l'atout vient d'être défini ou change, trier et highlighter les cartes
-        if (atoutChanged && m_lastBidCouleur != Carte::COULEURINVALIDE) {
+        // En mode TA ou SA, forcer le tri même si atoutChanged est false
+        if ((atoutChanged && m_lastBidCouleur != Carte::COULEURINVALIDE) || isToutAtout || isSansAtout) {
             // Mettre à jour la couleur d'atout pour tous les HandModels
+            // En mode TA/SA, on passe COULEURINVALIDE pour ne pas highlighter de couleur spécifique
             m_player0Hand->setAtoutCouleur(m_lastBidCouleur);
             m_player1Hand->setAtoutCouleur(m_lastBidCouleur);
             m_player2Hand->setAtoutCouleur(m_lastBidCouleur);
@@ -669,10 +678,25 @@ void GameModel::updateGameState(const QJsonObject& state)
             Player* localPlayer = getPlayerByPosition(m_myPosition);
             if (localPlayer) {
                 // Marquer les cartes d'atout avant le tri
-                for (Carte* carte : localPlayer->getMain()) {
-                    carte->setAtout(carte->getCouleur() == m_lastBidCouleur);
+                if (isToutAtout) {
+                    // Mode Tout Atout: toutes les cartes sont des atouts
+                    qDebug() << "Mode Tout Atout - Marquage de toutes les cartes comme atout";
+                    localPlayer->setAllCardsAsAtout();
+                    localPlayer->sortHandToutAtout();
+                } else if (isSansAtout) {
+                    // Mode Sans Atout: aucune carte n'est atout
+                    qDebug() << "Mode Sans Atout - Aucune carte n'est atout";
+                    for (Carte* carte : localPlayer->getMain()) {
+                        carte->setAtout(false);
+                    }
+                    localPlayer->sortHandSansAtout();
+                } else {
+                    // Mode normal: seules les cartes de la couleur d'atout
+                    for (Carte* carte : localPlayer->getMain()) {
+                        carte->setAtout(carte->getCouleur() == m_lastBidCouleur);
+                    }
+                    localPlayer->sortHand();
                 }
-                localPlayer->sortHand();
                 HandModel* hand = getHandModelByPosition(m_myPosition);
                 if (hand) hand->refresh();
             }
