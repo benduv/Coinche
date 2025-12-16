@@ -116,6 +116,7 @@ public:
     // Recevoir les mises à jour du serveur
     Q_INVOKABLE void updateGameState(const QJsonObject& state);
     Q_INVOKABLE void receivePlayerAction(int playerIndex, const QString& action, const QVariant& data);
+    Q_INVOKABLE void receiveCardsDealt(const QJsonArray& cards);
     Q_INVOKABLE void refreshAllHands();
 
 signals:
@@ -154,7 +155,7 @@ private:
     HandModel* getHandModelByPosition(int position);
     Player* getPlayerByPosition(int position);
     void refreshHand(int playerIndex);
-    void distributeCards(int startIdx, int endIdx, const std::vector<Carte*>& myCards);
+    void distributeCards(int startIdx, int endIdx, const std::vector<Carte*>& myCards, bool includePhantomCards = true);
     void playRandomCard();
 
     HandModel* m_player0Hand;

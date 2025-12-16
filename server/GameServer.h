@@ -25,6 +25,7 @@ struct PlayerConnection {
     QString avatar;            // Avatar du joueur
     int gameRoomId;
     int playerIndex;           // Position dans la partie (0-3)
+    QString lobbyPartnerId;    // ID du partenaire de lobby (vide si pas de partenaire)
 };
 
 // Une partie de jeu avec la vraie logique
@@ -90,6 +91,15 @@ struct GameRoom {
     bool beloteDameJouee = false; // Dame de l'atout jouée
 
     GameModel* gameModel = nullptr;
+};
+
+// Lobby privé pour jouer avec des amis
+struct PrivateLobby {
+    QString code;  // Code à 4 caractères
+    QString hostPlayerName;  // Nom du joueur hôte
+    QList<QString> playerNames;  // Noms des joueurs dans le lobby
+    QList<QString> playerAvatars;  // Avatars des joueurs
+    QList<bool> readyStatus;  // Statut "prêt" de chaque joueur
 };
 
 class GameServer : public QObject {
@@ -172,6 +182,18 @@ private slots:
             handleMakeBid(sender, obj);
         } else if (type == "forfeit") {
             handleForfeit(sender);
+        } else if (type == "createPrivateLobby") {
+            handleCreatePrivateLobby(sender);
+        } else if (type == "joinPrivateLobby") {
+            handleJoinPrivateLobby(sender, obj);
+        } else if (type == "lobbyReady") {
+            handleLobbyReady(sender, obj);
+        } else if (type == "startLobbyGame") {
+            handleStartLobbyGame(sender);
+        } else if (type == "leaveLobby") {
+            handleLeaveLobby(sender);
+        } else if (type == "updateAvatar") {
+            handleUpdateAvatar(sender, obj);
         }
     }
 
@@ -279,6 +301,7 @@ private:
         response["type"] = "registered";
         response["connectionId"] = connectionId;
         response["playerName"] = playerName;
+        response["avatar"] = avatar;
         sendMessage(socket, response);
 
         qDebug() << "Joueur enregistre:" << playerName << "Avatar:" << avatar << "ID:" << connectionId;
@@ -421,6 +444,65 @@ private:
 
                     sendMessage(conn->socket, cardPlayedMsg);
                 }
+            }
+        }
+    }
+
+    void handleUpdateAvatar(QWebSocket *socket, const QJsonObject &data) {
+        QString newAvatar = data["avatar"].toString();
+        if (newAvatar.isEmpty()) {
+            qDebug() << "Avatar vide reçu, ignoré";
+            return;
+        }
+
+        // Trouver la connexion du joueur
+        QString connectionId;
+        for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+            if (it.value()->socket == socket) {
+                connectionId = it.key();
+                break;
+            }
+        }
+
+        if (connectionId.isEmpty()) {
+            qDebug() << "Impossible de trouver la connexion pour la mise à jour d'avatar";
+            return;
+        }
+
+        PlayerConnection* conn = m_connections[connectionId];
+        conn->avatar = newAvatar;
+
+        qDebug() << "Avatar mis à jour pour" << conn->playerName << ":" << newAvatar;
+
+        // Confirmation au client
+        QJsonObject response;
+        response["type"] = "avatarUpdated";
+        response["avatar"] = newAvatar;
+        sendMessage(socket, response);
+
+        // Si le joueur est dans un lobby, notifier les autres joueurs
+        for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ++it) {
+            PrivateLobby* lobby = it.value();
+            bool playerInLobby = false;
+
+            // Vérifier si le joueur est dans ce lobby
+            for (const QString& playerName : lobby->playerNames) {
+                if (playerName == conn->playerName) {
+                    playerInLobby = true;
+
+                    // Mettre à jour l'avatar dans le lobby
+                    int playerIndex = lobby->playerNames.indexOf(playerName);
+                    if (playerIndex >= 0 && playerIndex < lobby->playerAvatars.size()) {
+                        lobby->playerAvatars[playerIndex] = newAvatar;
+                    }
+                    break;
+                }
+            }
+
+            if (playerInLobby) {
+                // Envoyer la liste mise à jour à tous les joueurs du lobby
+                sendLobbyUpdate(lobby->code);
+                break;
             }
         }
     }
@@ -605,9 +687,50 @@ private:
 
     void tryCreateGame() {
         if (m_matchmakingQueue.size() >= 4) {
-            QList<QString> connectionIds;
+            // Prendre 4 joueurs de la queue
+            QList<QString> queuedPlayers;
             for (int i = 0; i < 4; i++) {
-                connectionIds.append(m_matchmakingQueue.dequeue());
+                queuedPlayers.append(m_matchmakingQueue.dequeue());
+            }
+
+            // Organiser les joueurs pour que les partenaires de lobby soient ensemble
+            QList<QString> connectionIds(4);
+
+            // Chercher une paire de partenaires
+            QString partner1, partner2;
+            for (const QString &playerId : queuedPlayers) {
+                PlayerConnection* conn = m_connections[playerId];
+                if (!conn->lobbyPartnerId.isEmpty() && queuedPlayers.contains(conn->lobbyPartnerId)) {
+                    partner1 = playerId;
+                    partner2 = conn->lobbyPartnerId;
+                    qDebug() << "Paire de partenaires trouvée:" << conn->playerName << "et" << m_connections[partner2]->playerName;
+                    break;
+                }
+            }
+
+            if (!partner1.isEmpty()) {
+                // Placer les partenaires aux positions 0 et 2
+                connectionIds[0] = partner1;
+                connectionIds[2] = partner2;
+
+                // Réinitialiser les marqueurs de partenariat
+                m_connections[partner1]->lobbyPartnerId = "";
+                m_connections[partner2]->lobbyPartnerId = "";
+
+                // Placer les autres joueurs aux positions 1 et 3
+                int otherIndex = 1;
+                for (const QString &playerId : queuedPlayers) {
+                    if (playerId != partner1 && playerId != partner2) {
+                        connectionIds[otherIndex] = playerId;
+                        otherIndex = 3;  // Passer à la position 3 pour le deuxième joueur
+                    }
+                }
+
+                qDebug() << "Partie créée avec partenaires de lobby aux positions 0 et 2";
+            } else {
+                // Pas de partenaires, utiliser l'ordre normal
+                connectionIds = queuedPlayers;
+                qDebug() << "Partie créée sans partenaires de lobby";
             }
 
             int roomId = m_nextRoomId++;
@@ -1895,12 +2018,24 @@ private:
         // Incrémenter le compteur de parties jouées (défaite) pour ce joueur
         if (!conn->playerName.isEmpty()) {
             m_dbManager->updateGameStats(conn->playerName, false);  // false = défaite
-            qDebug() << "Stats mises à jour pour" << conn->playerName << "- Défaite enregistrée";
+            qDebug() << "Stats mises a jour pour" << conn->playerName << "- Defaite enregistree";
         }
 
         // Remplacer le joueur par un bot
         room->isBot[playerIndex] = true;
-        qDebug() << "Joueur" << playerIndex << "remplacé par un bot";
+        qDebug() << "Joueur" << playerIndex << "remplace par un bot";
+
+        // Retirer le joueur de la partie - il ne pourra plus la rejoindre
+        // Ceci s'applique UNIQUEMENT aux abandons volontaires (clic sur "Quitter")
+        // Les déconnexions involontaires passent par onDisconnected() qui garde le joueur dans la partie
+        conn->gameRoomId = -1;
+        conn->playerIndex = -1;
+
+        // IMPORTANT: Retirer le joueur de la map de reconnexion pour qu'il ne puisse pas
+        // rejoindre cette partie, même s'il clique sur "Jouer" ensuite
+        m_playerNameToRoomId.remove(conn->playerName);
+
+        qDebug() << "Joueur" << conn->playerName << "retire de la partie (abandon volontaire), peut rejoindre une nouvelle partie";
 
         // Notifier tous les joueurs qu'un joueur a abandonné et a été remplacé par un bot
         QJsonObject forfeitMsg;
@@ -2039,7 +2174,7 @@ private:
         int randomIdx = QRandomGenerator::global()->bounded(static_cast<int>(playableIndices.size()));
         int cardIndex = playableIndices[randomIdx];
 
-        qDebug() << "GameServer - Bot joueur" << playerIndex << "joue la carte à l'index" << cardIndex;
+        qDebug() << "GameServer - Bot joueur" << playerIndex << "joue la carte a l'index" << cardIndex;
 
         Carte* cartePlayed = player->getMain()[cardIndex];
 
@@ -2424,12 +2559,12 @@ private:
         // Incrémenter le compteur de parties jouées (défaite) pour ce joueur
         if (!conn->playerName.isEmpty()) {
             m_dbManager->updateGameStats(conn->playerName, false);  // false = défaite
-            qDebug() << "Stats mises à jour pour" << conn->playerName << "- Défaite enregistrée (déconnexion)";
+            qDebug() << "Stats mises a jour pour" << conn->playerName << "- Defaite enregistree (deconnexion)";
         }
 
         // Remplacer le joueur par un bot
         room->isBot[playerIndex] = true;
-        qDebug() << "Joueur" << playerIndex << "remplacé par un bot (déconnexion)";
+        qDebug() << "Joueur" << playerIndex << "remplace par un bot (deconnexion)";
 
         // Notifier tous les joueurs qu'un joueur s'est déconnecté et a été remplacé par un bot
         QJsonObject dcMsg;
@@ -2463,6 +2598,454 @@ private:
         return QString();
     }
 
+    // ========================================
+    // Gestion des lobbies privés
+    // ========================================
+
+    QString generateLobbyCode() {
+        const QString chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        QString code;
+        for (int i = 0; i < 4; i++) {
+            code += chars[QRandomGenerator::global()->bounded(chars.length())];
+        }
+        // Vérifier que le code n'existe pas déjà
+        if (m_privateLobbies.contains(code)) {
+            return generateLobbyCode();  // Régénérer si collision
+        }
+        return code;
+    }
+
+    void handleCreatePrivateLobby(QWebSocket *socket) {
+        QString connectionId = getConnectionIdBySocket(socket);
+        if (connectionId.isEmpty()) return;
+
+        PlayerConnection* conn = m_connections[connectionId];
+        if (!conn) return;
+
+        // Générer un code unique
+        QString code = generateLobbyCode();
+
+        // Créer le lobby
+        PrivateLobby* lobby = new PrivateLobby();
+        lobby->code = code;
+        lobby->hostPlayerName = conn->playerName;
+        lobby->playerNames.append(conn->playerName);
+        lobby->playerAvatars.append(conn->avatar);
+        lobby->readyStatus.append(false);
+
+        m_privateLobbies[code] = lobby;
+
+        qDebug() << "Lobby privé créé - Code:" << code << "Hôte:" << conn->playerName;
+
+        // Envoyer le code au client
+        QJsonObject response;
+        response["type"] = "lobbyCreated";
+        response["code"] = code;
+        sendMessage(socket, response);
+
+        // Envoyer l'état initial du lobby
+        sendLobbyUpdate(code);
+    }
+
+    void handleJoinPrivateLobby(QWebSocket *socket, const QJsonObject &obj) {
+        QString connectionId = getConnectionIdBySocket(socket);
+        if (connectionId.isEmpty()) return;
+
+        PlayerConnection* conn = m_connections[connectionId];
+        if (!conn) return;
+
+        QString code = obj["code"].toString().toUpper();
+
+        // Vérifier que le lobby existe
+        if (!m_privateLobbies.contains(code)) {
+            QJsonObject error;
+            error["type"] = "lobbyError";
+            error["message"] = "Lobby introuvable";
+            sendMessage(socket, error);
+            return;
+        }
+
+        PrivateLobby* lobby = m_privateLobbies[code];
+
+        // Vérifier que le lobby n'est pas plein
+        if (lobby->playerNames.size() >= 4) {
+            QJsonObject error;
+            error["type"] = "lobbyError";
+            error["message"] = "Lobby complet";
+            sendMessage(socket, error);
+            return;
+        }
+
+        // Vérifier que le joueur n'est pas déjà dans le lobby
+        if (lobby->playerNames.contains(conn->playerName)) {
+            QJsonObject error;
+            error["type"] = "lobbyError";
+            error["message"] = "Vous êtes déjà dans ce lobby";
+            sendMessage(socket, error);
+            return;
+        }
+
+        // Ajouter le joueur au lobby
+        lobby->playerNames.append(conn->playerName);
+        lobby->playerAvatars.append(conn->avatar);
+        lobby->readyStatus.append(false);
+
+        qDebug() << "Joueur" << conn->playerName << "a rejoint le lobby" << code;
+
+        // Confirmer au joueur
+        QJsonObject response;
+        response["type"] = "lobbyJoined";
+        response["code"] = code;
+        sendMessage(socket, response);
+
+        // Envoyer l'état du lobby à tous
+        sendLobbyUpdate(code);
+    }
+
+    void handleLobbyReady(QWebSocket *socket, const QJsonObject &obj) {
+        QString connectionId = getConnectionIdBySocket(socket);
+        if (connectionId.isEmpty()) return;
+
+        PlayerConnection* conn = m_connections[connectionId];
+        if (!conn) return;
+
+        bool ready = obj["ready"].toBool();
+
+        // Trouver le lobby du joueur
+        QString lobbyCode;
+        for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ++it) {
+            if (it.value()->playerNames.contains(conn->playerName)) {
+                lobbyCode = it.key();
+                break;
+            }
+        }
+
+        if (lobbyCode.isEmpty()) return;
+
+        PrivateLobby* lobby = m_privateLobbies[lobbyCode];
+        int playerIndex = lobby->playerNames.indexOf(conn->playerName);
+        if (playerIndex >= 0 && playerIndex < lobby->readyStatus.size()) {
+            lobby->readyStatus[playerIndex] = ready;
+            qDebug() << "Joueur" << conn->playerName << "prêt:" << ready << "dans lobby" << lobbyCode;
+            sendLobbyUpdate(lobby->code);
+        }
+    }
+
+    void handleStartLobbyGame(QWebSocket *socket) {
+        QString connectionId = getConnectionIdBySocket(socket);
+        if (connectionId.isEmpty()) return;
+
+        PlayerConnection* conn = m_connections[connectionId];
+        if (!conn) return;
+
+        // Trouver le lobby du joueur
+        QString lobbyCode;
+        for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ++it) {
+            if (it.value()->hostPlayerName == conn->playerName) {
+                lobbyCode = it.key();
+                break;
+            }
+        }
+
+        if (lobbyCode.isEmpty()) {
+            QJsonObject error;
+            error["type"] = "lobbyError";
+            error["message"] = "Vous n'êtes pas l'hôte d'un lobby";
+            sendMessage(socket, error);
+            return;
+        }
+
+        PrivateLobby* lobby = m_privateLobbies[lobbyCode];
+
+        // Vérifier le nombre de joueurs
+        int playerCount = lobby->playerNames.size();
+        if (playerCount != 2 && playerCount != 4) {
+            QJsonObject error;
+            error["type"] = "lobbyError";
+            error["message"] = "Il faut 2 ou 4 joueurs pour lancer une partie";
+            sendMessage(socket, error);
+            return;
+        }
+
+        // Vérifier que tous sont prêts
+        for (bool ready : lobby->readyStatus) {
+            if (!ready) {
+                QJsonObject error;
+                error["type"] = "lobbyError";
+                error["message"] = "Tous les joueurs doivent être prêts";
+                sendMessage(socket, error);
+                return;
+            }
+        }
+
+        qDebug() << "Lancement de la partie depuis le lobby" << lobbyCode << "avec" << playerCount << "joueurs";
+
+        // Notifier tous les joueurs que la partie va démarrer
+        QJsonObject startMsg;
+        startMsg["type"] = "lobbyGameStart";
+        sendLobbyMessage(lobbyCode, startMsg);
+
+        if (playerCount == 4) {
+            // Lancer une partie directement avec ces 4 joueurs
+            startLobbyGameWith4Players(lobby);
+        } else if (playerCount == 2) {
+            // Ajouter les 2 joueurs au matchmaking en tant que partenaires
+            startLobbyGameWith2Players(lobby);
+        }
+
+        // Supprimer le lobby
+        delete lobby;
+        m_privateLobbies.remove(lobbyCode);
+    }
+
+    void handleLeaveLobby(QWebSocket *socket) {
+        QString connectionId = getConnectionIdBySocket(socket);
+        if (connectionId.isEmpty()) return;
+
+        PlayerConnection* conn = m_connections[connectionId];
+        if (!conn) return;
+
+        // Trouver et quitter le lobby
+        QString lobbyCode;
+        for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ++it) {
+            if (it.value()->playerNames.contains(conn->playerName)) {
+                lobbyCode = it.key();
+                break;
+            }
+        }
+
+        if (lobbyCode.isEmpty()) return;
+
+        PrivateLobby* lobby = m_privateLobbies[lobbyCode];
+        int playerIndex = lobby->playerNames.indexOf(conn->playerName);
+
+        if (playerIndex >= 0) {
+            lobby->playerNames.removeAt(playerIndex);
+            lobby->playerAvatars.removeAt(playerIndex);
+            lobby->readyStatus.removeAt(playerIndex);
+
+            qDebug() << "Joueur" << conn->playerName << "a quitté le lobby" << lobbyCode;
+
+            // Si le lobby est vide, le supprimer
+            if (lobby->playerNames.isEmpty()) {
+                qDebug() << "Lobby" << lobbyCode << "supprimé (vide)";
+                delete lobby;
+                m_privateLobbies.remove(lobbyCode);
+            } else {
+                // Si c'était l'hôte, désigner un nouvel hôte
+                if (lobby->hostPlayerName == conn->playerName) {
+                    lobby->hostPlayerName = lobby->playerNames.first();
+                    qDebug() << "Nouvel hôte du lobby" << lobbyCode << ":" << lobby->hostPlayerName;
+                }
+                // Mettre à jour les autres joueurs
+                sendLobbyUpdate(lobby->code);
+            }
+        }
+    }
+
+    void sendLobbyUpdate(const QString &lobbyCode) {
+        if (!m_privateLobbies.contains(lobbyCode)) return;
+
+        PrivateLobby* lobby = m_privateLobbies[lobbyCode];
+
+        QJsonArray playersArray;
+        for (int i = 0; i < lobby->playerNames.size(); i++) {
+            QJsonObject player;
+            player["name"] = lobby->playerNames[i];
+            player["avatar"] = lobby->playerAvatars[i];
+            player["ready"] = lobby->readyStatus[i];
+            player["isHost"] = (lobby->playerNames[i] == lobby->hostPlayerName);
+            playersArray.append(player);
+        }
+
+        QJsonObject update;
+        update["type"] = "lobbyUpdate";
+        update["players"] = playersArray;
+
+        sendLobbyMessage(lobbyCode, update);
+    }
+
+    void sendLobbyMessage(const QString &lobbyCode, const QJsonObject &message) {
+        if (!m_privateLobbies.contains(lobbyCode)) return;
+
+        PrivateLobby* lobby = m_privateLobbies[lobbyCode];
+
+        for (const QString &playerName : lobby->playerNames) {
+            // Trouver la connexion du joueur
+            for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+                if (it.value()->playerName == playerName) {
+                    sendMessage(it.value()->socket, message);
+                    break;
+                }
+            }
+        }
+    }
+
+    void startLobbyGameWith4Players(PrivateLobby* lobby) {
+        // Créer une partie avec les 4 joueurs du lobby
+        QList<QString> connectionIds;
+
+        for (const QString &playerName : lobby->playerNames) {
+            for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+                if (it.value()->playerName == playerName) {
+                    connectionIds.append(it.key());
+                    break;
+                }
+            }
+        }
+
+        if (connectionIds.size() != 4) {
+            qDebug() << "Erreur: impossible de trouver les 4 connexions";
+            return;
+        }
+
+        // Créer la partie (similaire à tryCreateGame)
+        int roomId = m_nextRoomId++;
+        GameRoom* room = new GameRoom();
+        room->roomId = roomId;
+        room->connectionIds = connectionIds;
+        room->originalConnectionIds = connectionIds;
+        room->gameState = "waiting";
+
+        // Crée les joueurs du jeu
+        for (int i = 0; i < 4; i++) {
+            PlayerConnection* conn = m_connections[connectionIds[i]];
+            conn->gameRoomId = roomId;
+            conn->playerIndex = i;
+
+            // Sauvegarder le nom et avatar du joueur pour reconnexion
+            room->playerNames.append(conn->playerName);
+            room->playerAvatars.append(conn->avatar);
+            m_playerNameToRoomId[conn->playerName] = roomId;
+
+            std::vector<Carte*> emptyHand;
+            auto player = std::make_unique<Player>(
+                conn->playerName.toStdString(),
+                emptyHand,
+                i
+            );
+            room->players.push_back(std::move(player));
+            room->isBot.push_back(false);
+        }
+
+        // Distribue les cartes
+        room->deck.shuffleDeck();
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 8; j++) {
+                Carte* carte = room->deck.drawCard();
+                if (carte) {
+                    room->players[i]->addCardToHand(carte);
+                }
+            }
+        }
+
+        m_gameRooms[roomId] = room;
+
+        // Init le premier joueur (celui qui commence les enchères)
+        room->firstPlayerIndex = 0;
+        room->currentPlayerIndex = 0;
+
+        qDebug() << "Partie créée depuis lobby (4 joueurs) - Room ID:" << roomId;
+
+        // Notifier tous les joueurs
+        for (int i = 0; i < 4; i++) {
+            QJsonArray opponentsArray;
+            for (int j = 0; j < 4; j++) {
+                if (j != i) {
+                    QJsonObject opponent;
+                    opponent["name"] = room->playerNames[j];
+                    opponent["avatar"] = room->playerAvatars[j];
+                    opponent["position"] = j;
+                    opponentsArray.append(opponent);
+                }
+            }
+
+            QJsonObject gameFoundMsg;
+            gameFoundMsg["type"] = "gameFound";
+            gameFoundMsg["playerPosition"] = i;
+            gameFoundMsg["opponents"] = opponentsArray;
+
+            sendMessage(m_connections[connectionIds[i]]->socket, gameFoundMsg);
+        }
+
+        // Envoyer les mains à chaque joueur
+        for (int i = 0; i < 4; i++) {
+            QJsonArray cardsArray;
+            for (Carte* carte : room->players[i]->getMain()) {
+                QJsonObject cardObj;
+                cardObj["suit"] = static_cast<int>(carte->getCouleur());
+                cardObj["value"] = static_cast<int>(carte->getChiffre());
+                cardsArray.append(cardObj);
+            }
+
+            QJsonObject cardsMsg;
+            cardsMsg["type"] = "cardsDealt";
+            cardsMsg["cards"] = cardsArray;
+            sendMessage(m_connections[connectionIds[i]]->socket, cardsMsg);
+        }
+
+        // Phase d'enchères
+        room->gameState = "bidding";
+        QJsonObject biddingMsg;
+        biddingMsg["type"] = "biddingPhase";
+        biddingMsg["currentPlayer"] = room->currentPlayerIndex;
+        broadcastToRoom(roomId, biddingMsg);
+    }
+
+    void startLobbyGameWith2Players(PrivateLobby* lobby) {
+        // Ajouter les 2 joueurs au matchmaking en tant que partenaires
+        // Ils seront placés aux positions 0 et 2 (partenaires)
+        qDebug() << "Matchmaking avec 2 joueurs partenaires - ajout à la queue";
+
+        QList<QString> lobbyConnectionIds;
+
+        // Récupérer les IDs de connexion des 2 joueurs du lobby
+        for (const QString &playerName : lobby->playerNames) {
+            for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+                if (it.value()->playerName == playerName) {
+                    lobbyConnectionIds.append(it.key());
+                    break;
+                }
+            }
+        }
+
+        if (lobbyConnectionIds.size() != 2) {
+            qDebug() << "Erreur: impossible de trouver les 2 connexions du lobby";
+            return;
+        }
+
+        // Marquer les 2 joueurs comme partenaires
+        PlayerConnection* player1 = m_connections[lobbyConnectionIds[0]];
+        PlayerConnection* player2 = m_connections[lobbyConnectionIds[1]];
+        player1->lobbyPartnerId = lobbyConnectionIds[1];
+        player2->lobbyPartnerId = lobbyConnectionIds[0];
+
+        qDebug() << "Joueurs marqués comme partenaires:" << player1->playerName << "et" << player2->playerName;
+
+        // Ajouter à la queue de matchmaking
+        for (const QString &connId : lobbyConnectionIds) {
+            if (!m_matchmakingQueue.contains(connId)) {
+                m_matchmakingQueue.enqueue(connId);
+                qDebug() << "Joueur du lobby ajouté à la queue:" << m_connections[connId]->playerName;
+            }
+        }
+
+        // Notifier tous les joueurs en queue
+        QJsonObject response;
+        response["type"] = "matchmakingStatus";
+        response["status"] = "searching";
+        response["playersInQueue"] = m_matchmakingQueue.size();
+
+        for (const QString &queuedConnectionId : m_matchmakingQueue) {
+            if (m_connections.contains(queuedConnectionId)) {
+                sendMessage(m_connections[queuedConnectionId]->socket, response);
+            }
+        }
+
+        // Vérifier si on peut créer une partie
+        tryCreateGame();
+    }
+
     void sendMessage(QWebSocket *socket, const QJsonObject &message) {
         QJsonDocument doc(message);
         socket->sendTextMessage(doc.toJson(QJsonDocument::Compact));
@@ -2488,6 +3071,7 @@ private:
     QQueue<QString> m_matchmakingQueue;
     QMap<int, GameRoom*> m_gameRooms;
     QMap<QString, int> m_playerNameToRoomId;  // playerName → roomId pour reconnexion
+    QMap<QString, PrivateLobby*> m_privateLobbies;  // code → PrivateLobby
     int m_nextRoomId;
     DatabaseManager *m_dbManager;
 };

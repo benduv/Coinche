@@ -11,6 +11,9 @@
         <file>qml/GameOverPopup.qml</file>
         <file>qml/AvatarSelector.qml</file>
         <file>qml/ExitGamePopup.qml</file>
+        <file>qml/PrivateLobbyView.qml</file>
+        <file>qml/LobbyRoomView.qml</file>
+        <file>qml/AvatarSelectorPopup.qml</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>
@@ -49,6 +52,7 @@
         <file>resources/right-arrow-next-svgrepo-com.svg</file>
         <file>resources/left-arrow-next-svgrepo-com.svg</file>
         <file>resources/exit-svgrepo-com.svg</file>
+        <file>resources/stats-svgrepo-com.svg</file>
         <file>resources/avatar/avataaars1.svg</file>
         <file>resources/avatar/avataaars2.svg</file>
         <file>resources/avatar/avataaars3.svg</file>

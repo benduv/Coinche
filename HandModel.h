@@ -11,6 +11,7 @@
 // Modèle pour une main de cartes
 class HandModel : public QAbstractListModel {
     Q_OBJECT
+    Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
 
 public:
     enum CardRoles {
@@ -45,6 +46,9 @@ public:
 
     // Noms des rôles pour QML
     QHash<int, QByteArray> roleNames() const override;
+
+signals:
+    void countChanged();
 
 private:
     Player* m_player;

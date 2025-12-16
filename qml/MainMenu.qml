@@ -19,6 +19,24 @@ ApplicationWindow {
     property string accountType: ""
     property bool shouldLoadCoincheView: false
 
+    // Fonction pour retourner au menu principal depuis n'importe où
+    function returnToMainMenu() {
+        console.log("MainMenu.returnToMainMenu - Début, stackView depth:", stackView.depth)
+
+        // Réinitialiser le flag de chargement
+        shouldLoadCoincheView = false
+
+        // Nettoyer le gameModel
+        networkManager.clearGameModel()
+
+        // Pop toutes les pages jusqu'au MainMenu (depth 2)
+        while (stackView.depth > 2) {
+            console.log("MainMenu.returnToMainMenu - Pop, depth:", stackView.depth)
+            stackView.pop()
+        }
+        console.log("MainMenu.returnToMainMenu - Terminé, depth final:", stackView.depth)
+    }
+
     // Ratio responsive pour adapter la taille des composants
     property real widthRatio: width / 1024
     property real heightRatio: height / 768
@@ -44,12 +62,23 @@ ApplicationWindow {
             // Activer le chargement après un court délai pour éviter les TypeErrors
             loadDelayTimer.start()
         }
+
+        function onLobbyCreated(lobbyCode) {
+            console.log("MainMenu - lobbyCreated reçu, code:", lobbyCode)
+            stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": true })
+        }
+
+        function onLobbyJoined(lobbyCode) {
+            console.log("MainMenu - lobbyJoined reçu, code:", lobbyCode)
+            stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": false })
+        }
     }
 
     // Timer pour retarder légèrement l'activation du Loader
+    // Doit attendre la fin de l'animation de distribution (3250ms)
     Timer {
         id: loadDelayTimer
-        interval: 2000
+        interval: 500
         repeat: false
         onTriggered: {
             console.log("Activation du chargement de CoincheView")
@@ -227,15 +256,18 @@ ApplicationWindow {
                         Layout.alignment: Qt.AlignHCenter
                         spacing: 15 * mainWindow.minRatio
 
-                        // Avatar du joueur
+                        // Avatar du joueur (cliquable pour changer)
                         Rectangle {
                             width: 120 * mainWindow.minRatio
                             height: 120 * mainWindow.minRatio
                             radius: 60 * mainWindow.minRatio
-                            color: "#444444"
+                            color: avatarMouseArea.containsMouse ? "#555555" : "#444444"
                             border.color: "#FFD700"
-                            border.width: 2 * mainWindow.minRatio
+                            border.width: avatarMouseArea.containsMouse ? 3 * mainWindow.minRatio : 2 * mainWindow.minRatio
                             anchors.verticalCenter: parent.verticalCenter
+
+                            Behavior on color { ColorAnimation { duration: 200 } }
+                            Behavior on border.width { NumberAnimation { duration: 200 } }
 
                             Image {
                                 anchors.fill: parent
@@ -243,6 +275,35 @@ ApplicationWindow {
                                 source: "qrc:/resources/avatar/" + networkManager.playerAvatar
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
+                            }
+
+                            // Icône de modification (visible au survol)
+                            Rectangle {
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                width: 30 * mainWindow.minRatio
+                                height: 30 * mainWindow.minRatio
+                                radius: 15 * mainWindow.minRatio
+                                color: "#FFD700"
+                                visible: avatarMouseArea.containsMouse
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "✎"
+                                    font.pixelSize: 18 * mainWindow.minRatio
+                                    color: "#000000"
+                                }
+                            }
+
+                            MouseArea {
+                                id: avatarMouseArea
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                hoverEnabled: true
+                                onClicked: {
+                                    avatarSelectorPopup.selectedAvatar = networkManager.playerAvatar
+                                    avatarSelectorPopup.open()
+                                }
                             }
                         }
 
@@ -261,7 +322,7 @@ ApplicationWindow {
                     // Bouton Jouer
                     Button {
                         Layout.preferredWidth: 300 * mainWindow.widthRatio
-                        Layout.preferredHeight: 160 * mainWindow.heightRatio
+                        Layout.preferredHeight: 140 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
                         enabled: networkManager.connected
 
@@ -289,31 +350,56 @@ ApplicationWindow {
                         }
                     }
 
-                    // Bouton Statistiques (uniquement pour les comptes enregistrés)
+                    // Bouton Jouer avec des amis
                     Button {
                         Layout.preferredWidth: 300 * mainWindow.widthRatio
-                        Layout.preferredHeight: 120 * mainWindow.heightRatio
+                        Layout.preferredHeight: 150 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
-                        visible: mainWindow.accountType !== "guest"
+                        enabled: networkManager.connected
 
                         background: Rectangle {
-                            color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
+                            color: parent.enabled ?
+                                   (parent.down ? "#6a4c93" : (parent.hovered ? "#8a6cb3" : "#7a5ca3")) :
+                                   "#555555"
                             radius: 10 * mainWindow.minRatio
-                            border.color: "#FFD700"
+                            border.color: parent.enabled ? "#FFD700" : "#888888"
                             border.width: 2 * mainWindow.minRatio
                         }
 
-                        contentItem: Text {
-                            text: "Statistiques"
-                            font.pixelSize: 48 * mainWindow.minRatio
-                            font.bold: true
-                            color: "white"
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                        contentItem: Column {
+                            anchors.centerIn: parent
+                            spacing: 5 * mainWindow.minRatio
+
+                            Row {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                spacing: 10 * mainWindow.minRatio
+
+                                Text {
+                                    text: "👥"
+                                    font.pixelSize: 40 * mainWindow.minRatio
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                Text {
+                                    text: "Jouer"
+                                    font.pixelSize: 40 * mainWindow.minRatio
+                                    font.bold: true
+                                    color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            }
+
+                            Text {
+                                text: "avec des amis"
+                                font.pixelSize: 28 * mainWindow.minRatio
+                                color: parent.parent.enabled ? "white" : "#aaaaaa"
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
                         }
 
                         onClicked: {
-                            stackView.push(statsViewComponent)
+                            networkManager.registerPlayer(mainWindow.loggedInPlayerName, networkManager.playerAvatar)
+                            stackView.push("qrc:/qml/PrivateLobbyView.qml")
                         }
                     }
 
@@ -345,6 +431,56 @@ ApplicationWindow {
                         }
                     }
                 }
+
+                // Bouton Statistiques en bas à gauche (uniquement pour les comptes enregistrés)
+                Button {
+                    anchors.left: parent.left
+                    anchors.bottom: parent.bottom
+                    anchors.leftMargin: 50 * mainWindow.minRatio
+                    anchors.bottomMargin: 50 * mainWindow.minRatio
+                    width: 120 * mainWindow.minRatio
+                    height: 120 * mainWindow.minRatio
+                    visible: mainWindow.accountType !== "guest"
+                    z: 2
+
+                    background: Rectangle {
+                        color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
+                        radius: 10 * mainWindow.minRatio
+                        border.color: "#FFD700"
+                        border.width: 2 * mainWindow.minRatio
+
+                        // Animation de pulsation au hover
+                        /*SequentialAnimation on scale {
+                            running: parent.parent.hovered
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 1.1; duration: 600; easing.type: Easing.InOutQuad }
+                            NumberAnimation { to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
+                        }*/
+                    }
+
+                    contentItem: Image {
+                        source: "qrc:/resources/stats-svgrepo-com.svg"
+                        fillMode: Image.PreserveAspectFit
+                        anchors.fill: parent
+                        anchors.margins: 15 * mainWindow.minRatio
+                        smooth: true
+                    }
+
+                    onClicked: {
+                        stackView.push(statsViewComponent)
+                    }
+                }
+
+                // Popup de sélection d'avatar
+                AvatarSelectorPopup {
+                    id: avatarSelectorPopup
+                    parent: Overlay.overlay
+
+                    onAvatarSelected: function(avatar) {
+                        console.log("Avatar sélectionné:", avatar)
+                        networkManager.updateAvatar(avatar)
+                    }
+                }
             }
         }
 
@@ -357,6 +493,14 @@ ApplicationWindow {
                 onBackToMenu: {
                     stackView.pop()
                 }
+            }
+        }
+
+        Component {
+            id: lobbyRoomViewComponent
+
+            LobbyRoomView {
+                // Les propriétés lobbyCode et isHost seront passées lors du push
             }
         }
 

@@ -8,7 +8,7 @@
 #include <QJsonArray>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include "GameModel.h"  // ⭐ Inclure GameModel
+#include "GameModel.h"
 
 class NetworkManager : public QObject {
     Q_OBJECT
@@ -19,6 +19,7 @@ class NetworkManager : public QObject {
     Q_PROPERTY(int myPosition READ myPosition NOTIFY gameDataChanged)
     Q_PROPERTY(QJsonArray opponents READ opponents NOTIFY gameDataChanged)
     Q_PROPERTY(QString playerAvatar READ playerAvatar NOTIFY playerAvatarChanged)
+    Q_PROPERTY(QVariantList lobbyPlayers READ lobbyPlayers NOTIFY lobbyPlayersChanged)
 
 public:
     explicit NetworkManager(QObject *parent = nullptr)
@@ -52,6 +53,7 @@ public:
     QJsonArray opponents() const { return m_opponents; }
     GameModel* gameModel() const { return m_gameModel; }
     QString playerAvatar() const { return m_playerAvatar; }
+    QVariantList lobbyPlayers() const { return m_lobbyPlayers; }
 
     // Nouvelle méthode pour créer le GameModel
     Q_INVOKABLE void createGameModel(int position, const QJsonArray& cards, const QJsonArray& opps) {
@@ -164,16 +166,75 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void clearGameModel() {
+        if (m_gameModel) {
+            qDebug() << "Nettoyage du gameModel";
+            m_gameModel->deleteLater();
+            m_gameModel = nullptr;
+        }
+    }
+
+    Q_INVOKABLE void updateAvatar(const QString &avatar) {
+        qDebug() << "Mise à jour de l'avatar:" << avatar;
+        m_playerAvatar = avatar;
+        emit playerAvatarChanged();
+
+        // Envoyer la mise à jour au serveur
+        QJsonObject msg;
+        msg["type"] = "updateAvatar";
+        msg["avatar"] = avatar;
+        sendMessage(msg);
+    }
+
+    // Méthodes pour les lobbies privés
+    Q_INVOKABLE void createPrivateLobby() {
+        QJsonObject msg;
+        msg["type"] = "createPrivateLobby";
+        sendMessage(msg);
+        qDebug() << "Demande de creation de lobby prive envoyee";
+    }
+
+    Q_INVOKABLE void joinPrivateLobby(const QString& code) {
+        QJsonObject msg;
+        msg["type"] = "joinPrivateLobby";
+        msg["code"] = code;
+        sendMessage(msg);
+        qDebug() << "Demande de rejoindre le lobby" << code;
+    }
+
+    Q_INVOKABLE void toggleLobbyReady(bool ready) {
+        QJsonObject msg;
+        msg["type"] = "lobbyReady";
+        msg["ready"] = ready;
+        sendMessage(msg);
+        qDebug() << "Changement de statut pret:" << ready;
+    }
+
+    Q_INVOKABLE void startLobbyGame() {
+        QJsonObject msg;
+        msg["type"] = "startLobbyGame";
+        sendMessage(msg);
+        qDebug() << "Demande de demarrage de la partie depuis le lobby";
+    }
+
+    Q_INVOKABLE void leaveLobby() {
+        QJsonObject msg;
+        msg["type"] = "leaveLobby";
+        sendMessage(msg);
+        qDebug() << "Quitte le lobby";
+    }
+
 signals:
     void connectedChanged();
     void matchmakingStatusChanged();
     void playersInQueueChanged();
     void gameDataChanged();
     void gameFound(int playerPosition, QJsonArray opponents);
-    void gameModelReady();  // ⭐ Nouveau signal
+    void gameModelReady();
     void cardPlayed(QString playerId, int cardIndex);
     void bidMade(QString playerId, int bidValue, int suit);
     void playerDisconnected(QString playerId);
+    void playerForfeited(int playerIndex, QString playerName);
     void errorOccurred(QString error);
     void registerSuccess(QString playerName, QString avatar);
     void registerFailed(QString error);
@@ -181,6 +242,13 @@ signals:
     void loginFailed(QString error);
     void messageReceived(QString message);  // Pour que QML puisse écouter tous les messages
     void playerAvatarChanged();
+
+    // Signaux pour les lobbies privés
+    void lobbyCreated(QString code);
+    void lobbyJoined(QString code);
+    void lobbyError(QString message);
+    void lobbyPlayersChanged();
+    void lobbyGameStarting();
 
 private slots:
     void onConnected() {
@@ -207,7 +275,14 @@ private slots:
 
         if (type == "registered") {
             m_playerId = obj["connectionId"].toString();
-            qDebug() << "Enregistre avec ID:" << m_playerId;
+            QString avatar = obj["avatar"].toString();
+            if (!avatar.isEmpty()) {
+                m_playerAvatar = avatar;
+                emit playerAvatarChanged();
+                qDebug() << "Enregistre avec ID:" << m_playerId << "Avatar:" << avatar;
+            } else {
+                qDebug() << "Enregistre avec ID:" << m_playerId;
+            }
         }
         else if (type == "matchmakingStatus") {
             m_matchmakingStatus = obj["status"].toString();
@@ -428,6 +503,64 @@ private slots:
             QString playerId = obj["playerId"].toString();
             emit playerDisconnected(playerId);
         }
+        else if (type == "playerForfeited") {
+            int playerIndex = obj["playerIndex"].toInt();
+            QString playerName = obj["playerName"].toString();
+            qDebug() << "NetworkManager - Joueur" << playerName << "(index:" << playerIndex << ") a abandonné la partie";
+            emit playerForfeited(playerIndex, playerName);
+        }
+        else if (type == "lobbyCreated") {
+            QString code = obj["code"].toString();
+            qDebug() << "NetworkManager - Lobby créé avec le code:" << code;
+            emit lobbyCreated(code);
+        }
+        else if (type == "lobbyJoined") {
+            QString code = obj["code"].toString();
+            qDebug() << "NetworkManager - Lobby rejoint:" << code;
+            emit lobbyJoined(code);
+        }
+        else if (type == "lobbyUpdate") {
+            QJsonArray players = obj["players"].toArray();
+            qDebug() << "NetworkManager - Réception lobbyUpdate avec" << players.size() << "joueurs";
+            qDebug() << "NetworkManager - Contenu:" << players;
+
+            // Créer une nouvelle liste au lieu de modifier l'ancienne
+            // pour que QML détecte le changement
+            QVariantList newList;
+
+            for (const QJsonValue &playerVal : players) {
+                QJsonObject playerObj = playerVal.toObject();
+                QVariantMap playerMap;
+                playerMap["name"] = playerObj["name"].toString();
+                playerMap["avatar"] = playerObj["avatar"].toString();
+                playerMap["ready"] = playerObj["ready"].toBool();
+                playerMap["isHost"] = playerObj["isHost"].toBool();
+                newList.append(playerMap);
+            }
+
+            m_lobbyPlayers = newList;
+            qDebug() << "NetworkManager - Lobby mis à jour:" << m_lobbyPlayers.length() << "joueurs";
+            emit lobbyPlayersChanged();
+        }
+        else if (type == "lobbyError") {
+            QString errorMsg = obj["message"].toString();
+            qDebug() << "NetworkManager - Erreur lobby:" << errorMsg;
+            emit lobbyError(errorMsg);
+        }
+        else if (type == "lobbyGameStart") {
+            qDebug() << "NetworkManager - La partie du lobby démarre!";
+            emit lobbyGameStarting();
+        }
+        else if (type == "cardsDealt") {
+            qDebug() << "NetworkManager - Réception des cartes!";
+            QJsonArray cards = obj["cards"].toArray();
+            qDebug() << "  Nombre de cartes reçues:" << cards.size();
+
+            // Transmettre les cartes au GameModel
+            if (m_gameModel) {
+                m_gameModel->receiveCardsDealt(cards);
+            }
+        }
     }
 
 private:
@@ -453,6 +586,9 @@ private:
 
     GameModel* m_gameModel;  // Le GameModel géré par NetworkManager
     QString m_playerAvatar;
+
+    // Lobbies privés
+    QVariantList m_lobbyPlayers;
 };
 
 #endif // NETWORKMANAGER_H

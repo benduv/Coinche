@@ -87,6 +87,8 @@ qt_add_qml_module(coinche
     VERSION 1.0
     QML_FILES
         qml/MainMenu.qml
+        qml/PrivateLobbyView.qml
+        qml/LobbyRoomView.qml
         # Ajoutez tous vos fichiers QML ici
     RESOURCE_PREFIX "/"
 )

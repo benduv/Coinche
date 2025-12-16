@@ -10,6 +10,113 @@ Rectangle {
     // Signal émis quand l'utilisateur est connecté
     signal loginSuccess(string playerName, string accountType)
 
+    // Animation de fond - Symboles de cartes tombant comme des flocons
+    Item {
+        anchors.fill: parent
+        z: 100
+        clip: false
+
+        Repeater {
+            model: 20
+
+            delegate: Text {
+                property int symbolIndex: index
+                property real randomOffset: (symbolIndex * 37) % 30
+                property real oscillationOffset: 0  // Déplacement pour l'oscillation
+
+                text: {
+                    var symbols = ["♥", "♣", "♦", "♠"]
+                    return symbols[symbolIndex % 4]
+                }
+                color: {
+                    var colors = ["#FF0000", "#000000", "#FF0000", "#000000"]
+                    return colors[symbolIndex % 4]
+                }
+                font.pixelSize: (40 + (symbolIndex % 5) * 12) * loginRoot.minRatio
+                opacity: 0.2 + (symbolIndex % 3) * 0.05
+
+                // Position horizontale avec binding + oscillation
+                x: {
+                    var quarterWidth = loginRoot.width * 0.23
+                    var baseX = 0
+                    if (symbolIndex < 10) {
+                        // Quart gauche (0-23%)
+                        baseX = (quarterWidth / 10) * symbolIndex + randomOffset
+                    } else {
+                        // Quart droit (71-100%)
+                        var rightIndex = symbolIndex - 10
+                        baseX = loginRoot.width * 0.71 + (quarterWidth / 10) * rightIndex + randomOffset
+                    }
+                    return baseX + oscillationOffset
+                }
+
+                // Position verticale initiale
+                y: -150 - (symbolIndex % 5) * 50
+
+                // Animation de chute continue
+                SequentialAnimation on y {
+                    running: true
+                    loops: Animation.Infinite
+
+                    PauseAnimation {
+                        duration: (symbolIndex * 300) % 2000
+                    }
+
+                    NumberAnimation {
+                        to: loginRoot.height + 150
+                        duration: 10000 + (symbolIndex % 8) * 2000
+                        easing.type: Easing.Linear
+                    }
+
+                    PropertyAction {
+                        value: -150 - (symbolIndex % 5) * 50
+                    }
+                }
+
+                // Rotation pendant la chute
+                SequentialAnimation on rotation {
+                    running: true
+                    loops: Animation.Infinite
+
+                    PauseAnimation {
+                        duration: (symbolIndex * 300) % 2000
+                    }
+
+                    NumberAnimation {
+                        from: (symbolIndex * 37) % 360
+                        to: (symbolIndex * 37) % 360 + 360
+                        duration: 20000 + (symbolIndex % 5) * 3000
+                        easing.type: Easing.InOutQuad
+                    }
+                }
+
+                // Oscillation horizontale (balancement)
+                SequentialAnimation on oscillationOffset {
+                    running: true
+                    loops: Animation.Infinite
+
+                    PauseAnimation {
+                        duration: (symbolIndex * 300) % 2000
+                    }
+
+                    NumberAnimation {
+                        from: 0
+                        to: 40 * loginRoot.minRatio
+                        duration: 2500 + (symbolIndex % 4) * 500
+                        easing.type: Easing.InOutSine
+                    }
+
+                    NumberAnimation {
+                        from: 40 * loginRoot.minRatio
+                        to: 0
+                        duration: 2500 + (symbolIndex % 4) * 500
+                        easing.type: Easing.InOutSine
+                    }
+                }
+            }
+        }
+    }
+
     // Ratio responsive pour adapter la taille des composants
     property real widthRatio: width / 1024
     property real heightRatio: height / 768
@@ -54,12 +161,14 @@ Rectangle {
         id: loginStack
         anchors.fill: parent
         initialItem: welcomeScreen
+        z: 1  // Au-dessus de l'animation de fond
 
         // Écran de bienvenue
         Component {
             id: welcomeScreen
 
             Rectangle {
+                anchors.centerIn: parent
                 color: "#1a1a1a"
 
                 ColumnLayout {
@@ -879,7 +988,7 @@ Rectangle {
 
                     Text {
                         text: "Jouer en tant qu'invité"
-                        font.pixelSize: 72 * loginRoot.minRatio
+                        font.pixelSize: 48 * loginRoot.minRatio
                         font.bold: true
                         color: "#FFD700"
                         Layout.alignment: Qt.AlignHCenter

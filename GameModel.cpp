@@ -754,7 +754,6 @@ void GameModel::updateGameState(const QJsonObject& state)
         if (currentPlayer == m_myPosition && !m_biddingPhase) {
             Player* localPlayer = getPlayerByPosition(m_myPosition);
             int handSize = localPlayer ? localPlayer->getMain().size() : -1;
-            qDebug() << "Vérification jeu auto - Position:" << m_myPosition << "Taille main:" << handSize;
 
             if (localPlayer && handSize == 1) {
                 qDebug() << "Dernier pli detecte - Jeu automatique de la dernière carte";
@@ -1144,9 +1143,9 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
     }
 }
 
-void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Carte*>& myCards)
+void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Carte*>& myCards, bool includePhantomCards)
 {
-    qDebug() << "Distribution cartes" << startIdx << "a" << (endIdx - 1);
+    qDebug() << "Distribution cartes" << startIdx << "a" << (endIdx - 1) << "- includePhantomCards:" << includePhantomCards;
 
     Player* localPlayer = getPlayerByPosition(m_myPosition);
     if (!localPlayer) return;
@@ -1167,20 +1166,22 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
             }
         });
 
-        // Distribuer cartes fantômes aux autres joueurs (avec même délai)
-        for (int playerPos = 0; playerPos < 4; playerPos++) {
-            if (playerPos == m_myPosition) continue;
+        // Distribuer cartes fantômes aux autres joueurs (avec même délai) - seulement si demandé
+        if (includePhantomCards) {
+            for (int playerPos = 0; playerPos < 4; playerPos++) {
+                if (playerPos == m_myPosition) continue;
 
-            QTimer::singleShot(delay, this, [this, playerPos]() {
-                Player* player = getPlayerByPosition(playerPos);
-                if (player) {
-                    Carte* phantomCard = new Carte(Carte::COEUR, Carte::SEPT);
-                    player->addCardToHand(phantomCard);
+                QTimer::singleShot(delay, this, [this, playerPos]() {
+                    Player* player = getPlayerByPosition(playerPos);
+                    if (player) {
+                        Carte* phantomCard = new Carte(Carte::COEUR, Carte::SEPT);
+                        player->addCardToHand(phantomCard);
 
-                    HandModel* hand = getHandModelByPosition(playerPos);
-                    if (hand) hand->refresh();
-                }
-            });
+                        HandModel* hand = getHandModelByPosition(playerPos);
+                        if (hand) hand->refresh();
+                    }
+                });
+            }
         }
     }
 
@@ -1190,6 +1191,53 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
         localPlayer->sortHand();
         HandModel* hand = getHandModelByPosition(m_myPosition);
         if (hand) hand->refresh();
+    });
+}
+
+void GameModel::receiveCardsDealt(const QJsonArray& cards)
+{
+    qDebug() << "GameModel::receiveCardsDealt - Réception de" << cards.size() << "cartes";
+
+    // Convertir les cartes JSON en vecteur de Carte*
+    std::vector<Carte*> myNewCartes;
+    for (const QJsonValue& val : cards) {
+        QJsonObject cardObj = val.toObject();
+        Carte* carte = new Carte(
+            static_cast<Carte::Couleur>(cardObj["suit"].toInt()),
+            static_cast<Carte::Chiffre>(cardObj["value"].toInt())
+        );
+        myNewCartes.push_back(carte);
+    }
+
+    // Lancer l'animation de distribution 3-2-3
+    qDebug() << "Animation de distribution 3-2-3 démarrée pour les cartes reçues";
+
+    // Phase 1 : 3 cartes (apres 250ms)
+    QTimer::singleShot(250, this, [this, myNewCartes]() {
+        m_distributionPhase = 1;
+        emit distributionPhaseChanged();
+        distributeCards(0, 3, myNewCartes, false);  // false = pas de cartes fantômes (lobby mode)
+
+        // Phase 2 : 2 cartes (après 1000ms supplémentaires)
+        QTimer::singleShot(1000, this, [this, myNewCartes]() {
+            m_distributionPhase = 2;
+            emit distributionPhaseChanged();
+            distributeCards(3, 5, myNewCartes, false);  // false = pas de cartes fantômes (lobby mode)
+
+            // Phase 3 : 3 cartes (après 1000ms supplémentaires)
+            QTimer::singleShot(1000 , this, [this, myNewCartes]() {
+                m_distributionPhase = 3;
+                emit distributionPhaseChanged();
+                distributeCards(5, 8, myNewCartes, false);  // false = pas de cartes fantômes (lobby mode)
+
+                // Fin de distribution (après 1000ms supplémentaires)
+                QTimer::singleShot(1000, this, [this]() {
+                    m_distributionPhase = 0;
+                    emit distributionPhaseChanged();
+                    qDebug() << "Partie initialisee - Distribution terminée (lobby mode)";
+                });
+            });
+        });
     });
 }
 

@@ -9,6 +9,10 @@ Rectangle {
 
     signal cancelClicked()
 
+    // Si true, appelle joinMatchmaking automatiquement (mode normal)
+    // Si false, le matchmaking a déjà été lancé (mode lobby)
+    property bool autoJoin: true
+
     // Ratios pour le responsive
     property real widthRatio: width / 1920
     property real heightRatio: height / 1080
@@ -335,8 +339,11 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        if (networkManager.connected) {
+        if (networkManager.connected && autoJoin) {
+            console.log("MatchmakingView - Rejoindre le matchmaking (mode normal)")
             networkManager.joinMatchmaking()
+        } else if (!autoJoin) {
+            console.log("MatchmakingView - Matchmaking déjà lancé (mode lobby)")
         }
     }
 }

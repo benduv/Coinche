@@ -26,7 +26,7 @@ void HandModel::setPlayer(Player* player, bool faceUp) {
 void HandModel::setPlayableCards(const QList<int>& playableIndices) {
     m_playableIndices = playableIndices;
 
-    qDebug() << "HandModel - Cartes jouables mises à jour:" << m_playableIndices;
+    qDebug() << "HandModel - Cartes jouables mises a jour:" << m_playableIndices;
 
     // Notifier QML que les états "playable" ont changé
     if (rowCount() > 0) {
@@ -38,7 +38,7 @@ void HandModel::setPlayableCards(const QList<int>& playableIndices) {
 void HandModel::setAtoutCouleur(Carte::Couleur atoutCouleur) {
     m_atoutCouleur = atoutCouleur;
 
-    qDebug() << "HandModel - Couleur d'atout mise à jour:" << static_cast<int>(m_atoutCouleur);
+    qDebug() << "HandModel - Couleur d'atout mise a jour:" << static_cast<int>(m_atoutCouleur);
 
     // Notifier QML que les états "isAtout" ont changé
     if (rowCount() > 0) {
@@ -50,6 +50,7 @@ void HandModel::setAtoutCouleur(Carte::Couleur atoutCouleur) {
 void HandModel::refresh() {
     beginResetModel();
     endResetModel();
+    emit countChanged();
 }
 
 // Nombre de cartes dans la main

@@ -20,13 +20,26 @@ Rectangle {
 
     // Fonction pour retourner au menu principal
     function returnToMainMenu() {
-        var stackView = rootArea.StackView.view
-        if (stackView) {
-            // Pop jusqu'au menu principal (depth 2: LoginView + MainMenu)
-            // On veut rester au MainMenu, donc on pop jusqu'à depth 2
-            while (stackView.depth > 2) {
-                stackView.pop()
-            }
+        console.log("CoincheView.returnToMainMenu - Appel de la fonction centralisée")
+
+        // Appeler la fonction centralisée dans mainWindow
+        var mainWindow = rootArea.Window.window
+        if (mainWindow && mainWindow.returnToMainMenu) {
+            mainWindow.returnToMainMenu()
+        } else {
+            console.log("CoincheView.returnToMainMenu - ERREUR: mainWindow ou sa fonction returnToMainMenu non trouvée!")
+        }
+    }
+
+    // Gérer l'abandon d'un joueur
+    Connections {
+        target: networkManager
+        function onPlayerForfeited(playerIndex, playerName) {
+            console.log("CoincheView - Joueur", playerName, "a abandonné")
+            // Afficher une notification que le joueur a été remplacé par un bot
+            // Note: Si c'est le joueur local qui a abandonné, returnToMainMenu() est déjà
+            // appelé depuis ExitGamePopup, donc on ne le fait pas ici pour éviter de le faire deux fois
+            console.log("Le joueur", playerName, "a été remplacé par un bot")
         }
     }
 
@@ -1583,11 +1596,12 @@ Rectangle {
                 }
             }
 
-            // Miniatures du dernier pli
-            Row {
+            // Miniatures du dernier pli (en losange)
+            Item {
                 id: lastPliDisplay
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: parent.width * 0.008
+                width: rootArea.width * 0.15
+                height: rootArea.width * 0.15
                 visible: gameModel.lastPliCards.length > 0
 
                 // Fonction pour obtenir le symbole de la couleur
@@ -1623,16 +1637,54 @@ Rectangle {
                     }
                 }
 
+                // Fonction pour obtenir la position relative du joueur
+                // par rapport à ma position (gameModel.myPosition)
+                function getRelativePosition(playerId) {
+                    var myPos = gameModel.myPosition
+                    var offset = (playerId - myPos + 4) % 4
+                    // offset 0 = sud (moi), 1 = ouest, 2 = nord, 3 = est
+                    return offset
+                }
+
                 Repeater {
                     model: gameModel.lastPliCards
 
                     Rectangle {
-                        width: rootArea.width * 0.05
-                        height: rootArea.width * 0.05
+                        id: miniCard
+                        width: rootArea.width * 0.045
+                        height: rootArea.width * 0.045
                         color: "white"
                         radius: 3
                         border.color: modelData.isWinner ? "#FFD700" : "#aaaaaa"
                         border.width: modelData.isWinner ? 3 : 1
+
+                        // Position selon la position relative du joueur
+                        property int relPos: lastPliDisplay.getRelativePosition(modelData.playerId)
+
+                        // Centre du losange
+                        property real centerX: parent.width / 2
+                        property real centerY: parent.height / 2
+
+                        // Positionnement en losange
+                        x: {
+                            switch (relPos) {
+                                case 0: return centerX - width / 2           // Sud (centre bas)
+                                case 1: return 0                              // Ouest (gauche)
+                                case 2: return centerX - width / 2           // Nord (centre haut)
+                                case 3: return parent.width - width          // Est (droite)
+                                default: return centerX - width / 2
+                            }
+                        }
+
+                        y: {
+                            switch (relPos) {
+                                case 0: return parent.height - height        // Sud (bas)
+                                case 1: return centerY - height / 2          // Ouest (centre)
+                                case 2: return 0                              // Nord (haut)
+                                case 3: return centerY - height / 2          // Est (centre)
+                                default: return centerY - height / 2
+                            }
+                        }
 
                         Text {
                             anchors.centerIn: parent
@@ -2006,6 +2058,23 @@ Rectangle {
         onCancelExit: {
             // Ne rien faire, la popup se ferme automatiquement
         }
+    }
+
+    Component.onCompleted: {
+        console.log("=== CoincheView chargé ===")
+        console.log("gameModel:", gameModel)
+        console.log("myPosition:", gameModel.myPosition)
+        console.log("player0Hand:", gameModel.player0Hand)
+        console.log("player1Hand:", gameModel.player1Hand)
+        console.log("player2Hand:", gameModel.player2Hand)
+        console.log("player3Hand:", gameModel.player3Hand)
+        if (gameModel.player0Hand) {
+            console.log("player0Hand count:", gameModel.player0Hand.count)
+            console.log("player0Hand rowCount:", gameModel.player0Hand.rowCount())
+        } else {
+            console.log("player0Hand est null!")
+        }
+        console.log("playerSouthRow.actualPlayerIndex:", playerSouthRow.actualPlayerIndex)
     }
 }
 
