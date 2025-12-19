@@ -83,13 +83,13 @@ public:
             forfeitGame();
         });
 
-        // Initialiser avec les données
-        m_gameModel->initOnlineGame(position, cards, opps);
+        // Initialiser avec les données en passant le pseudo du joueur
+        m_gameModel->initOnlineGame(position, cards, opps, m_playerPseudo);
 
         // Définir l'avatar du joueur local
         m_gameModel->setPlayerAvatar(position, m_playerAvatar);
 
-        qDebug() << "GameModel cree et initialise avec avatar:" << m_playerAvatar;
+        qDebug() << "GameModel cree et initialise - Pseudo:" << m_playerPseudo << "Avatar:" << m_playerAvatar;
 
         // Émettre signal pour que QML navigue vers CoincheView
         emit gameModelReady();
@@ -275,13 +275,20 @@ private slots:
 
         if (type == "registered") {
             m_playerId = obj["connectionId"].toString();
+            QString playerName = obj["playerName"].toString();
             QString avatar = obj["avatar"].toString();
+
+            // Mettre à jour le pseudo (le serveur peut l'avoir modifié pour les invités)
+            if (!playerName.isEmpty()) {
+                m_playerPseudo = playerName;
+            }
+
             if (!avatar.isEmpty()) {
                 m_playerAvatar = avatar;
                 emit playerAvatarChanged();
-                qDebug() << "Enregistre avec ID:" << m_playerId << "Avatar:" << avatar;
+                qDebug() << "Enregistre avec ID:" << m_playerId << "Pseudo:" << m_playerPseudo << "Avatar:" << avatar;
             } else {
-                qDebug() << "Enregistre avec ID:" << m_playerId;
+                qDebug() << "Enregistre avec ID:" << m_playerId << "Pseudo:" << m_playerPseudo;
             }
         }
         else if (type == "matchmakingStatus") {
@@ -465,6 +472,7 @@ private slots:
             QString playerName = obj["playerName"].toString();
             QString avatar = obj["avatar"].toString();
             if (avatar.isEmpty()) avatar = "avataaars1.svg";
+            m_playerPseudo = playerName;
             m_playerAvatar = avatar;
             qDebug() << "NetworkManager - Compte cree avec succès:" << playerName << "Avatar:" << avatar;
             emit playerAvatarChanged();
@@ -480,6 +488,7 @@ private slots:
             QString avatar = obj["avatar"].toString();
             QString connectionId = obj["connectionId"].toString();
             if (avatar.isEmpty()) avatar = "avataaars1.svg";
+            m_playerPseudo = playerName;
             m_playerAvatar = avatar;
             if (!connectionId.isEmpty()) {
                 m_playerId = connectionId;
@@ -585,6 +594,7 @@ private:
     QJsonArray m_opponents;
 
     GameModel* m_gameModel;  // Le GameModel géré par NetworkManager
+    QString m_playerPseudo;
     QString m_playerAvatar;
 
     // Lobbies privés

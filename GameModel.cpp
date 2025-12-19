@@ -22,6 +22,7 @@ GameModel::GameModel(QObject *parent)
     , m_showSurcoincheAnimation(false)
     , m_showBeloteAnimation(false)
     , m_showRebeloteAnimation(false)
+    , m_showCapotAnimation(false)
     , m_distributionPhase(0)
     , m_playTimeRemaining(15)
     , m_maxPlayTime(15)
@@ -238,6 +239,11 @@ bool GameModel::showRebeloteAnimation() const
     return m_showRebeloteAnimation;
 }
 
+bool GameModel::showCapotAnimation() const
+{
+    return m_showCapotAnimation;
+}
+
 QList<QVariant> GameModel::lastPliCards() const
 {
     QList<QVariant> result;
@@ -313,9 +319,9 @@ void GameModel::setPlayerAvatar(int position, const QString& avatar)
     qDebug() << "Avatar défini pour position" << position << ":" << avatar;
 }
 
-void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents)
+void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents, const QString& myPseudo)
 {
-    qDebug() << "Initialisation partie online - Position:" << myPosition;
+    qDebug() << "Initialisation partie online - Position:" << myPosition << "Pseudo:" << myPseudo;
     qDebug() << "Nombre de cartes reçues:" << myCards.size();
     qDebug() << "Nombre d'adversaires:" << opponents.size();
 
@@ -339,8 +345,8 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         myNewCartes.push_back(carte);
     }
 
-    // Créer le joueur local avec une main vide initialement
-    Player* localPlayer = new Player("Moi", std::vector<Carte*>(), myPosition);
+    // Créer le joueur local avec son pseudo (le serveur a déjà généré un nom pour les invités)
+    Player* localPlayer = new Player(myPseudo.toStdString(), std::vector<Carte*>(), myPosition);
     m_onlinePlayers.append(localPlayer);
 
     // Stocker l'avatar du joueur local (récupéré depuis networkManager)
@@ -1005,6 +1011,7 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         QJsonObject scoreData = data.toJsonObject();
         int scoreTotalTeam1 = scoreData["scoreTotalTeam1"].toInt();
         int scoreTotalTeam2 = scoreData["scoreTotalTeam2"].toInt();
+        int capotTeam = scoreData["capotTeam"].toInt(0);
 
         qDebug() << "GameModel::receivePlayerAction - Manche terminee";
         qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
@@ -1014,6 +1021,19 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_scoreTotalTeam2 = scoreTotalTeam2;
         emit scoreTotalTeam1Changed();
         emit scoreTotalTeam2Changed();
+
+        // Afficher l'animation CAPOT si une équipe a fait un capot
+        if (capotTeam > 0) {
+            qDebug() << "GameModel::receivePlayerAction - CAPOT réalisé par équipe" << capotTeam;
+            m_showCapotAnimation = true;
+            emit showCapotAnimationChanged();
+
+            // Masquer l'animation après 3 secondes
+            QTimer::singleShot(3000, this, [this]() {
+                m_showCapotAnimation = false;
+                emit showCapotAnimationChanged();
+            });
+        }
 
         // Le dealer change automatiquement car il est calculé à partir de biddingPlayer
 

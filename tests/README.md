@@ -6,6 +6,7 @@ Ces tests utilisent **Google Test**, le framework de test standard en C++.
 
 ## Structure
 
+- `gameserver_test.cpp` - **Tests unitaires complets pour GameServer** (nouveau !)
 - `capot_generale_test.cpp` - Tests Google Test pour CAPOT et GENERALE
 - `coinche_test.cpp` - Tests Google Test pour COINCHE et SURCOINCHE
 - `carte_test.cpp`, `deck_test.cpp`, `player_test.cpp` - Tests unitaires existants
@@ -234,8 +235,50 @@ Les annonces CAPOT et GENERALE peuvent aussi être coinchées/surcoinchées:
 ### Combinaison avec Belote
 Les 20 points de Belote s'ajoutent au score de l'équipe qui l'a, même en cas de COINCHE/SURCOINCHE.
 
+## Tests GameServer (nouveau)
+
+Le fichier `gameserver_test.cpp` contient des tests unitaires complets pour GameServer, incluant :
+
+### Tests CAPOT non annoncé
+- **CapotNonAnnonce_Team1ReussiAvecBelote** : Team1 annonce 80, fait 8 plis → 250 + 162 + 20 = 432 points
+- **CapotNonAnnonce_Team2Reussi** : Team2 annonce 90, fait 8 plis → 250 + 162 = 412 points
+- **CapotNonAnnonce_PasDeCapot** : Contrat normal avec 7 plis (pas de bonus capot)
+
+### Tests COINCHE/SURCOINCHE
+- **Coinche_Team1ReussitContrat** : (80 + 110) × 2 = 380 points
+- **Coinche_Team1EchoueContrat** : (100 + 160) × 2 = 520 points pour Team2
+- **Surcoinche_Team2ReussitContrat** : (120 + 132) × 4 = 1008 points
+- **Surcoinche_Team2EchoueContrat** : (140 + 160) × 4 = 1200 points pour Team1
+
+### Tests SURCOINCHE SUBIES
+- **SurcoincheSubie_JoueurQuiCoincheSeulementRecoit** : Vérifie que seul le joueur qui a coinché reçoit la stat
+- **SurcoincheSubie_JoueurQuiCoincheGagneSiContratEchoue** : Vérifie la logique inversée (won = !contractReussi)
+
+### Tests CAPOT annoncé
+- **CapotAnnonce_Reussi** : 250 + 250 = 500 points
+- **CapotAnnonce_Echoue** : 160 + 250 = 410 points pour adversaire
+- **CapotAnnonce_CoincheReussi** : 500 × 2 = 1000 points
+
+### Tests de détection d'erreurs
+- **Detection_TotalPlisDoit8** : Vérifie que le total des plis = 8
+- **Detection_CoinchePlayerIndexValide** : Vérifie l'index du joueur qui coinche
+- **Detection_SurcoincheNecessiteCoinche** : Vérifie que surcoinche implique coinche
+
+### Compilation et exécution
+
+```bash
+cd build
+cmake --build . --target test_gameserver
+./tests/test_gameserver               # Linux/Mac
+.\tests\test_gameserver.exe           # Windows
+
+# Avec CTest
+ctest -R test_gameserver --verbose
+```
+
 ## Prochaines étapes
 
+- [x] Créer des tests unitaires pour GameServer
 - [ ] Ajouter des tests d'intégration avec vraie simulation de plis
 - [ ] Tester avec de vrais clients WebSocket
 - [ ] Ajouter des tests pour la Belote combinée avec CAPOT/GENERALE

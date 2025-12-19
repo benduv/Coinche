@@ -13,7 +13,8 @@
         <file>qml/ExitGamePopup.qml</file>
         <file>qml/PrivateLobbyView.qml</file>
         <file>qml/LobbyRoomView.qml</file>
-        <file>qml/AvatarSelectorPopup.qml</file>
+        <file>qml/Config.qml</file>
+        <file>qml/PlayerStatsPopup.qml</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>

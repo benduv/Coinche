@@ -60,6 +60,9 @@ public:
         int annoncesCoincheesgagnees;
         int surcoincheAttempts;
         int surcoincheSuccess;
+        int annoncesSurcoinchees;
+        int annoncesSurcoincheesGagnees;
+        int maxWinStreak;
     };
     PlayerStats getPlayerStats(const QString &pseudo);
 
@@ -77,6 +80,9 @@ public:
 
     // Mettre à jour les statistiques de surcoinche
     bool updateSurcoincheStats(const QString &pseudo, bool attempt, bool success);
+
+    // Mettre à jour les statistiques de surcoinche subies
+    bool updateAnnonceSurcoinchee(const QString &pseudo, bool won);
 
 private:
     QSqlDatabase m_db;

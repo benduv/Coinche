@@ -52,6 +52,7 @@ class GameModel : public QObject {
     Q_PROPERTY(bool showSurcoincheAnimation READ showSurcoincheAnimation NOTIFY showSurcoincheAnimationChanged)
     Q_PROPERTY(bool showBeloteAnimation READ showBeloteAnimation NOTIFY showBeloteAnimationChanged)
     Q_PROPERTY(bool showRebeloteAnimation READ showRebeloteAnimation NOTIFY showRebeloteAnimationChanged)
+    Q_PROPERTY(bool showCapotAnimation READ showCapotAnimation NOTIFY showCapotAnimationChanged)
     Q_PROPERTY(QList<QVariant> lastPliCards READ lastPliCards NOTIFY lastPliCardsChanged)
     Q_PROPERTY(int distributionPhase READ distributionPhase NOTIFY distributionPhaseChanged)
     Q_PROPERTY(QList<QVariant> playerBids READ playerBids NOTIFY playerBidsChanged)
@@ -91,6 +92,7 @@ public:
     bool showSurcoincheAnimation() const;
     bool showBeloteAnimation() const;
     bool showRebeloteAnimation() const;
+    bool showCapotAnimation() const;
     QList<QVariant> lastPliCards() const;
     int distributionPhase() const;
     QList<QVariant> playerBids() const;
@@ -103,7 +105,7 @@ public:
     Q_INVOKABLE void setPlayerAvatar(int position, const QString& avatar);
 
     // Initialiser la partie avec les données du serveur
-    Q_INVOKABLE void initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents);
+    Q_INVOKABLE void initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents, const QString& myPseudo = "Moi");
     
     // Actions du joueur local
     Q_INVOKABLE void playCard(int cardIndex);
@@ -137,6 +139,7 @@ signals:
     void showSurcoincheAnimationChanged();
     void showBeloteAnimationChanged();
     void showRebeloteAnimationChanged();
+    void showCapotAnimationChanged();
     void lastPliCardsChanged();
     void distributionPhaseChanged();
     void playerBidsChanged();
@@ -183,6 +186,7 @@ private:
     bool m_showSurcoincheAnimation;
     bool m_showBeloteAnimation;
     bool m_showRebeloteAnimation;
+    bool m_showCapotAnimation;
     QList<CarteDuPliSauvegardee> m_lastPliCards;  // Cartes du dernier pli terminé (avec copie des valeurs)
     int m_distributionPhase;  // 0=pas de distribution, 1=3 cartes, 2=2 cartes, 3=3 cartes
     QList<QVariantMap> m_playerBids;  // Annonces de chaque joueur {value, suit, text}

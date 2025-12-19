@@ -287,6 +287,12 @@ private:
         QString avatar = data["avatar"].toString();
         if (avatar.isEmpty()) avatar = "avataaars1.svg";
 
+        // Si le joueur n'a pas de nom (invité), générer un nom unique
+        if (playerName.isEmpty()) {
+            static int guestCounter = 0;
+            playerName = QString("Invité %1").arg(++guestCounter);
+        }
+
         PlayerConnection *conn = new PlayerConnection{
             socket,
             connectionId,
@@ -619,6 +625,9 @@ private:
         response["annoncesCoincheesgagnees"] = stats.annoncesCoincheesgagnees;
         response["surcoincheAttempts"] = stats.surcoincheAttempts;
         response["surcoincheSuccess"] = stats.surcoincheSuccess;
+        response["annoncesSurcoinchees"] = stats.annoncesSurcoinchees;
+        response["annoncesSurcoincheesGagnees"] = stats.annoncesSurcoincheesGagnees;
+        response["maxWinStreak"] = stats.maxWinStreak;
 
         qDebug() << "Stats envoyees pour:" << pseudo
                  << "- Parties:" << stats.gamesPlayed
@@ -1196,13 +1205,19 @@ private:
         bool capotReussi = false;
         bool generaleReussie = false;
 
+        // Vérifier si une équipe a fait un CAPOT (8 plis) même sans l'avoir annoncé
+        int plisTeam1 = room->plisCountPlayer0 + room->plisCountPlayer2;
+        int plisTeam2 = room->plisCountPlayer1 + room->plisCountPlayer3;
+        bool capotNonAnnonceTeam1 = (!isCapotAnnonce && !isGeneraleAnnonce && plisTeam1 == 8);
+        bool capotNonAnnonceTeam2 = (!isCapotAnnonce && !isGeneraleAnnonce && plisTeam2 == 8);
+
         if (isCapotAnnonce) {
             // CAPOT: l'equipe qui a annonce doit faire tous les 8 plis
             int plisTeamAnnonceur = 0;
             if (team1HasBid) {
-                plisTeamAnnonceur = room->plisCountPlayer0 + room->plisCountPlayer2;
+                plisTeamAnnonceur = plisTeam1;
             } else {
-                plisTeamAnnonceur = room->plisCountPlayer1 + room->plisCountPlayer3;
+                plisTeamAnnonceur = plisTeam2;
             }
             capotReussi = (plisTeamAnnonceur == 8);
             qDebug() << "GameServer - CAPOT annonce: equipe a fait" << plisTeamAnnonceur << "/8 plis -"
@@ -1407,6 +1422,18 @@ private:
                         qDebug() << "Stats annonce coinchée pour:" << conn->playerName << "Réussie:" << contractReussi;
                     }
                 }
+
+                // Si surcoinchée, mettre à jour les stats du joueur qui avait coinché
+                if (room->surcoinched && room->coinchePlayerIndex != -1 && !room->isBot[room->coinchePlayerIndex]) {
+                    PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
+                    if (coincheConn && !coincheConn->playerName.isEmpty()) {
+                        // Le joueur qui a coinché subit maintenant une surcoinche
+                        // Si le contrat réussit → le joueur qui a coinché perd (won = false)
+                        // Si le contrat échoue → le joueur qui a coinché gagne quand même (won = true)
+                        m_dbManager->updateAnnonceSurcoinchee(coincheConn->playerName, !contractReussi);
+                        qDebug() << "Stats surcoinche subie pour:" << coincheConn->playerName << "Gagnée:" << !contractReussi;
+                    }
+                }
             } else {
                 // Team2 a annoncé, vérifie si elle réussit
                 bool contractReussi = (pointsRealisesTeam2 >= valeurContrat);
@@ -1461,17 +1488,29 @@ private:
                         qDebug() << "Stats annonce coinchée pour:" << conn->playerName << "Réussie:" << contractReussi;
                     }
                 }
+
+                // Si surcoinchée, mettre à jour les stats du joueur qui avait coinché
+                if (room->surcoinched && room->coinchePlayerIndex != -1 && !room->isBot[room->coinchePlayerIndex]) {
+                    PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
+                    if (coincheConn && !coincheConn->playerName.isEmpty()) {
+                        // Le joueur qui a coinché subit maintenant une surcoinche
+                        // Si le contrat réussit → le joueur qui a coinché perd (won = false)
+                        // Si le contrat échoue → le joueur qui a coinché gagne quand même (won = true)
+                        m_dbManager->updateAnnonceSurcoinchee(coincheConn->playerName, !contractReussi);
+                        qDebug() << "Stats surcoinche subie pour:" << coincheConn->playerName << "Gagnée:" << !contractReussi;
+                    }
+                }
             }
         } else if (team1HasBid) {
             // L'équipe 1 a annoncé (contrat normal)
             if (pointsRealisesTeam1 >= valeurContrat) {
                 // Vérifier si Team1 a fait un CAPOT non annoncé (tous les 8 plis)
-                if (capotReussi) {
-                    // CAPOT non annoncé: 250 + valeurContrat
-                    scoreToAddTeam1 = 250 + valeurContrat;
+                if (capotNonAnnonceTeam1) {
+                    // CAPOT non annoncé: 250 + pointsRéalisés
+                    scoreToAddTeam1 = 250 + pointsRealisesTeam1;
                     scoreToAddTeam2 = 0;
                     qDebug() << "GameServer - Equipe 1 fait un CAPOT non annonce!";
-                    qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(250+" << valeurContrat << ")";
+                    qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(250+" << pointsRealisesTeam1 << ")";
                     qDebug() << "  Team2 marque: 0";
                 } else {
                     // Contrat réussi: valeurContrat + pointsRéalisés
@@ -1493,13 +1532,13 @@ private:
             // L'équipe 2 a annoncé (contrat normal)
             if (pointsRealisesTeam2 >= valeurContrat) {
                 // Vérifier si Team2 a fait un CAPOT non annoncé (tous les 8 plis)
-                if (capotReussi) {
-                    // CAPOT non annoncé: 250 + valeurContrat
+                if (capotNonAnnonceTeam2) {
+                    // CAPOT non annoncé: 250 + pointsRéalisés
                     scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = 250 + valeurContrat;
+                    scoreToAddTeam2 = 250 + pointsRealisesTeam2;
                     qDebug() << "GameServer - Equipe 2 fait un CAPOT non annonce!";
                     qDebug() << "  Team1 marque: 0";
-                    qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(250+" << valeurContrat << ")";
+                    qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(250+" << pointsRealisesTeam2 << ")";
                 } else {
                     // Contrat réussi: valeurContrat + pointsRéalisés
                     scoreToAddTeam1 = pointsRealisesTeam1;
@@ -1588,11 +1627,24 @@ private:
         scoreMsg["type"] = "mancheFinished";
         scoreMsg["scoreTotalTeam1"] = room->scoreTeam1;
         scoreMsg["scoreTotalTeam2"] = room->scoreTeam2;
+        // Ajouter l'information du capot pour l'animation
+        if (capotNonAnnonceTeam1) {
+            scoreMsg["capotTeam"] = 1;
+            qDebug() << "GameServer - Envoi notification CAPOT Team1 aux clients";
+        } else if (capotNonAnnonceTeam2) {
+            scoreMsg["capotTeam"] = 2;
+            qDebug() << "GameServer - Envoi notification CAPOT Team2 aux clients";
+        } else if (isCapotAnnonce && capotReussi) {
+            scoreMsg["capotTeam"] = team1HasBid ? 1 : 2;
+            qDebug() << "GameServer - Envoi notification CAPOT annoncé réussi Team" << (team1HasBid ? 1 : 2) << "aux clients";
+        } else {
+            scoreMsg["capotTeam"] = 0;
+        }
         broadcastToRoom(roomId, scoreMsg);
 
         // Vérifier si une équipe a atteint 1000 points
-        bool team1Won = room->scoreTeam1 >= 1000;
-        bool team2Won = room->scoreTeam2 >= 1000;
+        bool team1Won = room->scoreTeam1 >= 100;
+        bool team2Won = room->scoreTeam2 >= 100;
 
         if (team1Won || team2Won) {
             // Une ou les deux équipes ont dépassé 1000 points
@@ -2835,7 +2887,7 @@ private:
                 // Si c'était l'hôte, désigner un nouvel hôte
                 if (lobby->hostPlayerName == conn->playerName) {
                     lobby->hostPlayerName = lobby->playerNames.first();
-                    qDebug() << "Nouvel hôte du lobby" << lobbyCode << ":" << lobby->hostPlayerName;
+                    qDebug() << "Nouvel hote du lobby" << lobbyCode << ":" << lobby->hostPlayerName;
                 }
                 // Mettre à jour les autres joueurs
                 sendLobbyUpdate(lobby->code);

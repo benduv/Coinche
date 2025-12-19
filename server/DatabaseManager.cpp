@@ -194,6 +194,49 @@ bool DatabaseManager::createTables()
         }
     }
 
+    // Vérifier et ajouter les colonnes pour surcoinche subies et séries de victoires
+    bool hasAnnoncesSurcoinchees = false;
+    bool hasAnnoncesSurcoincheesGagnees = false;
+    bool hasMaxWinStreak = false;
+    bool hasCurrentWinStreak = false;
+
+    query.exec("PRAGMA table_info(stats)");
+    while (query.next()) {
+        QString columnName = query.value(1).toString();
+        if (columnName == "annonces_surcoinchees") hasAnnoncesSurcoinchees = true;
+        if (columnName == "annonces_surcoinchees_gagnees") hasAnnoncesSurcoincheesGagnees = true;
+        if (columnName == "max_win_streak") hasMaxWinStreak = true;
+        if (columnName == "current_win_streak") hasCurrentWinStreak = true;
+    }
+
+    if (!hasAnnoncesSurcoinchees) {
+        qDebug() << "Ajout de la colonne annonces_surcoinchees";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN annonces_surcoinchees INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne annonces_surcoinchees:" << query.lastError().text();
+        }
+    }
+
+    if (!hasAnnoncesSurcoincheesGagnees) {
+        qDebug() << "Ajout de la colonne annonces_surcoinchees_gagnees";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN annonces_surcoinchees_gagnees INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne annonces_surcoinchees_gagnees:" << query.lastError().text();
+        }
+    }
+
+    if (!hasMaxWinStreak) {
+        qDebug() << "Ajout de la colonne max_win_streak";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN max_win_streak INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne max_win_streak:" << query.lastError().text();
+        }
+    }
+
+    if (!hasCurrentWinStreak) {
+        qDebug() << "Ajout de la colonne current_win_streak";
+        if (!query.exec("ALTER TABLE stats ADD COLUMN current_win_streak INTEGER DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne current_win_streak:" << query.lastError().text();
+        }
+    }
+
     return true;
 }
 
@@ -401,10 +444,22 @@ bool DatabaseManager::updateGameStats(const QString &pseudo, bool won)
     }
 
     QSqlQuery query(m_db);
+
     if (won) {
-        query.prepare("UPDATE stats SET games_played = games_played + 1, games_won = games_won + 1 WHERE user_id = :user_id");
+        // Victoire : incrémenter games_played, games_won, current_win_streak
+        // et mettre à jour max_win_streak si nécessaire
+        query.prepare("UPDATE stats SET "
+                     "games_played = games_played + 1, "
+                     "games_won = games_won + 1, "
+                     "current_win_streak = current_win_streak + 1, "
+                     "max_win_streak = CASE WHEN (current_win_streak + 1) > max_win_streak THEN (current_win_streak + 1) ELSE max_win_streak END "
+                     "WHERE user_id = :user_id");
     } else {
-        query.prepare("UPDATE stats SET games_played = games_played + 1 WHERE user_id = :user_id");
+        // Défaite : incrémenter games_played et réinitialiser current_win_streak
+        query.prepare("UPDATE stats SET "
+                     "games_played = games_played + 1, "
+                     "current_win_streak = 0 "
+                     "WHERE user_id = :user_id");
     }
     query.bindValue(":user_id", userId);
 
@@ -473,7 +528,7 @@ bool DatabaseManager::updateCoincheStats(const QString &pseudo, bool attempt, bo
 
 DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseudo)
 {
-    PlayerStats stats = {0, 0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    PlayerStats stats = {0, 0, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     int userId = getUserIdByPseudo(pseudo);
     if (userId == -1) {
@@ -482,7 +537,7 @@ DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseu
     }
 
     QSqlQuery query(m_db);
-    query.prepare("SELECT games_played, games_won, coinche_attempts, coinche_success, capot_realises, capot_annonces_realises, capot_annonces_tentes, generale_attempts, generale_success, annonces_coinchees, annonces_coinchees_gagnees, surcoinche_attempts, surcoinche_success FROM stats WHERE user_id = :user_id");
+    query.prepare("SELECT games_played, games_won, coinche_attempts, coinche_success, capot_realises, capot_annonces_realises, capot_annonces_tentes, generale_attempts, generale_success, annonces_coinchees, annonces_coinchees_gagnees, surcoinche_attempts, surcoinche_success, annonces_surcoinchees, annonces_surcoinchees_gagnees, max_win_streak FROM stats WHERE user_id = :user_id");
     query.bindValue(":user_id", userId);
 
     if (!query.exec()) {
@@ -504,6 +559,9 @@ DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseu
         stats.annoncesCoincheesgagnees = query.value(10).toInt();
         stats.surcoincheAttempts = query.value(11).toInt();
         stats.surcoincheSuccess = query.value(12).toInt();
+        stats.annoncesSurcoinchees = query.value(13).toInt();
+        stats.annoncesSurcoincheesGagnees = query.value(14).toInt();
+        stats.maxWinStreak = query.value(15).toInt();
 
         if (stats.gamesPlayed > 0) {
             stats.winRatio = (double)stats.gamesWon / (double)stats.gamesPlayed;
@@ -643,5 +701,32 @@ bool DatabaseManager::updateSurcoincheStats(const QString &pseudo, bool attempt,
     }
 
     qDebug() << "Stats de surcoinche mises a jour pour:" << pseudo << "Attempt:" << attempt << "Success:" << success;
+    return true;
+}
+
+bool DatabaseManager::updateAnnonceSurcoinchee(const QString &pseudo, bool won)
+{
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour mise a jour annonce surcoinchee:" << pseudo;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    if (won) {
+        // L'annonce a été surcoinchée mais le joueur a quand même gagné la manche
+        query.prepare("UPDATE stats SET annonces_surcoinchees = annonces_surcoinchees + 1, annonces_surcoinchees_gagnees = annonces_surcoinchees_gagnees + 1 WHERE user_id = :user_id");
+    } else {
+        // L'annonce a été surcoinchée et le joueur a perdu la manche
+        query.prepare("UPDATE stats SET annonces_surcoinchees = annonces_surcoinchees + 1 WHERE user_id = :user_id");
+    }
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur mise a jour annonce surcoinchee:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Stats annonce surcoinchee mises a jour pour:" << pseudo << "Gagnee:" << won;
     return true;
 }

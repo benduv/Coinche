@@ -80,3 +80,28 @@ target_link_libraries(test_coinche PRIVATE
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
 gtest_discover_tests(test_coinche)
+
+# ========================================
+# Tests unitaires GameServer
+# ========================================
+add_executable(test_gameserver
+    gameserver_test.cpp
+)
+
+target_include_directories(test_gameserver PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_gameserver PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Network
+    Qt6::WebSockets
+    Qt6::Sql
+)
+
+# Découvrir automatiquement les tests Google Test
+include(GoogleTest)
+gtest_discover_tests(test_gameserver)

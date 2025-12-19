@@ -186,7 +186,7 @@ Rectangle {
 
                     Text {
                         text: "Jeu de cartes multijoueur"
-                        font.pixelSize: 20 * loginRoot.minRatio
+                        font.pixelSize: 26 * loginRoot.minRatio
                         color: "#aaaaaa"
                         Layout.alignment: Qt.AlignHCenter
                     }
@@ -552,134 +552,13 @@ Rectangle {
                             border.width: 3 * loginRoot.minRatio
                         }
 
-                        ColumnLayout {
+                        AvatarSelector {
                             anchors.fill: parent
-                            anchors.topMargin: 15 * loginRoot.minRatio
-                            anchors.bottomMargin: 1 * loginRoot.minRatio
-                            anchors.leftMargin: 15 * loginRoot.minRatio
-                            anchors.rightMargin: 15 * loginRoot.minRatio
-                            spacing: 20 * loginRoot.minRatio
+                            selectedAvatar: registerScreenRec.selectedAvatar
 
-                            /*Text {
-                                text: "Choisissez votre avatar"
-                                font.pixelSize: 32 * loginRoot.minRatio
-                                font.bold: true
-                                color: "#FFD700"
-                                Layout.alignment: Qt.AlignHCenter
-                            }*/
-
-                            ScrollView {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                clip: true
-                                contentWidth: availableWidth
-
-                                GridLayout {
-                                    id: avatarGrid
-                                    width: parent.parent.width - 20 * loginRoot.minRatio
-                                    columns: 3
-                                    rowSpacing: 20 * loginRoot.minRatio
-                                    columnSpacing: 20 * loginRoot.minRatio
-
-                                    // Calcul de la taille optimale pour que 3 colonnes remplissent exactement la largeur
-                                    property real avatarSize: (width - columnSpacing * (columns - 1)) / columns
-
-                                    Repeater {
-                                        model: [
-                                            "avataaars1.svg",
-                                            "avataaars2.svg",
-                                            "avataaars3.svg",
-                                            "avataaars4.svg",
-                                            "avataaars5.svg",
-                                            "avataaars6.svg",
-                                            "avataaars7.svg",
-                                            "avataaars8.svg",
-                                            "avataaars9.svg",
-                                            "avataaars10.svg",
-                                            "avataaars11.svg",
-                                            "avataaars12.svg",
-                                            "avataaars13.svg",
-                                            "avataaars14.svg",
-                                            "avataaars15.svg",
-                                            "avataaars16.svg",
-                                            "avataaars17.svg",
-                                            "avataaars18.svg",
-                                            "avataaars19.svg",
-                                            "avataaars20.svg",
-                                            "avataaars21.svg",
-                                            "avataaars22.svg",
-                                            "avataaars23.svg",
-                                            "avataaars24.svg"
-                                        ]
-
-                                        delegate: Rectangle {
-                                            Layout.preferredWidth: avatarGrid.avatarSize
-                                            Layout.preferredHeight: avatarGrid.avatarSize
-                                            color: registerScreenRec.selectedAvatar === modelData ? "#FFD700" : "#2a2a2a"
-                                            radius: 15 * loginRoot.minRatio
-                                            border.color: registerScreenRec.selectedAvatar === modelData ? "#FFFFFF" : "#666666"
-                                            border.width: registerScreenRec.selectedAvatar === modelData ? 4 * loginRoot.minRatio : 2 * loginRoot.minRatio
-
-                                            Image {
-                                                anchors.fill: parent
-                                                anchors.margins: 10 * loginRoot.minRatio
-                                                source: "qrc:/resources/avatar/" + modelData
-                                                fillMode: Image.PreserveAspectFit
-                                                smooth: true
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-
-                                                onClicked: {
-                                                    registerScreenRec.selectedAvatar = modelData
-                                                    registerAvatarPopup.close()
-                                                }
-
-                                                onEntered: {
-                                                    parent.scale = 1.1
-                                                }
-
-                                                onExited: {
-                                                    parent.scale = 1.0
-                                                }
-                                            }
-
-                                            Behavior on scale {
-                                                NumberAnimation { duration: 150 }
-                                            }
-
-                                            Behavior on color {
-                                                ColorAnimation { duration: 200 }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Button {
-                                Layout.alignment: Qt.AlignHCenter
-                                Layout.preferredWidth: 200 * loginRoot.widthRatio
-                                Layout.preferredHeight: 100 * loginRoot.heightRatio
-
-                                background: Rectangle {
-                                    color: parent.down ? "#666666" : (parent.hovered ? "#888888" : "#777777")
-                                    radius: 8 * loginRoot.minRatio
-                                }
-
-                                contentItem: Text {
-                                    text: "Fermer"
-                                    font.pixelSize: 36 * loginRoot.minRatio
-                                    color: "white"
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-
-                                onClicked: {
-                                    registerAvatarPopup.close()
-                                }
+                            onAvatarSelected: function(avatar) {
+                                registerScreenRec.selectedAvatar = avatar
+                                registerAvatarPopup.close()
                             }
                         }
                     }
@@ -1102,131 +981,13 @@ Rectangle {
                             border.width: 3 * loginRoot.minRatio
                         }
 
-                        ColumnLayout {
+                        AvatarSelector {
                             anchors.fill: parent
-                            anchors.margins: 20 * loginRoot.minRatio
-                            spacing: 15 * loginRoot.minRatio
+                            selectedAvatar: guestScreenRect.selectedAvatar
 
-                            Text {
-                                text: "Choisissez votre avatar"
-                                font.pixelSize: 32 * loginRoot.minRatio
-                                font.bold: true
-                                color: "#FFD700"
-                                Layout.alignment: Qt.AlignHCenter
-                            }
-
-                            ScrollView {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                clip: true
-                                contentWidth: availableWidth
-
-                                GridLayout {
-                                    id: guestAvatarGrid
-                                    width: parent.parent.width - 20 * loginRoot.minRatio
-                                    columns: 3
-                                    rowSpacing: 20 * loginRoot.minRatio
-                                    columnSpacing: 20 * loginRoot.minRatio
-
-                                    // Calcul de la taille optimale pour que 3 colonnes remplissent exactement la largeur
-                                    property real avatarSize: (width - columnSpacing * (columns - 1)) / columns
-
-                                    Repeater {
-                                        model: [
-                                            "avataaars1.svg",
-                                            "avataaars2.svg",
-                                            "avataaars3.svg",
-                                            "avataaars4.svg",
-                                            "avataaars5.svg",
-                                            "avataaars6.svg",
-                                            "avataaars7.svg",
-                                            "avataaars8.svg",
-                                            "avataaars9.svg",
-                                            "avataaars10.svg",
-                                            "avataaars11.svg",
-                                            "avataaars12.svg",
-                                            "avataaars13.svg",
-                                            "avataaars14.svg",
-                                            "avataaars15.svg",
-                                            "avataaars16.svg",
-                                            "avataaars17.svg",
-                                            "avataaars18.svg",
-                                            "avataaars19.svg",
-                                            "avataaars20.svg",
-                                            "avataaars21.svg",
-                                            "avataaars22.svg",
-                                            "avataaars23.svg",
-                                            "avataaars24.svg"
-                                        ]
-
-                                        delegate: Rectangle {
-                                            Layout.preferredWidth: guestAvatarGrid.avatarSize
-                                            Layout.preferredHeight: guestAvatarGrid.avatarSize
-                                            color: guestScreenRect.selectedAvatar === modelData ? "#FFD700" : "#2a2a2a"
-                                            radius: 15 * loginRoot.minRatio
-                                            border.color: guestScreenRect.selectedAvatar === modelData ? "#FFFFFF" : "#666666"
-                                            border.width: guestScreenRect.selectedAvatar === modelData ? 4 * loginRoot.minRatio : 2 * loginRoot.minRatio
-
-                                            Image {
-                                                anchors.fill: parent
-                                                anchors.margins: 10 * loginRoot.minRatio
-                                                source: "qrc:/resources/avatar/" + modelData
-                                                fillMode: Image.PreserveAspectFit
-                                                smooth: true
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-
-                                                onClicked: {
-                                                    guestScreenRect.selectedAvatar = modelData
-                                                    guestAvatarPopup.close()
-                                                }
-
-                                                onEntered: {
-                                                    parent.scale = 1.1
-                                                }
-
-                                                onExited: {
-                                                    parent.scale = 1.0
-                                                }
-                                            }
-
-                                            Behavior on scale {
-                                                NumberAnimation { duration: 150 }
-                                            }
-
-                                            Behavior on color {
-                                                ColorAnimation { duration: 200 }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Button {
-                                Layout.alignment: Qt.AlignHCenter
-                                Layout.preferredWidth: 200 * loginRoot.widthRatio
-                                Layout.preferredHeight: 100 * loginRoot.heightRatio
-
-                                background: Rectangle {
-                                    color: parent.down ? "#666666" : (parent.hovered ? "#888888" : "#777777")
-                                    radius: 8 * loginRoot.minRatio
-                                }
-
-                                contentItem: Text {
-                                    text: "Fermer"
-                                    font.pixelSize: 36 * loginRoot.minRatio
-                                    color: "white"
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-
-                                onClicked: {
-                                    guestAvatarPopup.close()
-                                }
+                            onAvatarSelected: function(avatar) {
+                                guestScreenRect.selectedAvatar = avatar
+                                guestAvatarPopup.close()
                             }
                         }
                     }

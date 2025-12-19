@@ -7,34 +7,6 @@ Rectangle {
     id: root
     color: "transparent"
 
-    // Liste des avatars disponibles
-    readonly property var avatarList: [
-        "avataaars1.svg",
-        "avataaars2.svg",
-        "avataaars3.svg",
-        "avataaars4.svg",
-        "avataaars5.svg",
-        "avataaars6.svg",
-        "avataaars7.svg",
-        "avataaars8.svg",
-        "avataaars9.svg",
-        "avataaars10.svg",
-        "avataaars11.svg",
-        "avataaars12.svg",
-        "avataaars13.svg",
-        "avataaars14.svg",
-        "avataaars15.svg",
-        "avataaars16.svg",
-        "avataaars17.svg",
-        "avataaars18.svg",
-        "avataaars19.svg",
-        "avataaars20.svg",
-        "avataaars21.svg",
-        "avataaars22.svg",
-        "avataaars23.svg",
-        "avataaars24.svg"
-    ]
-
     // Avatar actuellement sélectionné
     property string selectedAvatar: "avataaars1.svg"
 
@@ -45,76 +17,101 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 15 * minRatio
+        anchors.topMargin: 15 * minRatio
+        anchors.bottomMargin: 1 * minRatio
+        anchors.leftMargin: 15 * minRatio
+        anchors.rightMargin: 15 * minRatio
+        spacing: 20 * minRatio
 
-        // Titre
-        Text {
-            text: "Choisissez votre avatar :"
-            font.pixelSize: 20 * minRatio
-            font.bold: true
-            color: "#FFD700"
-            Layout.alignment: Qt.AlignHCenter
-        }
-
-        // Grille d'avatars
-        GridLayout {
+        ScrollView {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignHCenter
-            columns: 4
-            rowSpacing: 15 * minRatio
-            columnSpacing: 15 * minRatio
+            Layout.fillHeight: true
+            clip: true
+            contentWidth: availableWidth
 
-            Repeater {
-                model: root.avatarList
+            GridLayout {
+                id: avatarGrid
+                width: parent.parent.width - 20 * root.minRatio
+                columns: 3
+                rowSpacing: 20 * root.minRatio
+                columnSpacing: 20 * root.minRatio
 
-                delegate: Rectangle {
-                    Layout.preferredWidth: 80 * minRatio
-                    Layout.preferredHeight: 80 * minRatio
-                    color: root.selectedAvatar === modelData ? "#FFD700" : "#444444"
-                    radius: 10 * minRatio
-                    border.color: root.selectedAvatar === modelData ? "#FFFFFF" : "#666666"
-                    border.width: root.selectedAvatar === modelData ? 3 * minRatio : 1 * minRatio
+                // Calcul de la taille optimale pour que 3 colonnes remplissent exactement la largeur
+                property real avatarSize: (width - columnSpacing * (columns - 1)) / columns
 
-                    // Image de l'avatar
-                    Image {
-                        anchors.fill: parent
-                        anchors.margins: 5 * minRatio
-                        source: "qrc:/resources/avatar/" + modelData
-                        fillMode: Image.PreserveAspectFit
-                        smooth: true
-                    }
+                Repeater {
+                    model: [
+                        "avataaars1.svg",
+                        "avataaars2.svg",
+                        "avataaars3.svg",
+                        "avataaars4.svg",
+                        "avataaars5.svg",
+                        "avataaars6.svg",
+                        "avataaars7.svg",
+                        "avataaars8.svg",
+                        "avataaars9.svg",
+                        "avataaars10.svg",
+                        "avataaars11.svg",
+                        "avataaars12.svg",
+                        "avataaars13.svg",
+                        "avataaars14.svg",
+                        "avataaars15.svg",
+                        "avataaars16.svg",
+                        "avataaars17.svg",
+                        "avataaars18.svg",
+                        "avataaars19.svg",
+                        "avataaars20.svg",
+                        "avataaars21.svg",
+                        "avataaars22.svg",
+                        "avataaars23.svg",
+                        "avataaars24.svg"
+                    ]
 
-                    // Effet de survol
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
+                    delegate: Rectangle {
+                        Layout.preferredWidth: avatarGrid.avatarSize
+                        Layout.preferredHeight: avatarGrid.avatarSize
+                        color: root.selectedAvatar === modelData ? "#FFD700" : "#2a2a2a"
+                        radius: 15 * root.minRatio
+                        border.color: root.selectedAvatar === modelData ? "#FFFFFF" : "#666666"
+                        border.width: root.selectedAvatar === modelData ? 4 * root.minRatio : 2 * root.minRatio
 
-                        onClicked: {
-                            root.selectedAvatar = modelData
-                            root.avatarSelected(modelData)
+                        Image {
+                            anchors.fill: parent
+                            anchors.margins: 10 * root.minRatio
+                            source: "qrc:/resources/avatar/" + modelData
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
                         }
 
-                        onEntered: {
-                            parent.scale = 1.1
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+
+                            onClicked: {
+                                root.selectedAvatar = modelData
+                                root.avatarSelected(modelData)
+                            }
+
+                            onEntered: {
+                                parent.scale = 1.1
+                            }
+
+                            onExited: {
+                                parent.scale = 1.0
+                            }
                         }
 
-                        onExited: {
-                            parent.scale = 1.0
+                        Behavior on scale {
+                            NumberAnimation { duration: 150 }
                         }
-                    }
 
-                    Behavior on scale {
-                        NumberAnimation { duration: 150 }
-                    }
-
-                    Behavior on color {
-                        ColorAnimation { duration: 200 }
+                        Behavior on color {
+                            ColorAnimation { duration: 200 }
+                        }
                     }
                 }
             }
         }
-
-        Item { Layout.fillHeight: true }
     }
 }

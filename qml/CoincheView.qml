@@ -5,7 +5,7 @@ import QtQuick.Layouts
 Rectangle {
     id: rootArea
     anchors.fill: parent
-    color: "#2d5016"
+    color: "#79d279"
 
     // Ratios pour le responsive (résolution de référence: 1920x1080)
     property real widthRatio: width / 1920
@@ -164,10 +164,88 @@ Rectangle {
             border.width: parent.height * 0.01
         }
 
+        // ---- Indicateur "XXX annonce ..." ----
+        Rectangle {
+            anchors.centerIn: parent
+            width: parent.width * 0.5
+            height: 120 * rootArea.minRatio
+            color: "#2a2a2a"
+            radius: 15 * rootArea.minRatio
+            border.color: "#FFD700"
+            border.width: 4 * rootArea.minRatio
+            opacity: 0.8
+            visible: gameModel.biddingPhase &&
+                     gameModel.distributionPhase === 0 &&
+                     gameModel.biddingPlayer !== gameModel.myPosition &&
+                     !gameModel.showCoincheAnimation &&      // Masquer si animation Coinche
+                     !gameModel.showSurcoincheAnimation &&   // Masquer si animation Surcoinche
+                     !gameModel.surcoincheAvailable          // Masquer si bouton Surcoinche visible
+            z: 5
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 0
+
+                Text {
+                    id: biddingIndicatorText
+                    text: rootArea.getPlayerName(gameModel.biddingPlayer) + " annonce "
+                    font.pixelSize: 60 * rootArea.minRatio
+                    font.bold: true
+                    color: "#FFD700"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                Text {
+                    id: dotsText
+                    text: dotsAnimation.dots
+                    font.pixelSize: 60 * rootArea.minRatio
+                    font.bold: true
+                    color: "#FFD700"
+                    horizontalAlignment: Text.AlignLeft
+                    width: 80 * rootArea.minRatio  // Largeur fixe pour 3 points
+                }
+            }
+
+            // Animation des points "..."
+            QtObject {
+                id: dotsAnimation
+                property string dots: ""
+            }
+
+            Timer {
+                running: parent.visible
+                repeat: true
+                interval: 500
+                onTriggered: {
+                    if (dotsAnimation.dots === "") {
+                        dotsAnimation.dots = "."
+                    } else if (dotsAnimation.dots === ".") {
+                        dotsAnimation.dots = ".."
+                    } else if (dotsAnimation.dots === "..") {
+                        dotsAnimation.dots = "..."
+                    } else {
+                        dotsAnimation.dots = ""
+                    }
+                }
+            }
+
+            // Animation de pulsation
+            SequentialAnimation on scale {
+                running: parent.visible
+                loops: Animation.Infinite
+                NumberAnimation { to: 1.05; duration: 800; easing.type: Easing.InOutQuad }
+                NumberAnimation { to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
+            }
+        }
+
         // ---- Panneau d'annonces ----
         AnnoncesPanel {
             anchors.fill: parent
-            anchors.margins: parent.width * 0.09
+            anchors.leftMargin: parent.width * 0.09
+            anchors.rightMargin: parent.width * 0.09
+            anchors.topMargin: parent.height * 0.2
+            anchors.bottomMargin: parent.height * 0.2
             visible: gameModel.biddingPhase &&
                      gameModel.distributionPhase === 0 &&    // Attendre fin de distribution
                      gameModel.biddingPlayer === gameModel.myPosition &&
@@ -433,7 +511,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.leftMargin: parent.width * 0.055
                 anchors.top : parent.top
-                anchors.topMargin: - parent.height * 0.055
+                anchors.topMargin: - parent.height * 0.13
                 spacing: rootArea.height * 0.003
 
                 // Row pour le jeton de dealer, avatar+annonce+nom
@@ -461,12 +539,15 @@ Rectangle {
                         }
                     }
 
-                    // Column pour annonce + avatar + nom (centré ensemble)
-                    Column {
-                        spacing: rootArea.height * 0.005
+                    // Item wrapper pour annonce + avatar + nom (layout indépendant pour le nom)
+                    Item {
+                        width: rootArea.width * 0.08
+                        height: rootArea.height * 0.045 + rootArea.height * 0.005 + rootArea.width * 0.075 + rootArea.height * 0.005 + rootArea.height * 0.04
 
                         // Indicateur d'annonce (espace toujours reserve)
                         Rectangle {
+                            id: bidRectSouth
+                            anchors.top: parent.top
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: Math.max(bidRowSouth.width + rootArea.width * 0.02, rootArea.width * 0.08)
                             height: rootArea.height * 0.045
@@ -506,6 +587,9 @@ Rectangle {
 
                         Rectangle {
                             id: avatarSouth
+                            anchors.top: bidRectSouth.bottom
+                            anchors.topMargin: rootArea.height * 0.005
+                            anchors.horizontalCenter: parent.horizontalCenter
                             width: rootArea.width * 0.075
                             height: rootArea.width * 0.075
                             radius: 5
@@ -554,14 +638,35 @@ Rectangle {
                                     }
                                 }
                             }
+
+                            // MouseArea pour afficher les stats
+                            MouseArea {
+                                anchors.fill: parent
+                                property bool isGuest: {
+                                    var name = rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
+                                    return !name || name.startsWith("Invité") || name.startsWith("Joueur")
+                                }
+                                cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                onClicked: {
+                                    if (!isGuest) {
+                                        playerStatsPopup.loadPlayerStats(rootArea.getPlayerName(playerSouthRow.actualPlayerIndex))
+                                        playerStatsPopup.visible = true
+                                    }
+                                }
+                            }
                         }
 
                         Text {
                             text: rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
                             color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "white"
-                            font.pixelSize: rootArea.height * 0.03
+                            font.pixelSize: rootArea.height * 0.04
                             font.bold: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
-                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.top: avatarSouth.bottom
+                            anchors.topMargin: rootArea.height * 0.005
+                            anchors.horizontalCenter: avatarSouth.horizontalCenter
+                            width: rootArea.width * 0.11
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
                         }
                     }
                 }
@@ -613,7 +718,7 @@ Rectangle {
             id: playerNorthColumn
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.topMargin: - parent.height * 0.01
+            anchors.topMargin: parent.height * 0.005
             width: parent.width * 0.5
             height: rootArea.height * 0.23
 
@@ -626,12 +731,14 @@ Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: rootArea.width * 0.01
 
-                // Column pour avatar + nom (empilés verticalement)
-                Column {
-                    spacing: rootArea.height * 0.005
+                // Item wrapper pour avatar + nom (layout indépendant pour le nom)
+                Item {
+                    width: rootArea.width * 0.075
+                    height: rootArea.width * 0.075 + rootArea.height * 0.005 + rootArea.height * 0.04
 
                     Rectangle {
                         id: northAvatarRect
+                        anchors.top: parent.top
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: rootArea.width * 0.075
                         height: rootArea.width * 0.075
@@ -680,14 +787,35 @@ Rectangle {
                                 }
                             }
                         }
+
+                        // MouseArea pour afficher les stats
+                        MouseArea {
+                            anchors.fill: parent
+                            property bool isGuest: {
+                                var name = rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex)
+                                return !name || name.startsWith("Invité") || name.startsWith("Joueur")
+                            }
+                            cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
+                            onClicked: {
+                                if (!isGuest) {
+                                    playerStatsPopup.loadPlayerStats(rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex))
+                                    playerStatsPopup.visible = true
+                                }
+                            }
+                        }
                     }
 
                     Text {
                         text: rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex)
                         color: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex ? "#ffff66" : "white"
-                        font.pixelSize: rootArea.height * 0.03
+                        font.pixelSize: rootArea.height * 0.04
                         font.bold: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex
-                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: northAvatarRect.bottom
+                        anchors.topMargin: rootArea.height * 0.005
+                        anchors.horizontalCenter: northAvatarRect.horizontalCenter
+                        width: rootArea.width * 0.11
+                        horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
                     }
                 }
 
@@ -730,7 +858,6 @@ Rectangle {
                             if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "Passe") return 0
                             return 0.85
                         }
-                        //visible: opacity > 0
 
                         Behavior on opacity {
                             NumberAnimation { duration: 200 }
@@ -812,7 +939,7 @@ Rectangle {
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(1)
 
-            // Avatar, nom et annonce a droite des cartes
+            // Column pour annonce + avatar + dealer, avec nom en overlay
             Column {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: rootArea.height * 0.005
@@ -856,63 +983,92 @@ Rectangle {
                     }
                 }
 
-                Rectangle {
+                // Item wrapper pour avatar + nom (le nom n'affecte pas la largeur)
+                Item {
                     width: rootArea.width * 0.075
-                    height: rootArea.width * 0.075
-                    radius: 5
-                    color: "#80808080"  // Gris avec 50% de transparence
-                    border.color: gameModel.currentPlayer === playerWestRow.actualPlayerIndex ? "#ffff66" : "#888888"
-                    border.width: 3
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    height: rootArea.width * 0.075 + rootArea.height * 0.005 + rootArea.height * 0.04
 
-                    Image {
-                        anchors.fill: parent
-                        anchors.margins: parent.width * 0.05
-                        source: rootArea.getPlayerAvatar(playerWestRow.actualPlayerIndex)
-                        fillMode: Image.PreserveAspectFit
-                        smooth: true
-                    }
-
-                    // Jauge de timer en overlay
                     Rectangle {
-                        anchors.fill: parent
-                        anchors.margins: 3
-                        radius: 2
-                        visible: !gameModel.biddingPhase && gameModel.currentPlayer === playerWestRow.actualPlayerIndex
-                        clip: true
-                        color: "transparent"
-                        z: 100
+                        id: westAvatarRect
+                        anchors.top: parent.top
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: rootArea.width * 0.075
+                        height: rootArea.width * 0.075
+                        radius: 5
+                        color: "#80808080"  // Gris avec 50% de transparence
+                        border.color: gameModel.currentPlayer === playerWestRow.actualPlayerIndex ? "#ffff66" : "#888888"
+                        border.width: 3
 
+                        Image {
+                            anchors.fill: parent
+                            anchors.margins: parent.width * 0.05
+                            source: rootArea.getPlayerAvatar(playerWestRow.actualPlayerIndex)
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                        }
+
+                        // Jauge de timer en overlay
                         Rectangle {
-                            property real fillRatio: gameModel.playTimeRemaining / gameModel.maxPlayTime
+                            anchors.fill: parent
+                            anchors.margins: 3
+                            radius: 2
+                            visible: !gameModel.biddingPhase && gameModel.currentPlayer === playerWestRow.actualPlayerIndex
+                            clip: true
+                            color: "transparent"
+                            z: 100
 
-                            width: parent.width
-                            height: parent.height * fillRatio
-                            anchors.bottom: parent.bottom
-                            radius: parent.radius
-                            color: {
-                                if (gameModel.playTimeRemaining <= 3) return "#B0FF3333"
-                                if (gameModel.playTimeRemaining <= 7) return "#B0FFAA00"
-                                return "#B000CC00"
+                            Rectangle {
+                                property real fillRatio: gameModel.playTimeRemaining / gameModel.maxPlayTime
+
+                                width: parent.width
+                                height: parent.height * fillRatio
+                                anchors.bottom: parent.bottom
+                                radius: parent.radius
+                                color: {
+                                    if (gameModel.playTimeRemaining <= 3) return "#B0FF3333"
+                                    if (gameModel.playTimeRemaining <= 7) return "#B0FFAA00"
+                                    return "#B000CC00"
+                                }
+
+                                Behavior on height {
+                                    NumberAnimation { duration: 300 }
+                                }
+
+                                Behavior on color {
+                                    ColorAnimation { duration: 300 }
+                                }
                             }
+                        }
 
-                            Behavior on height {
-                                NumberAnimation { duration: 300 }
+                        // MouseArea pour afficher les stats
+                        MouseArea {
+                            anchors.fill: parent
+                            property bool isGuest: {
+                                var name = rootArea.getPlayerName(playerWestRow.actualPlayerIndex)
+                                return !name || name.startsWith("Invité") || name.startsWith("Joueur")
                             }
-
-                            Behavior on color {
-                                ColorAnimation { duration: 300 }
+                            cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
+                            onClicked: {
+                                if (!isGuest) {
+                                    playerStatsPopup.loadPlayerStats(rootArea.getPlayerName(playerWestRow.actualPlayerIndex))
+                                    playerStatsPopup.visible = true
+                                }
                             }
                         }
                     }
-                }
 
-                Text {
-                    text: rootArea.getPlayerName(playerWestRow.actualPlayerIndex)
-                    color: gameModel.currentPlayer === playerWestRow.actualPlayerIndex ? "#ffff66" : "white"
-                    font.pixelSize: rootArea.height * 0.03
-                    font.bold: gameModel.currentPlayer === playerWestRow.actualPlayerIndex
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Text {
+                        text: rootArea.getPlayerName(playerWestRow.actualPlayerIndex)
+                        color: gameModel.currentPlayer === playerWestRow.actualPlayerIndex ? "#ffff66" : "white"
+                        font.pixelSize: rootArea.height * 0.04
+                        font.bold: gameModel.currentPlayer === playerWestRow.actualPlayerIndex
+                        anchors.top: westAvatarRect.bottom
+                        anchors.topMargin: rootArea.height * 0.005
+                        anchors.horizontalCenter: westAvatarRect.horizontalCenter
+                        width: rootArea.width * 0.11
+                        horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
+                    }
                 }
 
                 // Jeton de dealer
@@ -986,7 +1142,7 @@ Rectangle {
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(3)
 
-            // Avatar et nom a coté du jeu
+            // Column pour annonce + avatar + dealer, avec nom en overlay
             Column {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: rootArea.height * 0.005
@@ -1030,63 +1186,92 @@ Rectangle {
                     }
                 }
 
-                Rectangle {
+                // Item wrapper pour avatar + nom (le nom n'affecte pas la largeur)
+                Item {
                     width: rootArea.width * 0.075
-                    height: rootArea.width * 0.075
-                    radius: 5
-                    color: "#80808080"  // Gris avec 50% de transparence
-                    border.color: gameModel.currentPlayer === playerEastRow.actualPlayerIndex ? "#ffff66" : "#888888"
-                    border.width: 3
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    height: rootArea.width * 0.075 + rootArea.height * 0.005 + rootArea.height * 0.04
 
-                    Image {
-                        anchors.fill: parent
-                        anchors.margins: parent.width * 0.05
-                        source: rootArea.getPlayerAvatar(playerEastRow.actualPlayerIndex)
-                        fillMode: Image.PreserveAspectFit
-                        smooth: true
-                    }
-
-                    // Jauge de timer en overlay
                     Rectangle {
-                        anchors.fill: parent
-                        radius: 2
-                        anchors.margins: 3
-                        visible: !gameModel.biddingPhase && gameModel.currentPlayer === playerEastRow.actualPlayerIndex
-                        clip: true
-                        color: "transparent"
-                        z: 100
+                        id: eastAvatarRect
+                        anchors.top: parent.top
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: rootArea.width * 0.075
+                        height: rootArea.width * 0.075
+                        radius: 5
+                        color: "#80808080"  // Gris avec 50% de transparence
+                        border.color: gameModel.currentPlayer === playerEastRow.actualPlayerIndex ? "#ffff66" : "#888888"
+                        border.width: 3
 
+                        Image {
+                            anchors.fill: parent
+                            anchors.margins: parent.width * 0.05
+                            source: rootArea.getPlayerAvatar(playerEastRow.actualPlayerIndex)
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                        }
+
+                        // Jauge de timer en overlay
                         Rectangle {
-                            property real fillRatio: gameModel.playTimeRemaining / gameModel.maxPlayTime
+                            anchors.fill: parent
+                            radius: 2
+                            anchors.margins: 3
+                            visible: !gameModel.biddingPhase && gameModel.currentPlayer === playerEastRow.actualPlayerIndex
+                            clip: true
+                            color: "transparent"
+                            z: 100
 
-                            width: parent.width
-                            height: parent.height * fillRatio
-                            anchors.bottom: parent.bottom
-                            radius: parent.radius
-                            color: {
-                                if (gameModel.playTimeRemaining <= 3) return "#B0FF3333"
-                                if (gameModel.playTimeRemaining <= 7) return "#B0FFAA00"
-                                return "#B000CC00"
+                            Rectangle {
+                                property real fillRatio: gameModel.playTimeRemaining / gameModel.maxPlayTime
+
+                                width: parent.width
+                                height: parent.height * fillRatio
+                                anchors.bottom: parent.bottom
+                                radius: parent.radius
+                                color: {
+                                    if (gameModel.playTimeRemaining <= 3) return "#B0FF3333"
+                                    if (gameModel.playTimeRemaining <= 7) return "#B0FFAA00"
+                                    return "#B000CC00"
+                                }
+
+                                Behavior on height {
+                                    NumberAnimation { duration: 300 }
+                                }
+
+                                Behavior on color {
+                                    ColorAnimation { duration: 300 }
+                                }
                             }
+                        }
 
-                            Behavior on height {
-                                NumberAnimation { duration: 300 }
+                        // MouseArea pour afficher les stats
+                        MouseArea {
+                            anchors.fill: parent
+                            property bool isGuest: {
+                                var name = rootArea.getPlayerName(playerEastRow.actualPlayerIndex)
+                                return !name || name.startsWith("Invité") || name.startsWith("Joueur")
                             }
-
-                            Behavior on color {
-                                ColorAnimation { duration: 300 }
+                            cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
+                            onClicked: {
+                                if (!isGuest) {
+                                    playerStatsPopup.loadPlayerStats(rootArea.getPlayerName(playerEastRow.actualPlayerIndex))
+                                    playerStatsPopup.visible = true
+                                }
                             }
                         }
                     }
-                }
 
-                Text {
-                    text: rootArea.getPlayerName(playerEastRow.actualPlayerIndex)
-                    color: gameModel.currentPlayer === playerEastRow.actualPlayerIndex ? "#ffff66" : "white"
-                    font.pixelSize: rootArea.height * 0.03
-                    font.bold: gameModel.currentPlayer === playerEastRow.actualPlayerIndex
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Text {
+                        text: rootArea.getPlayerName(playerEastRow.actualPlayerIndex)
+                        color: gameModel.currentPlayer === playerEastRow.actualPlayerIndex ? "#ffff66" : "white"
+                        font.pixelSize: rootArea.height * 0.04
+                        font.bold: gameModel.currentPlayer === playerEastRow.actualPlayerIndex
+                        anchors.top: eastAvatarRect.bottom
+                        anchors.topMargin: rootArea.height * 0.005
+                        anchors.horizontalCenter: eastAvatarRect.horizontalCenter
+                        width: rootArea.width * 0.11
+                        horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
+                    }
                 }
 
                 // Jeton de dealer
@@ -1243,11 +1428,11 @@ Rectangle {
         // =====================
         Button {
             id: coincheButton
-            text: "Coinche"
+            text: "COINCHE !"
 
             // Dimensions et position
-            width: rootArea.width * 0.1
-            height: rootArea.height * 0.15
+            width: rootArea.width * 0.14
+            height: rootArea.height * 0.2
             anchors.bottom: parent.bottom
             anchors.right: parent.right
             anchors.margins: parent.width * 0.015
@@ -1290,7 +1475,7 @@ Rectangle {
 
             contentItem: Text {
                 text: parent.text
-                font.pixelSize: rootArea.height * 0.035
+                font.pixelSize: rootArea.height * 0.05
                 font.bold: true
                 color: parent.enabled ? "white" : "#666666"
                 horizontalAlignment: Text.AlignHCenter
@@ -1450,7 +1635,7 @@ Rectangle {
                 Text {
                     anchors.centerIn: parent
                     text: "SURCOINCHE !"
-                    font.pixelSize: parent.height * 0.3
+                    font.pixelSize: parent.height * 0.5
                     font.bold: true
                     color: "#FF0088"
                     horizontalAlignment: Text.AlignHCenter
@@ -1554,6 +1739,74 @@ Rectangle {
                         easing.type: Easing.OutCubic
                     }
                 }
+            }
+        }
+
+        // ---- Animation CAPOT ----
+        Rectangle {
+            anchors.centerIn: parent
+            width: playArea.width * 0.6
+            height: playArea.height * 0.35
+            visible: gameModel.showCapotAnimation
+            z: 100
+
+            Text {
+                anchors.centerIn: parent
+                text: "CAPOT !"
+                font.pixelSize: parent.height * 0.6
+                font.family: "Serif"
+                font.italic: true
+                font.weight: Font.Black
+                color: "#FFD700"  // Or
+                style: Text.Outline
+                styleColor: "#8B0000"  // Rouge foncé pour le contour
+
+                // Animation de fade in/out
+                opacity: gameModel.showCapotAnimation ? 1.0 : 0.0
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 800
+                        easing.type: Easing.InOutQuad
+                    }
+                }
+
+                // Animation d'échelle à l'apparition
+                scale: gameModel.showCapotAnimation ? 1.0 : 0.5
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 600
+                        easing.type: Easing.OutBack
+                    }
+                }
+
+                // Animation de rotation légère
+                rotation: gameModel.showCapotAnimation ? 0 : -15
+                Behavior on rotation {
+                    NumberAnimation {
+                        duration: 600
+                        easing.type: Easing.OutBack
+                    }
+                }
+            }
+
+            // Animation de pulsation pour le fond
+            color: "transparent"
+            border.color: "#FFD700"
+            border.width: 5 * rootArea.minRatio
+            radius: 20 * rootArea.minRatio
+            opacity: gameModel.showCapotAnimation ? 0.9 : 0.0
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 800
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            SequentialAnimation on scale {
+                running: gameModel.showCapotAnimation
+                loops: Animation.Infinite
+                NumberAnimation { to: 1.05; duration: 1000; easing.type: Easing.InOutQuad }
+                NumberAnimation { to: 1.0; duration: 1000; easing.type: Easing.InOutQuad }
             }
         }
 
@@ -1714,8 +1967,8 @@ Rectangle {
         // =====================
         Item {
             anchors.centerIn: playArea
-            width: playArea.width * 0.3
-            height: playArea.height * 0.3
+            width: playArea.width * 0.4
+            height: playArea.height * 0.4
             visible: gameModel.surcoincheAvailable
 
             // Couches d'ombre (du plus flou au plus net)
@@ -1758,18 +2011,9 @@ Rectangle {
                 anchors.margins: parent.height * 0.1
                 spacing: parent.height * 0.08
 
-                /*Text {
-                    text: "Surcoinche"
-                    font.pixelSize: parent.height * 0.12
-                    font.bold: true
-                    color: "#FFD700"
-                    Layout.alignment: Qt.AlignHCenter
-                    horizontalAlignment: Text.AlignHCenter
-                }*/
-
                 Button {
                     id: surcoincheButton
-                    text: "SURCOINCHE"
+                    text: "SURCOINCHE ?"
                     Layout.preferredWidth: parent.width * 0.9
                     Layout.preferredHeight: parent.height * 0.65
                     Layout.alignment: Qt.AlignHCenter
@@ -1792,7 +2036,7 @@ Rectangle {
 
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: surcoincheContainer.height * 0.1
+                        font.pixelSize: surcoincheContainer.height * 0.2
                         font.bold: true
                         color: "white"
                         horizontalAlignment: Text.AlignHCenter
@@ -2057,6 +2301,16 @@ Rectangle {
 
         onCancelExit: {
             // Ne rien faire, la popup se ferme automatiquement
+        }
+    }
+
+    // ---- Popup de statistiques du joueur ----
+    PlayerStatsPopup {
+        id: playerStatsPopup
+        anchors.fill: parent
+
+        onClosePopup: {
+            playerStatsPopup.visible = false
         }
     }
 

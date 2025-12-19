@@ -77,7 +77,7 @@ Rectangle {
         // Texte de statut
         Text {
             text: "Recherche de joueurs..."
-            font.pixelSize: 32 * root.minRatio
+            font.pixelSize: 46 * root.minRatio
             font.bold: true
             color: "#FFD700"
             Layout.alignment: Qt.AlignHCenter

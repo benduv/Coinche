@@ -27,9 +27,49 @@ Rectangle {
     property int annoncesCoincheesgagnees: 0
     property int surcoincheAttempts: 0
     property int surcoincheSuccess: 0
+    property int annoncesSurcoinchees: 0
+    property int annoncesSurcoincheesGagnees: 0
+    property int maxWinStreak: 0
     property string playerName: ""
 
     signal backToMenu()
+
+    // Bouton retour
+    Rectangle {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.margins: 40 * minRatio
+        width: 100 * minRatio
+        height: 100 * minRatio
+        color: "transparent"
+        z: 100
+
+        Image {
+            anchors.fill: parent
+            source: "qrc:/resources/back-square-svgrepo-com.svg"
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                backToMenu()
+            }
+            onEntered: {
+                parent.scale = 1.1
+            }
+            onExited: {
+                parent.scale = 1.0
+            }
+        }
+
+        Behavior on scale {
+            NumberAnimation { duration: 100 }
+        }
+    }
 
     Component.onCompleted: {
         // Demander les statistiques au serveur
@@ -72,6 +112,9 @@ Rectangle {
                 annoncesCoincheesgagnees = data.annoncesCoincheesgagnees || 0
                 surcoincheAttempts = data.surcoincheAttempts || 0
                 surcoincheSuccess = data.surcoincheSuccess || 0
+                annoncesSurcoinchees = data.annoncesSurcoinchees || 0
+                annoncesSurcoincheesGagnees = data.annoncesSurcoincheesGagnees || 0
+                maxWinStreak = data.maxWinStreak || 0
                 console.log("Stats affichées - Parties:", gamesPlayed, "Victoires:", gamesWon)
             }
         }
@@ -283,6 +326,53 @@ Rectangle {
                             font.pixelSize: Math.min(48 * minRatio, 42)
                             font.bold: true
                             color: "#FFD700"
+                            Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
+                        }
+                    }
+                }
+
+                // Carte: Série de victoire
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 160 * heightRatio
+                    Layout.minimumWidth: 250 * widthRatio
+                    color: "#2a2a2a"
+                    radius: 15 * minRatio
+                    border.color: "#00ff88"
+                    border.width: 2 * minRatio
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 15 * minRatio
+                        spacing: 8 * minRatio
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8 * minRatio
+
+                            Text {
+                                text: "🔥"
+                                font.pixelSize: 28 * minRatio
+                            }
+
+                            Text {
+                                text: "Série de victoire"
+                                font.pixelSize: Math.min(20 * minRatio, 18)
+                                font.bold: true
+                                color: "#00ff88"
+                                Layout.fillWidth: true
+                            }
+                        }
+
+                        Item { Layout.fillHeight: true }
+
+                        Text {
+                            text: maxWinStreak.toString()
+                            font.pixelSize: Math.min(48 * minRatio, 42)
+                            font.bold: true
+                            color: "#00ff88"
                             Layout.alignment: Qt.AlignHCenter
                             style: Text.Outline
                             styleColor: "#000000"
@@ -618,6 +708,120 @@ Rectangle {
 
                         Text {
                             text: surcoincheAttempts > 0 ? ((surcoincheSuccess / surcoincheAttempts) * 100).toFixed(1) + "%" : "0%"
+                            font.pixelSize: Math.min(42 * minRatio, 36)
+                            font.bold: true
+                            color: "#FFD700"
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+                    }
+                }
+            }
+
+            // Section Surcoinches Subies
+            Text {
+                text: "🛡️ SURCOINCHES SUBIES"
+                font.pixelSize: Math.min(28 * minRatio, 24)
+                font.bold: true
+                color: "#cc66ff"
+                Layout.topMargin: 10 * minRatio
+            }
+
+            GridLayout {
+                Layout.fillWidth: true
+                columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
+                columnSpacing: 15 * widthRatio
+                rowSpacing: 15 * heightRatio
+
+                // Carte: Surcoinches subies
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 140 * heightRatio
+                    Layout.minimumWidth: 200 * widthRatio
+                    color: "#2a2a2a"
+                    radius: 15 * minRatio
+                    border.color: "#9966ff"
+                    border.width: 2 * minRatio
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 12 * minRatio
+                        spacing: 5 * minRatio
+
+                        Text {
+                            text: "Subies"
+                            font.pixelSize: Math.min(18 * minRatio, 16)
+                            color: "#aaaaaa"
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+
+                        Text {
+                            text: annoncesSurcoinchees.toString()
+                            font.pixelSize: Math.min(42 * minRatio, 36)
+                            font.bold: true
+                            color: "#9966ff"
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+                    }
+                }
+
+                // Carte: Surcoinches subies réussies
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 140 * heightRatio
+                    Layout.minimumWidth: 200 * widthRatio
+                    color: "#2a2a2a"
+                    radius: 15 * minRatio
+                    border.color: "#00dd00"
+                    border.width: 2 * minRatio
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 12 * minRatio
+                        spacing: 5 * minRatio
+
+                        Text {
+                            text: "Subies réussies"
+                            font.pixelSize: Math.min(16 * minRatio, 14)
+                            color: "#aaaaaa"
+                            Layout.alignment: Qt.AlignHCenter
+                            wrapMode: Text.WordWrap
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        Text {
+                            text: annoncesSurcoincheesGagnees.toString()
+                            font.pixelSize: Math.min(42 * minRatio, 36)
+                            font.bold: true
+                            color: "#00dd00"
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+                    }
+                }
+
+                // Carte: Taux de réussite subies
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 140 * heightRatio
+                    Layout.minimumWidth: 200 * widthRatio
+                    color: "#2a2a2a"
+                    radius: 15 * minRatio
+                    border.color: "#FFD700"
+                    border.width: 2 * minRatio
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 12 * minRatio
+                        spacing: 5 * minRatio
+
+                        Text {
+                            text: "Taux de victoire"
+                            font.pixelSize: Math.min(18 * minRatio, 16)
+                            color: "#aaaaaa"
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+
+                        Text {
+                            text: annoncesSurcoinchees > 0 ? ((annoncesSurcoincheesGagnees / annoncesSurcoinchees) * 100).toFixed(1) + "%" : "0%"
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
                             color: "#FFD700"

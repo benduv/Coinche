@@ -101,9 +101,14 @@ ApplicationWindow {
                     stackView.push(mainMenuComponent)
                 }
 
+                Config {
+                    id: config
+                }
+
                 Component.onCompleted: {
-                    networkManager.connectToServer("ws://localhost:1234")
-                    //networkManager.connectToServer("ws://10.0.2.2:1234")
+                    var serverUrl = config.getServerUrl()
+                    console.log("Connexion au serveur:", serverUrl)
+                    networkManager.connectToServer(serverUrl)
                 }
             }
         }
@@ -277,7 +282,7 @@ ApplicationWindow {
                                 smooth: true
                             }
 
-                            // Icône de modification (visible au survol)
+                            // Icône de modification (toujours visible)
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.bottom: parent.bottom
@@ -285,7 +290,6 @@ ApplicationWindow {
                                 height: 30 * mainWindow.minRatio
                                 radius: 15 * mainWindow.minRatio
                                 color: "#FFD700"
-                                visible: avatarMouseArea.containsMouse
 
                                 Text {
                                     anchors.centerIn: parent
@@ -301,7 +305,6 @@ ApplicationWindow {
                                 cursorShape: Qt.PointingHandCursor
                                 hoverEnabled: true
                                 onClicked: {
-                                    avatarSelectorPopup.selectedAvatar = networkManager.playerAvatar
                                     avatarSelectorPopup.open()
                                 }
                             }
@@ -363,7 +366,7 @@ ApplicationWindow {
                                    "#555555"
                             radius: 10 * mainWindow.minRatio
                             border.color: parent.enabled ? "#FFD700" : "#888888"
-                            border.width: 2 * mainWindow.minRatio
+                            border.width: 3 * mainWindow.minRatio
                         }
 
                         contentItem: Column {
@@ -447,15 +450,7 @@ ApplicationWindow {
                         color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
                         radius: 10 * mainWindow.minRatio
                         border.color: "#FFD700"
-                        border.width: 2 * mainWindow.minRatio
-
-                        // Animation de pulsation au hover
-                        /*SequentialAnimation on scale {
-                            running: parent.parent.hovered
-                            loops: Animation.Infinite
-                            NumberAnimation { to: 1.1; duration: 600; easing.type: Easing.InOutQuad }
-                            NumberAnimation { to: 1.0; duration: 600; easing.type: Easing.InOutQuad }
-                        }*/
+                        border.width: 3 * mainWindow.minRatio
                     }
 
                     contentItem: Image {
@@ -472,13 +467,32 @@ ApplicationWindow {
                 }
 
                 // Popup de sélection d'avatar
-                AvatarSelectorPopup {
+                Popup {
                     id: avatarSelectorPopup
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width, 500 * mainWindow.widthRatio)
+                    height: Math.min(parent.height, 600 * mainWindow.heightRatio)
+                    modal: true
+                    focus: true
+                    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
                     parent: Overlay.overlay
 
-                    onAvatarSelected: function(avatar) {
-                        console.log("Avatar sélectionné:", avatar)
-                        networkManager.updateAvatar(avatar)
+                    background: Rectangle {
+                        color: "#1a1a1a"
+                        radius: 15 * mainWindow.minRatio
+                        border.color: "#FFD700"
+                        border.width: 3 * mainWindow.minRatio
+                    }
+
+                    AvatarSelector {
+                        anchors.fill: parent
+                        selectedAvatar: networkManager.playerAvatar
+
+                        onAvatarSelected: function(avatar) {
+                            console.log("Avatar sélectionné:", avatar)
+                            networkManager.updateAvatar(avatar)
+                            avatarSelectorPopup.close()
+                        }
                     }
                 }
             }

@@ -304,8 +304,8 @@ Rectangle {
                 }
                 // Bouton Tout Atout
                 Button {
-                    width: suitSelector.width * 0.13
-                    height: suitSelector.height * 0.45
+                    width: suitSelector.height * 0.6
+                    height: suitSelector.height * 0.6
 
                     background: Rectangle {
                         color: parent.down ? "#444444" :
@@ -333,8 +333,8 @@ Rectangle {
 
                 // Bouton Sans Atout
                 Button {
-                    width: suitSelector.width * 0.13
-                    height: suitSelector.height * 0.45
+                    width: suitSelector.height * 0.6
+                    height: suitSelector.height * 0.6
 
                     background: Rectangle {
                         color: parent.down ? "#444444" :
@@ -399,8 +399,8 @@ Rectangle {
         property real popupWidth: 100
         property real popupHeight: 100
 
-        width: popupWidth * 0.13
-        height: popupHeight * 0.45
+        width: popupHeight * 0.6
+        height: popupHeight * 0.6
 
         background: Rectangle {
             color: parent.down ? "#444444" :
@@ -412,7 +412,7 @@ Rectangle {
 
         contentItem: Text {
             text: parent.text
-            font.pixelSize: popupHeight * 0.35
+            font.pixelSize: popupHeight * 0.3
             color: suitColor
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
