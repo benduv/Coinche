@@ -1,11 +1,43 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 
 Rectangle {
     id: rootArea
     anchors.fill: parent
-    color: "#79d279"
+
+    // Musique de fond pour la partie
+    MediaPlayer {
+        id: gameMusic
+        source: "qrc:/resources/sons/lofi-boy-night-waves-lofi-relax-instrumental-278248.mp3"
+        loops: MediaPlayer.Infinite
+        audioOutput: AudioOutput {}
+    }
+
+    // Son pour jouer une carte
+    MediaPlayer {
+        id: cardSound
+        source: "qrc:/resources/sons/card-sounds-35956.mp3"
+        audioOutput: AudioOutput {}
+    }
+
+    // Surveiller les changements de paramètres audio
+    Connections {
+        target: AudioSettings
+        function onMusicEnabledChanged() {
+            if (AudioSettings.musicEnabled) {
+                gameMusic.play()
+            } else {
+                gameMusic.pause()
+            }
+        }
+    }
+
+    Component.onDestruction: {
+        // Arrêter la musique quand on quitte la vue
+        gameMusic.stop()
+    }
 
     // Ratios pour le responsive (résolution de référence: 1920x1080)
     property real widthRatio: width / 1920
@@ -17,6 +49,12 @@ Rectangle {
     property int gameOverWinner: 1
     property int gameOverScoreTeam1: 0
     property int gameOverScoreTeam2: 0
+
+    Image {
+        anchors.fill: parent
+        source: "qrc:/resources/cielEtoile.jpg"
+        fillMode: Image.PreserveAspectCrop
+    }
 
     // Fonction pour retourner au menu principal
     function returnToMainMenu() {
@@ -177,6 +215,7 @@ Rectangle {
             visible: gameModel.biddingPhase &&
                      gameModel.distributionPhase === 0 &&
                      gameModel.biddingPlayer !== gameModel.myPosition &&
+                     gameModel.biddingPlayer >= 0 &&         // Masquer si biddingPlayer invalide
                      !gameModel.showCoincheAnimation &&      // Masquer si animation Coinche
                      !gameModel.showSurcoincheAnimation &&   // Masquer si animation Surcoinche
                      !gameModel.surcoincheAvailable          // Masquer si bouton Surcoinche visible
@@ -265,12 +304,6 @@ Rectangle {
             Repeater {
                 id: pliRepeater
                 model: gameModel.currentPli
-
-                onCountChanged: {
-                    if (count === 0) {
-                        pliArea.lastCardCount = 0
-                    }
-                }
 
                 Card {
                     id: cardInPli
@@ -398,6 +431,15 @@ Rectangle {
                         running: false
                         repeat: false
                         onTriggered: {
+                            console.log("animateToFinalTimer.onTriggered - CoincheView ID:", rootArea, "Carte:", modelData.playerId, modelData.value, modelData.suit)
+                            console.log("AudioSettings.effectsEnabled:", AudioSettings.effectsEnabled)
+                            // Jouer le son de carte si les effets sont activés
+                            if (AudioSettings.effectsEnabled) {
+                                console.log(">>> LECTURE DU SON DE CARTE <<<")
+                                cardSound.stop()
+                                cardSound.play()
+                            }
+
                             // ACTIVER les Behaviors pour l'animation
                             willAnimate = true
 
@@ -2315,7 +2357,10 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        console.log("=== CoincheView chargé ===")
+        console.log("=== CoincheView charge - Instance ID:", rootArea, "===")
+        console.log("Stack trace pour identifier le parent:")
+        console.log("Parent:", parent)
+        console.log("Parent.parent:", parent ? parent.parent : "null")
         console.log("gameModel:", gameModel)
         console.log("myPosition:", gameModel.myPosition)
         console.log("player0Hand:", gameModel.player0Hand)
@@ -2329,6 +2374,11 @@ Rectangle {
             console.log("player0Hand est null!")
         }
         console.log("playerSouthRow.actualPlayerIndex:", playerSouthRow.actualPlayerIndex)
+
+        // Démarrer la musique de fond si elle est activée
+        if (AudioSettings.musicEnabled) {
+            gameMusic.play()
+        }
     }
 }
 

@@ -14,6 +14,9 @@
         <file>qml/PrivateLobbyView.qml</file>
         <file>qml/LobbyRoomView.qml</file>
         <file>qml/Config.qml</file>
+        <file>qml/Settings.qml</file>
+        <file>qml/AudioSettings.qml</file>
+        <file>qml/qmldir</file>
         <file>qml/PlayerStatsPopup.qml</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
@@ -49,11 +52,13 @@
         <file>resources/cards/trefle_roi.png</file>
         <file>resources/cards/trefle_as.png</file>
         <file>resources/Tapis poker3.jpg</file>
+        <file>resources/cielEtoile.jpg</file>
         <file>resources/back-square-svgrepo-com.svg</file>
         <file>resources/right-arrow-next-svgrepo-com.svg</file>
         <file>resources/left-arrow-next-svgrepo-com.svg</file>
         <file>resources/exit-svgrepo-com.svg</file>
         <file>resources/stats-svgrepo-com.svg</file>
+        <file>resources/setting-svgrepo-com.svg</file>
         <file>resources/avatar/avataaars1.svg</file>
         <file>resources/avatar/avataaars2.svg</file>
         <file>resources/avatar/avataaars3.svg</file>
@@ -78,5 +83,8 @@
         <file>resources/avatar/avataaars22.svg</file>
         <file>resources/avatar/avataaars23.svg</file>
         <file>resources/avatar/avataaars24.svg</file>
+        <file>resources/sons/watr-double-overhead-11517.mp3</file>
+        <file>resources/sons/lofi-boy-night-waves-lofi-relax-instrumental-278248.mp3</file>
+        <file>resources/sons/card-sounds-35956.mp3</file>
     </qresource>
 </RCC>

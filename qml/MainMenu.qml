@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 
 ApplicationWindow {
     id: mainWindow
@@ -9,9 +10,30 @@ ApplicationWindow {
     height: 768
     title: "Jeu de Coinche"
 
+    // Son de démarrage
+    MediaPlayer {
+        id: startupSound
+        source: "qrc:/resources/sons/watr-double-overhead-11517.mp3"
+        audioOutput: AudioOutput {}
+    }
+
+    // Surveiller les changements de paramètres audio
+    Connections {
+        target: AudioSettings
+        function onMusicEnabledChanged() {
+            if (!AudioSettings.musicEnabled) {
+                startupSound.stop()
+            }
+        }
+    }
+
     Component.onCompleted: {
         // Positionner automatiquement la fenêtre au démarrage
         windowPositioner.positionWindow(mainWindow)
+        // Jouer le son de démarrage si les effets sont activés
+        if (AudioSettings.effectsEnabled) {
+            startupSound.play()
+        }
     }
 
     // Variable pour stocker le nom du joueur connecté
@@ -466,6 +488,36 @@ ApplicationWindow {
                     }
                 }
 
+                // Bouton Réglages en bas à droite
+                Button {
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.rightMargin: 50 * mainWindow.minRatio
+                    anchors.bottomMargin: 50 * mainWindow.minRatio
+                    width: 120 * mainWindow.minRatio
+                    height: 120 * mainWindow.minRatio
+                    z: 2
+
+                    background: Rectangle {
+                        color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
+                        radius: 10 * mainWindow.minRatio
+                        border.color: "#FFD700"
+                        border.width: 3 * mainWindow.minRatio
+                    }
+
+                    contentItem: Image {
+                        source: "qrc:/resources/setting-svgrepo-com.svg"
+                        fillMode: Image.PreserveAspectFit
+                        anchors.fill: parent
+                        anchors.margins: 15 * mainWindow.minRatio
+                        smooth: true
+                    }
+
+                    onClicked: {
+                        stackView.push(configViewComponent)
+                    }
+                }
+
                 // Popup de sélection d'avatar
                 Popup {
                     id: avatarSelectorPopup
@@ -504,6 +556,16 @@ ApplicationWindow {
             StatsView {
                 playerName: mainWindow.loggedInPlayerName
 
+                onBackToMenu: {
+                    stackView.pop()
+                }
+            }
+        }
+
+        Component {
+            id: configViewComponent
+
+            Settings {
                 onBackToMenu: {
                     stackView.pop()
                 }
@@ -619,6 +681,8 @@ ApplicationWindow {
 
                     onLoaded: {
                         console.log("CoincheView chargé avec succès!")
+                        // Arrêter le son du menu principal
+                        startupSound.stop()
                     }
                 }
             }
