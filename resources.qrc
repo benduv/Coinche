@@ -18,6 +18,7 @@
         <file>qml/AudioSettings.qml</file>
         <file>qml/qmldir</file>
         <file>qml/PlayerStatsPopup.qml</file>
+        <file>qml/Rules.qml</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>
@@ -59,6 +60,7 @@
         <file>resources/exit-svgrepo-com.svg</file>
         <file>resources/stats-svgrepo-com.svg</file>
         <file>resources/setting-svgrepo-com.svg</file>
+        <file>resources/question-svgrepo-com.svg</file>
         <file>resources/avatar/avataaars1.svg</file>
         <file>resources/avatar/avataaars2.svg</file>
         <file>resources/avatar/avataaars3.svg</file>
@@ -86,5 +88,7 @@
         <file>resources/sons/watr-double-overhead-11517.mp3</file>
         <file>resources/sons/lofi-boy-night-waves-lofi-relax-instrumental-278248.mp3</file>
         <file>resources/sons/card-sounds-35956.mp3</file>
+        <file>resources/sons/701848__perduuus__card-step-2.wav</file>
+        <file>resources/sons/827603__elliottliu__card3.wav</file>
     </qresource>
 </RCC>

@@ -357,9 +357,18 @@ Rectangle {
         }
 
         function onLobbyGameStarting() {
-            console.log("Partie du lobby qui démarre - navigation vers MatchMakingView")
-            // Pousser MatchMakingView avec autoJoin=false (matchmaking déjà lancé par le serveur)
-            stackView.push("qrc:/qml/MatchMakingView.qml", { autoJoin: false })
+            console.log("Partie du lobby qui démarre")
+            var playerCount = networkManager.lobbyPlayers.length
+
+            if (playerCount === 2) {
+                // Lobby à 2 joueurs: pousser MatchMakingView pour attendre 2 autres joueurs
+                console.log("Lobby à 2 joueurs - navigation vers MatchMakingView")
+                stackView.push("qrc:/qml/MatchMakingView.qml", { autoJoin: false })
+            } else if (playerCount === 4) {
+                // Lobby à 4 joueurs: ne rien faire, gameFound arrivera immédiatement
+                // et sera géré par MainMenu qui chargera directement CoincheView
+                console.log("Lobby à 4 joueurs - attente du signal gameFound")
+            }
         }
     }
 

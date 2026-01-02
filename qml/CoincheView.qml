@@ -22,6 +22,20 @@ Rectangle {
         audioOutput: AudioOutput {}
     }
 
+    // Son quand un pli est remporté
+    MediaPlayer {
+        id: pliWonSound
+        source: "qrc:/resources/sons/701848__perduuus__card-step-2.wav"
+        audioOutput: AudioOutput {}
+    }
+
+    // Son distribution
+    MediaPlayer {
+        id: dealingSound
+        source: "qrc:/resources/sons/827603__elliottliu__card3.wav"
+        audioOutput: AudioOutput {}
+    }
+
     // Surveiller les changements de paramètres audio
     Connections {
         target: AudioSettings
@@ -389,6 +403,12 @@ Rectangle {
                         running: false
                         repeat: false
                         onTriggered: {
+                            if (AudioSettings.effectsEnabled) {
+                                console.log(">>> LECTURE DU SON DE CARTE <<<")
+                                //cardSound.stop()
+                                cardSound.play()
+                            }
+
                             // Calculer la position de depart MAINTENANT (dimensions disponibles)
                             var visualPos = rootArea.getVisualPosition(modelData.playerId)
                             var cardW = cardInPli.width
@@ -431,15 +451,6 @@ Rectangle {
                         running: false
                         repeat: false
                         onTriggered: {
-                            console.log("animateToFinalTimer.onTriggered - CoincheView ID:", rootArea, "Carte:", modelData.playerId, modelData.value, modelData.suit)
-                            console.log("AudioSettings.effectsEnabled:", AudioSettings.effectsEnabled)
-                            // Jouer le son de carte si les effets sont activés
-                            if (AudioSettings.effectsEnabled) {
-                                console.log(">>> LECTURE DU SON DE CARTE <<<")
-                                cardSound.stop()
-                                cardSound.play()
-                            }
-
                             // ACTIVER les Behaviors pour l'animation
                             willAnimate = true
 
@@ -473,6 +484,10 @@ Rectangle {
                         target: gameModel
                         function onPliWinnerIdChanged() {
                             if (gameModel.pliWinnerId >= 0) {
+                                if(AudioSettings.effectsEnabled) {
+                                    pliWonSound.stop()
+                                    pliWonSound.play()
+                                }
                                 // Démarrer l'animation de sortie vers le gagnant
                                 var winnerVisualPos = rootArea.getVisualPosition(gameModel.pliWinnerId)
                                 cardInPli.exitAnimating = true
@@ -534,6 +549,18 @@ Rectangle {
             rootArea.showGameOverPopup = true
         }
     }
+
+    // Connexion pour jouer le son quand un pli est remporté
+    /*Connections {
+        target: gameModel
+        function onPliWinnerIdChanged() {
+            if (gameModel.pliWinnerId >= 0 && AudioSettings.effectsEnabled) {
+                console.log("Pli remporte par joueur", gameModel.pliWinnerId)
+                pliWonSound.stop()
+                pliWonSound.play()
+            }
+        }
+    }*/
 
         // =====================
         // JOUEUR SUD (vous)
@@ -2154,6 +2181,10 @@ Rectangle {
 
             // Position de départ selon le dealer
             Component.onCompleted: {
+                if(AudioSettings.effectsEnabled) {
+                    //dealingSound.stop()
+                    dealingSound.play()
+                }
                 opacity = 0
                 // Positionner selon le dealer: 0=Sud(bas), 1=Ouest(gauche), 2=Nord(haut), 3=Est(droite)
                 if (gameModel.dealerPosition === 0) {

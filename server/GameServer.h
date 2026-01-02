@@ -90,6 +90,42 @@ struct GameRoom {
     bool beloteRoiJoue = false;   // Roi de l'atout joué
     bool beloteDameJouee = false; // Dame de l'atout jouée
 
+    // Tracking des cartes jouées pour l'IA des bots
+    // Structure: playedCards[couleur][chiffre] = true si la carte a été jouée
+    std::map<Carte::Couleur, std::map<Carte::Chiffre, bool>> playedCards;
+
+    // Initialise le tracking des cartes jouées (à appeler au début de chaque manche)
+    void resetPlayedCards() {
+        playedCards.clear();
+        std::array<Carte::Couleur, 4> couleurs = {Carte::COEUR, Carte::TREFLE, Carte::CARREAU, Carte::PIQUE};
+        std::array<Carte::Chiffre, 8> chiffres = {Carte::SEPT, Carte::HUIT, Carte::NEUF, Carte::DIX,
+                                                   Carte::VALET, Carte::DAME, Carte::ROI, Carte::AS};
+        for (auto couleur : couleurs) {
+            for (auto chiffre : chiffres) {
+                playedCards[couleur][chiffre] = false;
+            }
+        }
+    }
+
+    // Marque une carte comme jouée
+    void markCardAsPlayed(Carte* carte) {
+        if (carte) {
+            playedCards[carte->getCouleur()][carte->getChiffre()] = true;
+        }
+    }
+
+    // Vérifie si une carte a été jouée
+    bool isCardPlayed(Carte::Couleur couleur, Carte::Chiffre chiffre) const {
+        auto itCouleur = playedCards.find(couleur);
+        if (itCouleur != playedCards.end()) {
+            auto itChiffre = itCouleur->second.find(chiffre);
+            if (itChiffre != itCouleur->second.end()) {
+                return itChiffre->second;
+            }
+        }
+        return false;
+    }
+
     GameModel* gameModel = nullptr;
 };
 
@@ -949,6 +985,9 @@ private:
         // Ajoute au pli courant
         room->currentPli.push_back(std::make_pair(playerIndex, cartePlayed));
 
+        // Marquer la carte comme jouée pour le tracking IA
+        room->markCardAsPlayed(cartePlayed);
+
         // IMPORTANT : Retirer la carte de la main du joueur côté serveur
         // Cela maintient la synchronisation avec les clients
         player->removeCard(cardIndex);
@@ -1714,6 +1753,9 @@ private:
         room->beloteRoiJoue = false;
         room->beloteDameJouee = false;
 
+        // Réinitialiser le tracking des cartes jouées pour l'IA
+        room->resetPlayedCards();
+
         // Reinitialiser les compteurs de plis par joueur
         room->plisCountPlayer0 = 0;
         room->plisCountPlayer1 = 0;
@@ -2112,62 +2154,677 @@ private:
         }
     }
 
+    // Évalue la force d'une main pour une couleur d'atout donnée
+    // Retourne un score estimé de points que le bot peut espérer faire
+    int evaluateHandForSuit(Player* player, Carte::Couleur atoutCouleur) {
+        int score = 0;
+        int atoutCount = 0;
+        bool hasValetAtout = false;
+        bool hasNeufAtout = false;
+        bool hasRoiAtout = false;
+        bool hasDameAtout = false;
+
+        const auto& main = player->getMain();
+
+        for (Carte* carte : main) {
+            Carte::Couleur couleur = carte->getCouleur();
+            Carte::Chiffre chiffre = carte->getChiffre();
+
+            if (couleur == atoutCouleur) {
+                // C'est un atout
+                atoutCount++;
+
+                if (chiffre == Carte::VALET) {
+                    hasValetAtout = true;
+                    score += 20; // Valet d'atout : 20 points
+                } else if (chiffre == Carte::NEUF) {
+                    hasNeufAtout = true;
+                    score += 14; // 9 d'atout : 14 points
+                } else if (chiffre == Carte::AS) {
+                    score += 11;
+                } else if (chiffre == Carte::DIX) {
+                    score += 10;
+                } else if (chiffre == Carte::ROI) {
+                    hasRoiAtout = true;
+                    score += 4;
+                } else if (chiffre == Carte::DAME) {
+                    hasDameAtout = true;
+                    score += 3;
+                }
+            } else {
+                // Hors atout
+                if (chiffre == Carte::AS) {
+                    score += 10; // Bonus pour As hors atout (maître potentiel)
+                }
+            }
+        }
+
+        // Bonus pour la belote (Roi + Dame d'atout)
+        if (hasRoiAtout && hasDameAtout) {
+            score += 20;
+        }
+
+        // Bonus pour nombre d'atouts (plus on en a, mieux c'est)
+        if (atoutCount >= 5) {
+            score += 30;
+        } else if (atoutCount >= 4) {
+            score += 20;
+        } else if (atoutCount >= 3) {
+            score += 10;
+        } else if (atoutCount < 2) {
+            // Pénalité si trop peu d'atouts
+            score -= 20;
+        }
+
+        // Bonus si on a le Valet ET le 9 d'atout (très fort)
+        if (hasValetAtout && hasNeufAtout) {
+            score += 15;
+        }
+
+        return score;
+    }
+
+    // Évalue la main pour soutenir l'annonce du partenaire
+    // Retourne un score bonus à ajouter si le bot veut surenchérir sur l'atout du partenaire
+    int evaluateHandForPartnerSuit(Player* player, Carte::Couleur partnerAtout) {
+        int score = 0;
+        int atoutCount = 0;
+        bool hasValetAtout = false;
+        bool hasNeufAtout = false;
+        bool hasRoiAtout = false;
+        bool hasDameAtout = false;
+
+        const auto& main = player->getMain();
+
+        for (Carte* carte : main) {
+            Carte::Couleur couleur = carte->getCouleur();
+            Carte::Chiffre chiffre = carte->getChiffre();
+
+            if (couleur == partnerAtout) {
+                // C'est un atout (la couleur du partenaire)
+                atoutCount++;
+
+                if (chiffre == Carte::VALET) {
+                    hasValetAtout = true;
+                    score += 15; // Valet d'atout pour soutien : +15
+                } else if (chiffre == Carte::NEUF) {
+                    hasNeufAtout = true;
+                    score += 10; // 9 d'atout pour soutien : +10
+                } else if (chiffre == Carte::ROI) {
+                    hasRoiAtout = true;
+                } else if (chiffre == Carte::DAME) {
+                    hasDameAtout = true;
+                }
+            } else {
+                // Hors atout - les As sont très utiles pour le partenaire
+                if (chiffre == Carte::AS) {
+                    score += 10; // As hors atout : +10 (on peut faire des plis)
+                }
+            }
+        }
+
+        // Bonus pour la belote (Roi + Dame de l'atout du partenaire)
+        if (hasRoiAtout && hasDameAtout) {
+            score += 15; // Belote pour soutien : +15
+        }
+
+        // Bonus si on a des atouts pour soutenir
+        if (hasNeufAtout && atoutCount >= 2) {
+            score += 10; // 9 + autres atouts : bon soutien
+        }
+
+        // Bonus si on a le Valet (très fort pour soutenir)
+        if (hasValetAtout) {
+            score += 5; // Bonus additionnel si on a le Valet
+        }
+
+        return score;
+    }
+
+    // Convertit un score d'évaluation en annonce
+    Player::Annonce scoreToAnnonce(int score, Player::Annonce currentBid) {
+        Player::Annonce annonce = Player::PASSE;
+
+        // Définir l'annonce en fonction du score
+        if (score >= 140) {
+            annonce = Player::CENTSOIXANTE;
+        } else if (score >= 130) {
+            annonce = Player::CENTCINQUANTE;
+        } else if (score >= 120) {
+            annonce = Player::CENTQUARANTE;
+        } else if (score >= 110) {
+            annonce = Player::CENTTRENTE;
+        } else if (score >= 100) {
+            annonce = Player::CENTVINGT;
+        } else if (score >= 90) {
+            annonce = Player::CENTDIX;
+        } else if (score >= 80) {
+            annonce = Player::CENT;
+        } else if (score >= 70) {
+            annonce = Player::QUATREVINGTDIX;
+        } else if (score >= 60) {
+            annonce = Player::QUATREVINGT;
+        }
+
+        // S'assurer que l'annonce est supérieure à l'annonce actuelle
+        if (annonce != Player::PASSE && annonce <= currentBid) {
+            // Essayer d'annoncer un cran au-dessus si le score le permet
+            if (currentBid < Player::CENTSOIXANTE && score >= 60) {
+                annonce = static_cast<Player::Annonce>(static_cast<int>(currentBid) + 1);
+                // Vérifier qu'on ne dépasse pas nos moyens
+                int requiredScore = 60 + (static_cast<int>(annonce) - 1) * 10;
+                if (score < requiredScore) {
+                    annonce = Player::PASSE;
+                }
+            } else {
+                annonce = Player::PASSE;
+            }
+        }
+
+        return annonce;
+    }
+
     void playBotBid(int roomId, int playerIndex) {
         GameRoom* room = m_gameRooms.value(roomId);
         if (!room || room->currentPlayerIndex != playerIndex) return;
 
-        // Le bot passe toujours
-        qDebug() << "GameServer - Bot joueur" << playerIndex << "passe";
+        Player* player = room->players[playerIndex].get();
 
-        room->passedBidsCount++;
+        // Évaluer la main pour chaque couleur d'atout possible (annonce propre)
+        int bestOwnScore = 0;
+        Carte::Couleur bestOwnCouleur = Carte::COULEURINVALIDE;
 
-        // Broadcast l'enchère à tous
-        QJsonObject msg;
-        msg["type"] = "bidMade";
-        msg["playerIndex"] = playerIndex;
-        msg["bidValue"] = static_cast<int>(Player::PASSE);
-        msg["suit"] = 0;
-        broadcastToRoom(roomId, msg);
+        std::array<Carte::Couleur, 4> couleurs = {Carte::COEUR, Carte::TREFLE, Carte::CARREAU, Carte::PIQUE};
 
-        // Vérifier si phase d'enchères terminée
-        if (room->passedBidsCount >= 3 && room->lastBidAnnonce != Player::ANNONCEINVALIDE) {
-            qDebug() << "GameServer - Fin des encheres! Lancement phase de jeu";
-            for (int i = 0; i < 4; i++) {
-                if (room->isToutAtout) {
-                    room->players[i]->setAllCardsAsAtout();
-                } else if (room->isSansAtout) {
-                    room->players[i]->setNoAtout();
-                } else {
-                    room->players[i]->setAtout(room->lastBidCouleur);
-                }
-            }
-            startPlayingPhase(roomId);
-        } else if (room->passedBidsCount >= 4 && room->lastBidAnnonce == Player::ANNONCEINVALIDE) {
-            // Tous les joueurs ont passé sans annonce -> nouvelle manche
-            qDebug() << "GameServer - Tous les joueurs ont passe! Nouvelle manche";
-            startNewManche(roomId);
-        } else {
-            // Passer au joueur suivant
-            room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
-            room->biddingPlayer = room->currentPlayerIndex;
-
-            QJsonObject stateMsg;
-            stateMsg["type"] = "gameState";
-            stateMsg["currentPlayer"] = room->currentPlayerIndex;
-            stateMsg["biddingPlayer"] = room->biddingPlayer;
-            stateMsg["biddingPhase"] = true;
-            broadcastToRoom(roomId, stateMsg);
-
-            // Si le prochain joueur est aussi un bot, le faire jouer
-            if (room->isBot[room->currentPlayerIndex]) {
-                QTimer::singleShot(800, this, [this, roomId]() {
-                    GameRoom* room = m_gameRooms.value(roomId);
-                    if (room && room->gameState == "bidding") {
-                        playBotBid(roomId, room->currentPlayerIndex);
-                    }
-                });
+        for (Carte::Couleur couleur : couleurs) {
+            int score = evaluateHandForSuit(player, couleur);
+            qDebug() << "Bot" << playerIndex << "- Evaluation couleur" << static_cast<int>(couleur) << ":" << score;
+            if (score > bestOwnScore) {
+                bestOwnScore = score;
+                bestOwnCouleur = couleur;
             }
         }
+
+        // Vérifier si le partenaire a déjà annoncé
+        int partnerIndex = (playerIndex + 2) % 4;
+        bool partnerHasBid = (room->lastBidderIndex == partnerIndex &&
+                              room->lastBidAnnonce != Player::ANNONCEINVALIDE);
+
+        int bestScore = bestOwnScore;
+        Carte::Couleur bestCouleur = bestOwnCouleur;
+
+        if (partnerHasBid) {
+            // Le partenaire a annoncé - évaluer si on peut soutenir
+            Carte::Couleur partnerCouleur = room->lastBidCouleur;
+            int supportScore = evaluateHandForPartnerSuit(player, partnerCouleur);
+
+            qDebug() << "Bot" << playerIndex << "- Partenaire a annoncé en"
+                     << static_cast<int>(partnerCouleur) << ", score soutien:" << supportScore;
+
+            // Si on a un bon soutien, calculer le score équivalent pour comparer
+            if (supportScore >= 25) {
+                int supportTotalScore = supportScore + 60; // Score équivalent pour surenchérir
+
+                // Comparer : soutenir le partenaire vs annoncer soi-même
+                if (supportTotalScore > bestOwnScore) {
+                    qDebug() << "Bot" << playerIndex << "- Préfère soutenir le partenaire ("
+                             << supportTotalScore << ") vs propre annonce (" << bestOwnScore << ")";
+                    bestScore = supportTotalScore;
+                    bestCouleur = partnerCouleur;
+                } else {
+                    qDebug() << "Bot" << playerIndex << "- Préfère sa propre annonce ("
+                             << bestOwnScore << ") vs soutien (" << supportTotalScore << ")";
+                }
+            }
+        }
+
+        // Déterminer l'annonce en fonction du score
+        Player::Annonce annonce = scoreToAnnonce(bestScore, room->lastBidAnnonce);
+
+        qDebug() << "GameServer - Bot joueur" << playerIndex << "meilleur score:" << bestScore
+                 << "couleur:" << static_cast<int>(bestCouleur) << "annonce:" << static_cast<int>(annonce);
+
+        if (annonce == Player::PASSE) {
+            // Le bot passe
+            qDebug() << "GameServer - Bot joueur" << playerIndex << "passe";
+            room->passedBidsCount++;
+
+            // Broadcast l'enchère à tous
+            QJsonObject msg;
+            msg["type"] = "bidMade";
+            msg["playerIndex"] = playerIndex;
+            msg["bidValue"] = static_cast<int>(Player::PASSE);
+            msg["suit"] = 0;
+            broadcastToRoom(roomId, msg);
+
+            // Vérifier si phase d'enchères terminée
+            if (room->passedBidsCount >= 3 && room->lastBidAnnonce != Player::ANNONCEINVALIDE) {
+                qDebug() << "GameServer - Fin des encheres! Lancement phase de jeu";
+                for (int i = 0; i < 4; i++) {
+                    if (room->isToutAtout) {
+                        room->players[i]->setAllCardsAsAtout();
+                    } else if (room->isSansAtout) {
+                        room->players[i]->setNoAtout();
+                    } else {
+                        room->players[i]->setAtout(room->lastBidCouleur);
+                    }
+                }
+                startPlayingPhase(roomId);
+            } else if (room->passedBidsCount >= 4 && room->lastBidAnnonce == Player::ANNONCEINVALIDE) {
+                // Tous les joueurs ont passé sans annonce -> nouvelle manche
+                qDebug() << "GameServer - Tous les joueurs ont passe! Nouvelle manche";
+                startNewManche(roomId);
+            } else {
+                // Passer au joueur suivant
+                advanceToNextBidder(roomId);
+            }
+        } else {
+            // Le bot fait une annonce
+            qDebug() << "GameServer - Bot joueur" << playerIndex << "annonce"
+                     << static_cast<int>(annonce) << "en" << static_cast<int>(bestCouleur);
+
+            room->passedBidsCount = 0;  // Réinitialiser le compteur de passes
+            room->lastBidAnnonce = annonce;
+            room->lastBidCouleur = bestCouleur;
+            room->lastBidderIndex = playerIndex;
+            room->couleurAtout = bestCouleur;
+
+            // Broadcast l'enchère à tous
+            QJsonObject msg;
+            msg["type"] = "bidMade";
+            msg["playerIndex"] = playerIndex;
+            msg["bidValue"] = static_cast<int>(annonce);
+            msg["suit"] = static_cast<int>(bestCouleur);
+            broadcastToRoom(roomId, msg);
+
+            // Passer au joueur suivant
+            advanceToNextBidder(roomId);
+        }
+    }
+
+    // Fonction utilitaire pour passer au prochain enchérisseur
+    void advanceToNextBidder(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
+        room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
+        room->biddingPlayer = room->currentPlayerIndex;
+
+        QJsonObject stateMsg;
+        stateMsg["type"] = "gameState";
+        stateMsg["currentPlayer"] = room->currentPlayerIndex;
+        stateMsg["biddingPlayer"] = room->biddingPlayer;
+        stateMsg["biddingPhase"] = true;
+        broadcastToRoom(roomId, stateMsg);
+
+        // Si le prochain joueur est aussi un bot, le faire jouer
+        if (room->isBot[room->currentPlayerIndex]) {
+            QTimer::singleShot(800, this, [this, roomId]() {
+                GameRoom* room = m_gameRooms.value(roomId);
+                if (room && room->gameState == "bidding") {
+                    playBotBid(roomId, room->currentPlayerIndex);
+                }
+            });
+        }
+    }
+
+    // Vérifie si le partenaire est le joueur qui gagne actuellement le pli
+    bool isPartnerWinning(int playerIndex, int winningPlayerIndex) {
+        // Les partenaires sont aux positions 0-2 et 1-3
+        return (playerIndex % 2) == (winningPlayerIndex % 2);
+    }
+
+    // Calcule la valeur totale des points dans le pli actuel
+    int calculatePliPoints(const std::vector<std::pair<int, Carte*>>& pli) {
+        int points = 0;
+        for (const auto& pair : pli) {
+            points += pair.second->getValeurDeLaCarte();
+        }
+        return points;
+    }
+
+    // Trouve l'index de la carte avec la plus petite valeur
+    int findLowestValueCard(Player* player, const std::vector<int>& playableIndices) {
+        const auto& main = player->getMain();
+        int lowestIdx = playableIndices[0];
+        int lowestValue = main[lowestIdx]->getValeurDeLaCarte() * 100 + main[lowestIdx]->getOrdreCarteForte();
+
+        for (int idx : playableIndices) {
+            int value = main[idx]->getValeurDeLaCarte() * 100 + main[idx]->getOrdreCarteForte();
+            if (value < lowestValue) {
+                lowestValue = value;
+                lowestIdx = idx;
+            }
+        }
+        return lowestIdx;
+    }
+
+    // Trouve l'index de la carte avec la plus grande valeur
+    int findHighestValueCard(Player* player, const std::vector<int>& playableIndices) {
+        const auto& main = player->getMain();
+        int highestIdx = playableIndices[0];
+        int highestValue = main[highestIdx]->getValeurDeLaCarte() * 100 + main[highestIdx]->getOrdreCarteForte();
+
+        for (int idx : playableIndices) {
+            int value = main[idx]->getValeurDeLaCarte() * 100 + main[idx]->getOrdreCarteForte();
+            if (value > highestValue) {
+                highestValue = value;
+                highestIdx = idx;
+            }
+        }
+        return highestIdx;
+    }
+
+    // Trouve la carte la plus faible qui bat la carte gagnante actuelle
+    int findLowestWinningCard(Player* player, const std::vector<int>& playableIndices,
+                              Carte* carteGagnante, Carte::Couleur couleurAtout) {
+        const auto& main = player->getMain();
+        int bestIdx = -1;
+        int bestValue = 9999;
+
+        for (int idx : playableIndices) {
+            Carte* carte = main[idx];
+            // Vérifier si cette carte bat la carte gagnante
+            if (*carteGagnante < *carte) {
+                int value = carte->getValeurDeLaCarte() * 100 + carte->getOrdreCarteForte();
+                if (value < bestValue) {
+                    bestValue = value;
+                    bestIdx = idx;
+                }
+            }
+        }
+        return bestIdx;
+    }
+
+    // Choisit la meilleure carte à jouer selon la stratégie
+    // Compte le nombre d'atouts restants chez les autres joueurs
+    int countRemainingTrumps(GameRoom* room, Player* player) {
+        int remaining = 0;
+        Carte::Couleur atout = room->couleurAtout;
+
+        std::array<Carte::Chiffre, 8> chiffres = {Carte::SEPT, Carte::HUIT, Carte::NEUF, Carte::DIX,
+                                                   Carte::VALET, Carte::DAME, Carte::ROI, Carte::AS};
+
+        for (auto chiffre : chiffres) {
+            // Si la carte n'a pas été jouée et n'est pas dans ma main, elle est chez un autre
+            if (!room->isCardPlayed(atout, chiffre)) {
+                bool inMyHand = false;
+                for (Carte* c : player->getMain()) {
+                    if (c->getCouleur() == atout && c->getChiffre() == chiffre) {
+                        inMyHand = true;
+                        break;
+                    }
+                }
+                if (!inMyHand) {
+                    remaining++;
+                }
+            }
+        }
+        return remaining;
+    }
+
+    // Vérifie si l'As d'une couleur a été joué
+    bool isAcePlayed(GameRoom* room, Carte::Couleur couleur) {
+        return room->isCardPlayed(couleur, Carte::AS);
+    }
+
+    // Vérifie si le 10 d'une couleur est maître (l'As est tombé)
+    bool isTenMaster(GameRoom* room, Carte::Couleur couleur, Player* player) {
+        // Le 10 est maître si l'As de cette couleur a été joué
+        // et si le 10 n'est pas lui-même dans ma main (sinon je le sais déjà)
+        return isAcePlayed(room, couleur);
+    }
+
+    // Vérifie si le Valet d'atout est tombé
+    bool isTrumpJackPlayed(GameRoom* room) {
+        return room->isCardPlayed(room->couleurAtout, Carte::VALET);
+    }
+
+    // Vérifie si le 9 d'atout est tombé
+    bool isTrumpNinePlayed(GameRoom* room) {
+        return room->isCardPlayed(room->couleurAtout, Carte::NEUF);
+    }
+
+    // Compte le nombre d'atouts déjà joués (tombés)
+    int countPlayedTrumps(GameRoom* room) {
+        int count = 0;
+        Carte::Couleur atout = room->couleurAtout;
+
+        std::array<Carte::Chiffre, 8> chiffres = {Carte::SEPT, Carte::HUIT, Carte::NEUF, Carte::DIX,
+                                                   Carte::VALET, Carte::DAME, Carte::ROI, Carte::AS};
+
+        for (auto chiffre : chiffres) {
+            if (room->isCardPlayed(atout, chiffre)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    int chooseBestCard(GameRoom* room, Player* player, int playerIndex,
+                       const std::vector<int>& playableIndices,
+                       Carte* carteGagnante, int idxPlayerWinning) {
+        const auto& main = player->getMain();
+
+        // Cas 1: Le bot commence le pli (premier à jouer)
+        if (room->currentPli.empty()) {
+            qDebug() << "Bot" << playerIndex << "commence le pli - analyse de la main";
+
+            // Analyser les atouts en main
+            int valetAtoutIdx = -1;
+            int neufAtoutIdx = -1;
+            int otherAtoutCount = 0;
+            bool hasAsHorsAtout = false;
+
+            for (size_t i = 0; i < playableIndices.size(); i++) {
+                int idx = playableIndices[i];
+                Carte* carte = main[idx];
+                if (carte->getCouleur() == room->couleurAtout) {
+                    if (carte->getChiffre() == Carte::VALET) {
+                        valetAtoutIdx = idx;
+                    } else if (carte->getChiffre() == Carte::NEUF) {
+                        neufAtoutIdx = idx;
+                    } else {
+                        otherAtoutCount++;
+                    }
+                } else if (carte->getChiffre() == Carte::AS) {
+                    hasAsHorsAtout = true;
+                }
+            }
+
+            // Compter les atouts restants chez les autres
+            int remainingTrumps = countRemainingTrumps(room, player);
+
+            // Trouver le plus petit atout en main (hors Valet et 9)
+            int smallestAtoutIdx = -1;
+            int smallestAtoutOrder = 999;
+            for (int idx : playableIndices) {
+                Carte* carte = main[idx];
+                if (carte->getCouleur() == room->couleurAtout &&
+                    carte->getChiffre() != Carte::VALET && carte->getChiffre() != Carte::NEUF) {
+                    int order = carte->getOrdreCarteForte();
+                    if (order < smallestAtoutOrder) {
+                        smallestAtoutOrder = order;
+                        smallestAtoutIdx = idx;
+                    }
+                }
+            }
+
+            int totalAtouts = (valetAtoutIdx >= 0 ? 1 : 0) + (neufAtoutIdx >= 0 ? 1 : 0) + otherAtoutCount;
+
+            // Vérifier si le bot est dans l'équipe qui a pris (fait l'annonce)
+            // L'équipe qui prend est celle du lastBidderIndex
+            bool isAttackingTeam = (playerIndex % 2) == (room->lastBidderIndex % 2);
+
+            // Compter les atouts déjà tombés
+            int playedTrumps = countPlayedTrumps(room);
+
+            // Vérifier si on doit continuer à chasser les atouts
+            // Arrêter si 5+ atouts sont tombés et qu'on n'a pas les restants en main
+            bool shouldStopChasing = (playedTrumps >= 5) && (totalAtouts < (8 - playedTrumps));
+
+            qDebug() << "Bot" << playerIndex << "- Valet:" << (valetAtoutIdx >= 0)
+                     << "9:" << (neufAtoutIdx >= 0) << "autres atouts:" << otherAtoutCount
+                     << "total atouts:" << totalAtouts << "equipe attaque:" << isAttackingTeam
+                     << "As hors atout:" << hasAsHorsAtout << "atouts restants adversaires:" << remainingTrumps
+                     << "atouts tombes:" << playedTrumps << "arreter chasse:" << shouldStopChasing;
+
+            // === STRATÉGIE ÉQUIPE QUI ATTAQUE ===
+            // Que ce soit le joueur qui a parlé ou son partenaire, on doit faire tomber les atouts
+            // Mais on arrête si 5+ atouts sont tombés et qu'on n'a pas les restants
+            if (isAttackingTeam && remainingTrumps > 0 && totalAtouts >= 1 && !shouldStopChasing) {
+                qDebug() << "Bot" << playerIndex << "- [ATTAQUE] Entre dans strategie chasse aux atouts";
+
+                // Si j'ai le Valet, je le joue directement (carte maîtresse)
+                if (valetAtoutIdx >= 0) {
+                    qDebug() << "Bot" << playerIndex << "- [ATTAQUE] J'ai le Valet, je le joue";
+                    return valetAtoutIdx;
+                }
+
+                // Si le Valet est tombé et j'ai le 9 (qui devient maître), je le joue
+                if (neufAtoutIdx >= 0 && isTrumpJackPlayed(room)) {
+                    qDebug() << "Bot" << playerIndex << "- [ATTAQUE] Valet tombé, je joue le 9 (maître)";
+                    return neufAtoutIdx;
+                }
+
+                // Si j'ai le 9 + autres atouts (et le Valet pas encore tombé),
+                // je joue un autre atout (pas le 9) pour garder le 9 maître pour plus tard
+                if (neufAtoutIdx >= 0 && otherAtoutCount > 0 && smallestAtoutIdx >= 0 && !isTrumpJackPlayed(room)) {
+                    qDebug() << "Bot" << playerIndex << "- [ATTAQUE] J'ai le 9 + autres, je joue un petit atout";
+                    return smallestAtoutIdx;
+                }
+
+                // Si j'ai seulement le 9 (sans autre atout) et le Valet pas tombé,
+                // je le joue quand même pour aider (mon partenaire a probablement le Valet)
+                if (neufAtoutIdx >= 0 && otherAtoutCount == 0 && !isTrumpJackPlayed(room)) {
+                    qDebug() << "Bot" << playerIndex << "- [ATTAQUE] J'ai seulement le 9, je le joue";
+                    return neufAtoutIdx;
+                }
+
+                // Si j'ai d'autres atouts (sans Valet ni 9), je joue le plus petit
+                // pour faire tomber les atouts adverses
+                if (smallestAtoutIdx >= 0) {
+                    qDebug() << "Bot" << playerIndex << "- [ATTAQUE] Je joue un atout pour faire tomber";
+                    return smallestAtoutIdx;
+                }
+            }
+
+            // Si le Valet est tombé mais on a le 9 et on attaque, jouer le 9
+            if (isAttackingTeam && valetAtoutIdx < 0 && neufAtoutIdx >= 0 &&
+                isTrumpJackPlayed(room) && remainingTrumps > 0) {
+                qDebug() << "Bot" << playerIndex << "- [ATTAQUE] Continue avec le 9 (Valet tombé)";
+                return neufAtoutIdx;
+            }
+
+            // === STRATÉGIE COMMUNE : Jouer les cartes maîtres hors atout ===
+            // Si les atouts adverses sont tombés ou qu'on défend (économiser atouts), jouer les As
+            if (remainingTrumps == 0 || !isAttackingTeam || (valetAtoutIdx < 0 && neufAtoutIdx < 0)) {
+                for (int idx : playableIndices) {
+                    Carte* carte = main[idx];
+                    if (carte->getCouleur() != room->couleurAtout && carte->getChiffre() == Carte::AS) {
+                        qDebug() << "Bot" << playerIndex << "- Joue un As hors atout";
+                        return idx;
+                    }
+                }
+            }
+
+            // Jouer un 10 si l'As de cette couleur est tombé (le 10 est maître)
+            for (int idx : playableIndices) {
+                Carte* carte = main[idx];
+                if (carte->getCouleur() != room->couleurAtout && carte->getChiffre() == Carte::DIX) {
+                    if (isAcePlayed(room, carte->getCouleur())) {
+                        qDebug() << "Bot" << playerIndex << "- Joue un 10 maître (As tombé)";
+                        return idx;
+                    }
+                }
+            }
+
+            // === STRATÉGIE ÉQUIPE QUI DÉFEND ===
+            // Économiser les atouts, jouer les petites cartes hors atout
+            // (findLowestValueCard va naturellement éviter de jouer des atouts forts)
+
+            // Sinon, jouer la carte la plus faible pour économiser les fortes
+            return findLowestValueCard(player, playableIndices);
+        }
+
+        // Cas 2: Le partenaire est en train de gagner le pli
+        if (isPartnerWinning(playerIndex, idxPlayerWinning)) {
+            qDebug() << "Bot" << playerIndex << "- partenaire gagne";
+
+            // Vérifier si le partenaire a joué à l'atout (première carte du pli)
+            bool partnerPlayedTrump = false;
+            if (!room->currentPli.empty()) {
+                Carte* firstCard = room->currentPli[0].second;
+                partnerPlayedTrump = (firstCard->getCouleur() == room->couleurAtout);
+            }
+
+            // Compter les atouts tombés pour savoir si on doit encore jouer atout
+            int playedTrumps = countPlayedTrumps(room);
+
+            // Si le partenaire joue à l'atout et qu'on est dans l'équipe qui attaque,
+            // jouer le Valet si on l'a pour être sûr de gagner le pli
+            // MAIS seulement si moins de 5 atouts sont tombés (sinon inutile)
+            bool isAttackingTeam = (playerIndex % 2) == (room->lastBidderIndex % 2);
+
+            if (partnerPlayedTrump && isAttackingTeam && playedTrumps < 5) {
+                // Chercher le Valet d'atout
+                for (int idx : playableIndices) {
+                    Carte* carte = main[idx];
+                    if (carte->getCouleur() == room->couleurAtout && carte->getChiffre() == Carte::VALET) {
+                        qDebug() << "Bot" << playerIndex << "- Partenaire joue atout, je joue le Valet pour gagner";
+                        return idx;
+                    }
+                }
+
+                // Si on a le 9 et le Valet est tombé, jouer le 9 pour gagner
+                if (isTrumpJackPlayed(room)) {
+                    for (int idx : playableIndices) {
+                        Carte* carte = main[idx];
+                        if (carte->getCouleur() == room->couleurAtout && carte->getChiffre() == Carte::NEUF) {
+                            qDebug() << "Bot" << playerIndex << "- Partenaire joue atout, je joue le 9 (Valet tombé)";
+                            return idx;
+                        }
+                    }
+                }
+            }
+
+            // Si c'est le dernier joueur et le pli a beaucoup de points, charger
+            if (room->currentPli.size() == 3) {
+                int pliPoints = calculatePliPoints(room->currentPli);
+                if (pliPoints >= 15) {
+                    // Charger avec une carte à points (10 ou As)
+                    for (int idx : playableIndices) {
+                        Carte* carte = main[idx];
+                        if (carte->getCouleur() != room->couleurAtout &&
+                            (carte->getChiffre() == Carte::DIX || carte->getChiffre() == Carte::AS)) {
+                            qDebug() << "Bot" << playerIndex << "charge le pli avec points";
+                            return idx;
+                        }
+                    }
+                }
+            }
+
+            // Jouer la carte la plus faible
+            return findLowestValueCard(player, playableIndices);
+        }
+
+        // Cas 3: Un adversaire gagne le pli - essayer de prendre
+        qDebug() << "Bot" << playerIndex << "- adversaire gagne, essaie de prendre";
+
+        int pliPoints = calculatePliPoints(room->currentPli);
+
+        // Si le pli contient des points significatifs (> 10), essayer de prendre
+        if (pliPoints >= 10 || room->currentPli.size() == 3) {
+            int winningCardIdx = findLowestWinningCard(player, playableIndices,
+                                                        carteGagnante, room->couleurAtout);
+            if (winningCardIdx >= 0) {
+                qDebug() << "Bot" << playerIndex << "prend le pli avec carte gagnante";
+                return winningCardIdx;
+            }
+        }
+
+        // Si on ne peut pas gagner ou le pli ne vaut pas le coup, jouer petit
+        return findLowestValueCard(player, playableIndices);
     }
 
     void playBotCard(int roomId, int playerIndex) {
@@ -2222,9 +2879,9 @@ private:
             return;
         }
 
-        // Choisir une carte aléatoire parmi les cartes jouables
-        int randomIdx = QRandomGenerator::global()->bounded(static_cast<int>(playableIndices.size()));
-        int cardIndex = playableIndices[randomIdx];
+        // Stratégie de jeu intelligente
+        int cardIndex = chooseBestCard(room, player, playerIndex, playableIndices,
+                                        carteGagnante, idxPlayerWinning);
 
         qDebug() << "GameServer - Bot joueur" << playerIndex << "joue la carte a l'index" << cardIndex;
 
@@ -2237,6 +2894,9 @@ private:
 
         // Ajouter au pli courant
         room->currentPli.push_back(std::make_pair(playerIndex, cartePlayed));
+
+        // Marquer la carte comme jouée pour le tracking IA
+        room->markCardAsPlayed(cartePlayed);
 
         // Retirer la carte de la main
         player->removeCard(cardIndex);
@@ -2519,6 +3179,9 @@ private:
 
                 // Ajouter au pli courant
                 room->currentPli.push_back(std::make_pair(currentPlayer, cartePlayed));
+
+                // Marquer la carte comme jouée pour le tracking IA
+                room->markCardAsPlayed(cartePlayed);
 
                 // Retirer la carte de la main
                 player->removeCard(0);

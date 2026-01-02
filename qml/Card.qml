@@ -62,7 +62,7 @@ Item {
     Rectangle {
         id: cardBorder
         anchors.fill: parent
-        color: root.isPlayable ? "white" : "grey"
+        color: "white" //root.isPlayable ? "white" : "grey"
         border.color: selected ? "#FFD700" : "#000000"
         border.width: selected ? 3 : 1
         radius: 3
@@ -95,6 +95,16 @@ Item {
             Behavior on opacity { NumberAnimation { duration: 200 } }
         }
 
+        // Overlay gris pour les cartes non jouables
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 2
+            radius: cardBorder.radius
+            color: "black"
+            opacity: !root.isPlayable && root.faceUp ? 0.4 : 0
+            Behavior on opacity { NumberAnimation { duration: 200 } }
+        }
+
 
         // Dos de la carte (image ou pattern)
         Image {
@@ -103,9 +113,17 @@ Item {
             anchors.margins: 1
             source: "qrc:/resources/cards/back.png"
             visible: !root.faceUp
-            fillMode: Image.PreserveAspectCrop
+            /*fillMode: Image.PreserveAspectCrop
+            smooth: true
+            antialiasing: true*/
+            fillMode: Image.PreserveAspectFit
             smooth: true
             antialiasing: true
+            onStatusChanged: {
+                if (status === Image.Ready) {
+                    root.cardRatio = implicitWidth / implicitHeight
+                }
+            }
 
             // Fallback si pas d'image de dos
             Rectangle {

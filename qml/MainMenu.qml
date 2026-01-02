@@ -78,11 +78,26 @@ ApplicationWindow {
         }
 
         function onGameModelReady() {
-            console.log("MainMenu - gameModelReady reçu, navigation vers CoincheView")
-            mainWindow.shouldLoadCoincheView = false
-            stackView.push(coincheViewLoaderComponent)
-            // Activer le chargement après un court délai pour éviter les TypeErrors
-            loadDelayTimer.start()
+            console.log("MainMenu - gameModelReady reçu")
+
+            // Vérifier quelle vue est au top du StackView
+            var currentItem = stackView.currentItem
+            var currentItemStr = currentItem ? currentItem.toString() : ""
+            var isInMatchmaking = currentItemStr.indexOf("MatchMakingView") >= 0
+
+            console.log("Current item:", currentItem)
+            console.log("Is in MatchMakingView:", isInMatchmaking)
+
+            // Si on est dans MatchMakingView, elle gère déjà le chargement de CoincheView
+            // Sinon (par exemple depuis LobbyRoomView d'un lobby à 4 joueurs), on charge nous-mêmes
+            if (!isInMatchmaking) {
+                console.log("MainMenu - Chargement de CoincheView (pas dans MatchMakingView)")
+                mainWindow.shouldLoadCoincheView = false
+                stackView.push(coincheViewLoaderComponent)
+                loadDelayTimer.start()
+            } else {
+                console.log("MainMenu - gameModelReady ignoré, MatchMakingView gère le chargement")
+            }
         }
 
         function onLobbyCreated(lobbyCode) {
@@ -488,6 +503,36 @@ ApplicationWindow {
                     }
                 }
 
+                // Bouton Règles en haut à droite
+                Button {
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.rightMargin: 50 * mainWindow.minRatio
+                    anchors.topMargin: 50 * mainWindow.minRatio
+                    width: 120 * mainWindow.minRatio
+                    height: 120 * mainWindow.minRatio
+                    z: 2
+
+                    background: Rectangle {
+                        color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
+                        radius: 10 * mainWindow.minRatio
+                        border.color: "#FFD700"
+                        border.width: 3 * mainWindow.minRatio
+                    }
+
+                    contentItem: Image {
+                        source: "qrc:/resources/question-svgrepo-com.svg"
+                        fillMode: Image.PreserveAspectFit
+                        anchors.fill: parent
+                        anchors.margins: 15 * mainWindow.minRatio
+                        smooth: true
+                    }
+
+                    onClicked: {
+                        stackView.push(rulesViewComponent)
+                    }
+                }
+
                 // Bouton Réglages en bas à droite
                 Button {
                     anchors.right: parent.right
@@ -566,6 +611,16 @@ ApplicationWindow {
             id: configViewComponent
 
             Settings {
+                onBackToMenu: {
+                    stackView.pop()
+                }
+            }
+        }
+
+        Component {
+            id: rulesViewComponent
+
+            Rules {
                 onBackToMenu: {
                     stackView.pop()
                 }
