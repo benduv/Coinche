@@ -370,8 +370,12 @@ private slots:
         else if (type == "mancheFinished") {
             int scoreTotalTeam1 = obj["scoreTotalTeam1"].toInt();
             int scoreTotalTeam2 = obj["scoreTotalTeam2"].toInt();
+            int scoreMancheTeam1 = obj["scoreMancheTeam1"].toInt();
+            int scoreMancheTeam2 = obj["scoreMancheTeam2"].toInt();
+            int capotTeam = obj["capotTeam"].toInt(0);
 
             qDebug() << "NetworkManager - Manche terminee!";
+            qDebug() << "  Scores de manche finaux: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
             qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
 
             // Transmettre au GameModel
@@ -379,6 +383,9 @@ private slots:
                 QJsonObject scoreData;
                 scoreData["scoreTotalTeam1"] = scoreTotalTeam1;
                 scoreData["scoreTotalTeam2"] = scoreTotalTeam2;
+                scoreData["scoreMancheTeam1"] = scoreMancheTeam1;
+                scoreData["scoreMancheTeam2"] = scoreMancheTeam2;
+                scoreData["capotTeam"] = capotTeam;
                 m_gameModel->receivePlayerAction(-1, "mancheFinished", scoreData);
             }
         }

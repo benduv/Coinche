@@ -1662,10 +1662,18 @@ private:
         }
 
         // Envoi les scores aux clients
+        qDebug() << "GameServer - Envoi mancheFinished avec:";
+        qDebug() << "  scoreMancheTeam1:" << scoreToAddTeam1;
+        qDebug() << "  scoreMancheTeam2:" << scoreToAddTeam2;
+        qDebug() << "  scoreTotalTeam1:" << room->scoreTeam1;
+        qDebug() << "  scoreTotalTeam2:" << room->scoreTeam2;
+
         QJsonObject scoreMsg;
         scoreMsg["type"] = "mancheFinished";
         scoreMsg["scoreTotalTeam1"] = room->scoreTeam1;
         scoreMsg["scoreTotalTeam2"] = room->scoreTeam2;
+        scoreMsg["scoreMancheTeam1"] = scoreToAddTeam1;  // Points finaux attribués pour cette manche
+        scoreMsg["scoreMancheTeam2"] = scoreToAddTeam2;  // Points finaux attribués pour cette manche
         // Ajouter l'information du capot pour l'animation
         if (capotNonAnnonceTeam1) {
             scoreMsg["capotTeam"] = 1;
@@ -1783,9 +1791,13 @@ private:
             // Rassembler toutes les cartes : équipe 1 d'abord, puis équipe 2
             std::vector<Carte*> allCards;
             for (const auto& pair : room->plisTeam1) {
+                // Réinitialiser l'état d'atout de la carte
+                pair.second->setAtout(false);
                 allCards.push_back(pair.second);
             }
             for (const auto& pair : room->plisTeam2) {
+                // Réinitialiser l'état d'atout de la carte
+                pair.second->setAtout(false);
                 allCards.push_back(pair.second);
             }
 
@@ -1812,6 +1824,14 @@ private:
         }
         for (Carte* carte : main4) {
             room->players[3]->addCardToHand(carte);
+        }
+
+        // Réinitialiser l'état d'atout de toutes les cartes distribuées
+        for (int i = 0; i < 4; i++) {
+            const auto& main = room->players[i]->getMain();
+            for (Carte* carte : main) {
+                carte->setAtout(false);
+            }
         }
 
         // Réinitialiser l'état de la partie pour les enchères
@@ -2744,8 +2764,23 @@ private:
                      << "atouts tombes:" << playedTrumps << "arreter chasse:" << shouldStopChasing;
 
             // === STRATÉGIE ÉQUIPE QUI ATTAQUE ===
+            // Si 5+ atouts sont tombés, arrêter la chasse et jouer les cartes maîtres hors atout
+            if (isAttackingTeam && shouldStopChasing) {
+                qDebug() << "Bot" << playerIndex << "- [ATTAQUE] 5+ atouts tombés, arrêt chasse, recherche cartes maîtres";
+
+                // Jouer les cartes maîtres hors atout en priorité
+                for (int idx : playableIndices) {
+                    Carte* carte = main[idx];
+                    if (carte->getCouleur() != room->couleurAtout && isMasterCard(room, carte)) {
+                        qDebug() << "Bot" << playerIndex << "- [ATTAQUE] Joue carte maître hors atout (chasse arrêtée)";
+                        return idx;
+                    }
+                }
+                // Si pas de carte maître, continuer avec la stratégie normale (en bas)
+            }
+
             // Que ce soit le joueur qui a parlé ou son partenaire, on doit faire tomber les atouts
-            // Mais on arrête si 5+ atouts sont tombés et qu'on n'a pas les restants
+            // Mais on arrête si 5+ atouts sont tombés
             if (isAttackingTeam && remainingTrumps > 0 && totalAtouts >= 1 && !shouldStopChasing) {
                 qDebug() << "Bot" << playerIndex << "- [ATTAQUE] Entre dans strategie chasse aux atouts";
 
@@ -2783,9 +2818,9 @@ private:
                 }
             }
 
-            // Si le Valet est tombé mais on a le 9 et on attaque, jouer le 9
+            // Si le Valet est tombé mais on a le 9 et on attaque, jouer le 9 SEULEMENT si chasse pas arrêtée
             if (isAttackingTeam && valetAtoutIdx < 0 && neufAtoutIdx >= 0 &&
-                isTrumpJackPlayed(room) && remainingTrumps > 0) {
+                isTrumpJackPlayed(room) && remainingTrumps > 0 && !shouldStopChasing) {
                 qDebug() << "Bot" << playerIndex << "- [ATTAQUE] Continue avec le 9 (Valet tombé)";
                 return neufAtoutIdx;
             }

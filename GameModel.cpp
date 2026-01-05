@@ -1011,10 +1011,19 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         QJsonObject scoreData = data.toJsonObject();
         int scoreTotalTeam1 = scoreData["scoreTotalTeam1"].toInt();
         int scoreTotalTeam2 = scoreData["scoreTotalTeam2"].toInt();
+        int scoreMancheTeam1 = scoreData["scoreMancheTeam1"].toInt();
+        int scoreMancheTeam2 = scoreData["scoreMancheTeam2"].toInt();
         int capotTeam = scoreData["capotTeam"].toInt(0);
 
         qDebug() << "GameModel::receivePlayerAction - Manche terminee";
+        qDebug() << "  Scores de manche finaux: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
         qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
+
+        // Mettre à jour les scores de manche avec les points finaux attribués
+        m_scoreTeam1 = scoreMancheTeam1;
+        m_scoreTeam2 = scoreMancheTeam2;
+        emit scoreTeam1Changed();
+        emit scoreTeam2Changed();
 
         // Mettre à jour les scores totaux
         m_scoreTotalTeam1 = scoreTotalTeam1;
@@ -1113,7 +1122,11 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             if (player) {
                 player->clearHand();
                 HandModel* hand = getHandModelByPosition(i);
-                if (hand) hand->refresh();
+                if (hand) {
+                    // Réinitialiser la couleur d'atout pour la nouvelle manche
+                    hand->setAtoutCouleur(Carte::COULEURINVALIDE);
+                    hand->refresh();
+                }
             }
         }
 

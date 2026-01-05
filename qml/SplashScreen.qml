@@ -4,7 +4,13 @@ import QtQuick.Controls
 Rectangle {
     id: splashRoot
     anchors.fill: parent
-    color: "#000000"  // Fond noir pour style rétro
+
+    // Dégradé spatial pour le fond
+    gradient: Gradient {
+        GradientStop { position: 0.0; color: "#0a0a2e" }  // Bleu très foncé
+        GradientStop { position: 0.5; color: "#16213e" }  // Bleu-gris
+        GradientStop { position: 1.0; color: "#1a1a3e" }  // Bleu nuit
+    }
 
     signal loadingComplete()
 
@@ -16,33 +22,55 @@ Rectangle {
     property real heightRatio: height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
 
-    // Animation de fond style Matrix/rétro
+    // Étoiles scintillantes en arrière-plan
     Repeater {
-        model: 15
-        Column {
-            x: (index * splashRoot.width / 15)
-            y: -splashRoot.height
-            spacing: 20
-            opacity: 0.15
+        model: 80
+        Rectangle {
+            x: Math.random() * splashRoot.width
+            y: Math.random() * splashRoot.height
+            width: (Math.random() * 2 + 1) * splashRoot.minRatio
+            height: width
+            radius: width / 2
+            color: "white"
+            opacity: 0.3
 
-            Repeater {
-                model: 20
-                Text {
-                    text: ["0", "1", "♠", "♥", "♦", "♣"][Math.floor(Math.random() * 6)]
-                    font.pixelSize: 20 * splashRoot.minRatio
-                    font.family: "Courier New"
-                    color: "#00ff00"
-                }
-            }
-
-            SequentialAnimation on y {
+            SequentialAnimation on opacity {
                 running: true
                 loops: Animation.Infinite
-                NumberAnimation {
-                    from: -splashRoot.height
-                    to: splashRoot.height * 1.5
-                    duration: 8000 + (index * 500)
-                }
+                PauseAnimation { duration: Math.random() * 2000 }
+                NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
+                NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
+            }
+        }
+    }
+
+    // Effet de nébuleuse (cercles colorés avec flou)
+    Repeater {
+        model: 5
+        Rectangle {
+            x: Math.random() * splashRoot.width
+            y: Math.random() * splashRoot.height
+            width: (100 + Math.random() * 200) * splashRoot.minRatio
+            height: width
+            radius: width / 2
+            color: {
+                var colors = ["#4a148c80", "#1a237e80", "#0d47a180", "#01579b80", "#4a00e080"]
+                return colors[index]
+            }
+            opacity: 0.15
+
+            SequentialAnimation on opacity {
+                running: true
+                loops: Animation.Infinite
+                NumberAnimation { to: 0.3; duration: 3000 + (index * 500) }
+                NumberAnimation { to: 0.1; duration: 3000 + (index * 500) }
+            }
+
+            NumberAnimation on rotation {
+                from: 0
+                to: 360
+                duration: 20000 + (index * 5000)
+                loops: Animation.Infinite
             }
         }
     }
@@ -67,7 +95,7 @@ Rectangle {
                 font.family: "Courier New"
                 font.bold: true
                 font.letterSpacing: 8
-                color: "#003300"
+                color: "#1a1a3e"
                 anchors.centerIn: parent
                 anchors.horizontalCenterOffset: 4 * splashRoot.minRatio
                 anchors.verticalCenterOffset: 4 * splashRoot.minRatio
@@ -81,7 +109,7 @@ Rectangle {
                 font.family: "Courier New"
                 font.bold: true
                 font.letterSpacing: 8
-                color: "#00ff00"
+                color: "white"
                 anchors.centerIn: parent
 
                 // Effet de clignotement
@@ -97,8 +125,8 @@ Rectangle {
             Rectangle {
                 width: parent.width
                 height: 2
-                color: "#00ff00"
-                opacity: 0.5
+                color: "white"
+                opacity: 0.3
                 anchors.centerIn: parent
 
                 SequentialAnimation on y {
@@ -119,7 +147,7 @@ Rectangle {
             font.pixelSize: 24 * splashRoot.minRatio
             font.family: "Courier New"
             font.letterSpacing: 4
-            color: "#00cc00"
+            color: "#cccccc"
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
@@ -135,7 +163,7 @@ Rectangle {
                 font.pixelSize: 20 * splashRoot.minRatio
                 font.family: "Courier New"
                 font.letterSpacing: 2
-                color: "#00ff00"
+                color: "white"
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 // Animation de points
@@ -163,7 +191,7 @@ Rectangle {
                 Rectangle {
                     anchors.fill: parent
                     color: "transparent"
-                    border.color: "#00ff00"
+                    border.color: "white"
                     border.width: 3 * splashRoot.minRatio
                 }
 
@@ -180,7 +208,7 @@ Rectangle {
                         Rectangle {
                             width: (parent.width - (19 * parent.spacing)) / 20
                             height: parent.height
-                            color: index < (splashRoot.progress * 20) ? "#00ff00" : "#003300"
+                            color: index < (splashRoot.progress * 20) ? "white" : "#2a2a4e"
                             opacity: index < (splashRoot.progress * 20) ? 1.0 : 0.3
 
                             // Animation de remplissage
@@ -204,7 +232,7 @@ Rectangle {
                         height: parent.parent.height
                         gradient: Gradient {
                             GradientStop { position: 0.0; color: "transparent" }
-                            GradientStop { position: 0.5; color: "#00ff0040" }
+                            GradientStop { position: 0.5; color: "#ffffff40" }
                             GradientStop { position: 1.0; color: "transparent" }
                         }
 
@@ -229,7 +257,7 @@ Rectangle {
                 font.family: "Courier New"
                 font.bold: true
                 font.letterSpacing: 2
-                color: "#00ff00"
+                color: "white"
                 anchors.horizontalCenter: parent.horizontalCenter
             }
         }
