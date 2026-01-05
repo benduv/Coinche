@@ -1062,7 +1062,7 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         QJsonArray myCards = newMancheData["myCards"].toArray();
 
         qDebug() << "GameModel::receivePlayerAction - Nouvelle manche";
-        qDebug() << "  Joueur qui commence les enchères:" << biddingPlayer;
+        qDebug() << "  Joueur qui commence les encheres:" << biddingPlayer;
         qDebug() << "  Nouvelles cartes:" << myCards.size();
 
         // Le biddingPlayer au début de la manche est le firstPlayerIndex

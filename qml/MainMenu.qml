@@ -80,23 +80,23 @@ ApplicationWindow {
         function onGameModelReady() {
             console.log("MainMenu - gameModelReady reçu")
 
-            // Vérifier quelle vue est au top du StackView
+            // MainMenu gère toujours le chargement de CoincheView
+            // Vérifier si on n'est pas déjà sur l'écran de chargement
             var currentItem = stackView.currentItem
             var currentItemStr = currentItem ? currentItem.toString() : ""
-            var isInMatchmaking = currentItemStr.indexOf("MatchMakingView") >= 0
+            var isAlreadyLoading = currentItemStr.indexOf("coincheViewLoader") >= 0
 
             console.log("Current item:", currentItem)
-            console.log("Is in MatchMakingView:", isInMatchmaking)
+            console.log("Is already loading:", isAlreadyLoading)
+            console.log("StackView depth:", stackView.depth)
 
-            // Si on est dans MatchMakingView, elle gère déjà le chargement de CoincheView
-            // Sinon (par exemple depuis LobbyRoomView d'un lobby à 4 joueurs), on charge nous-mêmes
-            if (!isInMatchmaking) {
-                console.log("MainMenu - Chargement de CoincheView (pas dans MatchMakingView)")
+            if (!isAlreadyLoading) {
+                console.log("MainMenu - PUSH coincheViewLoaderComponent")
                 mainWindow.shouldLoadCoincheView = false
                 stackView.push(coincheViewLoaderComponent)
                 loadDelayTimer.start()
             } else {
-                console.log("MainMenu - gameModelReady ignoré, MatchMakingView gère le chargement")
+                console.log("MainMenu - PAS de push, déjà en chargement")
             }
         }
 
@@ -126,7 +126,21 @@ ApplicationWindow {
     StackView {
         id: stackView
         anchors.fill: parent
-        initialItem: loginViewComponent
+        initialItem: splashScreenComponent
+
+        Component {
+            id: splashScreenComponent
+
+            Loader {
+                anchors.fill: parent
+                source: "qrc:/qml/SplashScreen.qml"
+                onLoaded: {
+                    item.loadingComplete.connect(function() {
+                        stackView.replace(loginViewComponent)
+                    })
+                }
+            }
+        }
 
         Component {
             id: loginViewComponent

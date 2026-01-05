@@ -403,9 +403,10 @@ Rectangle {
                         running: false
                         repeat: false
                         onTriggered: {
+                            console.log(">>> animationTimer.onTriggered - CoincheView ID:", rootArea, "- Carte jouée par joueur:", modelData.playerId)
                             if (AudioSettings.effectsEnabled) {
                                 console.log(">>> LECTURE DU SON DE CARTE <<<")
-                                //cardSound.stop()
+                                cardSound.stop()
                                 cardSound.play()
                             }
 
@@ -2388,10 +2389,7 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        console.log("=== CoincheView charge - Instance ID:", rootArea, "===")
-        console.log("Stack trace pour identifier le parent:")
-        console.log("Parent:", parent)
-        console.log("Parent.parent:", parent ? parent.parent : "null")
+        console.log("=== CoincheView CRÉÉ - Instance ID:", rootArea, "===")
         console.log("gameModel:", gameModel)
         console.log("myPosition:", gameModel.myPosition)
         console.log("player0Hand:", gameModel.player0Hand)

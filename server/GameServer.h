@@ -1682,8 +1682,8 @@ private:
         broadcastToRoom(roomId, scoreMsg);
 
         // Vérifier si une équipe a atteint 1000 points
-        bool team1Won = room->scoreTeam1 >= 100;
-        bool team2Won = room->scoreTeam2 >= 100;
+        bool team1Won = room->scoreTeam1 >= 1000;
+        bool team2Won = room->scoreTeam2 >= 1000;
 
         if (team1Won || team2Won) {
             // Une ou les deux équipes ont dépassé 1000 points
@@ -2499,6 +2499,39 @@ private:
         return lowestIdx;
     }
 
+    // Trouve l'index de la carte avec la plus petite valeur en évitant l'atout
+    // Si toutes les cartes jouables sont des atouts, retourne le plus petit atout
+    int findLowestValueCardAvoidTrump(Player* player, const std::vector<int>& playableIndices,
+                                       Carte::Couleur couleurAtout) {
+        const auto& main = player->getMain();
+
+        // D'abord, chercher les cartes hors atout
+        std::vector<int> nonTrumpIndices;
+        for (int idx : playableIndices) {
+            if (main[idx]->getCouleur() != couleurAtout) {
+                nonTrumpIndices.push_back(idx);
+            }
+        }
+
+        // Si on a des cartes hors atout, trouver la plus faible parmi elles
+        if (!nonTrumpIndices.empty()) {
+            int lowestIdx = nonTrumpIndices[0];
+            int lowestValue = main[lowestIdx]->getValeurDeLaCarte() * 100 + main[lowestIdx]->getOrdreCarteForte();
+
+            for (int idx : nonTrumpIndices) {
+                int value = main[idx]->getValeurDeLaCarte() * 100 + main[idx]->getOrdreCarteForte();
+                if (value < lowestValue) {
+                    lowestValue = value;
+                    lowestIdx = idx;
+                }
+            }
+            return lowestIdx;
+        }
+
+        // Sinon, retourner la plus faible carte (qui sera un atout)
+        return findLowestValueCard(player, playableIndices);
+    }
+
     // Trouve l'index de la carte avec la plus grande valeur
     int findHighestValueCard(Player* player, const std::vector<int>& playableIndices) {
         const auto& main = player->getMain();
@@ -2573,6 +2606,47 @@ private:
         // Le 10 est maître si l'As de cette couleur a été joué
         // et si le 10 n'est pas lui-même dans ma main (sinon je le sais déjà)
         return isAcePlayed(room, couleur);
+    }
+
+    // Vérifie si une carte hors atout est maître (toutes les cartes plus fortes sont tombées)
+    // Ordre hors atout: As > 10 > Roi > Dame > Valet > 9 > 8 > 7
+    bool isMasterCard(GameRoom* room, Carte* carte) {
+        Carte::Couleur couleur = carte->getCouleur();
+        Carte::Chiffre chiffre = carte->getChiffre();
+
+        // L'As est toujours maître s'il est encore en jeu
+        if (chiffre == Carte::AS) {
+            return true;
+        }
+
+        // Le 10 est maître si l'As est tombé
+        if (chiffre == Carte::DIX) {
+            return room->isCardPlayed(couleur, Carte::AS);
+        }
+
+        // Le Roi est maître si l'As et le 10 sont tombés
+        if (chiffre == Carte::ROI) {
+            return room->isCardPlayed(couleur, Carte::AS) &&
+                   room->isCardPlayed(couleur, Carte::DIX);
+        }
+
+        // La Dame est maître si As, 10 et Roi sont tombés
+        if (chiffre == Carte::DAME) {
+            return room->isCardPlayed(couleur, Carte::AS) &&
+                   room->isCardPlayed(couleur, Carte::DIX) &&
+                   room->isCardPlayed(couleur, Carte::ROI);
+        }
+
+        // Le Valet est maître si As, 10, Roi et Dame sont tombés
+        if (chiffre == Carte::VALET) {
+            return room->isCardPlayed(couleur, Carte::AS) &&
+                   room->isCardPlayed(couleur, Carte::DIX) &&
+                   room->isCardPlayed(couleur, Carte::ROI) &&
+                   room->isCardPlayed(couleur, Carte::DAME);
+        }
+
+        // Les autres cartes (9, 8, 7) ne sont généralement pas considérées comme maîtres
+        return false;
     }
 
     // Vérifie si le Valet d'atout est tombé
@@ -2660,8 +2734,8 @@ private:
             int playedTrumps = countPlayedTrumps(room);
 
             // Vérifier si on doit continuer à chasser les atouts
-            // Arrêter si 5+ atouts sont tombés et qu'on n'a pas les restants en main
-            bool shouldStopChasing = (playedTrumps >= 5) && (totalAtouts < (8 - playedTrumps));
+            // Arrêter dès que 5+ atouts sont tombés
+            bool shouldStopChasing = (playedTrumps >= 5);
 
             qDebug() << "Bot" << playerIndex << "- Valet:" << (valetAtoutIdx >= 0)
                      << "9:" << (neufAtoutIdx >= 0) << "autres atouts:" << otherAtoutCount
@@ -2740,8 +2814,21 @@ private:
             }
 
             // === STRATÉGIE ÉQUIPE QUI DÉFEND ===
-            // Économiser les atouts, jouer les petites cartes hors atout
-            // (findLowestValueCard va naturellement éviter de jouer des atouts forts)
+            if (!isAttackingTeam) {
+                // Jouer une carte maître hors atout si on en a (le pli est vide donc pas d'atout dedans)
+                // Chercher d'abord les cartes avec le plus de valeur (As, 10, Roi...)
+                for (int idx : playableIndices) {
+                    Carte* carte = main[idx];
+                    if (carte->getCouleur() != room->couleurAtout && isMasterCard(room, carte)) {
+                        qDebug() << "Bot" << playerIndex << "- [DEFENSE] Joue une carte maître hors atout en partant";
+                        return idx;
+                    }
+                }
+
+                // Sinon, jouer la carte la plus faible en évitant l'atout
+                qDebug() << "Bot" << playerIndex << "- [DEFENSE] Évite de jouer atout en partant";
+                return findLowestValueCardAvoidTrump(player, playableIndices, room->couleurAtout);
+            }
 
             // Sinon, jouer la carte la plus faible pour économiser les fortes
             return findLowestValueCard(player, playableIndices);
@@ -2767,7 +2854,7 @@ private:
             bool isAttackingTeam = (playerIndex % 2) == (room->lastBidderIndex % 2);
 
             if (partnerPlayedTrump && isAttackingTeam && playedTrumps < 5) {
-                // Chercher le Valet d'atout
+                // Chercher le Valet d'atout dans ma main
                 for (int idx : playableIndices) {
                     Carte* carte = main[idx];
                     if (carte->getCouleur() == room->couleurAtout && carte->getChiffre() == Carte::VALET) {
@@ -2776,12 +2863,49 @@ private:
                     }
                 }
 
-                // Si on a le 9 et le Valet est tombé, jouer le 9 pour gagner
-                if (isTrumpJackPlayed(room)) {
+                // Vérifier si le Valet d'atout est dans le pli actuel (joué par n'importe qui)
+                bool jackInCurrentPli = false;
+                for (const auto& pair : room->currentPli) {
+                    Carte* carte = pair.second;
+                    if (carte->getCouleur() == room->couleurAtout && carte->getChiffre() == Carte::VALET) {
+                        jackInCurrentPli = true;
+                        break;
+                    }
+                }
+
+                // Analyser mes atouts en main
+                int neufAtoutIdx = -1;
+                int otherAtoutIdx = -1;  // Plus petit atout hors 9
+                int otherAtoutOrder = 999;
+
+                for (int idx : playableIndices) {
+                    Carte* carte = main[idx];
+                    if (carte->getCouleur() == room->couleurAtout) {
+                        if (carte->getChiffre() == Carte::NEUF) {
+                            neufAtoutIdx = idx;
+                        } else {
+                            int order = carte->getOrdreCarteForte();
+                            if (order < otherAtoutOrder) {
+                                otherAtoutOrder = order;
+                                otherAtoutIdx = idx;
+                            }
+                        }
+                    }
+                }
+
+                // Si le Valet est dans le pli actuel et que j'ai le 9 + d'autres atouts,
+                // je joue un autre atout pour garder le 9 (qui sera maître après ce pli)
+                if (jackInCurrentPli && neufAtoutIdx >= 0 && otherAtoutIdx >= 0) {
+                    qDebug() << "Bot" << playerIndex << "- Valet dans le pli, je garde le 9 et joue un autre atout";
+                    return otherAtoutIdx;
+                }
+
+                // Si on a le 9 et le Valet est tombé (dans un pli précédent), jouer le 9 pour gagner
+                if (isTrumpJackPlayed(room) && !jackInCurrentPli) {
                     for (int idx : playableIndices) {
                         Carte* carte = main[idx];
                         if (carte->getCouleur() == room->couleurAtout && carte->getChiffre() == Carte::NEUF) {
-                            qDebug() << "Bot" << playerIndex << "- Partenaire joue atout, je joue le 9 (Valet tombé)";
+                            qDebug() << "Bot" << playerIndex << "- Partenaire joue atout, je joue le 9 (Valet tombé avant)";
                             return idx;
                         }
                     }
@@ -2804,12 +2928,52 @@ private:
                 }
             }
 
+            // Pour l'équipe qui défend: ne JAMAIS jouer atout si possible
+            if (!isAttackingTeam) {
+                qDebug() << "Bot" << playerIndex << "- [DEFENSE] Partenaire gagne, évite atout";
+                return findLowestValueCardAvoidTrump(player, playableIndices, room->couleurAtout);
+            }
+
+            // Pour l'équipe qui attaque avec 5+ atouts tombés: éviter de jouer atout inutilement
+            if (isAttackingTeam && playedTrumps >= 5) {
+                qDebug() << "Bot" << playerIndex << "- [ATTAQUE] Partenaire gagne, 5+ atouts tombés, évite atout";
+                return findLowestValueCardAvoidTrump(player, playableIndices, room->couleurAtout);
+            }
+
             // Jouer la carte la plus faible
             return findLowestValueCard(player, playableIndices);
         }
 
         // Cas 3: Un adversaire gagne le pli - essayer de prendre
         qDebug() << "Bot" << playerIndex << "- adversaire gagne, essaie de prendre";
+
+        // Vérifier si un atout a été joué dans le pli
+        bool trumpInPli = false;
+        for (const auto& pair : room->currentPli) {
+            if (pair.second->getCouleur() == room->couleurAtout) {
+                trumpInPli = true;
+                break;
+            }
+        }
+
+        // Déterminer si on est en défense
+        bool isAttackingTeam = (playerIndex % 2) == (room->lastBidderIndex % 2);
+
+        // Pour l'équipe qui défend: jouer une carte maître hors atout si:
+        // - Aucun atout dans le pli
+        // - La carte maître est de la couleur demandée
+        // L'équipe qui attaque garde ses cartes maîtres pour faire le plus de plis possible
+        if (!isAttackingTeam && !trumpInPli) {
+            for (int idx : playableIndices) {
+                Carte* carte = main[idx];
+                if (carte->getCouleur() != room->couleurAtout &&
+                    carte->getCouleur() == room->couleurDemandee &&
+                    isMasterCard(room, carte)) {
+                    qDebug() << "Bot" << playerIndex << "- [DEFENSE] Joue une carte maître à la couleur demandée (pas d'atout dans le pli)";
+                    return idx;
+                }
+            }
+        }
 
         int pliPoints = calculatePliPoints(room->currentPli);
 
