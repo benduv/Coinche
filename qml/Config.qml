@@ -8,7 +8,7 @@ QtObject {
     // - "localhost" : Développement local (Windows/Mac/Linux)
     // - "emulator" : Émulateur Android
     // - "production" : Serveur de production
-    property string environment: "localhost"
+    property string environment: "emulator"
 
     // URLs pour chaque environnement
     readonly property var serverUrls: ({

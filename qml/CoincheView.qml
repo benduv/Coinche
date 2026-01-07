@@ -403,9 +403,7 @@ Rectangle {
                         running: false
                         repeat: false
                         onTriggered: {
-                            console.log(">>> animationTimer.onTriggered - CoincheView ID:", rootArea, "- Carte jouée par joueur:", modelData.playerId)
                             if (AudioSettings.effectsEnabled) {
-                                console.log(">>> LECTURE DU SON DE CARTE <<<")
                                 cardSound.stop()
                                 cardSound.play()
                             }
@@ -640,6 +638,7 @@ Rectangle {
                                 id: bidRowSouth
                                 anchors.centerIn: parent
                                 visible: rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) !== ""
+                                spacing: rootArea.width * 0.005
                                 Text {
                                     text: rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex)
                                     color: "white"
@@ -648,8 +647,8 @@ Rectangle {
                                 }
                                 Text {
                                     text: rootArea.getPlayerBidSymbol(playerSouthRow.actualPlayerIndex)
-                                    color: rootArea.getPlayerBidSymbolColor(playerSouthRow.actualPlayerIndex)
-                                    font.pixelSize: rootArea.height * 0.045
+                                    color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerSouthRow.actualPlayerIndex) : "D4AF37"
+                                    font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
                                     font.bold: true
                                 }
                             }
@@ -937,6 +936,7 @@ Rectangle {
                             id: bidRowNorth
                             anchors.centerIn: parent
                             visible: rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) !== ""
+                            spacing: rootArea.width * 0.005
                             Text {
                                 text: rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex)
                                 color: "white"
@@ -945,8 +945,8 @@ Rectangle {
                             }
                             Text {
                                 text: rootArea.getPlayerBidSymbol(playerNorthColumn.actualPlayerIndex)
-                                color: rootArea.getPlayerBidSymbolColor(playerNorthColumn.actualPlayerIndex)
-                                font.pixelSize: rootArea.height * 0.045
+                                color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerNorthColumn.actualPlayerIndex) : "D4AF37"
+                                font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
                                 font.bold: true
                             }
                         }
@@ -1038,6 +1038,7 @@ Rectangle {
                         id: bidRowWest
                         anchors.centerIn: parent
                         visible: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) !== ""
+                        spacing: rootArea.width * 0.005
                         Text {
                             text: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex)
                             color: "white"
@@ -1046,8 +1047,8 @@ Rectangle {
                         }
                         Text {
                             text: rootArea.getPlayerBidSymbol(playerWestRow.actualPlayerIndex)
-                            color: rootArea.getPlayerBidSymbolColor(playerWestRow.actualPlayerIndex)
-                            font.pixelSize: rootArea.height * 0.045
+                            color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerWestRow.actualPlayerIndex) : "D4AF37"
+                            font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
                             font.bold: true
                         }
                     }
@@ -1241,6 +1242,7 @@ Rectangle {
                         id: bidRowEast
                         anchors.centerIn: parent
                         visible: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) !== ""
+                        spacing: rootArea.width * 0.005
                         Text {
                             text: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex)
                             color: "white"
@@ -1249,8 +1251,8 @@ Rectangle {
                         }
                         Text {
                             text: rootArea.getPlayerBidSymbol(playerEastRow.actualPlayerIndex)
-                            color: rootArea.getPlayerBidSymbolColor(playerEastRow.actualPlayerIndex)
-                            font.pixelSize: rootArea.height * 0.045
+                            color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerEastRow.actualPlayerIndex) : "#D4AF37"
+                            font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
                             font.bold: true
                         }
                     }
@@ -1813,21 +1815,21 @@ Rectangle {
         }
 
         // ---- Animation CAPOT ----
-        Rectangle {
-            anchors.centerIn: parent
-            width: playArea.width * 0.6
-            height: playArea.height * 0.35
+        Item {
+            anchors.centerIn: playArea
+            width: playArea.width * 0.5
+            height: playArea.height * 0.3
             visible: gameModel.showCapotAnimation
             z: 100
 
             Text {
                 anchors.centerIn: parent
-                text: "CAPOT !"
-                font.pixelSize: parent.height * 0.6
+                text: "CAPOT"
+                font.pixelSize: parent.height * 0.5
                 font.family: "Serif"
                 font.italic: true
                 font.weight: Font.Black
-                color: "#FFD700"  // Or
+                color: "#D4AF37"  // Or
                 style: Text.Outline
                 styleColor: "#8B0000"  // Rouge foncé pour le contour
 
@@ -1848,35 +1850,6 @@ Rectangle {
                         easing.type: Easing.OutBack
                     }
                 }
-
-                // Animation de rotation légère
-                rotation: gameModel.showCapotAnimation ? 0 : -15
-                Behavior on rotation {
-                    NumberAnimation {
-                        duration: 600
-                        easing.type: Easing.OutBack
-                    }
-                }
-            }
-
-            // Animation de pulsation pour le fond
-            color: "transparent"
-            border.color: "#FFD700"
-            border.width: 5 * rootArea.minRatio
-            radius: 20 * rootArea.minRatio
-            opacity: gameModel.showCapotAnimation ? 0.9 : 0.0
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 800
-                    easing.type: Easing.InOutQuad
-                }
-            }
-
-            SequentialAnimation on scale {
-                running: gameModel.showCapotAnimation
-                loops: Animation.Infinite
-                NumberAnimation { to: 1.05; duration: 1000; easing.type: Easing.InOutQuad }
-                NumberAnimation { to: 1.0; duration: 1000; easing.type: Easing.InOutQuad }
             }
         }
 

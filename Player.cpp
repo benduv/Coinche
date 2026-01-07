@@ -341,15 +341,6 @@ void Player::sortHandWithAtout(Carte::Couleur atout)
 
 void Player::sortHandToutAtout()
 {
-    std::cout << "sortHandToutAtout - Tri des cartes en mode Tout Atout pour " << m_name << std::endl;
-
-    // Afficher l'ordre des cartes avant tri
-    std::cout << "Avant tri:" << std::endl;
-    for (auto carte : m_main) {
-        carte->printCarte();
-        std::cout << "  Ordre: " << carte->getOrdreCarteForte() << std::endl;
-    }
-
     // En mode Tout Atout, trier d'abord par couleur, puis par force de carte (toutes sont atouts)
     std::sort(m_main.begin(), m_main.end(), [](Carte* a, Carte* b) {
         // Trier par couleur d'abord
@@ -359,18 +350,10 @@ void Player::sortHandToutAtout()
         // Puis par force de carte en mode atout (7 < 8 < D < R < 10 < A < 9 < V)
         return a->getOrdreCarteForte() < b->getOrdreCarteForte();
     });
-
-    // Afficher l'ordre des cartes après tri
-    std::cout << "Après tri:" << std::endl;
-    for (auto carte : m_main) {
-        carte->printCarte();
-    }
 }
 
 void Player::sortHandSansAtout()
 {
-    std::cout << "sortHandSansAtout - Tri des cartes en mode Sans Atout pour " << m_name << std::endl;
-
     // En mode Sans Atout, trier par couleur, puis par force (7 < 8 < 9 < V < D < R < 10 < As)
     std::sort(m_main.begin(), m_main.end(), [](Carte* a, Carte* b) {
         // Trier par couleur d'abord

@@ -20,6 +20,7 @@
         <file>qml/PlayerStatsPopup.qml</file>
         <file>qml/Rules.qml</file>
         <file>qml/SplashScreen.qml</file>
+        <file>qml/ShootingStar.qml</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>

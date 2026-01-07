@@ -11,11 +11,11 @@ QtObject {
     // Fonction pour sauvegarder les paramètres
     function saveMusicEnabled(enabled) {
         musicEnabled = enabled
-        console.log("Musique:", enabled ? "activée" : "désactivée")
+        console.log("Musique:", enabled ? "activee" : "désactivee")
     }
 
     function saveEffectsEnabled(enabled) {
         effectsEnabled = enabled
-        console.log("Effets sonores:", enabled ? "activés" : "désactivés")
+        console.log("Effets sonores:", enabled ? "actives" : "désactives")
     }
 }

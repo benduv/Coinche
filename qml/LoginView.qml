@@ -5,7 +5,8 @@ import QtQuick.Layouts
 Rectangle {
     id: loginRoot
     anchors.fill: parent
-    color: "#1a1a1a"
+    //color: "#1a1a1a"
+    color: "#0a0a2e"
 
     // Signal émis quand l'utilisateur est connecté
     signal loginSuccess(string playerName, string accountType)
@@ -29,7 +30,7 @@ Rectangle {
                     return symbols[symbolIndex % 4]
                 }
                 color: {
-                    var colors = ["#FF0000", "#000000", "#FF0000", "#000000"]
+                    var colors = ["#AD1111", "#422E2E", "#AD1111", "#422E2E"]
                     return colors[symbolIndex % 4]
                 }
                 font.pixelSize: (40 + (symbolIndex % 5) * 12) * loginRoot.minRatio
@@ -169,11 +170,34 @@ Rectangle {
 
             Rectangle {
                 anchors.centerIn: parent
-                color: "#1a1a1a"
+                //color: "#1a1a1a"
+                color: "#0a0a2e"
+
+                // Étoiles scintillantes en arrière-plan
+                Repeater {
+                    model: 80
+                    Rectangle {
+                        x: Math.random() * loginRoot.width
+                        y: Math.random() * loginRoot.height
+                        width: (Math.random() * 2 + 1) * loginRoot.minRatio
+                        height: width
+                        radius: width / 2
+                        color: "white"
+                        opacity: 0.3
+
+                        SequentialAnimation on opacity {
+                            running: true
+                            loops: Animation.Infinite
+                            PauseAnimation { duration: Math.random() * 2000 }
+                            NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
+                            NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
+                        }
+                    }
+                }
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: 25 * loginRoot.minRatio
+                    spacing: 15 * loginRoot.minRatio
                     width: Math.min(parent.width * 0.4, 500 * loginRoot.widthRatio)
 
                     Text {
@@ -185,13 +209,14 @@ Rectangle {
                     }
 
                     Text {
-                        text: "Jeu de cartes multijoueur"
-                        font.pixelSize: 26 * loginRoot.minRatio
-                        color: "#aaaaaa"
+                        text: "DE L'ESPACE"
+                        font.pixelSize: 36 * loginRoot.minRatio
+                        font.bold: true
+                        color: "#FFD700"
                         Layout.alignment: Qt.AlignHCenter
                     }
 
-                    Item { height: 40 * loginRoot.minRatio }
+                    Item { height: 35 * loginRoot.minRatio }
 
                     // Bouton Créer un compte
                     Button {
@@ -219,6 +244,8 @@ Rectangle {
                         }
                     }
 
+                    Item { height: 10 * loginRoot.minRatio }
+
                     // Bouton Se connecter
                     Button {
                         Layout.fillWidth: true
@@ -244,6 +271,8 @@ Rectangle {
                             loginStack.push(loginScreen)
                         }
                     }
+
+                    Item { height: 10 * loginRoot.minRatio }
 
                     // Bouton Jouer en tant qu'invité
                     Button {
@@ -271,7 +300,7 @@ Rectangle {
                         }
                     }
 
-                    Item { height: 20 * loginRoot.minRatio }
+                    Item { height: 30 * loginRoot.minRatio }
 
                     // Statut connexion
                     Row {
@@ -310,7 +339,30 @@ Rectangle {
 
             Rectangle {
                 id: registerScreenRec
-                color: "#1a1a1a"
+                //color: "#1a1a1a"
+                color: "#0a0a2e"
+
+                // Étoiles scintillantes en arrière-plan
+                Repeater {
+                    model: 80
+                    Rectangle {
+                        x: Math.random() * loginRoot.width
+                        y: Math.random() * loginRoot.height
+                        width: (Math.random() * 2 + 1) * loginRoot.minRatio
+                        height: width
+                        radius: width / 2
+                        color: "white"
+                        opacity: 0.3
+
+                        SequentialAnimation on opacity {
+                            running: true
+                            loops: Animation.Infinite
+                            PauseAnimation { duration: Math.random() * 2000 }
+                            NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
+                            NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
+                        }
+                    }
+                }
 
                 // Variable pour stocker l'avatar sélectionné
                 property string selectedAvatar: "avataaars1.svg"
@@ -623,7 +675,30 @@ Rectangle {
             id: loginScreen
 
             Rectangle {
-                color: "#1a1a1a"
+                //color: "#1a1a1a"
+                color: "#0a0a2e"
+
+                // Étoiles scintillantes en arrière-plan
+                Repeater {
+                    model: 80
+                    Rectangle {
+                        x: Math.random() * loginRoot.width
+                        y: Math.random() * loginRoot.height
+                        width: (Math.random() * 2 + 1) * loginRoot.minRatio
+                        height: width
+                        radius: width / 2
+                        color: "white"
+                        opacity: 0.3
+
+                        SequentialAnimation on opacity {
+                            running: true
+                            loops: Animation.Infinite
+                            PauseAnimation { duration: Math.random() * 2000 }
+                            NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
+                            NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
+                        }
+                    }
+                }
 
                 // Bouton retour en haut à gauche
                 Rectangle {
@@ -818,7 +893,30 @@ Rectangle {
 
             Rectangle {
                 id: guestScreenRect
-                color: "#1a1a1a"
+                //color: "#1a1a1a"
+                color: "#0a0a2e"
+
+                // Étoiles scintillantes en arrière-plan
+                Repeater {
+                    model: 80
+                    Rectangle {
+                        x: Math.random() * loginRoot.width
+                        y: Math.random() * loginRoot.height
+                        width: (Math.random() * 2 + 1) * loginRoot.minRatio
+                        height: width
+                        radius: width / 2
+                        color: "white"
+                        opacity: 0.3
+
+                        SequentialAnimation on opacity {
+                            running: true
+                            loops: Animation.Infinite
+                            PauseAnimation { duration: Math.random() * 2000 }
+                            NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
+                            NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
+                        }
+                    }
+                }
 
                 // Variable pour stocker l'avatar sélectionné
                 property string selectedAvatar: "avataaars1.svg"

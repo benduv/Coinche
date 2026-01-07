@@ -43,7 +43,7 @@ ApplicationWindow {
 
     // Fonction pour retourner au menu principal depuis n'importe où
     function returnToMainMenu() {
-        console.log("MainMenu.returnToMainMenu - Début, stackView depth:", stackView.depth)
+        console.log("MainMenu.returnToMainMenu - Debut, stackView depth:", stackView.depth)
 
         // Réinitialiser le flag de chargement
         shouldLoadCoincheView = false
@@ -56,7 +56,7 @@ ApplicationWindow {
             console.log("MainMenu.returnToMainMenu - Pop, depth:", stackView.depth)
             stackView.pop()
         }
-        console.log("MainMenu.returnToMainMenu - Terminé, depth final:", stackView.depth)
+        console.log("MainMenu.returnToMainMenu - Termine, depth final:", stackView.depth)
     }
 
     // Ratio responsive pour adapter la taille des composants
@@ -69,7 +69,7 @@ ApplicationWindow {
         target: networkManager
 
         function onGameFound(playerPosition, opponents) {
-            console.log("MainMenu - gameFound reçu! Position:", playerPosition)
+            console.log("MainMenu - gameFound recu! Position:", playerPosition)
             networkManager.createGameModel(
                 networkManager.myPosition,
                 networkManager.myCards,
@@ -96,7 +96,7 @@ ApplicationWindow {
                 stackView.push(coincheViewLoaderComponent)
                 loadDelayTimer.start()
             } else {
-                console.log("MainMenu - PAS de push, déjà en chargement")
+                console.log("MainMenu - PAS de push, deja en chargement")
             }
         }
 
@@ -168,7 +168,29 @@ ApplicationWindow {
             id: mainMenuComponent
             Rectangle {
                 anchors.fill: parent
-                color: "#1a1a1a"
+                //color: "#1a1a1a"
+                color: "#0a0a2e"
+                // Étoiles scintillantes en arrière-plan
+                Repeater {
+                    model: 80
+                    Rectangle {
+                        x: Math.random() * mainWindow.width
+                        y: Math.random() * mainWindow.height
+                        width: (Math.random() * 2 + 1) * mainWindow.minRatio
+                        height: width
+                        radius: width / 2
+                        color: "white"
+                        opacity: 0.3
+
+                        SequentialAnimation on opacity {
+                            running: true
+                            loops: Animation.Infinite
+                            PauseAnimation { duration: Math.random() * 2000 }
+                            NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
+                            NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
+                        }
+                    }
+                }
 
                 // Animations de fond - Colonnes de symboles de cartes
                 // Colonne 1 (gauche) - Coeurs montant
@@ -185,7 +207,7 @@ ApplicationWindow {
                         Text {
                             text: "♥"
                             font.pixelSize: 60 * mainWindow.minRatio
-                            color: "#FF0000"
+                            color: "#AD1111"
                         }
                     }
 
@@ -214,7 +236,7 @@ ApplicationWindow {
                         Text {
                             text: "♣"
                             font.pixelSize: 60 * mainWindow.minRatio
-                            color: "#000000"
+                            color: "#422E2E"
                         }
                     }
 
@@ -232,7 +254,7 @@ ApplicationWindow {
                 // Colonne 3 (droite-centre) - Carreaux descendant
                 Column {
                     id: diamondsColumn
-                    x: parent.width * 0.77
+                    x: parent.width * 0.75
                     y: -parent.height
                     spacing: 80 * mainWindow.minRatio
                     z: 0
@@ -243,7 +265,7 @@ ApplicationWindow {
                         Text {
                             text: "♦"
                             font.pixelSize: 60 * mainWindow.minRatio
-                            color: "#FF0000"
+                            color: "#AD1111"
                         }
                     }
 
@@ -261,7 +283,7 @@ ApplicationWindow {
                 // Colonne 4 (droite) - Piques montant
                 Column {
                     id: spadesColumn
-                    x: parent.width * 0.92
+                    x: parent.width * 0.90
                     y: -parent.height
                     spacing: 80 * mainWindow.minRatio
                     z: 0
@@ -272,7 +294,7 @@ ApplicationWindow {
                         Text {
                             text: "♠"
                             font.pixelSize: 60 * mainWindow.minRatio
-                            color: "#000000"
+                            color: "#422E2E"
                         }
                     }
 

@@ -851,13 +851,17 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
                     case 4: suitSymbol = QString::fromUtf8("\u2663"); break; // Trefle
                     case 5: suitSymbol = QString::fromUtf8("\u2666"); break; // Carreau
                     case 6: suitSymbol = QString::fromUtf8("\u2660"); break; // Pique
+                    case 7: suitSymbol = "TA"; break; // Tout Atout
+                    case 8: suitSymbol = "SA"; break; // Sans Atout
                 }
             }
             // Ne pas afficher Coinche/Surcoinche dans l'indicateur
             if (annonce != Player::COINCHE && annonce != Player::SURCOINCHE) {
                 bid["bidValue"] = bidValue;
                 bid["suitSymbol"] = suitSymbol;
-                // Coeur (3) et Carreau (5) sont rouges, Trefle (4) et Pique (6) sont noirs
+                // Coeur (3) et Carreau (5) sont rouges
+                // Trefle (4) et Pique (6) sont noirs
+                // TA (7) et SA (8) sont blancs (isRed = false)
                 bid["isRed"] = (suit == 3 || suit == 5);
                 m_playerBids[playerIndex] = bid;
                 emit playerBidsChanged();

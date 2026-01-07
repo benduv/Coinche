@@ -1250,6 +1250,11 @@ private:
         bool capotNonAnnonceTeam1 = (!isCapotAnnonce && !isGeneraleAnnonce && plisTeam1 == 8);
         bool capotNonAnnonceTeam2 = (!isCapotAnnonce && !isGeneraleAnnonce && plisTeam2 == 8);
 
+        // Si un capot non annoncé est réalisé, on doit le marquer comme réussi pour les stats
+        if (capotNonAnnonceTeam1 || capotNonAnnonceTeam2) {
+            capotReussi = true;
+        }
+
         if (isCapotAnnonce) {
             // CAPOT: l'equipe qui a annonce doit faire tous les 8 plis
             int plisTeamAnnonceur = 0;
@@ -1412,12 +1417,22 @@ private:
                 bool contractReussi = (pointsRealisesTeam1 >= valeurContrat);
 
                 if (contractReussi) {
-                    // Contrat réussi: (valeurContrat + pointsRealisés) × multiplicateur
-                    scoreToAddTeam1 = (valeurContrat + pointsRealisesTeam1) * multiplicateur;
-                    scoreToAddTeam2 = 0;
-                    qDebug() << "GameServer - Equipe 1 reussit son contrat COINCHE!";
-                    qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "((" << valeurContrat << "+" << pointsRealisesTeam1 << ")*" << multiplicateur << ")";
-                    qDebug() << "  Team2 marque: 0";
+                    // Vérifier si Team1 a fait un CAPOT non annoncé (tous les 8 plis)
+                    if (capotNonAnnonceTeam1) {
+                        // CAPOT non annoncé coinché: (250 + pointsRéalisés) × multiplicateur
+                        scoreToAddTeam1 = (250 + pointsRealisesTeam1) * multiplicateur;
+                        scoreToAddTeam2 = 0;
+                        qDebug() << "GameServer - Equipe 1 fait un CAPOT non annonce COINCHE!";
+                        qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "((250+" << pointsRealisesTeam1 << ")*" << multiplicateur << ")";
+                        qDebug() << "  Team2 marque: 0";
+                    } else {
+                        // Contrat réussi: (valeurContrat + pointsRealisés) × multiplicateur
+                        scoreToAddTeam1 = (valeurContrat + pointsRealisesTeam1) * multiplicateur;
+                        scoreToAddTeam2 = 0;
+                        qDebug() << "GameServer - Equipe 1 reussit son contrat COINCHE!";
+                        qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "((" << valeurContrat << "+" << pointsRealisesTeam1 << ")*" << multiplicateur << ")";
+                        qDebug() << "  Team2 marque: 0";
+                    }
 
                     // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
                     if (room->surcoinched && room->surcoinchePlayerIndex != -1 && !room->isBot[room->surcoinchePlayerIndex]) {
@@ -1478,12 +1493,22 @@ private:
                 bool contractReussi = (pointsRealisesTeam2 >= valeurContrat);
 
                 if (contractReussi) {
-                    // Contrat réussi: (valeurContrat + pointsRealisés) × multiplicateur
-                    scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = (valeurContrat + pointsRealisesTeam2) * multiplicateur;
-                    qDebug() << "GameServer - Equipe 2 reussit son contrat COINCHE!";
-                    qDebug() << "  Team1 marque: 0";
-                    qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((" << valeurContrat << "+" << pointsRealisesTeam2 << ")*" << multiplicateur << ")";
+                    // Vérifier si Team2 a fait un CAPOT non annoncé (tous les 8 plis)
+                    if (capotNonAnnonceTeam2) {
+                        // CAPOT non annoncé coinché: (250 + pointsRéalisés) × multiplicateur
+                        scoreToAddTeam1 = 0;
+                        scoreToAddTeam2 = (250 + pointsRealisesTeam2) * multiplicateur;
+                        qDebug() << "GameServer - Equipe 2 fait un CAPOT non annonce COINCHE!";
+                        qDebug() << "  Team1 marque: 0";
+                        qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((250+" << pointsRealisesTeam2 << ")*" << multiplicateur << ")";
+                    } else {
+                        // Contrat réussi: (valeurContrat + pointsRealisés) × multiplicateur
+                        scoreToAddTeam1 = 0;
+                        scoreToAddTeam2 = (valeurContrat + pointsRealisesTeam2) * multiplicateur;
+                        qDebug() << "GameServer - Equipe 2 reussit son contrat COINCHE!";
+                        qDebug() << "  Team1 marque: 0";
+                        qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((" << valeurContrat << "+" << pointsRealisesTeam2 << ")*" << multiplicateur << ")";
+                    }
 
                     // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
                     if (room->surcoinched && room->surcoinchePlayerIndex != -1 && !room->isBot[room->surcoinchePlayerIndex]) {
@@ -1841,6 +1866,8 @@ private:
         room->lastBidCouleur = Carte::COULEURINVALIDE;
         room->lastBidderIndex = -1;
         room->couleurAtout = Carte::COULEURINVALIDE;
+        room->isToutAtout = false;  // Réinitialiser le mode Tout Atout
+        room->isSansAtout = false;  // Réinitialiser le mode Sans Atout
         room->coinched = false;
         room->surcoinched = false;
         room->coinchePlayerIndex = -1;
@@ -2021,6 +2048,13 @@ private:
                 // Fin des enchères, lancement phase de jeu
                 qDebug() << "GameServer - SURCOINCHE annoncé! Fin des encheres, lancement phase de jeu";
                 for (int i = 0; i < 4; i++) {
+                    // IMPORTANT: Réinitialiser toutes les cartes avant de définir le nouvel atout
+                    // Cela évite que les cartes gardent l'état atout de la manche précédente (TA/SA)
+                    const auto& main = room->players[i]->getMain();
+                    for (Carte* carte : main) {
+                        carte->setAtout(false);
+                    }
+
                     if (room->isToutAtout) {
                         room->players[i]->setAllCardsAsAtout();
                     } else if (room->isSansAtout) {
@@ -2048,17 +2082,18 @@ private:
                 room->isSansAtout = false;
                 // En mode TA, utiliser COULEURINVALIDE pour ne pas highlighter une couleur spécifique
                 room->lastBidCouleur = Carte::COULEURINVALIDE;
-                qDebug() << "GameServer - Mode TOUT ATOUT active!";
+                qDebug() << "GameServer - Mode TOUT ATOUT activé! (isToutAtout=true, isSansAtout=false)";
             } else if (suit == 8) {
                 room->isToutAtout = false;
                 room->isSansAtout = true;
                 // En mode SA, utiliser COULEURINVALIDE pour ne pas highlighter une couleur spécifique
                 room->lastBidCouleur = Carte::COULEURINVALIDE;
-                qDebug() << "GameServer - Mode SANS ATOUT active!";
+                qDebug() << "GameServer - Mode SANS ATOUT activé! (isToutAtout=false, isSansAtout=true)";
             } else {
                 room->isToutAtout = false;
                 room->isSansAtout = false;
                 room->lastBidCouleur = static_cast<Carte::Couleur>(suit);
+                qDebug() << "GameServer - Mode NORMAL activé pour couleur" << suit << "(isToutAtout=false, isSansAtout=false)";
             }
 
             room->lastBidderIndex = playerIndex;
@@ -2078,6 +2113,12 @@ private:
         if (room->passedBidsCount >= 3 && room->lastBidAnnonce != Player::ANNONCEINVALIDE) {
             qDebug() << "GameServer - Fin des encheres! Lancement phase de jeu";
             for (int i = 0; i < 4; i++) {
+                // IMPORTANT: Réinitialiser toutes les cartes avant de définir le nouvel atout
+                const auto& main = room->players[i]->getMain();
+                for (Carte* carte : main) {
+                    carte->setAtout(false);
+                }
+
                 if (room->isToutAtout) {
                     room->players[i]->setAllCardsAsAtout();
                 } else if (room->isSansAtout) {
@@ -2421,6 +2462,12 @@ private:
             if (room->passedBidsCount >= 3 && room->lastBidAnnonce != Player::ANNONCEINVALIDE) {
                 qDebug() << "GameServer - Fin des encheres! Lancement phase de jeu";
                 for (int i = 0; i < 4; i++) {
+                    // IMPORTANT: Réinitialiser toutes les cartes avant de définir le nouvel atout
+                    const auto& main = room->players[i]->getMain();
+                    for (Carte* carte : main) {
+                        carte->setAtout(false);
+                    }
+
                     if (room->isToutAtout) {
                         room->players[i]->setAllCardsAsAtout();
                     } else if (room->isSansAtout) {
@@ -2448,6 +2495,13 @@ private:
             room->lastBidCouleur = bestCouleur;
             room->lastBidderIndex = playerIndex;
             room->couleurAtout = bestCouleur;
+
+            // IMPORTANT: Les bots ne parlent que des couleurs normales (COEUR, TREFLE, CARREAU, PIQUE)
+            // Si un joueur a parlé TA ou SA et qu'un bot surenchérit avec une couleur normale,
+            // il faut désactiver les modes TA/SA
+            room->isToutAtout = false;
+            room->isSansAtout = false;
+            qDebug() << "GameServer - Bot surenchérit avec couleur normale, désactivation TA/SA (isToutAtout=false, isSansAtout=false)";
 
             // Broadcast l'enchère à tous
             QJsonObject msg;
@@ -2517,6 +2571,50 @@ private:
             }
         }
         return lowestIdx;
+    }
+
+    // Trouve l'index de la carte avec la plus petite valeur en SANS ATOUT
+    // Évite de défausser les As (cartes maîtres) si possible
+    int findLowestValueCardSansAtout(Player* player, const std::vector<int>& playableIndices) {
+        const auto& main = player->getMain();
+
+        // D'abord, chercher les cartes qui ne sont PAS des As
+        std::vector<int> nonAceIndices;
+        for (int idx : playableIndices) {
+            if (main[idx]->getChiffre() != Carte::AS) {
+                nonAceIndices.push_back(idx);
+            }
+        }
+
+        // Si on a des cartes qui ne sont pas des As, trouver la plus faible parmi elles
+        if (!nonAceIndices.empty()) {
+            return findLowestValueCard(player, nonAceIndices);
+        }
+
+        // Sinon, on doit défausser un As (on n'a que des As)
+        return findLowestValueCard(player, playableIndices);
+    }
+
+    // Trouve l'index de la carte avec la plus petite valeur en TOUT ATOUT
+    // Évite de défausser les Valets (cartes maîtres) si possible
+    int findLowestValueCardToutAtout(Player* player, const std::vector<int>& playableIndices) {
+        const auto& main = player->getMain();
+
+        // D'abord, chercher les cartes qui ne sont PAS des Valets
+        std::vector<int> nonJackIndices;
+        for (int idx : playableIndices) {
+            if (main[idx]->getChiffre() != Carte::VALET) {
+                nonJackIndices.push_back(idx);
+            }
+        }
+
+        // Si on a des cartes qui ne sont pas des Valets, trouver la plus faible parmi elles
+        if (!nonJackIndices.empty()) {
+            return findLowestValueCard(player, nonJackIndices);
+        }
+
+        // Sinon, on doit défausser un Valet (on n'a que des Valets)
+        return findLowestValueCard(player, playableIndices);
     }
 
     // Trouve l'index de la carte avec la plus petite valeur en évitant l'atout
@@ -2695,11 +2793,203 @@ private:
         return count;
     }
 
+    // Stratégie pour SANS ATOUT (SA): pas d'atout, les cartes maîtres sont très importantes
+    // L'ordre de force est: As > 10 > Roi > Dame > Valet > 9 > 8 > 7
+    int chooseBestCardSansAtout(GameRoom* room, Player* player, int playerIndex,
+                                const std::vector<int>& playableIndices,
+                                Carte* carteGagnante, int idxPlayerWinning) {
+        const auto& main = player->getMain();
+        bool isAttackingTeam = (playerIndex % 2) == (room->lastBidderIndex % 2);
+
+        // Cas 1: Le bot commence le pli
+        if (room->currentPli.empty()) {
+            qDebug() << "Bot" << playerIndex << "commence le pli en SANS ATOUT";
+
+            // Stratégie: Jouer les As en priorité (cartes maîtres)
+            for (int idx : playableIndices) {
+                Carte* carte = main[idx];
+                if (carte->getChiffre() == Carte::AS) {
+                    qDebug() << "Bot" << playerIndex << "- [SA] Joue un As";
+                    return idx;
+                }
+            }
+
+            // Jouer un 10 si l'As de cette couleur est déjà tombé (le 10 devient maître)
+            for (int idx : playableIndices) {
+                Carte* carte = main[idx];
+                if (carte->getChiffre() == Carte::DIX && isAcePlayed(room, carte->getCouleur())) {
+                    qDebug() << "Bot" << playerIndex << "- [SA] Joue un 10 maître";
+                    return idx;
+                }
+            }
+
+            // Si on attaque, jouer les cartes fortes (Roi, 10)
+            if (isAttackingTeam) {
+                for (int idx : playableIndices) {
+                    Carte* carte = main[idx];
+                    if (carte->getChiffre() == Carte::ROI || carte->getChiffre() == Carte::DIX) {
+                        qDebug() << "Bot" << playerIndex << "- [SA] Joue une carte forte";
+                        return idx;
+                    }
+                }
+            }
+
+            // Sinon, jouer la carte la plus faible pour économiser les fortes
+            return findLowestValueCardSansAtout(player, playableIndices);
+        }
+
+        // Cas 2: Le partenaire gagne le pli
+        if (isPartnerWinning(playerIndex, idxPlayerWinning)) {
+            qDebug() << "Bot" << playerIndex << "- [SA] Partenaire gagne, défausse (évite As)";
+            return findLowestValueCardSansAtout(player, playableIndices);
+        }
+
+        // Cas 3: L'adversaire gagne le pli
+        // Essayer de reprendre avec une carte plus forte
+        int bestCardIdx = -1;
+        int bestOrder = -1;
+
+        for (int idx : playableIndices) {
+            Carte* carte = main[idx];
+            // Vérifier si cette carte peut battre la carte gagnante
+            if (carte->getCouleur() == carteGagnante->getCouleur()) {
+                int order = carte->getOrdreCarteForte();
+                if (order > carteGagnante->getOrdreCarteForte() && order > bestOrder) {
+                    bestOrder = order;
+                    bestCardIdx = idx;
+                }
+            }
+        }
+
+        // Si on peut gagner, jouer la plus petite carte gagnante
+        if (bestCardIdx != -1) {
+            qDebug() << "Bot" << playerIndex << "- [SA] Peut gagner, joue carte gagnante";
+            return bestCardIdx;
+        }
+
+        // Sinon, défausser la plus petite carte (évite les As)
+        qDebug() << "Bot" << playerIndex << "- [SA] Ne peut pas gagner, défausse (évite As)";
+        return findLowestValueCardSansAtout(player, playableIndices);
+    }
+
+    // Stratégie pour TOUT ATOUT (TA): toutes les cartes sont atouts
+    // L'ordre de force est: Valet > 9 > As > 10 > Roi > Dame > 8 > 7
+    // IMPORTANT: On est obligé de monter si on peut (règle du jeu)
+    int chooseBestCardToutAtout(GameRoom* room, Player* player, int playerIndex,
+                                const std::vector<int>& playableIndices,
+                                Carte* carteGagnante, int idxPlayerWinning) {
+        const auto& main = player->getMain();
+        bool isAttackingTeam = (playerIndex % 2) == (room->lastBidderIndex % 2);
+
+        // Cas 1: Le bot commence le pli
+        if (room->currentPli.empty()) {
+            qDebug() << "Bot" << playerIndex << "commence le pli en TOUT ATOUT";
+
+            // Stratégie: Jouer les cartes maîtres (Valet, 9, As)
+            // Jouer le Valet si on l'a
+            for (int idx : playableIndices) {
+                Carte* carte = main[idx];
+                if (carte->getChiffre() == Carte::VALET) {
+                    qDebug() << "Bot" << playerIndex << "- [TA] Joue un Valet";
+                    return idx;
+                }
+            }
+
+            // Jouer un 9 si on l'a
+            for (int idx : playableIndices) {
+                Carte* carte = main[idx];
+                if (carte->getChiffre() == Carte::NEUF) {
+                    qDebug() << "Bot" << playerIndex << "- [TA] Joue un 9";
+                    return idx;
+                }
+            }
+
+            // Jouer un As si on l'a
+            for (int idx : playableIndices) {
+                Carte* carte = main[idx];
+                if (carte->getChiffre() == Carte::AS) {
+                    qDebug() << "Bot" << playerIndex << "- [TA] Joue un As";
+                    return idx;
+                }
+            }
+
+            // Sinon, jouer la carte la plus faible pour économiser les fortes
+            return findLowestValueCardToutAtout(player, playableIndices);
+        }
+
+        // Cas 2: Le partenaire gagne le pli
+        if (isPartnerWinning(playerIndex, idxPlayerWinning)) {
+            qDebug() << "Bot" << playerIndex << "- [TA] Partenaire gagne";
+
+            // En TA, on doit MONTER si on peut, même si le partenaire gagne
+            // Chercher si on peut monter
+            int lowestWinningIdx = -1;
+            int lowestWinningOrder = 999;
+
+            for (int idx : playableIndices) {
+                Carte* carte = main[idx];
+                int order = carte->getOrdreCarteForte();
+                if (order > carteGagnante->getOrdreCarteForte() && order < lowestWinningOrder) {
+                    lowestWinningOrder = order;
+                    lowestWinningIdx = idx;
+                }
+            }
+
+            // Si on peut monter, jouer la plus petite carte qui monte
+            if (lowestWinningIdx != -1) {
+                qDebug() << "Bot" << playerIndex << "- [TA] Monte sur le partenaire (obligatoire)";
+                return lowestWinningIdx;
+            }
+
+            // Si on ne peut pas monter, défausser la plus petite (évite les Valets)
+            qDebug() << "Bot" << playerIndex << "- [TA] Ne peut pas monter, défausse (évite Valets)";
+            return findLowestValueCardToutAtout(player, playableIndices);
+        }
+
+        // Cas 3: L'adversaire gagne le pli
+        // On DOIT monter si on peut
+        int lowestWinningIdx = -1;
+        int lowestWinningOrder = 999;
+
+        for (int idx : playableIndices) {
+            Carte* carte = main[idx];
+            int order = carte->getOrdreCarteForte();
+            if (order > carteGagnante->getOrdreCarteForte() && order < lowestWinningOrder) {
+                lowestWinningOrder = order;
+                lowestWinningIdx = idx;
+            }
+        }
+
+        // Si on peut monter, jouer la plus petite carte qui monte
+        if (lowestWinningIdx != -1) {
+            qDebug() << "Bot" << playerIndex << "- [TA] Monte sur l'adversaire";
+            return lowestWinningIdx;
+        }
+
+        // Si on ne peut pas monter, défausser la plus petite (évite les Valets)
+        qDebug() << "Bot" << playerIndex << "- [TA] Ne peut pas monter, défausse (évite Valets)";
+        return findLowestValueCardToutAtout(player, playableIndices);
+    }
+
     int chooseBestCard(GameRoom* room, Player* player, int playerIndex,
                        const std::vector<int>& playableIndices,
                        Carte* carteGagnante, int idxPlayerWinning) {
         const auto& main = player->getMain();
 
+        // Détection des modes spéciaux: TA (7) et SA (8)
+        if (static_cast<int>(room->couleurAtout) == 8) {
+            // Mode SANS ATOUT
+            qDebug() << "Bot" << playerIndex << "utilise la stratégie SANS ATOUT";
+            return chooseBestCardSansAtout(room, player, playerIndex, playableIndices, carteGagnante, idxPlayerWinning);
+        }
+
+        if (static_cast<int>(room->couleurAtout) == 7) {
+            // Mode TOUT ATOUT
+            qDebug() << "Bot" << playerIndex << "utilise la stratégie TOUT ATOUT";
+            return chooseBestCardToutAtout(room, player, playerIndex, playableIndices, carteGagnante, idxPlayerWinning);
+        }
+
+        // Stratégie classique pour les couleurs normales (Coeur, Trèfle, Carreau, Pique)
         // Cas 1: Le bot commence le pli (premier à jouer)
         if (room->currentPli.empty()) {
             qDebug() << "Bot" << playerIndex << "commence le pli - analyse de la main";
@@ -3232,6 +3522,12 @@ private:
 
             // Lancer la phase de jeu
             for (int i = 0; i < 4; i++) {
+                // IMPORTANT: Réinitialiser toutes les cartes avant de définir le nouvel atout
+                const auto& main = room->players[i]->getMain();
+                for (Carte* carte : main) {
+                    carte->setAtout(false);
+                }
+
                 if (room->isToutAtout) {
                     room->players[i]->setAllCardsAsAtout();
                 } else if (room->isSansAtout) {
@@ -3255,7 +3551,16 @@ private:
         if (!room) return;
 
         room->gameState = "playing";
-        room->couleurAtout = room->lastBidCouleur;
+        // Définir couleurAtout selon le mode de jeu actuel
+        // IMPORTANT: S'assurer que couleurAtout reflète bien le mode de jeu final
+        if (room->isToutAtout || room->isSansAtout) {
+            // En mode TA/SA, utiliser COULEURINVALIDE (on se base sur les flags)
+            room->couleurAtout = Carte::COULEURINVALIDE;
+        } else {
+            // Mode normal: utiliser la couleur d'atout de la dernière enchère
+            room->couleurAtout = room->lastBidCouleur;
+        }
+
         // Le joueur qui a commencé les enchères joue en premier
         room->currentPlayerIndex = room->firstPlayerIndex;
 
@@ -3271,6 +3576,8 @@ private:
         }
 
         qDebug() << "Phase de jeu demarree - Atout:" << static_cast<int>(room->couleurAtout)
+                 << "isToutAtout:" << room->isToutAtout
+                 << "isSansAtout:" << room->isSansAtout
                  << "Premier joueur:" << room->currentPlayerIndex
                  << "(Gagnant encheres:" << room->lastBidderIndex << ")";
 
