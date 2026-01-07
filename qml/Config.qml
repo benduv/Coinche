@@ -7,14 +7,16 @@ QtObject {
     // Changez cette valeur selon votre environnement :
     // - "localhost" : Développement local (Windows/Mac/Linux)
     // - "emulator" : Émulateur Android
-    // - "production" : Serveur de production
-    property string environment: "emulator"
+    // - "local-network" : Tests sur réseau local (PC hotspot)
+    // - "remote" : Serveur VPS distant en production
+    property string environment: "localhost"
 
     // URLs pour chaque environnement
     readonly property var serverUrls: ({
         "localhost": "ws://localhost:1234",
         "emulator": "ws://10.0.2.2:1234",
-        "production": "ws://VOTRE_IP_SERVEUR:1234"  // À MODIFIER avec votre IP ou domaine
+        "local-network": "ws://172.20.10.13:1234",  // IP du PC sur le réseau local
+        "remote": "ws://VOTRE-IP-VPS:1234"  // À remplacer par l'IP de votre VPS
     })
 
     // URL active selon l'environnement

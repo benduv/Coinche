@@ -1,0 +1,18 @@
+[Unit]
+Description=Coinche Game Server
+After=network.target
+
+[Service]
+Type=simple
+User=coinche
+WorkingDirectory=/home/coinche/server/build
+ExecStart=/home/coinche/server/build/GameServer
+Restart=always
+RestartSec=10
+
+# Logs
+StandardOutput=append:/var/log/coinche/server.log
+StandardError=append:/var/log/coinche/error.log
+
+[Install]
+WantedBy=multi-user.target

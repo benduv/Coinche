@@ -11,7 +11,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <!-- SDK minimum et target -->
-    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34"/>
+    <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34"/>
 
     <!-- Support différentes tailles d'écran -->
     <supports-screens
