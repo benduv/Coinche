@@ -24,7 +24,7 @@ Rectangle {
         id: popup
         anchors.centerIn: parent
         width: Math.min(parent.width * 0.8, 500)
-        height: Math.min(parent.height * 0.5, 300)
+        height: Math.min(parent.height * 0.7, 400)
         color: "#1a1a1a"
         radius: 15
         border.color: "#FFD700"

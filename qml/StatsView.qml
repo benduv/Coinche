@@ -5,12 +5,35 @@ import QtQuick.Layouts
 Rectangle {
     id: statsRoot
     anchors.fill: parent
-    color: "#1a1a1a"
+    color: "#0a0a2e"  // Fond bleu foncé comme MainMenu
 
     // Ratio responsive pour adapter la taille des composants
     property real widthRatio: width / 1024
     property real heightRatio: height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
+
+    // Étoiles scintillantes en arrière-plan
+    Repeater {
+        model: 80
+        Rectangle {
+            x: Math.random() * statsRoot.width
+            y: Math.random() * statsRoot.height
+            width: (Math.random() * 2 + 1) * minRatio
+            height: width
+            radius: width / 2
+            color: "white"
+            opacity: 0.3
+            z: 0
+
+            SequentialAnimation on opacity {
+                running: true
+                loops: Animation.Infinite
+                PauseAnimation { duration: Math.random() * 2000 }
+                NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
+                NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
+            }
+        }
+    }
 
     // Propriétés pour les statistiques
     property int gamesPlayed: 0
@@ -131,75 +154,64 @@ Rectangle {
             width: parent.width
             spacing: 20 * minRatio
 
-            // Titre avec effet
-            Rectangle {
+            // Titre
+            Text {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 80 * heightRatio
-                color: "transparent"
+                Layout.alignment: Qt.AlignHCenter
+                text: "📊 STATISTIQUES DE JEU"
+                font.pixelSize: Math.min(42 * minRatio, 36)
+                font.bold: true
+                color: "#FFD700"
+                style: Text.Outline
+                styleColor: "#000000"
+                horizontalAlignment: Text.AlignHCenter
+            }
 
-                Rectangle {
-                    anchors.fill: parent
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#FFD700" }
-                        GradientStop { position: 1.0; color: "#FFA500" }
-                    }
-                    radius: 15 * minRatio
-                    opacity: 0.2
+            // Nom du joueur
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 10 * minRatio
+
+                Text {
+                    text: "👤"
+                    font.pixelSize: 24 * minRatio
                 }
 
                 Text {
-                    anchors.centerIn: parent
-                    text: "📊 STATISTIQUES DE JEU"
-                    font.pixelSize: Math.min(42 * minRatio, 36)
+                    text: playerName
+                    font.pixelSize: Math.min(24 * minRatio, 20)
                     font.bold: true
                     color: "#FFD700"
-                    style: Text.Outline
-                    styleColor: "#000000"
                 }
             }
 
-            // Nom du joueur avec badge
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 50 * heightRatio
-                color: "#2a2a2a"
-                radius: 25 * minRatio
-                border.color: "#FFD700"
-                border.width: 2 * minRatio
+            Item { Layout.preferredHeight: 10 * minRatio }
 
-                RowLayout {
-                    anchors.centerIn: parent
-                    spacing: 10 * minRatio
-
-                    Text {
-                        text: "👤"
-                        font.pixelSize: 24 * minRatio
-                    }
-
-                    Text {
-                        text: playerName
-                        font.pixelSize: Math.min(24 * minRatio, 20)
-                        font.bold: true
-                        color: "#FFD700"
-                    }
-                }
+            // Section Victoires
+            Text {
+                text: "🏆 VICTOIRES"
+                font.pixelSize: Math.min(28 * minRatio, 24)
+                font.bold: true
+                color: "#FFD700"
+                Layout.topMargin: 10 * minRatio
             }
 
             // Grid layout pour les cartes de stats
             GridLayout {
                 Layout.fillWidth: true
-                columns: Math.max(1, Math.floor(parent.width / (300 * widthRatio)))
-                columnSpacing: 15 * widthRatio
+                columns: 4  // Forcer 4 colonnes pour que tout tienne sur une ligne
+                columnSpacing: 10 * widthRatio
                 rowSpacing: 15 * heightRatio
 
                 // Carte: Parties
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 160 * heightRatio
-                    Layout.minimumWidth: 250 * widthRatio
+                    Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#4CAF50"
+                    border.color: "#FFD700"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -220,7 +232,7 @@ Rectangle {
                                 text: "Parties jouées"
                                 font.pixelSize: Math.min(20 * minRatio, 18)
                                 font.bold: true
-                                color: "#4CAF50"
+                                color: "#FFD700"
                                 Layout.fillWidth: true
                             }
                         }
@@ -231,7 +243,7 @@ Rectangle {
                             text: gamesPlayed.toString()
                             font.pixelSize: Math.min(48 * minRatio, 42)
                             font.bold: true
-                            color: "#4CAF50"
+                            color: "#FFD700"
                             Layout.alignment: Qt.AlignHCenter
                             style: Text.Outline
                             styleColor: "#000000"
@@ -243,10 +255,10 @@ Rectangle {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 160 * heightRatio
-                    Layout.minimumWidth: 250 * widthRatio
+                    Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#00ff00"
+                    border.color: "#FFD700"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -267,7 +279,7 @@ Rectangle {
                                 text: "Victoires"
                                 font.pixelSize: Math.min(20 * minRatio, 18)
                                 font.bold: true
-                                color: "#00ff00"
+                                color: "#FFD700"
                                 Layout.fillWidth: true
                             }
                         }
@@ -278,7 +290,7 @@ Rectangle {
                             text: gamesWon.toString()
                             font.pixelSize: Math.min(48 * minRatio, 42)
                             font.bold: true
-                            color: "#00ff00"
+                            color: "#FFD700"
                             Layout.alignment: Qt.AlignHCenter
                             style: Text.Outline
                             styleColor: "#000000"
@@ -290,7 +302,7 @@ Rectangle {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 160 * heightRatio
-                    Layout.minimumWidth: 250 * widthRatio
+                    Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
                     border.color: "#FFD700"
@@ -337,10 +349,10 @@ Rectangle {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 160 * heightRatio
-                    Layout.minimumWidth: 250 * widthRatio
+                    Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#00ff88"
+                    border.color: "#FFD700"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -361,7 +373,7 @@ Rectangle {
                                 text: "Série de victoire"
                                 font.pixelSize: Math.min(20 * minRatio, 18)
                                 font.bold: true
-                                color: "#00ff88"
+                                color: "#FFD700"
                                 Layout.fillWidth: true
                             }
                         }
@@ -372,7 +384,7 @@ Rectangle {
                             text: maxWinStreak.toString()
                             font.pixelSize: Math.min(48 * minRatio, 42)
                             font.bold: true
-                            color: "#00ff88"
+                            color: "#FFD700"
                             Layout.alignment: Qt.AlignHCenter
                             style: Text.Outline
                             styleColor: "#000000"
@@ -413,8 +425,9 @@ Rectangle {
 
                         Text {
                             text: "Tentatives"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -435,7 +448,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#00dd00"
+                    border.color: "#ff6666"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -445,8 +458,9 @@ Rectangle {
 
                         Text {
                             text: "Réussies"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -454,7 +468,7 @@ Rectangle {
                             text: coincheSuccess.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#00dd00"
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -467,7 +481,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#FFD700"
+                    border.color: "#ff6666"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -477,8 +491,9 @@ Rectangle {
 
                         Text {
                             text: "Taux"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -486,7 +501,7 @@ Rectangle {
                             text: coincheAttempts > 0 ? ((coincheSuccess / coincheAttempts) * 100).toFixed(1) + "%" : "0%"
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#FFD700"
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -498,7 +513,7 @@ Rectangle {
                 text: "🛡️ COINCHES SUBIES"
                 font.pixelSize: Math.min(28 * minRatio, 24)
                 font.bold: true
-                color: "#9966ff"
+                color: "#6699ff"
                 Layout.topMargin: 10 * minRatio
             }
 
@@ -515,7 +530,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#9966ff"
+                    border.color: "#6699ff"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -525,8 +540,9 @@ Rectangle {
 
                         Text {
                             text: "Subies"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -534,7 +550,7 @@ Rectangle {
                             text: annoncesCoinchees.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#9966ff"
+                            color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -547,7 +563,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#00dd00"
+                    border.color: "#6699ff"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -557,8 +573,9 @@ Rectangle {
 
                         Text {
                             text: "Gagnées malgré tout"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -566,7 +583,7 @@ Rectangle {
                             text: annoncesCoincheesgagnees.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#00dd00"
+                            color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -579,7 +596,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#FFD700"
+                    border.color: "#6699ff"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -589,8 +606,9 @@ Rectangle {
 
                         Text {
                             text: "Taux de victoire"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -598,7 +616,7 @@ Rectangle {
                             text: annoncesCoinchees > 0 ? ((annoncesCoincheesgagnees / annoncesCoinchees) * 100).toFixed(1) + "%" : "0%"
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#FFD700"
+                            color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -637,8 +655,9 @@ Rectangle {
 
                         Text {
                             text: "Tentatives"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -659,7 +678,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#00dd00"
+                    border.color: "#ff9900"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -669,8 +688,9 @@ Rectangle {
 
                         Text {
                             text: "Réussies"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -678,7 +698,7 @@ Rectangle {
                             text: surcoincheSuccess.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#00dd00"
+                            color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -691,7 +711,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#FFD700"
+                    border.color: "#ff9900"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -701,8 +721,9 @@ Rectangle {
 
                         Text {
                             text: "Taux"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -710,7 +731,7 @@ Rectangle {
                             text: surcoincheAttempts > 0 ? ((surcoincheSuccess / surcoincheAttempts) * 100).toFixed(1) + "%" : "0%"
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#FFD700"
+                            color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -739,7 +760,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#9966ff"
+                    border.color: "#cc66ff"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -749,8 +770,9 @@ Rectangle {
 
                         Text {
                             text: "Subies"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -758,7 +780,7 @@ Rectangle {
                             text: annoncesSurcoinchees.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#9966ff"
+                            color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -771,7 +793,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#00dd00"
+                    border.color: "#cc66ff"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -781,8 +803,9 @@ Rectangle {
 
                         Text {
                             text: "Subies réussies"
-                            font.pixelSize: Math.min(16 * minRatio, 14)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
@@ -792,7 +815,7 @@ Rectangle {
                             text: annoncesSurcoincheesGagnees.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#00dd00"
+                            color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -805,7 +828,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#FFD700"
+                    border.color: "#cc66ff"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -815,8 +838,9 @@ Rectangle {
 
                         Text {
                             text: "Taux de victoire"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -824,7 +848,7 @@ Rectangle {
                             text: annoncesSurcoinchees > 0 ? ((annoncesSurcoincheesGagnees / annoncesSurcoinchees) * 100).toFixed(1) + "%" : "0%"
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#FFD700"
+                            color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -863,8 +887,9 @@ Rectangle {
 
                         Text {
                             text: "Réalisés"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#9C27B0"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -885,7 +910,7 @@ Rectangle {
                     Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#E91E63"
+                    border.color: "#9C27B0"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -895,8 +920,9 @@ Rectangle {
 
                         Text {
                             text: "Annoncés tentés"
-                            font.pixelSize: Math.min(16 * minRatio, 14)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#9C27B0"
                             Layout.alignment: Qt.AlignHCenter
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
@@ -906,7 +932,7 @@ Rectangle {
                             text: capotAnnoncesTentes.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#E91E63"
+                            color: "#9C27B0"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -919,7 +945,7 @@ Rectangle {
                     Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#00ff88"
+                    border.color: "#9C27B0"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -929,8 +955,9 @@ Rectangle {
 
                         Text {
                             text: "Annoncés réussis"
-                            font.pixelSize: Math.min(16 * minRatio, 14)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#9C27B0"
                             Layout.alignment: Qt.AlignHCenter
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
@@ -940,7 +967,7 @@ Rectangle {
                             text: capotAnnoncesRealises.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#00ff88"
+                            color: "#9C27B0"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -953,7 +980,7 @@ Rectangle {
                     Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#FFD700"
+                    border.color: "#9C27B0"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -963,8 +990,9 @@ Rectangle {
 
                         Text {
                             text: "Taux annoncés"
-                            font.pixelSize: Math.min(16 * minRatio, 14)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#9C27B0"
                             Layout.alignment: Qt.AlignHCenter
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
@@ -974,7 +1002,7 @@ Rectangle {
                             text: capotAnnoncesTentes > 0 ? ((capotAnnoncesRealises / capotAnnoncesTentes) * 100).toFixed(1) + "%" : "0%"
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#FFD700"
+                            color: "#9C27B0"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -1013,8 +1041,9 @@ Rectangle {
 
                         Text {
                             text: "Tentatives"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -1035,7 +1064,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#00dd00"
+                    border.color: "#FF9800"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -1045,8 +1074,9 @@ Rectangle {
 
                         Text {
                             text: "Réussies"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -1054,7 +1084,7 @@ Rectangle {
                             text: generaleSuccess.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#00dd00"
+                            color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
@@ -1067,7 +1097,7 @@ Rectangle {
                     Layout.minimumWidth: 200 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#FFD700"
+                    border.color: "#FF9800"
                     border.width: 2 * minRatio
 
                     ColumnLayout {
@@ -1077,8 +1107,9 @@ Rectangle {
 
                         Text {
                             text: "Taux"
-                            font.pixelSize: Math.min(18 * minRatio, 16)
-                            color: "#aaaaaa"
+                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.bold: true
+                            color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -1086,7 +1117,7 @@ Rectangle {
                             text: generaleAttempts > 0 ? ((generaleSuccess / generaleAttempts) * 100).toFixed(1) + "%" : "0%"
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#FFD700"
+                            color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }

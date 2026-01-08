@@ -13,11 +13,11 @@ if (Test-Path ".\update_test_avatars.ps1") {
 }
 
 # Lancer le serveur en arrière-plan avec console visible
-Write-Host "`nLancement du serveur..." -ForegroundColor Green
-Start-Process -FilePath ".\build\Desktop_Qt_6_9_3_MinGW_64_bit-Debug\server.exe" -WindowStyle Normal
+#Write-Host "`nLancement du serveur..." -ForegroundColor Green
+#Start-Process -FilePath ".\build\Desktop_Qt_6_9_3_MinGW_64_bit-Debug\server.exe" -WindowStyle Normal
 
 # Attendre que le serveur démarre
-Start-Sleep -Seconds 2
+#Start-Sleep -Seconds 2
 
 # Identifiants des joueurs (email, password, avatar)
 $players = @(

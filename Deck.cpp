@@ -1,8 +1,5 @@
 #include <iostream>
 #include "Deck.h"
-#ifdef _WIN32
-#include <Windows.h>
-#endif
 #include <algorithm>
 #include <random>
 
@@ -61,10 +58,6 @@ void Deck::setAtout(Carte::Couleur atoutCouleur)
             elt->setAtout(true);
         }
     }
-
-    /*for(auto & elt : deck) {
-        std::cout << "Valeur de la carte: " << elt->getValeurDeLaCarte() << std::endl; 
-    }*/
 }
 
 void Deck::resetDeck()
@@ -103,27 +96,6 @@ void Deck::distribute(std::vector<Carte *> &main1, std::vector<Carte *> &main2, 
         }
         cpt++;
     }
-
-    
-    // for(auto elt : main1) {
-    //     std::cout << " MAIN 1" << std::endl;
-    //     elt->printCarte();
-    // }
-    
-    // for(auto elt : main2) {
-    //     std::cout << " MAIN 2" << std::endl;
-    //     elt->printCarte();
-    // }
-    
-    // for(auto elt : main3) {
-    //     std::cout << " MAIN 3" << std::endl;
-    //     elt->printCarte();
-    // }
-    
-    // for(auto elt : main4) {
-    //     std::cout << " MAIN 4" << std::endl;
-    //     elt->printCarte();
-    // }
 }
 
 void Deck::rebuildFromCards(const std::vector<Carte*>& cards)

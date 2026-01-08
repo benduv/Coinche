@@ -960,7 +960,7 @@ Rectangle {
                 anchors.bottom: northAvatar.top
                 anchors.bottomMargin: rootArea.height * 0.005
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: - rootArea.height * 0.05
+                spacing: - rootArea.height * 0.02
                 Repeater {
                     model: {
                         switch (playerNorthColumn.actualPlayerIndex) {
@@ -1002,9 +1002,9 @@ Rectangle {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             anchors.leftMargin: parent.width * 0.04
-            spacing: parent.height * 0.008
+            spacing: parent.height * 0.03
             rotation: 0
-            width: rootArea.width * 0.0625 // Largeur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
+            width: rootArea.width * 0.0775 // Largeur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
             layoutDirection: Qt.RightToLeft  // Inverse l'ordre visuel pour que l'avatar reste fixe
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(1)
@@ -1208,8 +1208,8 @@ Rectangle {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             anchors.rightMargin: parent.width * 0.04
-            spacing: parent.height * 0.008
-            width: rootArea.width * 0.0625  // Largeur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
+            spacing: parent.height * 0.02
+            width: rootArea.width * 0.075  // Largeur fixe pour eviter que playArea change de taille lorsque plus de carte dans la main
 
             property int actualPlayerIndex: rootArea.getActualPlayerIndex(3)
 

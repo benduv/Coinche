@@ -156,6 +156,41 @@ ApplicationWindow {
                     id: config
                 }
 
+                // Timer pour la reconnexion automatique
+                Timer {
+                    id: reconnectTimer
+                    interval: 3000  // Tente de se reconnecter toutes les 3 secondes
+                    repeat: true
+                    running: false
+
+                    onTriggered: {
+                        if (!networkManager.connected) {
+                            console.log("Tentative de reconnexion au serveur...")
+                            var serverUrl = config.getServerUrl()
+                            networkManager.connectToServer(serverUrl)
+                        } else {
+                            // Si reconnecté avec succès, arrêter le timer
+                            console.log("Reconnexion réussie!")
+                            stop()
+                        }
+                    }
+                }
+
+                // Surveiller les changements de connexion
+                Connections {
+                    target: networkManager
+
+                    function onConnectedChanged() {
+                        if (!networkManager.connected) {
+                            console.log("Connexion perdue, démarrage de la reconnexion automatique...")
+                            reconnectTimer.start()
+                        } else {
+                            console.log("Connexion établie")
+                            reconnectTimer.stop()
+                        }
+                    }
+                }
+
                 Component.onCompleted: {
                     var serverUrl = config.getServerUrl()
                     console.log("Connexion au serveur:", serverUrl)
