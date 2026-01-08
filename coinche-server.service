@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=coinche
-WorkingDirectory=/home/coinche/server/build
-ExecStart=/home/coinche/server/build/GameServer
+WorkingDirectory=/home/coinche/Coinche/build
+ExecStart=/home/coinche/Coinche/build/server
 Restart=always
 RestartSec=10
 
