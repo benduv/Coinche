@@ -460,6 +460,14 @@ private:
             stateMsg["isToutAtout"] = room->isToutAtout;
             stateMsg["isSansAtout"] = room->isSansAtout;
 
+            // Envoyer les scores (manche et total)
+            // Note: scoreTeam1/scoreTeam2 sont les scores TOTAUX de la partie
+            // scoreMancheTeam1/scoreMancheTeam2 sont les scores de la manche en cours
+            stateMsg["scoreTeam1"] = room->scoreMancheTeam1;
+            stateMsg["scoreTeam2"] = room->scoreMancheTeam2;
+            stateMsg["scoreTotalTeam1"] = room->scoreTeam1;
+            stateMsg["scoreTotalTeam2"] = room->scoreTeam2;
+
             // Si c'est le tour du joueur, envoyer aussi les cartes jouables
             if (room->currentPlayerIndex == playerIndex) {
                 QJsonArray playableCards = calculatePlayableCards(room, playerIndex);

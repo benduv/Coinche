@@ -735,6 +735,22 @@ void GameModel::updateGameState(const QJsonObject& state)
         }
     }
 
+    if (state.contains("scoreTotalTeam1")) {
+        int newScore = state["scoreTotalTeam1"].toInt();
+        if (m_scoreTotalTeam1 != newScore) {
+            m_scoreTotalTeam1 = newScore;
+            emit scoreTotalTeam1Changed();
+        }
+    }
+
+    if (state.contains("scoreTotalTeam2")) {
+        int newScore = state["scoreTotalTeam2"].toInt();
+        if (m_scoreTotalTeam2 != newScore) {
+            m_scoreTotalTeam2 = newScore;
+            emit scoreTotalTeam2Changed();
+        }
+    }
+
     // Mettre à jour les cartes jouables pour le joueur actuel
     if (state.contains("playableCards") && state.contains("currentPlayer")) {
         int currentPlayer = state["currentPlayer"].toInt();

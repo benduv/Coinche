@@ -222,6 +222,8 @@ Rectangle {
                     Button {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 120 * loginRoot.heightRatio
+                        enabled: networkManager.connected
+                        opacity: enabled ? 1.0 : 0.4
 
                         background: Rectangle {
                             color: parent.down ? "#0088cc" : (parent.hovered ? "#00aaee" : "#0099dd")
@@ -250,6 +252,8 @@ Rectangle {
                     Button {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 120 * loginRoot.heightRatio
+                        enabled: networkManager.connected
+                        opacity: enabled ? 1.0 : 0.4
 
                         background: Rectangle {
                             color: parent.down ? "#00aa00" : (parent.hovered ? "#00dd00" : "#00cc00")
@@ -278,6 +282,8 @@ Rectangle {
                     Button {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 120 * loginRoot.heightRatio
+                        enabled: networkManager.connected
+                        opacity: enabled ? 1.0 : 0.4
 
                         background: Rectangle {
                             color: parent.down ? "#666666" : (parent.hovered ? "#888888" : "#777777")

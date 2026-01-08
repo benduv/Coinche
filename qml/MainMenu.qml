@@ -552,6 +552,8 @@ ApplicationWindow {
                     width: 120 * mainWindow.minRatio
                     height: 120 * mainWindow.minRatio
                     visible: mainWindow.accountType !== "guest"
+                    enabled: networkManager.connected
+                    opacity: enabled ? 1.0 : 0.4
                     z: 2
 
                     background: Rectangle {
