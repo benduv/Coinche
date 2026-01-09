@@ -166,10 +166,10 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
                      const Carte::Couleur &couleurAtout, Carte* carteAtout,
                      int idxPlayerWinning, bool isToutAtout) const {
 
-    std::cout << "Verification si la carte est jouable pour le jouer: " << m_name << " et carteIdx = " << carteIdx << std::endl;
-    std::cout << "******************************************************* " << std::endl;
-    std::cout << "*****************************idxPlayerWinning: " << idxPlayerWinning << " m_index: " << m_index << std::endl;
-    std::cout << "Mode Tout Atout: " << (isToutAtout ? "OUI" : "NON") << std::endl;
+    // std::cout << "Verification si la carte est jouable pour le jouer: " << m_name << " et carteIdx = " << carteIdx << std::endl;
+    // std::cout << "******************************************************* " << std::endl;
+    // std::cout << "*****************************idxPlayerWinning: " << idxPlayerWinning << " m_index: " << m_index << std::endl;
+    // std::cout << "Mode Tout Atout: " << (isToutAtout ? "OUI" : "NON") << std::endl;
 
     if (carteIdx < 0 || carteIdx >= m_main.size()) {
         return false;
@@ -179,11 +179,11 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
     const Carte* carte = m_main[carteIdx];
     carte->printCarte();
 
-    std::cout << "Couleur demandee: " << couleurDemandee << ", Couleur atout: " << couleurAtout << std::endl;
+    //std::cout << "Couleur demandee: " << couleurDemandee << ", Couleur atout: " << couleurAtout << std::endl;
     
     // Premier joueur peut jouer n'importe quoi
     if (couleurDemandee == Carte::COULEURINVALIDE) {
-        std::cout << "Premier joueur, carte jouable." << std::endl;
+        //std::cout << "Premier joueur, carte jouable." << std::endl;
         return true;
     }
     
