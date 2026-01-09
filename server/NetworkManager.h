@@ -405,19 +405,8 @@ private slots:
                 // Mettre à jour les cartes du joueur
                 m_gameModel->receiveCardsDealt(m_myCards);
 
-                // Mettre à jour les adversaires si nécessaire
-                for (int i = 0; i < m_opponents.size(); i++) {
-                    QJsonObject opp = m_opponents[i].toObject();
-                    int oppPosition = opp["position"].toInt();
-                    QString oppName = opp["name"].toString();
-                    QString oppAvatar = opp["avatar"].toString();
-
-                    m_gameModel->setPlayerName(oppPosition, oppName);
-                    m_gameModel->setPlayerAvatar(oppPosition, oppAvatar);
-                }
-
-                qDebug() << "GameModel mis a jour pour reconnexion";
-                // Le gameState qui suit va mettre à jour le reste (currentPlayer, atout, etc.)
+                qDebug() << "GameModel mis a jour pour reconnexion - cartes rechargees";
+                // Le gameState qui suit va mettre à jour le reste (currentPlayer, atout, scores, etc.)
             } else {
                 // Nouvelle partie - émettre le signal pour créer un nouveau GameModel
                 emit gameDataChanged();

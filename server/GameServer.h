@@ -366,13 +366,21 @@ private:
                 }
 
                 qDebug() << "PlayerIndex:" << playerIndex << "isBot:" << (playerIndex != -1 ? room->isBot[playerIndex] : false);
-                if (playerIndex != -1 && room->isBot[playerIndex]) {
+
+                // Reconnexion si:
+                // 1. Le joueur est marqué comme bot (déconnexion détectée par le serveur)
+                // 2. OU le joueur a une ancienne connexion différente (reconnexion rapide avant détection)
+                bool isDifferentConnection = (playerIndex != -1 &&
+                                             room->connectionIds[playerIndex] != connectionId);
+
+                if (playerIndex != -1 && (room->isBot[playerIndex] || isDifferentConnection)) {
                     qDebug() << "Reconnexion detectee pour" << playerName << "a la partie" << roomId << "position" << playerIndex;
+                    qDebug() << "  isBot:" << room->isBot[playerIndex] << "isDifferentConnection:" << isDifferentConnection;
                     handleReconnection(connectionId, roomId, playerIndex);
                 } else if (playerIndex == -1) {
                     qDebug() << "ERREUR: Joueur" << playerName << "dans m_playerNameToRoomId mais pas trouve dans room->playerNames";
                 } else {
-                    qDebug() << "Joueur" << playerName << "trouve mais n'est pas marque comme bot (deja reconnecte?)";
+                    qDebug() << "Joueur" << playerName << "deja connecte avec la meme connexion";
                 }
             }
         }
@@ -1099,12 +1107,12 @@ private:
         int gagnantIndex = room->currentPli[0].first;
         qDebug() << "***************************GameServer - Determination du gagnant du pli";
         qDebug() << "Carte gagnante initiale:";
-        carteGagnante->printCarte();
+        //carteGagnante->printCarte();
 
         for (size_t i = 1; i < room->currentPli.size(); i++) {
             Carte* c = room->currentPli[i].second;
             qDebug() << "Comparaison avec la carte du joueur" << room->currentPli[i].first << ":";
-            c->printCarte();
+            //c->printCarte();
             if (*carteGagnante < *c) {
                 carteGagnante = c;
                 gagnantIndex = room->currentPli[i].first;
