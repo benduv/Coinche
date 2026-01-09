@@ -3700,6 +3700,13 @@ private:
             return;  // Ne pas exécuter le code du dernier pli automatique ci-dessous
         }
 
+        // Vérifier si le joueur a des cartes en main avant de démarrer le timer
+        Player* player = room->players[currentPlayer].get();
+        if (!player || player->getMain().empty()) {
+            qDebug() << "notifyPlayersWithPlayableCards - Joueur" << currentPlayer << "n'a plus de cartes, pas de timer";
+            return;
+        }
+
         // Pour les joueurs humains, démarrer un timer de 15 secondes
         // Si le joueur ne joue pas dans les temps, le marquer comme bot et jouer automatiquement
         if (!room->turnTimeout) {
@@ -3746,11 +3753,10 @@ private:
 
         // Si c'est le dernier pli (tous les joueurs n'ont qu'une carte), jouer automatiquement après un délai
         // IMPORTANT: Ne jouer automatiquement que si on est bien dans la phase de jeu
-        Player* player = room->players[currentPlayer].get();
         qDebug() << "notifyPlayersWithPlayableCards - Verification dernier pli pour joueur" << currentPlayer
-                 << "taille main:" << (player ? player->getMain().size() : -1)
+                 << "taille main:" << player->getMain().size()
                  << "isBot:" << room->isBot[currentPlayer];
-        if (player && player->getMain().size() == 1 && room->gameState == "playing") {
+        if (player->getMain().size() == 1 && room->gameState == "playing") {
             qDebug() << "GameServer - Dernier pli detecte, jeu automatique pour joueur" << currentPlayer;
 
             // Si c'est le début du dernier pli (pli vide), attendre 2000ms pour laisser le temps au pli précédent d'être nettoyé
