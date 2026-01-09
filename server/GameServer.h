@@ -3659,9 +3659,23 @@ private:
 
         broadcastToRoom(roomId, stateMsg);
 
-        // Si le joueur actuel est un bot, le faire jouer
-        if (room->isBot[currentPlayer]) {
-            qDebug() << "notifyPlayersWithPlayableCards - Joueur" << currentPlayer << "est un bot, planification playBotCard";
+        // Si le joueur actuel est un bot OU déconnecté (socket invalide), le faire jouer automatiquement
+        bool isPlayerDisconnected = false;
+        QString connectionId = room->connectionIds[currentPlayer];
+        if (!connectionId.isEmpty() && m_connections.contains(connectionId)) {
+            PlayerConnection* conn = m_connections[connectionId];
+            isPlayerDisconnected = (conn == nullptr || conn->socket == nullptr ||
+                                   conn->socket->state() != QAbstractSocket::ConnectedState);
+        }
+
+        if (room->isBot[currentPlayer] || isPlayerDisconnected) {
+            if (isPlayerDisconnected) {
+                qDebug() << "notifyPlayersWithPlayableCards - Joueur" << currentPlayer << "est deconnecte, marquer comme bot et jouer automatiquement";
+                room->isBot[currentPlayer] = true;
+            } else {
+                qDebug() << "notifyPlayersWithPlayableCards - Joueur" << currentPlayer << "est un bot, planification playBotCard";
+            }
+
             // Si c'est le début d'un nouveau pli (pli vide), attendre plus longtemps
             // pour laisser le temps au pli précédent d'être nettoyé côté client
             int delay = room->currentPli.empty() ? 2000 : 800;

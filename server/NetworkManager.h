@@ -400,13 +400,10 @@ private slots:
 
             // Si c'est une reconnexion et qu'on a déjà un GameModel, on le met à jour au lieu d'en créer un nouveau
             if (isReconnection && m_gameModel != nullptr) {
-                qDebug() << "Reconnexion detectee - Mise a jour du GameModel existant";
-
-                // Mettre à jour les cartes du joueur
-                m_gameModel->receiveCardsDealt(m_myCards);
-
-                qDebug() << "GameModel mis a jour pour reconnexion - cartes rechargees";
-                // Le gameState qui suit va mettre à jour le reste (currentPlayer, atout, scores, etc.)
+                qDebug() << "Reconnexion detectee - GameModel existe deja, pas besoin de mise a jour";
+                qDebug() << "Le message gameState qui suit va tout mettre a jour (currentPlayer, atout, scores, cartes jouees, etc.)";
+                // Note: Les cartes seront mises à jour directement par le message gameState du serveur
+                // qui contient les playableCards, donc pas besoin de receiveCardsDealt ici
             } else {
                 // Nouvelle partie - émettre le signal pour créer un nouveau GameModel
                 emit gameDataChanged();
