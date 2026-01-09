@@ -62,6 +62,9 @@ struct GameRoom {
     int coinchePlayerIndex = -1;  // Index du joueur qui a coinché
     int surcoinchePlayerIndex = -1;  // Index du joueur qui a surcoinché
 
+    // Timer pour détecter les joueurs qui ne répondent pas
+    QTimer* turnTimeout = nullptr;  // Timer pour timeout du tour (30 secondes)
+
     // Pli en cours
     std::vector<std::pair<int, Carte*>> currentPli;  // pair<playerIndex, carte>
     Carte::Couleur couleurDemandee = Carte::COULEURINVALIDE;
@@ -934,6 +937,12 @@ private:
 
         GameRoom* room = m_gameRooms[roomId];
         if (!room) return;
+
+        // Arrêter le timer de timeout du tour si actif
+        if (room->turnTimeout && room->turnTimeout->isActive()) {
+            room->turnTimeout->stop();
+            qDebug() << "GameServer - Timer de timeout arrêté (joueur a joué)";
+        }
 
         int playerIndex = conn->playerIndex;
         int cardIndex = data["cardIndex"].toInt();
@@ -3688,6 +3697,37 @@ private:
             });
             return;  // Ne pas exécuter le code du dernier pli automatique ci-dessous
         }
+
+        // Pour les joueurs humains, démarrer un timer de 15 secondes
+        // Si le joueur ne joue pas dans les temps, le marquer comme bot et jouer automatiquement
+        if (!room->turnTimeout) {
+            room->turnTimeout = new QTimer(this);
+            room->turnTimeout->setSingleShot(true);
+        }
+
+        // Arrêter l'ancien timer s'il est actif
+        if (room->turnTimeout->isActive()) {
+            room->turnTimeout->stop();
+            disconnect(room->turnTimeout, nullptr, this, nullptr);
+        }
+
+        // Démarrer le nouveau timer
+        connect(room->turnTimeout, &QTimer::timeout, this, [this, roomId, currentPlayer]() {
+            GameRoom* room = m_gameRooms.value(roomId);
+            if (!room || room->gameState != "playing") return;
+
+            // Vérifier que c'est toujours le même joueur (qu'aucune carte n'a été jouée entre-temps)
+            if (room->currentPlayerIndex == currentPlayer && !room->isBot[currentPlayer]) {
+                qDebug() << "TIMEOUT - Joueur" << currentPlayer << "n'a pas joué à temps (15s), marquage comme bot";
+                room->isBot[currentPlayer] = true;
+
+                // Faire jouer le bot immédiatement
+                playBotCard(roomId, currentPlayer);
+            }
+        }, Qt::UniqueConnection);
+
+        room->turnTimeout->start(15000);  // 15 secondes (cohérent avec le timer client)
+        qDebug() << "notifyPlayersWithPlayableCards - Timer de 15s démarré pour joueur" << currentPlayer;
 
         // Si c'est le dernier pli (tous les joueurs n'ont qu'une carte), jouer automatiquement après un délai
         // IMPORTANT: Ne jouer automatiquement que si on est bien dans la phase de jeu
