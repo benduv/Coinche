@@ -349,9 +349,11 @@ private:
         qDebug() << "Joueur enregistre:" << playerName << "Avatar:" << avatar << "ID:" << connectionId;
 
         // Vérifier si le joueur peut se reconnecter à une partie en cours
+        qDebug() << "Verification reconnexion pour" << playerName << "- m_playerNameToRoomId.contains:" << m_playerNameToRoomId.contains(playerName);
         if (m_playerNameToRoomId.contains(playerName)) {
             int roomId = m_playerNameToRoomId[playerName];
             GameRoom* room = m_gameRooms.value(roomId);
+            qDebug() << "RoomId:" << roomId << "Room valide:" << (room != nullptr) << "GameState:" << (room ? room->gameState : "N/A");
 
             if (room && room->gameState != "finished") {
                 // Trouver l'index du joueur dans la partie
@@ -363,9 +365,14 @@ private:
                     }
                 }
 
+                qDebug() << "PlayerIndex:" << playerIndex << "isBot:" << (playerIndex != -1 ? room->isBot[playerIndex] : false);
                 if (playerIndex != -1 && room->isBot[playerIndex]) {
                     qDebug() << "Reconnexion detectee pour" << playerName << "a la partie" << roomId << "position" << playerIndex;
                     handleReconnection(connectionId, roomId, playerIndex);
+                } else if (playerIndex == -1) {
+                    qDebug() << "ERREUR: Joueur" << playerName << "dans m_playerNameToRoomId mais pas trouve dans room->playerNames";
+                } else {
+                    qDebug() << "Joueur" << playerName << "trouve mais n'est pas marque comme bot (deja reconnecte?)";
                 }
             }
         }
