@@ -3718,10 +3718,23 @@ private:
 
             // Vérifier que c'est toujours le même joueur (qu'aucune carte n'a été jouée entre-temps)
             if (room->currentPlayerIndex == currentPlayer && !room->isBot[currentPlayer]) {
-                qDebug() << "TIMEOUT - Joueur" << currentPlayer << "n'a pas joué à temps (15s), marquage comme bot";
-                room->isBot[currentPlayer] = true;
+                // Vérifier si le joueur est déconnecté
+                bool isPlayerDisconnected = false;
+                QString connectionId = room->connectionIds[currentPlayer];
+                if (!connectionId.isEmpty() && m_connections.contains(connectionId)) {
+                    PlayerConnection* conn = m_connections[connectionId];
+                    isPlayerDisconnected = (conn == nullptr || conn->socket == nullptr ||
+                                           conn->socket->state() != QAbstractSocket::ConnectedState);
+                }
 
-                // Faire jouer le bot immédiatement
+                if (isPlayerDisconnected) {
+                    qDebug() << "TIMEOUT - Joueur" << currentPlayer << "est déconnecté, marquage comme bot permanent";
+                    room->isBot[currentPlayer] = true;
+                } else {
+                    qDebug() << "TIMEOUT - Joueur" << currentPlayer << "n'a pas joué à temps mais est connecté, jeu automatique sans marquer comme bot";
+                }
+
+                // Faire jouer le bot immédiatement dans tous les cas
                 playBotCard(roomId, currentPlayer);
             }
         });
