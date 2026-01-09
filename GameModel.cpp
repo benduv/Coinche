@@ -751,6 +751,34 @@ void GameModel::updateGameState(const QJsonObject& state)
         }
     }
 
+    // RECONNEXION: Resynchroniser complètement la main du joueur avec les cartes actuelles du serveur
+    if (state.contains("reconnectionCards")) {
+        QJsonArray reconnectionCardsArray = state["reconnectionCards"].toArray();
+        qDebug() << "Reconnexion: Resynchronisation de" << reconnectionCardsArray.size() << "cartes";
+
+        Player* localPlayer = getPlayerByPosition(m_myPosition);
+        if (localPlayer) {
+            // Vider complètement la main actuelle
+            localPlayer->clearHand();
+
+            // Recréer la main avec les cartes du serveur
+            for (const QJsonValue& cardVal : reconnectionCardsArray) {
+                QJsonObject cardObj = cardVal.toObject();
+                int value = cardObj["value"].toInt();
+                int suit = cardObj["suit"].toInt();
+
+                // Attention: le constructeur Carte prend (Couleur, Chiffre) dans cet ordre
+                Carte* newCard = new Carte(static_cast<Carte::Couleur>(suit),
+                                          static_cast<Carte::Chiffre>(value));
+                localPlayer->addCardToHand(newCard);
+            }
+
+            qDebug() << "Reconnexion: Main resynchronisée avec" << localPlayer->getMain().size() << "cartes";
+
+            // Le HandModel se mettra à jour automatiquement via les playableCards qui suivront
+        }
+    }
+
     // Mettre à jour les cartes jouables pour le joueur actuel
     if (state.contains("playableCards") && state.contains("currentPlayer")) {
         int currentPlayer = state["currentPlayer"].toInt();

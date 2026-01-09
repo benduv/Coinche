@@ -486,6 +486,21 @@ private:
             stateMsg["scoreTotalTeam1"] = room->scoreTeam1;
             stateMsg["scoreTotalTeam2"] = room->scoreTeam2;
 
+            // IMPORTANT: Pour la reconnexion, envoyer toutes les cartes actuelles du joueur
+            // Cela permet de resynchroniser complètement la main côté client
+            QJsonArray allCurrentCards;
+            const auto& playerHand = room->players[playerIndex]->getMain();
+            for (const auto* carte : playerHand) {
+                if (carte) {
+                    QJsonObject cardObj;
+                    cardObj["value"] = static_cast<int>(carte->getChiffre());
+                    cardObj["suit"] = static_cast<int>(carte->getCouleur());
+                    allCurrentCards.append(cardObj);
+                }
+            }
+            stateMsg["reconnectionCards"] = allCurrentCards;
+            qDebug() << "GameServer - Reconnexion: Envoi de" << allCurrentCards.size() << "cartes au joueur" << playerIndex;
+
             // Si c'est le tour du joueur, envoyer aussi les cartes jouables
             if (room->currentPlayerIndex == playerIndex) {
                 QJsonArray playableCards = calculatePlayableCards(room, playerIndex);
