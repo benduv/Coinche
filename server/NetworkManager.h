@@ -35,6 +35,9 @@ public:
         , m_playerAvatar("avataaars1.svg")
         , m_pingTimer(new QTimer(this))
         , m_lastPongReceived(QDateTime::currentMSecsSinceEpoch())
+        , m_reconnectTimer(new QTimer(this))
+        , m_wasInGame(false)
+        , m_reconnectAttempts(0)
     {
         connect(m_socket, &QWebSocket::connected, this, &NetworkManager::onConnected);
         connect(m_socket, &QWebSocket::disconnected, this, &NetworkManager::onDisconnected);
@@ -45,6 +48,10 @@ public:
         // Timer pour envoyer des pings toutes les 5 secondes
         connect(m_pingTimer, &QTimer::timeout, this, &NetworkManager::sendPing);
         m_pingTimer->setInterval(5000);
+
+        // Timer pour les tentatives de reconnexion
+        connect(m_reconnectTimer, &QTimer::timeout, this, &NetworkManager::attemptReconnect);
+        m_reconnectTimer->setInterval(3000); // Tenter de se reconnecter toutes les 3 secondes
     }
 
     ~NetworkManager() {
@@ -107,6 +114,7 @@ public:
 
     Q_INVOKABLE void connectToServer(const QString &url) {
         qDebug() << "Connexion au serveur:" << url;
+        m_serverUrl = url;  // Sauvegarder l'URL pour les reconnexions
         m_socket->open(QUrl(url));
     }
 
@@ -266,13 +274,32 @@ private slots:
         m_connected = true;
         m_lastPongReceived = QDateTime::currentMSecsSinceEpoch();
         m_pingTimer->start();  // Démarrer le ping timer
+        m_reconnectTimer->stop();  // Arrêter les tentatives de reconnexion
+        m_reconnectAttempts = 0;  // Réinitialiser le compteur
+
+        // Si on se reconnecte et qu'on avait un pseudo et avatar, se réenregistrer
+        if (!m_playerPseudo.isEmpty()) {
+            qDebug() << "Reconnexion - Réenregistrement avec pseudo:" << m_playerPseudo;
+            registerPlayer(m_playerPseudo, m_playerAvatar);
+        }
+
         emit connectedChanged();
     }
 
     void onDisconnected() {
         qDebug() << "Deconnecte du serveur";
+        bool wasConnected = m_connected;
         m_connected = false;
         m_pingTimer->stop();  // Arrêter le ping timer
+
+        // Si on était en partie ou connecté, activer la reconnexion automatique
+        if (wasConnected && (!m_playerPseudo.isEmpty() || m_gameModel != nullptr)) {
+            qDebug() << "Perte de connexion detectee - Demarrage tentatives de reconnexion";
+            m_wasInGame = (m_gameModel != nullptr);  // Sauvegarder si on était en partie
+            m_reconnectAttempts = 0;
+            m_reconnectTimer->start();  // Démarrer les tentatives de reconnexion
+        }
+
         emit connectedChanged();
     }
 
@@ -299,6 +326,28 @@ private slots:
             // Socket pas connecté mais m_connected est true, forcer la déconnexion
             qDebug() << "Socket déconnecté détecté, mise à jour de l'état";
             onDisconnected();
+        }
+    }
+
+    void attemptReconnect() {
+        // Limiter le nombre de tentatives (par exemple, 20 tentatives = 1 minute)
+        const int MAX_ATTEMPTS = 20;
+
+        if (m_reconnectAttempts >= MAX_ATTEMPTS) {
+            qDebug() << "Nombre maximum de tentatives de reconnexion atteint (" << MAX_ATTEMPTS << ")";
+            m_reconnectTimer->stop();
+            m_wasInGame = false;
+            return;
+        }
+
+        m_reconnectAttempts++;
+        qDebug() << "Tentative de reconnexion" << m_reconnectAttempts << "/" << MAX_ATTEMPTS;
+
+        // Si le socket n'est pas en train de se connecter, tenter la connexion
+        if (m_socket->state() != QAbstractSocket::ConnectingState &&
+            m_socket->state() != QAbstractSocket::ConnectedState) {
+            qDebug() << "Reconnexion à" << m_serverUrl;
+            m_socket->open(QUrl(m_serverUrl));
         }
     }
 
@@ -649,6 +698,12 @@ private:
     // Ping/Pong pour détecter les déconnexions
     QTimer* m_pingTimer;
     qint64 m_lastPongReceived;
+
+    // Reconnexion automatique
+    QTimer* m_reconnectTimer;
+    QString m_serverUrl;
+    bool m_wasInGame;
+    int m_reconnectAttempts;
 };
 
 #endif // NETWORKMANAGER_H
