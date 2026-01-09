@@ -3724,7 +3724,7 @@ private:
                 // Faire jouer le bot immédiatement
                 playBotCard(roomId, currentPlayer);
             }
-        }, Qt::UniqueConnection);
+        });
 
         room->turnTimeout->start(15000);  // 15 secondes (cohérent avec le timer client)
         qDebug() << "notifyPlayersWithPlayableCards - Timer de 15s démarré pour joueur" << currentPlayer;
