@@ -2007,11 +2007,18 @@ private:
 
         // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
         if (room->isBot[room->currentPlayerIndex]) {
-            QTimer::singleShot(800, this, [this, roomId]() {
+            int firstBidder = room->currentPlayerIndex;
+            QTimer::singleShot(800, this, [this, roomId, firstBidder]() {
                 GameRoom* room = m_gameRooms.value(roomId);
-                if (room && room->gameState == "bidding") {
-                    playBotBid(roomId, room->currentPlayerIndex);
+                if (!room || room->gameState != "bidding") return;
+
+                // Revérifier que le joueur est toujours un bot et que c'est son tour
+                if (room->currentPlayerIndex != firstBidder || !room->isBot[firstBidder]) {
+                    qDebug() << "playBotBid ANNULÉ - Joueur" << firstBidder << "n'est plus bot ou ce n'est plus son tour";
+                    return;
                 }
+
+                playBotBid(roomId, firstBidder);
             });
         }
     }
@@ -2023,9 +2030,13 @@ private:
         qDebug() << "Envoi des notifications de nouvelle manche a" << room->connectionIds.size() << "joueurs";
 
         for (int i = 0; i < room->connectionIds.size(); i++) {
-            if (room->isBot[i]) continue;  // Skip bots
-            PlayerConnection *conn = m_connections[room->connectionIds[i]];
-            if (!conn) continue;
+            // Envoyer à tous les joueurs connectés, même les bots
+            // Car un joueur peut être bot temporairement et se réhumaniser
+            PlayerConnection *conn = m_connections.value(room->connectionIds[i]);
+            if (!conn || !conn->socket) {
+                qDebug() << "Joueur" << i << "pas de connexion valide, skip";
+                continue;
+            }
 
             QJsonObject msg;
             msg["type"] = "newManche";
@@ -2509,6 +2520,13 @@ private:
     void playBotBid(int roomId, int playerIndex) {
         GameRoom* room = m_gameRooms.value(roomId);
         if (!room || room->currentPlayerIndex != playerIndex) return;
+
+        // IMPORTANT: Vérifier que le joueur est toujours un bot
+        // Il peut avoir été réhumanisé entre-temps
+        if (!room->isBot[playerIndex]) {
+            qDebug() << "playBotBid - ANNULÉ: Joueur" << playerIndex << "n'est plus un bot (réhumanisé)";
+            return;
+        }
 
         Player* player = room->players[playerIndex].get();
 
