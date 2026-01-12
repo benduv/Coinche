@@ -4017,7 +4017,7 @@ private:
         qDebug() << "Joueur" << playerIndex << "remplace par un bot (deconnexion)";
 
         // Notifier tous les joueurs qu'un joueur s'est déconnecté et a été remplacé par un bot
-        QJsonObject dcMsg;
+        /*QJsonObject dcMsg;
         dcMsg["type"] = "playerDisconnected";
         dcMsg["playerIndex"] = playerIndex;
         dcMsg["playerName"] = conn->playerName;
@@ -4036,7 +4036,7 @@ private:
                     playBotCard(roomId, playerIndex);
                 });
             }
-        }
+        }*/
     }
 
     QString getConnectionIdBySocket(QWebSocket *socket) {
