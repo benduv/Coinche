@@ -66,6 +66,10 @@ struct GameRoom {
     QTimer* turnTimeout = nullptr;  // Timer pour timeout du tour (15 secondes)
     int turnTimeoutGeneration = 0;  // Compteur pour invalider les anciens timeouts
 
+    // Timer pour détecter les joueurs qui ne répondent pas pendant les enchères
+    QTimer* bidTimeout = nullptr;  // Timer pour timeout des enchères (15 secondes)
+    int bidTimeoutGeneration = 0;  // Compteur pour invalider les anciens timeouts d'enchères
+
     // Pli en cours
     std::vector<std::pair<int, Carte*>> currentPli;  // pair<playerIndex, carte>
     Carte::Couleur couleurDemandee = Carte::COULEURINVALIDE;
@@ -643,14 +647,24 @@ private:
             response["type"] = "rehumanizeSuccess";
             sendMessage(socket, response);
 
-            // Si c'est le tour de ce joueur, lui envoyer les cartes jouables
-            if (room->currentPlayerIndex == playerIndex && room->gameState == "playing") {
-                qDebug() << "handleRehumanize - C'est le tour du joueur, envoi des cartes jouables";
-                QJsonObject stateMsg;
-                stateMsg["type"] = "gameState";
-                stateMsg["currentPlayer"] = playerIndex;
-                stateMsg["playableCards"] = calculatePlayableCards(room, playerIndex);
-                sendMessage(socket, stateMsg);
+            // Si c'est le tour de ce joueur
+            if (room->currentPlayerIndex == playerIndex) {
+                if (room->gameState == "playing") {
+                    // Phase de jeu : envoyer les cartes jouables et démarrer le timer de jeu
+                    qDebug() << "handleRehumanize - C'est le tour du joueur (phase jeu), envoi des cartes jouables";
+                    // Le timer de jeu sera géré par notifyPlayersWithPlayableCards qui sera appelé
+                    // On n'appelle pas directement notifyPlayersWithPlayableCards car il broadcast à tous
+                    // Au lieu de cela, on envoie juste les cartes jouables à ce joueur
+                    QJsonObject stateMsg;
+                    stateMsg["type"] = "gameState";
+                    stateMsg["currentPlayer"] = playerIndex;
+                    stateMsg["playableCards"] = calculatePlayableCards(room, playerIndex);
+                    sendMessage(socket, stateMsg);
+                } else if (room->gameState == "bidding") {
+                    // Phase d'enchères : démarrer le timer de timeout
+                    qDebug() << "handleRehumanize - C'est le tour du joueur (phase enchères), démarrage timer";
+                    startBidTimeout(roomId, playerIndex);
+                }
             }
         } else {
             qDebug() << "handleRehumanize - Joueur" << playerIndex << "était déjà humain";
@@ -948,6 +962,9 @@ private:
                         playBotBid(roomId, room->currentPlayerIndex);
                     }
                 });
+            } else {
+                // Joueur humain : démarrer le timer de timeout pour les enchères
+                startBidTimeout(roomId, room->currentPlayerIndex);
             }
 
         }
@@ -2014,6 +2031,9 @@ private:
 
                 playBotBid(roomId, firstBidder);
             });
+        } else {
+            // Joueur humain : démarrer le timer de timeout pour les enchères
+            startBidTimeout(roomId, room->currentPlayerIndex);
         }
     }
 
@@ -2067,6 +2087,13 @@ private:
 
         GameRoom* room = m_gameRooms[roomId];
         if (!room) return;
+
+        // Arrêter le timer de timeout des enchères et invalider les anciens callbacks
+        if (room->bidTimeout) {
+            room->bidTimeout->stop();
+            room->bidTimeoutGeneration++;
+            qDebug() << "handleMakeBid - Timer de timeout enchères arrêté (joueur a annoncé), génération:" << room->bidTimeoutGeneration;
+        }
 
         int playerIndex = conn->playerIndex;
         int bidValue = data["bidValue"].toInt();
@@ -2259,26 +2286,8 @@ private:
             qDebug() << "GameServer - Tous les joueurs ont passe! Nouvelle manche";
             startNewManche(roomId);
         } else {
-            // Passe au joueur suivant
-            room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
-            room->biddingPlayer = room->currentPlayerIndex;
-
-            QJsonObject stateMsg;
-            stateMsg["type"] = "gameState";
-            stateMsg["currentPlayer"] = room->currentPlayerIndex;
-            stateMsg["biddingPlayer"] = room->biddingPlayer;
-            stateMsg["biddingPhase"] = true;
-            broadcastToRoom(roomId, stateMsg);
-
-            // Si le prochain joueur est un bot, le faire jouer
-            if (room->isBot[room->currentPlayerIndex]) {
-                QTimer::singleShot(800, this, [this, roomId]() {
-                    GameRoom* room = m_gameRooms.value(roomId);
-                    if (room && room->gameState == "bidding") {
-                        playBotBid(roomId, room->currentPlayerIndex);
-                    }
-                });
-            }
+            // Passe au joueur suivant (utiliser la fonction centralisée qui gère aussi le timer)
+            advanceToNextBidder(roomId);
         }
     }
 
@@ -2522,6 +2531,13 @@ private:
             return;
         }
 
+        // Arrêter le timer de timeout et invalider les anciens callbacks
+        if (room->bidTimeout) {
+            room->bidTimeout->stop();
+            room->bidTimeoutGeneration++;
+            qDebug() << "playBotBid - Timer de timeout enchères arrêté, génération:" << room->bidTimeoutGeneration;
+        }
+
         Player* player = room->players[playerIndex].get();
 
         // Évaluer la main pour chaque couleur d'atout possible (annonce propre)
@@ -2672,7 +2688,76 @@ private:
                     playBotBid(roomId, room->currentPlayerIndex);
                 }
             });
+        } else {
+            // Joueur humain : démarrer le timer de timeout pour les enchères
+            startBidTimeout(roomId, room->currentPlayerIndex);
         }
+    }
+
+    // Démarre le timer de timeout pour la phase d'enchères (15 secondes)
+    void startBidTimeout(int roomId, int currentBidder) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room || room->gameState != "bidding") return;
+
+        // Créer le timer si nécessaire
+        if (!room->bidTimeout) {
+            room->bidTimeout = new QTimer(this);
+            room->bidTimeout->setSingleShot(true);
+        }
+
+        // Arrêter et déconnecter l'ancien timer
+        room->bidTimeout->stop();
+        disconnect(room->bidTimeout, nullptr, this, nullptr);
+
+        // Incrémenter la génération pour invalider les anciens callbacks en queue
+        room->bidTimeoutGeneration++;
+        int currentGeneration = room->bidTimeoutGeneration;
+
+        qDebug() << "startBidTimeout - Timer de 15s démarré pour joueur" << currentBidder << "(génération:" << currentGeneration << ")";
+
+        // Démarrer le nouveau timer
+        connect(room->bidTimeout, &QTimer::timeout, this, [this, roomId, currentBidder, currentGeneration]() {
+            GameRoom* room = m_gameRooms.value(roomId);
+            if (!room || room->gameState != "bidding") return;
+
+            // Vérifier que ce timeout est toujours valide (pas un ancien signal en queue)
+            if (room->bidTimeoutGeneration != currentGeneration) {
+                qDebug() << "BID TIMEOUT - Ignoré (ancienne génération:" << currentGeneration
+                         << "actuelle:" << room->bidTimeoutGeneration << ")";
+                return;
+            }
+
+            // Vérifier que c'est toujours le tour de ce joueur
+            if (room->currentPlayerIndex != currentBidder) {
+                qDebug() << "BID TIMEOUT - Ignoré (joueur actuel:" << room->currentPlayerIndex
+                         << ", timeout pour:" << currentBidder << ")";
+                return;
+            }
+
+            qDebug() << "BID TIMEOUT - Joueur" << currentBidder << "n'a pas annoncé dans les temps!";
+
+            // Marquer le joueur comme bot
+            if (!room->isBot[currentBidder]) {
+                room->isBot[currentBidder] = true;
+                qDebug() << "BID TIMEOUT - Joueur" << currentBidder << "remplacé par un bot";
+
+                // Envoyer une notification au joueur
+                if (currentBidder < room->connectionIds.size()) {
+                    PlayerConnection* conn = m_connections.value(room->connectionIds[currentBidder]);
+                    if (conn && conn->socket) {
+                        QJsonObject botMsg;
+                        botMsg["type"] = "botReplacement";
+                        botMsg["message"] = "Vous avez été remplacé par un bot car vous n'avez pas annoncé à temps.";
+                        sendMessage(conn->socket, botMsg);
+                    }
+                }
+            }
+
+            // Faire jouer le bot à la place du joueur
+            playBotBid(roomId, currentBidder);
+        });
+
+        room->bidTimeout->start(15000);  // 15 secondes
     }
 
     // Vérifie si le partenaire est le joueur qui gagne actuellement le pli
@@ -3697,6 +3782,13 @@ private:
         GameRoom* room = m_gameRooms.value(roomId);
         if (!room) return;
 
+        // Arrêter le timer de timeout des enchères si actif
+        if (room->bidTimeout) {
+            room->bidTimeout->stop();
+            room->bidTimeoutGeneration++;
+            qDebug() << "startPlayingPhase - Timer de timeout enchères arrêté, génération:" << room->bidTimeoutGeneration;
+        }
+
         room->gameState = "playing";
         // Définir couleurAtout selon le mode de jeu actuel
         // IMPORTANT: S'assurer que couleurAtout reflète bien le mode de jeu final
@@ -4434,6 +4526,9 @@ private:
         biddingMsg["type"] = "biddingPhase";
         biddingMsg["currentPlayer"] = room->currentPlayerIndex;
         broadcastToRoom(roomId, biddingMsg);
+
+        // Démarrer le timer pour le premier joueur à annoncer (toujours humain dans un lobby)
+        startBidTimeout(roomId, room->currentPlayerIndex);
     }
 
     void startLobbyGameWith2Players(PrivateLobby* lobby) {
