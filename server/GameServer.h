@@ -619,6 +619,10 @@ private:
 
         PlayerConnection* conn = m_connections[connectionId];
         int roomId = conn->gameRoomId;
+        int playerIndex = conn->playerIndex;  // Utiliser directement l'index stocké dans la connexion
+
+        qDebug() << "handleRehumanize - connectionId:" << connectionId
+                 << "roomId:" << roomId << "playerIndex:" << playerIndex;
 
         if (roomId == -1 || !m_gameRooms.contains(roomId)) {
             qDebug() << "handleRehumanize - Joueur pas dans une room";
@@ -627,19 +631,12 @@ private:
 
         GameRoom* room = m_gameRooms[roomId];
 
-        // Trouver l'index du joueur dans la room
-        int playerIndex = -1;
-        for (int i = 0; i < 4; ++i) {
-            if (room->connectionIds[i] == connectionId) {
-                playerIndex = i;
-                break;
-            }
-        }
-
-        if (playerIndex == -1) {
-            qDebug() << "handleRehumanize - Joueur non trouvé dans la room";
+        if (playerIndex < 0 || playerIndex >= 4) {
+            qDebug() << "handleRehumanize - Index joueur invalide:" << playerIndex;
             return;
         }
+
+        qDebug() << "handleRehumanize - isBot[" << playerIndex << "] =" << room->isBot[playerIndex];
 
         // Réhumaniser le joueur
         if (room->isBot[playerIndex]) {
@@ -650,6 +647,16 @@ private:
             QJsonObject response;
             response["type"] = "rehumanizeSuccess";
             sendMessage(socket, response);
+
+            // Si c'est le tour de ce joueur, lui envoyer les cartes jouables
+            if (room->currentPlayerIndex == playerIndex && room->gameState == "playing") {
+                qDebug() << "handleRehumanize - C'est le tour du joueur, envoi des cartes jouables";
+                QJsonObject stateMsg;
+                stateMsg["type"] = "gameState";
+                stateMsg["currentPlayer"] = playerIndex;
+                stateMsg["playableCards"] = calculatePlayableCards(room, playerIndex);
+                sendMessage(socket, stateMsg);
+            }
         } else {
             qDebug() << "handleRehumanize - Joueur" << playerIndex << "était déjà humain";
         }
