@@ -4013,11 +4013,11 @@ private:
         }
 
         // Remplacer le joueur par un bot
-        room->isBot[playerIndex] = true;
+        /*room->isBot[playerIndex] = true;
         qDebug() << "Joueur" << playerIndex << "remplace par un bot (deconnexion)";
 
         // Notifier tous les joueurs qu'un joueur s'est déconnecté et a été remplacé par un bot
-        /*QJsonObject dcMsg;
+        QJsonObject dcMsg;
         dcMsg["type"] = "playerDisconnected";
         dcMsg["playerIndex"] = playerIndex;
         dcMsg["playerName"] = conn->playerName;
