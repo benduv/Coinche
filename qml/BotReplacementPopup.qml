@@ -102,7 +102,7 @@ Rectangle {
             // Message
             Text {
                 text: message
-                font.pixelSize: 18 * minRatio
+                font.pixelSize: 22 * minRatio
                 color: "#cccccc"
                 Layout.alignment: Qt.AlignHCenter
                 Layout.fillWidth: true
@@ -110,12 +110,12 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            Item { Layout.fillHeight: true }
+            //Item { Layout.fillHeight: true }
 
             // Bouton OK
             Button {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 60 * heightRatio
+                Layout.preferredHeight: 100 * heightRatio
 
                 background: Rectangle {
                     color: parent.down ? "#006699" : (parent.hovered ? "#0088cc" : "#0077bb")
@@ -137,7 +137,7 @@ Rectangle {
 
                 contentItem: Text {
                     text: "OK - Reprendre le contrôle"
-                    font.pixelSize: 24 * minRatio
+                    font.pixelSize: 26 * minRatio
                     font.bold: true
                     color: "white"
                     horizontalAlignment: Text.AlignHCenter

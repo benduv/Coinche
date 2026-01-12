@@ -33,8 +33,6 @@ public:
         , m_myPosition(-1)
         , m_gameModel(nullptr)
         , m_playerAvatar("avataaars1.svg")
-        , m_pingTimer(new QTimer(this))
-        , m_lastPongReceived(QDateTime::currentMSecsSinceEpoch())
         , m_reconnectTimer(new QTimer(this))
         , m_wasInGame(false)
         , m_reconnectAttempts(0)
@@ -43,11 +41,6 @@ public:
         connect(m_socket, &QWebSocket::disconnected, this, &NetworkManager::onDisconnected);
         connect(m_socket, &QWebSocket::textMessageReceived,
                 this, &NetworkManager::onMessageReceived);
-        connect(m_socket, &QWebSocket::pong, this, &NetworkManager::onPongReceived);
-
-        // Timer pour envoyer des pings toutes les 5 secondes
-        connect(m_pingTimer, &QTimer::timeout, this, &NetworkManager::sendPing);
-        m_pingTimer->setInterval(5000);
 
         // Timer pour les tentatives de reconnexion
         connect(m_reconnectTimer, &QTimer::timeout, this, &NetworkManager::attemptReconnect);
@@ -284,8 +277,6 @@ private slots:
     void onConnected() {
         qDebug() << "Connecte au serveur";
         m_connected = true;
-        m_lastPongReceived = QDateTime::currentMSecsSinceEpoch();
-        m_pingTimer->start();  // Démarrer le ping timer
         m_reconnectTimer->stop();  // Arrêter les tentatives de reconnexion
         m_reconnectAttempts = 0;  // Réinitialiser le compteur
 
@@ -302,7 +293,6 @@ private slots:
         qDebug() << "Deconnecte du serveur";
         bool wasConnected = m_connected;
         m_connected = false;
-        m_pingTimer->stop();  // Arrêter le ping timer
 
         // Si on était en partie ou connecté, activer la reconnexion automatique
         if (wasConnected && (!m_playerPseudo.isEmpty() || m_gameModel != nullptr)) {
@@ -313,32 +303,6 @@ private slots:
         }
 
         emit connectedChanged();
-    }
-
-    void onPongReceived(quint64 elapsedTime, const QByteArray &payload) {
-        Q_UNUSED(elapsedTime)
-        Q_UNUSED(payload)
-        m_lastPongReceived = QDateTime::currentMSecsSinceEpoch();
-    }
-
-    void sendPing() {
-        if (m_socket->state() == QAbstractSocket::ConnectedState) {
-            // Vérifier si on a reçu un pong récemment (dans les 15 dernières secondes)
-            qint64 timeSinceLastPong = QDateTime::currentMSecsSinceEpoch() - m_lastPongReceived;
-            if (timeSinceLastPong > 15000) {
-                // Pas de pong depuis 15 secondes, considérer la connexion comme perdue
-                qDebug() << "Aucun pong reçu depuis" << timeSinceLastPong << "ms, déconnexion détectée";
-                m_socket->close();
-                onDisconnected();
-            } else {
-                // Envoyer un ping
-                m_socket->ping();
-            }
-        } else if (m_connected) {
-            // Socket pas connecté mais m_connected est true, forcer la déconnexion
-            qDebug() << "Socket déconnecté détecté, mise à jour de l'état";
-            onDisconnected();
-        }
     }
 
     void attemptReconnect() {
@@ -725,10 +689,6 @@ private:
 
     // Lobbies privés
     QVariantList m_lobbyPlayers;
-
-    // Ping/Pong pour détecter les déconnexions
-    QTimer* m_pingTimer;
-    qint64 m_lastPongReceived;
 
     // Reconnexion automatique
     QTimer* m_reconnectTimer;

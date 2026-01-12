@@ -784,6 +784,36 @@ void GameModel::updateGameState(const QJsonObject& state)
         }
     }
 
+    // RECONNEXION: Resynchroniser le pli en cours
+    if (state.contains("reconnectionPli")) {
+        QJsonArray reconnectionPliArray = state["reconnectionPli"].toArray();
+        qDebug() << "Reconnexion: Resynchronisation du pli avec" << reconnectionPliArray.size() << "cartes";
+
+        // Vider le pli actuel
+        for (auto& cdp : m_currentPli) {
+            delete cdp.carte;
+        }
+        m_currentPli.clear();
+
+        // Recréer le pli avec les cartes du serveur
+        for (const QJsonValue& cardVal : reconnectionPliArray) {
+            QJsonObject cardObj = cardVal.toObject();
+            int playerIdx = cardObj["playerIndex"].toInt();
+            int value = cardObj["value"].toInt();
+            int suit = cardObj["suit"].toInt();
+
+            Carte* carte = new Carte(static_cast<Carte::Couleur>(suit),
+                                     static_cast<Carte::Chiffre>(value));
+            CarteDuPli cdp;
+            cdp.playerId = playerIdx;
+            cdp.carte = carte;
+            m_currentPli.append(cdp);
+        }
+
+        qDebug() << "Reconnexion: Pli resynchronisé avec" << m_currentPli.size() << "cartes";
+        emit currentPliChanged();
+    }
+
     // Mettre à jour les cartes jouables pour le joueur actuel
     if (state.contains("playableCards") && state.contains("currentPlayer")) {
         int currentPlayer = state["currentPlayer"].toInt();

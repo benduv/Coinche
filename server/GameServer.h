@@ -519,27 +519,21 @@ private:
                 stateMsg["playableCards"] = playableCards;
             }
 
-            sendMessage(conn->socket, stateMsg);
-
-            // Envoyer les cartes déjà jouées dans le pli en cours
+            // RECONNEXION: Envoyer le pli en cours pour resynchroniser l'affichage
             if (!room->currentPli.empty()) {
-                qDebug() << "GameServer - Reconnexion: Envoi des" << room->currentPli.size()
-                         << "cartes du pli en cours au joueur" << playerIndex;
-
+                QJsonArray reconnectionPli;
                 for (const auto& cardPlay : room->currentPli) {
-                    int playedPlayerIndex = cardPlay.first;
-                    const Carte* playedCard = cardPlay.second;
-
-                    QJsonObject cardPlayedMsg;
-                    cardPlayedMsg["type"] = "cardPlayed";
-                    cardPlayedMsg["playerIndex"] = playedPlayerIndex;
-                    cardPlayedMsg["cardIndex"] = -1;  // Index non pertinent pour la reconnexion
-                    cardPlayedMsg["cardValue"] = static_cast<int>(playedCard->getChiffre());
-                    cardPlayedMsg["cardSuit"] = static_cast<int>(playedCard->getCouleur());
-
-                    sendMessage(conn->socket, cardPlayedMsg);
+                    QJsonObject cardObj;
+                    cardObj["playerIndex"] = cardPlay.first;
+                    cardObj["value"] = static_cast<int>(cardPlay.second->getChiffre());
+                    cardObj["suit"] = static_cast<int>(cardPlay.second->getCouleur());
+                    reconnectionPli.append(cardObj);
                 }
+                stateMsg["reconnectionPli"] = reconnectionPli;
+                qDebug() << "GameServer - Reconnexion: Envoi du pli en cours avec" << reconnectionPli.size() << "cartes";
             }
+
+            sendMessage(conn->socket, stateMsg);
         }
     }
 
