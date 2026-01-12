@@ -73,6 +73,7 @@ struct GameRoom {
     // Pli en cours
     std::vector<std::pair<int, Carte*>> currentPli;  // pair<playerIndex, carte>
     Carte::Couleur couleurDemandee = Carte::COULEURINVALIDE;
+    bool waitingForNextPli = false;  // True pendant l'attente de 1500ms entre les plis
 
     // Scores
     int scoreTeam1 = 0;  // Équipe 0: Joueurs 0 et 2
@@ -1053,6 +1054,12 @@ private:
             return;
         }
 
+        // Check qu'on n'est pas en attente entre deux plis
+        if (room->waitingForNextPli) {
+            qDebug() << "GameServer - Erreur: tentative de jouer pendant l'attente entre les plis (joueur" << playerIndex << ")";
+            return;
+        }
+
         // Check que c'est bien le tour du joueur
         if (room->currentPlayerIndex != playerIndex) {
             qDebug() << "GameServer - Erreur: ce n'est pas le tour du joueur" << playerIndex;
@@ -1305,11 +1312,16 @@ private:
         pliFinishedMsg["scoreMancheTeam2"] = room->scoreMancheTeam2;
         broadcastToRoom(roomId, pliFinishedMsg);
 
+        // Bloquer les requêtes de jeu pendant l'attente entre les plis
+        room->waitingForNextPli = true;
+
         if (mancheTerminee) {
             qDebug() << "GameServer - Manche terminee, attente de 1500ms avant de commencer la nouvelle manche...";
 
             // Attendre 1500ms pour laisser les joueurs voir le dernier pli
             QTimer::singleShot(1500, this, [this, roomId]() {
+                GameRoom* room = m_gameRooms.value(roomId);
+                if (room) room->waitingForNextPli = false;  // Débloquer les requêtes
                 qDebug() << "GameServer - Calcul des scores de la manche...";
                 finishManche(roomId);
             });
@@ -1320,6 +1332,9 @@ private:
             QTimer::singleShot(1500, this, [this, roomId, gagnantIndex]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (!room) return;
+
+                // Débloquer les requêtes de jeu
+                room->waitingForNextPli = false;
 
                 // Réinitialise pour le prochain pli
                 room->currentPli.clear();
@@ -1917,6 +1932,7 @@ private:
         room->beloteTeam2 = false;
         room->beloteRoiJoue = false;
         room->beloteDameJouee = false;
+        room->waitingForNextPli = false;  // Réinitialiser le flag d'attente entre les plis
 
         // Réinitialiser le tracking des cartes jouées pour l'IA
         room->resetPlayedCards();
@@ -3790,6 +3806,8 @@ private:
         }
 
         room->gameState = "playing";
+        room->waitingForNextPli = false;  // S'assurer que le flag est désactivé au début de la phase de jeu
+
         // Définir couleurAtout selon le mode de jeu actuel
         // IMPORTANT: S'assurer que couleurAtout reflète bien le mode de jeu final
         if (room->isToutAtout || room->isSansAtout) {
