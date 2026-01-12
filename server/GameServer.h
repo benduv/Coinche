@@ -407,8 +407,17 @@ private:
         // Remplacer l'ID de connexion dans la room
         room->connectionIds[playerIndex] = connectionId;
 
-        // Le joueur n'est plus un bot
-        room->isBot[playerIndex] = false;
+        // Vérifier si le joueur était un bot (remplacé pendant sa déconnexion)
+        bool wasBot = room->isBot[playerIndex];
+        if (wasBot) {
+            qDebug() << "GameServer - Le joueur" << playerIndex << "était un bot, envoi de la notification";
+            // NE PAS réhumaniser automatiquement - attendre que le joueur clique OK
+            // Envoyer la notification pour afficher la popup
+            QJsonObject notification;
+            notification["type"] = "botReplacement";
+            notification["message"] = "Vous avez été remplacé par un bot pendant votre absence.";
+            sendMessage(conn->socket, notification);
+        }
 
         // Préparer les données de l'état actuel de la partie pour le joueur qui se reconnecte
         QJsonObject reconnectMsg;
@@ -3428,6 +3437,13 @@ private:
                      << "currentPlayer=" << (room ? room->currentPlayerIndex : -1)
                      << "expected=" << playerIndex;
             return;
+        }
+
+        // Arrêter le timer de timeout si actif (important pour éviter les doublons)
+        if (room->turnTimeout && room->turnTimeout->isActive()) {
+            room->turnTimeout->stop();
+            disconnect(room->turnTimeout, nullptr, this, nullptr);
+            qDebug() << "playBotCard - Timer de timeout arrêté";
         }
 
         Player* player = room->players[playerIndex].get();
