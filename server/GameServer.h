@@ -63,7 +63,8 @@ struct GameRoom {
     int surcoinchePlayerIndex = -1;  // Index du joueur qui a surcoinché
 
     // Timer pour détecter les joueurs qui ne répondent pas
-    QTimer* turnTimeout = nullptr;  // Timer pour timeout du tour (30 secondes)
+    QTimer* turnTimeout = nullptr;  // Timer pour timeout du tour (15 secondes)
+    int turnTimeoutGeneration = 0;  // Compteur pour invalider les anciens timeouts
 
     // Pli en cours
     std::vector<std::pair<int, Carte*>> currentPli;  // pair<playerIndex, carte>
@@ -1025,10 +1026,11 @@ private:
         GameRoom* room = m_gameRooms[roomId];
         if (!room) return;
 
-        // Arrêter le timer de timeout du tour si actif
-        if (room->turnTimeout && room->turnTimeout->isActive()) {
+        // Arrêter le timer de timeout du tour et invalider les anciens callbacks
+        if (room->turnTimeout) {
             room->turnTimeout->stop();
-            qDebug() << "GameServer - Timer de timeout arrêté (joueur a joué)";
+            room->turnTimeoutGeneration++;  // Invalider les anciens callbacks en queue
+            qDebug() << "GameServer - Timer de timeout arrêté (joueur a joué), génération:" << room->turnTimeoutGeneration;
         }
 
         int playerIndex = conn->playerIndex;
@@ -3446,11 +3448,11 @@ private:
             return;
         }
 
-        // Arrêter le timer de timeout si actif (important pour éviter les doublons)
-        if (room->turnTimeout && room->turnTimeout->isActive()) {
+        // Arrêter le timer de timeout et invalider les anciens callbacks
+        if (room->turnTimeout) {
             room->turnTimeout->stop();
-            disconnect(room->turnTimeout, nullptr, this, nullptr);
-            qDebug() << "playBotCard - Timer de timeout arrêté";
+            room->turnTimeoutGeneration++;  // Invalider les anciens callbacks en queue
+            qDebug() << "playBotCard - Timer de timeout arrêté, génération:" << room->turnTimeoutGeneration;
         }
 
         Player* player = room->players[playerIndex].get();
@@ -3793,16 +3795,26 @@ private:
             room->turnTimeout->setSingleShot(true);
         }
 
-        // Arrêter l'ancien timer s'il est actif
-        if (room->turnTimeout->isActive()) {
-            room->turnTimeout->stop();
-            disconnect(room->turnTimeout, nullptr, this, nullptr);
-        }
+        // TOUJOURS arrêter et déconnecter l'ancien timer avant d'en créer un nouveau
+        // Cela évite que d'anciens signaux en queue ne se déclenchent pour le mauvais joueur
+        room->turnTimeout->stop();
+        disconnect(room->turnTimeout, nullptr, this, nullptr);
+
+        // Incrémenter la génération pour invalider les anciens callbacks en queue
+        room->turnTimeoutGeneration++;
+        int currentGeneration = room->turnTimeoutGeneration;
 
         // Démarrer le nouveau timer
-        connect(room->turnTimeout, &QTimer::timeout, this, [this, roomId, currentPlayer]() {
+        connect(room->turnTimeout, &QTimer::timeout, this, [this, roomId, currentPlayer, currentGeneration]() {
             GameRoom* room = m_gameRooms.value(roomId);
             if (!room || room->gameState != "playing") return;
+
+            // Vérifier que ce timeout est toujours valide (pas un ancien signal en queue)
+            if (room->turnTimeoutGeneration != currentGeneration) {
+                qDebug() << "TIMEOUT - Ignoré (ancienne génération:" << currentGeneration
+                         << "actuelle:" << room->turnTimeoutGeneration << ")";
+                return;
+            }
 
             // Vérifier que c'est toujours le même joueur (qu'aucune carte n'a été jouée entre-temps)
             if (room->currentPlayerIndex == currentPlayer && !room->isBot[currentPlayer]) {
@@ -3830,7 +3842,7 @@ private:
         });
 
         room->turnTimeout->start(15000);  // 15 secondes (cohérent avec le timer client)
-        qDebug() << "notifyPlayersWithPlayableCards - Timer de 15s démarré pour joueur" << currentPlayer;
+        qDebug() << "notifyPlayersWithPlayableCards - Timer de 15s démarré pour joueur" << currentPlayer << "(génération:" << currentGeneration << ")";
 
         // Si c'est le dernier pli (tous les joueurs n'ont qu'une carte), jouer automatiquement après un délai
         // IMPORTANT: Ne jouer automatiquement que si on est bien dans la phase de jeu
