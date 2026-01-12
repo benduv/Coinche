@@ -233,6 +233,8 @@ private slots:
             handleLeaveLobby(sender);
         } else if (type == "updateAvatar") {
             handleUpdateAvatar(sender, obj);
+        } else if (type == "rehumanize") {
+            handleRehumanize(sender);
         }
     }
 
@@ -587,6 +589,60 @@ private:
                 sendLobbyUpdate(lobby->code);
                 break;
             }
+        }
+    }
+
+    // Handler pour réhumaniser un joueur après qu'il ait été remplacé par un bot
+    void handleRehumanize(QWebSocket *socket) {
+        // Trouver la connexion du joueur
+        QString connectionId;
+        for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+            if (it.value()->socket == socket) {
+                connectionId = it.key();
+                break;
+            }
+        }
+
+        if (connectionId.isEmpty()) {
+            qDebug() << "handleRehumanize - Connexion non trouvée";
+            return;
+        }
+
+        PlayerConnection* conn = m_connections[connectionId];
+        int roomId = conn->gameRoomId;
+
+        if (roomId == -1 || !m_gameRooms.contains(roomId)) {
+            qDebug() << "handleRehumanize - Joueur pas dans une room";
+            return;
+        }
+
+        GameRoom* room = m_gameRooms[roomId];
+
+        // Trouver l'index du joueur dans la room
+        int playerIndex = -1;
+        for (int i = 0; i < 4; ++i) {
+            if (room->connectionIds[i] == connectionId) {
+                playerIndex = i;
+                break;
+            }
+        }
+
+        if (playerIndex == -1) {
+            qDebug() << "handleRehumanize - Joueur non trouvé dans la room";
+            return;
+        }
+
+        // Réhumaniser le joueur
+        if (room->isBot[playerIndex]) {
+            room->isBot[playerIndex] = false;
+            qDebug() << "handleRehumanize - Joueur" << playerIndex << "redevient humain";
+
+            // Confirmer au client
+            QJsonObject response;
+            response["type"] = "rehumanizeSuccess";
+            sendMessage(socket, response);
+        } else {
+            qDebug() << "handleRehumanize - Joueur" << playerIndex << "était déjà humain";
         }
     }
 
@@ -3727,23 +3783,25 @@ private:
 
             // Vérifier que c'est toujours le même joueur (qu'aucune carte n'a été jouée entre-temps)
             if (room->currentPlayerIndex == currentPlayer && !room->isBot[currentPlayer]) {
-                // Vérifier si le joueur est déconnecté
-                bool isPlayerDisconnected = false;
+                qDebug() << "TIMEOUT - Joueur" << currentPlayer << "n'a pas joué à temps, marquage comme bot";
+
+                // Marquer le joueur comme bot
+                room->isBot[currentPlayer] = true;
+
+                // Notifier le client qu'il a été remplacé par un bot
                 QString connectionId = room->connectionIds[currentPlayer];
                 if (!connectionId.isEmpty() && m_connections.contains(connectionId)) {
                     PlayerConnection* conn = m_connections[connectionId];
-                    isPlayerDisconnected = (conn == nullptr || conn->socket == nullptr ||
-                                           conn->socket->state() != QAbstractSocket::ConnectedState);
+                    if (conn && conn->socket && conn->socket->state() == QAbstractSocket::ConnectedState) {
+                        QJsonObject notification;
+                        notification["type"] = "botReplacement";
+                        notification["message"] = "Vous avez été remplacé par un bot car vous n'avez pas joué à temps.";
+                        conn->socket->sendTextMessage(QJsonDocument(notification).toJson(QJsonDocument::Compact));
+                        qDebug() << "TIMEOUT - Notification botReplacement envoyée au joueur" << currentPlayer;
+                    }
                 }
 
-                if (isPlayerDisconnected) {
-                    qDebug() << "TIMEOUT - Joueur" << currentPlayer << "est déconnecté, marquage comme bot permanent";
-                    room->isBot[currentPlayer] = true;
-                } else {
-                    qDebug() << "TIMEOUT - Joueur" << currentPlayer << "n'a pas joué à temps mais est connecté, jeu automatique sans marquer comme bot";
-                }
-
-                // Faire jouer le bot immédiatement dans tous les cas
+                // Faire jouer le bot immédiatement
                 playBotCard(roomId, currentPlayer);
             }
         });

@@ -64,6 +64,10 @@ Rectangle {
     property int gameOverScoreTeam1: 0
     property int gameOverScoreTeam2: 0
 
+    // Propriétés pour la popup de remplacement par bot
+    property bool showBotReplacementPopup: false
+    property string botReplacementMessage: ""
+
     Image {
         anchors.fill: parent
         source: "qrc:/resources/cielEtoile.jpg"
@@ -92,6 +96,17 @@ Rectangle {
             // Note: Si c'est le joueur local qui a abandonné, returnToMainMenu() est déjà
             // appelé depuis ExitGamePopup, donc on ne le fait pas ici pour éviter de le faire deux fois
             console.log("Le joueur", playerName, "a été remplacé par un bot")
+        }
+
+        function onBotReplacement(message) {
+            console.log("CoincheView - Remplacé par un bot:", message)
+            rootArea.botReplacementMessage = message
+            rootArea.showBotReplacementPopup = true
+        }
+
+        function onRehumanizeSuccess() {
+            console.log("CoincheView - Rehumanisation réussie")
+            rootArea.showBotReplacementPopup = false
         }
     }
 
@@ -2331,6 +2346,23 @@ Rectangle {
 
             onReturnToMenu: {
                 rootArea.returnToMainMenu()
+            }
+        }
+    }
+
+    // Popup de remplacement par bot
+    Loader {
+        id: botReplacementLoader
+        anchors.fill: parent
+        active: rootArea.showBotReplacementPopup
+        z: 999  // Juste en dessous de gameOverPopup
+
+        sourceComponent: BotReplacementPopup {
+            message: rootArea.botReplacementMessage
+
+            onOkClicked: {
+                console.log("BotReplacementPopup - OK cliqué, demande de réhumanisation")
+                networkManager.requestRehumanize()
             }
         }
     }

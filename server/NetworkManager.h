@@ -204,6 +204,14 @@ public:
         sendMessage(msg);
     }
 
+    // Demander à redevenir humain après avoir été remplacé par un bot
+    Q_INVOKABLE void requestRehumanize() {
+        qDebug() << "Demande de réhumanisation";
+        QJsonObject msg;
+        msg["type"] = "rehumanize";
+        sendMessage(msg);
+    }
+
     // Méthodes pour les lobbies privés
     Q_INVOKABLE void createPrivateLobby() {
         QJsonObject msg;
@@ -267,6 +275,10 @@ signals:
     void lobbyError(QString message);
     void lobbyPlayersChanged();
     void lobbyGameStarting();
+
+    // Signaux pour le remplacement par bot
+    void botReplacement(QString message);
+    void rehumanizeSuccess();
 
 private slots:
     void onConnected() {
@@ -674,6 +686,15 @@ private slots:
             if (m_gameModel) {
                 m_gameModel->receiveCardsDealt(cards);
             }
+        }
+        else if (type == "botReplacement") {
+            QString message = obj["message"].toString();
+            qDebug() << "NetworkManager - Remplace par un bot:" << message;
+            emit botReplacement(message);
+        }
+        else if (type == "rehumanizeSuccess") {
+            qDebug() << "NetworkManager - Rehumanisation reussie";
+            emit rehumanizeSuccess();
         }
     }
 

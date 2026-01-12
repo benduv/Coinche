@@ -775,7 +775,12 @@ void GameModel::updateGameState(const QJsonObject& state)
 
             qDebug() << "Reconnexion: Main resynchronisée avec" << localPlayer->getMain().size() << "cartes";
 
-            // Le HandModel se mettra à jour automatiquement via les playableCards qui suivront
+            // Rafraîchir le HandModel pour que QML affiche les bonnes cartes
+            HandModel* hand = getHandModelByPosition(m_myPosition);
+            if (hand) {
+                hand->refresh();
+                qDebug() << "Reconnexion: HandModel rafraîchi";
+            }
         }
     }
 
