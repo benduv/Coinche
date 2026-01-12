@@ -3448,6 +3448,13 @@ private:
             return;
         }
 
+        // IMPORTANT: Vérifier que le joueur est toujours un bot
+        // Il peut avoir été réhumanisé entre-temps (reconnexion + clic OK)
+        if (!room->isBot[playerIndex]) {
+            qDebug() << "playBotCard - ANNULÉ: Joueur" << playerIndex << "n'est plus un bot (réhumanisé)";
+            return;
+        }
+
         // Arrêter le timer de timeout et invalider les anciens callbacks
         if (room->turnTimeout) {
             room->turnTimeout->stop();
@@ -3772,11 +3779,24 @@ private:
             // pour laisser le temps au pli précédent d'être nettoyé côté client
             int delay = room->currentPli.empty() ? 2000 : 800;
 
-            QTimer::singleShot(delay, this, [this, roomId]() {
+            QTimer::singleShot(delay, this, [this, roomId, currentPlayer]() {
                 GameRoom* room = m_gameRooms.value(roomId);
-                if (room && room->gameState == "playing") {
-                    playBotCard(roomId, room->currentPlayerIndex);
+                if (!room || room->gameState != "playing") return;
+
+                // IMPORTANT: Revérifier que le joueur est toujours un bot
+                // Il peut avoir été réhumanisé entre-temps (reconnexion + clic OK)
+                if (!room->isBot[currentPlayer]) {
+                    qDebug() << "playBotCard ANNULÉ - Joueur" << currentPlayer << "n'est plus un bot (réhumanisé)";
+                    return;
                 }
+
+                // Vérifier que c'est toujours son tour
+                if (room->currentPlayerIndex != currentPlayer) {
+                    qDebug() << "playBotCard ANNULÉ - Ce n'est plus le tour du joueur" << currentPlayer;
+                    return;
+                }
+
+                playBotCard(roomId, currentPlayer);
             });
             return;  // Ne pas exécuter le code du dernier pli automatique ci-dessous
         }
