@@ -48,17 +48,6 @@ Rectangle {
         }
     }
 
-    Component.onCompleted: {
-        console.log("CoincheView - Component.onCompleted")
-        // Vérifier s'il y a un message de remplacement par bot en attente
-        var pendingMsg = networkManager.consumePendingBotReplacement()
-        if (pendingMsg && pendingMsg.length > 0) {
-            console.log("CoincheView - Message bot replacement en attente trouvé:", pendingMsg)
-            rootArea.botReplacementMessage = pendingMsg
-            rootArea.showBotReplacementPopup = true
-        }
-    }
-
     Component.onDestruction: {
         // Arrêter la musique quand on quitte la vue
         gameMusic.stop()
@@ -78,6 +67,9 @@ Rectangle {
     // Propriétés pour la popup de remplacement par bot
     property bool showBotReplacementPopup: false
     property string botReplacementMessage: ""
+
+    // Propriété pour l'animation "Nouvelle Manche"
+    property bool showNewMancheAnimation: false
 
     Image {
         anchors.fill: parent
@@ -118,6 +110,23 @@ Rectangle {
         function onRehumanizeSuccess() {
             console.log("CoincheView - Rehumanisation réussie")
             rootArea.showBotReplacementPopup = false
+        }
+
+        function onNewMancheAnimation() {
+            console.log("CoincheView - Animation Nouvelle Manche!")
+            rootArea.showNewMancheAnimation = true
+            // L'animation dure 3 secondes côté serveur, on la cache après 2.8s pour être synchronisé
+            newMancheAnimationTimer.start()
+        }
+    }
+
+    // Timer pour masquer l'animation "Nouvelle Manche"
+    Timer {
+        id: newMancheAnimationTimer
+        interval: 2800
+        repeat: false
+        onTriggered: {
+            rootArea.showNewMancheAnimation = false
         }
     }
 
@@ -1880,6 +1889,121 @@ Rectangle {
         }
 
         // =====================
+        // ANIMATION "NOUVELLE MANCHE"
+        // =====================
+        Item {
+            id: newMancheAnimationItem
+            anchors.centerIn: playArea
+            width: playArea.width * 0.7
+            height: playArea.height * 0.4
+            visible: rootArea.showNewMancheAnimation
+            z: 150
+
+            // Animation d'apparition avec zoom et fade
+            scale: rootArea.showNewMancheAnimation ? 1 : 0.3
+            opacity: rootArea.showNewMancheAnimation ? 1 : 0
+
+            Behavior on scale {
+                NumberAnimation {
+                    duration: 500
+                    easing.type: Easing.OutBack
+                }
+            }
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 400
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            // Texte principal "Nouvelle Manche"
+            Text {
+                id: newMancheText
+                anchors.centerIn: parent
+                text: "Nouvelle Manche"
+                font.pixelSize: parent.height * 0.35
+                font.bold: true
+                font.family: "Arial"
+                color: "#FFD700"  // Or
+                style: Text.Outline
+                styleColor: "#8B4513"  // Marron pour le contour
+            }
+
+            // Étoiles scintillantes autour du texte
+            Repeater {
+                model: 12
+                delegate: Text {
+                    id: starItem
+                    text: "\u2605"  // Étoile pleine Unicode
+                    font.pixelSize: parent.height * (0.08 + Math.random() * 0.06)
+                    color: "#FFD700"
+                    opacity: 0
+
+                    // Position autour du texte central
+                    x: parent.width / 2 + Math.cos(index * Math.PI / 6) * (parent.width * 0.35 + Math.random() * 30) - width / 2
+                    y: parent.height / 2 + Math.sin(index * Math.PI / 6) * (parent.height * 0.4 + Math.random() * 20) - height / 2
+
+                    // Animation de scintillement
+                    SequentialAnimation on opacity {
+                        running: rootArea.showNewMancheAnimation
+                        loops: Animation.Infinite
+
+                        PauseAnimation { duration: index * 100 }  // Décalage pour chaque étoile
+
+                        NumberAnimation {
+                            from: 0
+                            to: 1
+                            duration: 300
+                            easing.type: Easing.InOutQuad
+                        }
+                        NumberAnimation {
+                            from: 1
+                            to: 0.3
+                            duration: 400
+                            easing.type: Easing.InOutQuad
+                        }
+                        NumberAnimation {
+                            from: 0.3
+                            to: 1
+                            duration: 300
+                            easing.type: Easing.InOutQuad
+                        }
+                        NumberAnimation {
+                            from: 1
+                            to: 0
+                            duration: 400
+                            easing.type: Easing.InOutQuad
+                        }
+
+                        PauseAnimation { duration: 200 }
+                    }
+
+                    // Animation de scale pour effet de pulsation
+                    SequentialAnimation on scale {
+                        running: rootArea.showNewMancheAnimation
+                        loops: Animation.Infinite
+
+                        PauseAnimation { duration: index * 80 }
+
+                        NumberAnimation {
+                            from: 0.8
+                            to: 1.2
+                            duration: 500
+                            easing.type: Easing.InOutQuad
+                        }
+                        NumberAnimation {
+                            from: 1.2
+                            to: 0.8
+                            duration: 500
+                            easing.type: Easing.InOutQuad
+                        }
+                    }
+                }
+            }
+        }
+
+        // =====================
         // DERNIER PLI (en haut à gauche)
         // =====================
         // ZONE EN HAUT À GAUCHE : Bouton Exit + Miniatures dernier pli
@@ -2423,6 +2547,14 @@ Rectangle {
         // Démarrer la musique de fond si elle est activée
         if (AudioSettings.musicEnabled) {
             gameMusic.play()
+        }
+
+        // Vérifier s'il y a un message de remplacement par bot en attente (reconnexion)
+        var pendingMsg = networkManager.consumePendingBotReplacement()
+        if (pendingMsg && pendingMsg.length > 0) {
+            console.log("CoincheView - Message bot replacement en attente trouvé:", pendingMsg)
+            rootArea.botReplacementMessage = pendingMsg
+            rootArea.showBotReplacementPopup = true
         }
     }
 }

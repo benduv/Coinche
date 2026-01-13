@@ -283,6 +283,9 @@ signals:
     void rehumanizeSuccess();
     void pendingBotReplacementChanged();
 
+    // Signal pour l'animation de nouvelle manche
+    void newMancheAnimation();
+
 private slots:
     void onConnected() {
         qDebug() << "Connecte au serveur";
@@ -489,6 +492,10 @@ private slots:
                 gameOverData["scoreTeam2"] = scoreTeam2;
                 m_gameModel->receivePlayerAction(-1, "gameOver", gameOverData);
             }
+        }
+        else if (type == "newMancheAnimation") {
+            qDebug() << "NetworkManager - Animation nouvelle manche!";
+            emit newMancheAnimation();
         }
         else if (type == "newManche") {
             int playerPosition = obj["playerPosition"].toInt();

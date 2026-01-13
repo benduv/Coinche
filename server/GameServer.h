@@ -1920,6 +1920,23 @@ private:
         GameRoom* room = m_gameRooms.value(roomId);
         if (!room) return;
 
+        qDebug() << "GameServer - Nouvelle manche: envoi de l'animation aux clients";
+
+        // Envoyer le message d'animation "Nouvelle Manche" à tous les joueurs
+        QJsonObject newMancheMsg;
+        newMancheMsg["type"] = "newMancheAnimation";
+        broadcastToRoom(roomId, newMancheMsg);
+
+        // Attendre 3 secondes pour l'animation avant de distribuer les cartes
+        QTimer::singleShot(3000, this, [this, roomId]() {
+            doStartNewManche(roomId);
+        });
+    }
+
+    void doStartNewManche(int roomId) {
+        GameRoom* room = m_gameRooms.value(roomId);
+        if (!room) return;
+
         qDebug() << "GameServer - Nouvelle manche: melange et distribution des cartes";
 
         // Nettoyer les plis de la manche precedente
