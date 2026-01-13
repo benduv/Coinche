@@ -23,6 +23,7 @@ class NetworkManager : public QObject {
     Q_PROPERTY(QJsonArray opponents READ opponents NOTIFY gameDataChanged)
     Q_PROPERTY(QString playerAvatar READ playerAvatar NOTIFY playerAvatarChanged)
     Q_PROPERTY(QVariantList lobbyPlayers READ lobbyPlayers NOTIFY lobbyPlayersChanged)
+    Q_PROPERTY(QString pendingBotReplacement READ pendingBotReplacement NOTIFY pendingBotReplacementChanged)
 
 public:
     explicit NetworkManager(QObject *parent = nullptr)
@@ -64,6 +65,14 @@ public:
     GameModel* gameModel() const { return m_gameModel; }
     QString playerAvatar() const { return m_playerAvatar; }
     QVariantList lobbyPlayers() const { return m_lobbyPlayers; }
+    QString pendingBotReplacement() const { return m_pendingBotReplacement; }
+
+    // Méthode pour consommer le message de remplacement par bot en attente
+    Q_INVOKABLE QString consumePendingBotReplacement() {
+        QString msg = m_pendingBotReplacement;
+        m_pendingBotReplacement.clear();
+        return msg;
+    }
 
     // Nouvelle méthode pour créer le GameModel
     Q_INVOKABLE void createGameModel(int position, const QJsonArray& cards, const QJsonArray& opps) {
@@ -272,6 +281,7 @@ signals:
     // Signaux pour le remplacement par bot
     void botReplacement(QString message);
     void rehumanizeSuccess();
+    void pendingBotReplacementChanged();
 
 private slots:
     void onConnected() {
@@ -654,6 +664,10 @@ private slots:
         else if (type == "botReplacement") {
             QString message = obj["message"].toString();
             qDebug() << "NetworkManager - Remplace par un bot:" << message;
+            // Stocker le message pour que CoincheView puisse le récupérer quand il est prêt
+            m_pendingBotReplacement = message;
+            emit pendingBotReplacementChanged();
+            // Émettre aussi le signal pour les cas où CoincheView est déjà chargé
             emit botReplacement(message);
         }
         else if (type == "rehumanizeSuccess") {
@@ -686,6 +700,7 @@ private:
     GameModel* m_gameModel;  // Le GameModel géré par NetworkManager
     QString m_playerPseudo;
     QString m_playerAvatar;
+    QString m_pendingBotReplacement;  // Message de remplacement par bot en attente
 
     // Lobbies privés
     QVariantList m_lobbyPlayers;

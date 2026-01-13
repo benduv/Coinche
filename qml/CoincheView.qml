@@ -48,6 +48,17 @@ Rectangle {
         }
     }
 
+    Component.onCompleted: {
+        console.log("CoincheView - Component.onCompleted")
+        // Vérifier s'il y a un message de remplacement par bot en attente
+        var pendingMsg = networkManager.consumePendingBotReplacement()
+        if (pendingMsg && pendingMsg.length > 0) {
+            console.log("CoincheView - Message bot replacement en attente trouvé:", pendingMsg)
+            rootArea.botReplacementMessage = pendingMsg
+            rootArea.showBotReplacementPopup = true
+        }
+    }
+
     Component.onDestruction: {
         // Arrêter la musique quand on quitte la vue
         gameMusic.stop()
