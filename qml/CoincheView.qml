@@ -267,7 +267,8 @@ Rectangle {
                      gameModel.biddingPlayer >= 0 &&         // Masquer si biddingPlayer invalide
                      !gameModel.showCoincheAnimation &&      // Masquer si animation Coinche
                      !gameModel.showSurcoincheAnimation &&   // Masquer si animation Surcoinche
-                     !gameModel.surcoincheAvailable          // Masquer si bouton Surcoinche visible
+                     !gameModel.surcoincheAvailable &&       // Masquer si bouton Surcoinche visible
+                     !rootArea.showNewMancheAnimation
             z: 5
 
             Row {
@@ -339,7 +340,8 @@ Rectangle {
                      gameModel.biddingPlayer === gameModel.myPosition &&
                      !gameModel.showCoincheAnimation &&      // Masquer si animation Coinche
                      !gameModel.showSurcoincheAnimation &&   // Masquer si animation Surcoinche
-                     !gameModel.surcoincheAvailable          // Masquer si bouton Surcoinche visible
+                     !gameModel.surcoincheAvailable &&       // Masquer si bouton Surcoinche visible
+                     !rootArea.showNewMancheAnimation
         }
 
         // ---- Zone du pli (cartes jouées) ----
@@ -1544,13 +1546,15 @@ Rectangle {
             anchors.right: parent.right
             anchors.margins: parent.width * 0.015
 
-            // Visible uniquement pendant la phase d'enchères
+            // Visible uniquement pendant la phase d'enchères et pas pendant l'animation
             visible: gameModel.biddingPhase &&
                      gameModel.lastBidValue > 0 &&
                      gameModel.lastBidValue !== 14 &&  // Pas PASSE (14)
                      gameModel.lastBidValue !== 12 &&  // Pas déjà COINCHE (12)
                      gameModel.lastBidValue !== 13 &&  // Pas déjà SURCOINCHE (13)
-                     (gameModel.lastBidderIndex % 2) !== (gameModel.playerIndex % 2)
+                     (gameModel.lastBidderIndex % 2) !== (gameModel.playerIndex % 2) &&
+                     !gameModel.showCoincheAnimation &&  // Cacher pendant l'animation Coinche
+                     !gameModel.showSurcoincheAnimation  // Cacher pendant l'animation Surcoinche
 
             // Enabled seulement si:
             // 1. Il y a eu une annonce (lastBidValue > 0)
@@ -1596,167 +1600,39 @@ Rectangle {
         }
 
         // =====================
-        // ANIMATION "COINCHE !"
+        // ANIMATION "COINCHE !" avec explosion
         // =====================
-        Item {
+        ExplosionAnimation {
             anchors.centerIn: playArea
-            width: playArea.width * 0.5
-            height: playArea.height * 0.3
-            visible: gameModel.showCoincheAnimation
+            width: playArea.width * 0.7
+            height: playArea.height * 0.5
             z: 100
-
-            // Animation d'apparition avec zoom et fade
-            scale: gameModel.showCoincheAnimation ? 1 : 0
-            opacity: gameModel.showCoincheAnimation ? 1 : 0
-
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 600
-                    easing.type: Easing.OutElastic
-                    easing.amplitude: 1.5
-                    easing.period: 0.5
-                }
-            }
-
-            Behavior on opacity {
-                NumberAnimation { duration: 400 }
-            }
-
-            // Couches d'ombre
-            Rectangle {
-                anchors.centerIn: parent
-                anchors.verticalCenterOffset: 12
-                width: parent.width + 8
-                height: parent.height + 8
-                color: "#40000000"
-                radius: 20
-            }
-
-            Rectangle {
-                anchors.centerIn: parent
-                anchors.verticalCenterOffset: 8
-                width: parent.width + 4
-                height: parent.height + 4
-                color: "#50000000"
-                radius: 18
-            }
-
-            // Rectangle principal
-            Rectangle {
-                anchors.fill: parent
-                color: "#1a1a1a"
-                radius: 15
-                border.color: "#FF8800"
-                border.width: 6
-
-                // Animation de pulsation de la bordure
-                SequentialAnimation on border.width {
-                    running: gameModel.showCoincheAnimation
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 6; to: 10; duration: 500; easing.type: Easing.InOutQuad }
-                    NumberAnimation { from: 10; to: 6; duration: 500; easing.type: Easing.InOutQuad }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "COINCHE !"
-                    font.pixelSize: parent.height * 0.35
-                    font.bold: true
-                    color: "#FF8800"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-
-                    // Animation de rotation subtile
-                    SequentialAnimation on rotation {
-                        running: gameModel.showCoincheAnimation
-                        loops: Animation.Infinite
-                        NumberAnimation { from: -5; to: 5; duration: 400; easing.type: Easing.InOutSine }
-                        NumberAnimation { from: 5; to: -5; duration: 400; easing.type: Easing.InOutSine }
-                    }
-                }
-            }
+            text: "COINCHE !"
+            mainColor: "#FF8800"
+            secondaryColor: "#FFAA00"
+            particleColor1: "#FF4400"
+            particleColor2: "#FF8800"
+            particleColor3: "#FFCC00"
+            running: gameModel.showCoincheAnimation
+            minRatio: rootArea.minRatio
         }
 
         // =====================
-        // ANIMATION "SURCOINCHE !"
+        // ANIMATION "SURCOINCHE !" avec explosion
         // =====================
-        Item {
+        ExplosionAnimation {
             anchors.centerIn: playArea
-            width: playArea.width * 0.5
-            height: playArea.height * 0.3
-            visible: gameModel.showSurcoincheAnimation
+            width: playArea.width * 0.7
+            height: playArea.height * 0.5
             z: 100
-
-            // Animation d'apparition avec zoom et fade
-            scale: gameModel.showSurcoincheAnimation ? 1 : 0
-            opacity: gameModel.showSurcoincheAnimation ? 1 : 0
-
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 600
-                    easing.type: Easing.OutElastic
-                    easing.amplitude: 1.5
-                    easing.period: 0.5
-                }
-            }
-
-            Behavior on opacity {
-                NumberAnimation { duration: 400 }
-            }
-
-            // Couches d'ombre
-            Rectangle {
-                anchors.centerIn: parent
-                anchors.verticalCenterOffset: 12
-                width: parent.width + 8
-                height: parent.height + 8
-                color: "#40000000"
-                radius: 20
-            }
-
-            Rectangle {
-                anchors.centerIn: parent
-                anchors.verticalCenterOffset: 8
-                width: parent.width + 4
-                height: parent.height + 4
-                color: "#50000000"
-                radius: 18
-            }
-
-            // Rectangle principal
-            Rectangle {
-                anchors.fill: parent
-                color: "#1a1a1a"
-                radius: 15
-                border.color: "#FF0088"
-                border.width: 6
-
-                // Animation de pulsation de la bordure
-                SequentialAnimation on border.width {
-                    running: gameModel.showSurcoincheAnimation
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 6; to: 10; duration: 500; easing.type: Easing.InOutQuad }
-                    NumberAnimation { from: 10; to: 6; duration: 500; easing.type: Easing.InOutQuad }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "SURCOINCHE !"
-                    font.pixelSize: parent.height * 0.5
-                    font.bold: true
-                    color: "#FF0088"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-
-                    // Animation de rotation subtile
-                    SequentialAnimation on rotation {
-                        running: gameModel.showSurcoincheAnimation
-                        loops: Animation.Infinite
-                        NumberAnimation { from: -5; to: 5; duration: 400; easing.type: Easing.InOutSine }
-                        NumberAnimation { from: 5; to: -5; duration: 400; easing.type: Easing.InOutSine }
-                    }
-                }
-            }
+            text: "SURCOINCHE !"
+            mainColor: "#FF0088"
+            secondaryColor: "#FF44AA"
+            particleColor1: "#CC0066"
+            particleColor2: "#FF0088"
+            particleColor3: "#FF66BB"
+            running: gameModel.showSurcoincheAnimation
+            minRatio: rootArea.minRatio
         }
 
         // =====================
@@ -1851,7 +1727,9 @@ Rectangle {
 
         // ---- Animation CAPOT ----
         Item {
-            anchors.centerIn: playArea
+            anchors.top: newMancheAnimationItem.bottom
+            anchors.topMargin: parent.height * 0.05
+            anchors.horizontalCenter: parent.horizontalCenter
             width: playArea.width * 0.5
             height: playArea.height * 0.3
             visible: gameModel.showCapotAnimation
@@ -1941,7 +1819,7 @@ Rectangle {
                     opacity: 0
 
                     // Position autour du texte central
-                    x: parent.width / 2 + Math.cos(index * Math.PI / 6) * (parent.width * 0.35 + Math.random() * 30) - width / 2
+                    x: parent.width / 2 + Math.cos(index * Math.PI / 6) * (parent.width * 0.4 + Math.random() * 30) - width / 2
                     y: parent.height / 2 + Math.sin(index * Math.PI / 6) * (parent.height * 0.4 + Math.random() * 20) - height / 2
 
                     // Animation de scintillement

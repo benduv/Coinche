@@ -67,6 +67,13 @@ Rectangle {
         color: "transparent"
         z: 100
 
+        Rectangle {
+            anchors.centerIn: parent
+            width: parent.width * 0.6
+            height: parent.height * 0.6
+            color: "lightgrey"
+        }
+
         Image {
             anchors.fill: parent
             source: "qrc:/resources/back-square-svgrepo-com.svg"
@@ -213,28 +220,21 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#FFD700"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 15 * minRatio
                         spacing: 8 * minRatio
 
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8 * minRatio
-
-                            Text {
-                                text: "🎮"
-                                font.pixelSize: 28 * minRatio
-                            }
-
-                            Text {
-                                text: "Parties jouées"
-                                font.pixelSize: Math.min(20 * minRatio, 18)
-                                font.bold: true
-                                color: "#FFD700"
-                                Layout.fillWidth: true
-                            }
+                        Text {
+                            text: "Parties jouées"
+                            font.pixelSize: Math.min(24 * minRatio, 22)
+                            font.bold: true
+                            color: "#FFD700"
+                            Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Item { Layout.fillHeight: true }
@@ -260,28 +260,21 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#FFD700"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 15 * minRatio
                         spacing: 8 * minRatio
 
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8 * minRatio
-
-                            Text {
-                                text: "🏆"
-                                font.pixelSize: 28 * minRatio
-                            }
-
-                            Text {
-                                text: "Victoires"
-                                font.pixelSize: Math.min(20 * minRatio, 18)
-                                font.bold: true
-                                color: "#FFD700"
-                                Layout.fillWidth: true
-                            }
+                        Text {
+                            text: "Victoires"
+                            font.pixelSize: Math.min(24 * minRatio, 22)
+                            font.bold: true
+                            color: "#FFD700"
+                            Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Item { Layout.fillHeight: true }
@@ -307,28 +300,21 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#FFD700"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 15 * minRatio
                         spacing: 8 * minRatio
 
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8 * minRatio
-
-                            Text {
-                                text: "📈"
-                                font.pixelSize: 28 * minRatio
-                            }
-
-                            Text {
-                                text: "Taux de victoire"
-                                font.pixelSize: Math.min(20 * minRatio, 18)
-                                font.bold: true
-                                color: "#FFD700"
-                                Layout.fillWidth: true
-                            }
+                        Text {
+                            text: "Taux de victoire"
+                            font.pixelSize: Math.min(24 * minRatio, 22)
+                            font.bold: true
+                            color: "#FFD700"
+                            Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Item { Layout.fillHeight: true }
@@ -354,28 +340,21 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#FFD700"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 15 * minRatio
                         spacing: 8 * minRatio
 
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8 * minRatio
-
-                            Text {
-                                text: "🔥"
-                                font.pixelSize: 28 * minRatio
-                            }
-
-                            Text {
-                                text: "Série de victoire"
-                                font.pixelSize: Math.min(20 * minRatio, 18)
-                                font.bold: true
-                                color: "#FFD700"
-                                Layout.fillWidth: true
-                            }
+                        Text {
+                            text: "Série de victoire"
+                            font.pixelSize: Math.min(24 * minRatio, 22)
+                            font.bold: true
+                            color: "#FFD700"
+                            Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Item { Layout.fillHeight: true }
@@ -417,6 +396,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#ff6666"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -425,10 +405,12 @@ Rectangle {
 
                         Text {
                             text: "Tentatives"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -437,6 +419,8 @@ Rectangle {
                             font.bold: true
                             color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -450,6 +434,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#ff6666"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -458,10 +443,12 @@ Rectangle {
 
                         Text {
                             text: "Réussies"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -470,6 +457,8 @@ Rectangle {
                             font.bold: true
                             color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -483,6 +472,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#ff6666"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -491,10 +481,12 @@ Rectangle {
 
                         Text {
                             text: "Taux"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -503,6 +495,8 @@ Rectangle {
                             font.bold: true
                             color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -532,6 +526,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#6699ff"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -540,10 +535,12 @@ Rectangle {
 
                         Text {
                             text: "Subies"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -552,6 +549,8 @@ Rectangle {
                             font.bold: true
                             color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -565,6 +564,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#6699ff"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -573,10 +573,12 @@ Rectangle {
 
                         Text {
                             text: "Gagnées malgré tout"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -585,6 +587,8 @@ Rectangle {
                             font.bold: true
                             color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -598,6 +602,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#6699ff"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -606,10 +611,12 @@ Rectangle {
 
                         Text {
                             text: "Taux de victoire"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -618,6 +625,8 @@ Rectangle {
                             font.bold: true
                             color: "#6699ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -647,6 +656,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#ff9900"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -655,10 +665,12 @@ Rectangle {
 
                         Text {
                             text: "Tentatives"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -667,6 +679,8 @@ Rectangle {
                             font.bold: true
                             color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -680,6 +694,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#ff9900"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -688,10 +703,12 @@ Rectangle {
 
                         Text {
                             text: "Réussies"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -700,6 +717,8 @@ Rectangle {
                             font.bold: true
                             color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -713,6 +732,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#ff9900"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -721,10 +741,12 @@ Rectangle {
 
                         Text {
                             text: "Taux"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -733,6 +755,8 @@ Rectangle {
                             font.bold: true
                             color: "#ff9900"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -762,6 +786,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#cc66ff"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -770,10 +795,12 @@ Rectangle {
 
                         Text {
                             text: "Subies"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -782,6 +809,8 @@ Rectangle {
                             font.bold: true
                             color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -795,6 +824,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#cc66ff"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -803,12 +833,14 @@ Rectangle {
 
                         Text {
                             text: "Subies réussies"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -817,6 +849,8 @@ Rectangle {
                             font.bold: true
                             color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -830,6 +864,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#cc66ff"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -838,10 +873,12 @@ Rectangle {
 
                         Text {
                             text: "Taux de victoire"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -850,6 +887,8 @@ Rectangle {
                             font.bold: true
                             color: "#cc66ff"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -860,7 +899,7 @@ Rectangle {
                 text: "💥 CAPOTS"
                 font.pixelSize: Math.min(28 * minRatio, 24)
                 font.bold: true
-                color: "#9C27B0"
+                color: "#ff6666"
                 Layout.topMargin: 10 * minRatio
             }
 
@@ -877,8 +916,9 @@ Rectangle {
                     Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#9C27B0"
+                    border.color: "#ff6666"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -887,18 +927,22 @@ Rectangle {
 
                         Text {
                             text: "Réalisés"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
-                            color: "#9C27B0"
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
                             text: capotRealises.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#9C27B0"
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -910,8 +954,9 @@ Rectangle {
                     Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#9C27B0"
+                    border.color: "#ff6666"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -920,20 +965,24 @@ Rectangle {
 
                         Text {
                             text: "Annoncés tentés"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
-                            color: "#9C27B0"
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
                             text: capotAnnoncesTentes.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#9C27B0"
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -945,8 +994,9 @@ Rectangle {
                     Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#9C27B0"
+                    border.color: "#ff6666"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -955,20 +1005,24 @@ Rectangle {
 
                         Text {
                             text: "Annoncés réussis"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
-                            color: "#9C27B0"
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
                             text: capotAnnoncesRealises.toString()
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#9C27B0"
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -980,8 +1034,9 @@ Rectangle {
                     Layout.minimumWidth: 180 * widthRatio
                     color: "#2a2a2a"
                     radius: 15 * minRatio
-                    border.color: "#9C27B0"
+                    border.color: "#ff6666"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -990,20 +1045,24 @@ Rectangle {
 
                         Text {
                             text: "Taux annoncés"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
-                            color: "#9C27B0"
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
                             text: capotAnnoncesTentes > 0 ? ((capotAnnoncesRealises / capotAnnoncesTentes) * 100).toFixed(1) + "%" : "0%"
                             font.pixelSize: Math.min(42 * minRatio, 36)
                             font.bold: true
-                            color: "#9C27B0"
+                            color: "#ff6666"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -1033,6 +1092,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#FF9800"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -1041,10 +1101,12 @@ Rectangle {
 
                         Text {
                             text: "Tentatives"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -1053,6 +1115,8 @@ Rectangle {
                             font.bold: true
                             color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -1066,6 +1130,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#FF9800"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -1074,10 +1139,12 @@ Rectangle {
 
                         Text {
                             text: "Réussies"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -1086,6 +1153,8 @@ Rectangle {
                             font.bold: true
                             color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }
@@ -1099,6 +1168,7 @@ Rectangle {
                     radius: 15 * minRatio
                     border.color: "#FF9800"
                     border.width: 2 * minRatio
+                    opacity: 0.5
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -1107,10 +1177,12 @@ Rectangle {
 
                         Text {
                             text: "Taux"
-                            font.pixelSize: Math.min(20 * minRatio, 18)
+                            font.pixelSize: Math.min(24 * minRatio, 22)
                             font.bold: true
                             color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
 
                         Text {
@@ -1119,6 +1191,8 @@ Rectangle {
                             font.bold: true
                             color: "#FF9800"
                             Layout.alignment: Qt.AlignHCenter
+                            style: Text.Outline
+                            styleColor: "#000000"
                         }
                     }
                 }

@@ -123,21 +123,23 @@ Rectangle {
     property real heightRatio: height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
 
-    // Auto-login si les credentials sont fournis
+    // Auto-login avec credentials stockés
     property bool autoLoginPending: false
+    property bool autoLoginAttempted: false
 
     Component.onCompleted: {
-        if (autoLoginEmail !== "" && autoLoginPassword !== "") {
-            console.log("Auto-login préparé pour:", autoLoginEmail)
+        // Vérifier si on a des credentials stockés pour auto-login
+        if (networkManager.hasStoredCredentials) {
+            console.log("Credentials stockés trouvés pour:", networkManager.storedEmail)
             autoLoginPending = true
         }
     }
 
     function performAutoLogin() {
-        if (autoLoginPending && networkManager.connected) {
-            console.log("Exécution auto-login avec:", autoLoginEmail)
-            networkManager.loginAccount(autoLoginEmail, autoLoginPassword)
-            autoLoginPending = false
+        if (autoLoginPending && networkManager.connected && !autoLoginAttempted) {
+            console.log("Tentative d'auto-login...")
+            autoLoginAttempted = true
+            networkManager.tryAutoLogin()
         }
     }
 
@@ -145,7 +147,7 @@ Rectangle {
         target: networkManager
 
         function onConnectedChanged() {
-            if (networkManager.connected && autoLoginPending) {
+            if (networkManager.connected && autoLoginPending && !autoLoginAttempted) {
                 performAutoLogin()
             }
         }
@@ -155,6 +157,12 @@ Rectangle {
         }
         function onLoginFailed(error) {
             console.error("Erreur auto-login:", error)
+            // Si l'auto-login échoue, effacer les credentials invalides
+            if (autoLoginAttempted) {
+                console.log("Auto-login échoué, suppression des credentials stockés")
+                networkManager.clearCredentials()
+                autoLoginPending = false
+            }
         }
     }
 
@@ -382,6 +390,13 @@ Rectangle {
                     height: 100 * loginRoot.minRatio
                     color: "transparent"
                     z: 100
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width * 0.6
+                        height: parent.height * 0.6
+                        color: "lightgrey"
+                    }
 
                     Image {
                         anchors.fill: parent
@@ -657,20 +672,35 @@ Rectangle {
                                 return
                             }
 
+                            // Stocker temporairement pour sauvegarder après succès
+                            registerScreenRec.pendingEmail = registerEmail.text
+                            registerScreenRec.pendingPassword = registerPassword.text
+
                             // Envoyer la requête au serveur avec l'avatar sélectionné
-                            //var registerRect = parent.parent.parent
                             networkManager.registerAccount(registerPseudo.text, registerEmail.text, registerPassword.text, registerScreenRec.selectedAvatar)
                         }
                     }
                 }
 
+                // Propriétés pour stocker les credentials en attente de confirmation
+                property string pendingEmail: ""
+                property string pendingPassword: ""
+
                 Connections {
                     target: networkManager
                     function onRegisterSuccess(playerName, avatar) {
+                        // Sauvegarder les credentials pour l'auto-login
+                        if (registerScreenRec.pendingEmail !== "" && registerScreenRec.pendingPassword !== "") {
+                            networkManager.saveCredentials(registerScreenRec.pendingEmail, registerScreenRec.pendingPassword)
+                            registerScreenRec.pendingEmail = ""
+                            registerScreenRec.pendingPassword = ""
+                        }
                         loginRoot.loginSuccess(playerName, "account")
                     }
                     function onRegisterFailed(error) {
                         registerError.text = error
+                        registerScreenRec.pendingEmail = ""
+                        registerScreenRec.pendingPassword = ""
                     }
                 }
             }
@@ -681,6 +711,7 @@ Rectangle {
             id: loginScreen
 
             Rectangle {
+                id: loginScreenRect
                 //color: "#1a1a1a"
                 color: "#0a0a2e"
 
@@ -715,6 +746,13 @@ Rectangle {
                     height: 100 * loginRoot.minRatio
                     color: "transparent"
                     z: 100
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width * 0.6
+                        height: parent.height * 0.6
+                        color: "lightgrey"
+                    }
 
                     Image {
                         anchors.fill: parent
@@ -875,19 +913,33 @@ Rectangle {
                                 return
                             }
 
-                            // TODO: Envoyer la requête au serveur
+                            // Stocker temporairement pour sauvegarder après succès
+                            loginScreenRect.pendingEmail = loginEmail.text
+                            loginScreenRect.pendingPassword = loginPassword.text
                             networkManager.loginAccount(loginEmail.text, loginPassword.text)
                         }
                     }
                 }
 
+                // Propriétés pour stocker les credentials en attente de confirmation
+                property string pendingEmail: ""
+                property string pendingPassword: ""
+
                 Connections {
                     target: networkManager
                     function onLoginSuccess(playerName, avatar) {
+                        // Sauvegarder les credentials pour l'auto-login
+                        if (loginScreenRect.pendingEmail !== "" && loginScreenRect.pendingPassword !== "") {
+                            networkManager.saveCredentials(loginScreenRect.pendingEmail, loginScreenRect.pendingPassword)
+                            loginScreenRect.pendingEmail = ""
+                            loginScreenRect.pendingPassword = ""
+                        }
                         loginRoot.loginSuccess(playerName, "account")
                     }
                     function onLoginFailed(error) {
                         loginError.text = error
+                        loginScreenRect.pendingEmail = ""
+                        loginScreenRect.pendingPassword = ""
                     }
                 }
             }
@@ -936,6 +988,13 @@ Rectangle {
                     height: 100 * loginRoot.minRatio
                     color: "transparent"
                     z: 100
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width * 0.6
+                        height: parent.height * 0.6
+                        color: "lightgrey"
+                    }
 
                     Image {
                         anchors.fill: parent

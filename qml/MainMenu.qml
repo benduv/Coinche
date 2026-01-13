@@ -712,14 +712,219 @@ ApplicationWindow {
             id: coincheViewLoaderComponent
 
             Rectangle {
+                id: loaderBackground
                 anchors.fill: parent
-                color: "#1a472a"
+                color: "#0a0a1a"  // Fond spatial sombre
+
+                // Étoiles scintillantes en arrière-plan
+                Repeater {
+                    model: 80
+                    Rectangle {
+                        property real starX: Math.random()
+                        property real starY: Math.random()
+                        property real starSize: 1 + Math.random() * 3
+                        property real starDelay: Math.random() * 2000
+
+                        x: starX * loaderBackground.width
+                        y: starY * loaderBackground.height
+                        width: starSize * mainWindow.minRatio
+                        height: width
+                        radius: width / 2
+                        color: Qt.rgba(1, 1, 1, 0.6 + Math.random() * 0.4)
+
+                        SequentialAnimation on opacity {
+                            running: true
+                            loops: Animation.Infinite
+                            PauseAnimation { duration: starDelay }
+                            NumberAnimation { to: 0.2; duration: 800 + Math.random() * 400 }
+                            NumberAnimation { to: 1.0; duration: 800 + Math.random() * 400 }
+                        }
+                    }
+                }
+
+                // Planète 1 - Grande planète rouge/orange (style Mars)
+                Rectangle {
+                    id: planet1
+                    x: loaderBackground.width * 0.15
+                    y: loaderBackground.height * 0.25
+                    width: 120 * mainWindow.minRatio
+                    height: width
+                    radius: width / 2
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#ff6b4a" }
+                        GradientStop { position: 0.5; color: "#d44a2a" }
+                        GradientStop { position: 1.0; color: "#8b2a1a" }
+                    }
+
+                    // Ombre sur la planète
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: "transparent" }
+                            GradientStop { position: 0.6; color: "transparent" }
+                            GradientStop { position: 1.0; color: "#40000000" }
+                        }
+                    }
+
+                    // Animation de flottement
+                    SequentialAnimation on y {
+                        running: true
+                        loops: Animation.Infinite
+                        NumberAnimation { to: loaderBackground.height * 0.25 + 15; duration: 3000; easing.type: Easing.InOutSine }
+                        NumberAnimation { to: loaderBackground.height * 0.25; duration: 3000; easing.type: Easing.InOutSine }
+                    }
+                }
+
+                // Planète 2 - Planète bleue avec anneaux (style Saturne)
+                Item {
+                    id: planet2Container
+                    x: loaderBackground.width * 0.75
+                    y: loaderBackground.height * 0.6
+                    width: 90 * mainWindow.minRatio
+                    height: width
+
+                    // Anneaux (derrière la planète)
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width * 1.8
+                        height: parent.height * 0.3
+                        radius: height / 2
+                        color: "transparent"
+                        border.color: "#8899bb"
+                        border.width: 4 * mainWindow.minRatio
+                        opacity: 0.6
+                        rotation: -20
+                    }
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width * 1.5
+                        height: parent.height * 0.2
+                        radius: height / 2
+                        color: "transparent"
+                        border.color: "#aabbdd"
+                        border.width: 3 * mainWindow.minRatio
+                        opacity: 0.5
+                        rotation: -20
+                    }
+
+                    // Planète
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width
+                        height: width
+                        radius: width / 2
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: "#4a7ab8" }
+                            GradientStop { position: 0.5; color: "#2a5a98" }
+                            GradientStop { position: 1.0; color: "#1a3a68" }
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 0.7; color: "transparent" }
+                                GradientStop { position: 1.0; color: "#50000000" }
+                            }
+                        }
+                    }
+
+                    // Animation de flottement
+                    SequentialAnimation on y {
+                        running: true
+                        loops: Animation.Infinite
+                        NumberAnimation { to: loaderBackground.height * 0.6 - 10; duration: 4000; easing.type: Easing.InOutSine }
+                        NumberAnimation { to: loaderBackground.height * 0.6; duration: 4000; easing.type: Easing.InOutSine }
+                    }
+                }
+
+                // Planète 3 - Petite planète verte/cyan
+                Rectangle {
+                    id: planet3
+                    x: loaderBackground.width * 0.85
+                    y: loaderBackground.height * 0.2
+                    width: 45 * mainWindow.minRatio
+                    height: width
+                    radius: width / 2
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#4ade80" }
+                        GradientStop { position: 0.5; color: "#22c55e" }
+                        GradientStop { position: 1.0; color: "#15803d" }
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: "transparent" }
+                            GradientStop { position: 0.6; color: "transparent" }
+                            GradientStop { position: 1.0; color: "#40000000" }
+                        }
+                    }
+
+                    SequentialAnimation on y {
+                        running: true
+                        loops: Animation.Infinite
+                        NumberAnimation { to: loaderBackground.height * 0.2 + 8; duration: 2500; easing.type: Easing.InOutSine }
+                        NumberAnimation { to: loaderBackground.height * 0.2; duration: 2500; easing.type: Easing.InOutSine }
+                    }
+                }
+
+                // Grande étoile brillante (soleil lointain)
+                Rectangle {
+                    id: distantStar
+                    x: loaderBackground.width * 0.1
+                    y: loaderBackground.height * 0.7
+                    width: 8 * mainWindow.minRatio
+                    height: width
+                    radius: width / 2
+                    color: "#ffffaa"
+
+                    // Halo autour de l'étoile
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width * 4
+                        height: width
+                        radius: width / 2
+                        color: "transparent"
+                        border.color: "#40ffffaa"
+                        border.width: 2 * mainWindow.minRatio
+
+                        SequentialAnimation on scale {
+                            running: true
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 1.5; duration: 1500; easing.type: Easing.InOutSine }
+                            NumberAnimation { to: 1.0; duration: 1500; easing.type: Easing.InOutSine }
+                        }
+
+                        SequentialAnimation on opacity {
+                            running: true
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 0.3; duration: 1500; easing.type: Easing.InOutSine }
+                            NumberAnimation { to: 1.0; duration: 1500; easing.type: Easing.InOutSine }
+                        }
+                    }
+
+                    SequentialAnimation on opacity {
+                        running: true
+                        loops: Animation.Infinite
+                        NumberAnimation { to: 0.7; duration: 1000 }
+                        NumberAnimation { to: 1.0; duration: 1000 }
+                    }
+                }
 
                 // Indicateur de chargement
                 Column {
                     anchors.centerIn: parent
                     spacing: 30 * mainWindow.minRatio
                     visible: !coincheLoader.active
+                    z: 10
 
                     // Icône de joueurs trouvés (4 cercles représentant les joueurs)
                     Row {
@@ -732,7 +937,7 @@ ApplicationWindow {
                                 width: 50 * mainWindow.minRatio
                                 height: 50 * mainWindow.minRatio
                                 radius: 25 * mainWindow.minRatio
-                                color: "#444444"
+                                color: "#1a1a2e"
                                 border.color: "#FFD700"
                                 border.width: 3 * mainWindow.minRatio
 
@@ -767,7 +972,7 @@ ApplicationWindow {
                     Text {
                         text: "Lancement de la partie..."
                         font.pixelSize: 28 * mainWindow.minRatio
-                        color: "#aaaaaa"
+                        color: "#cccccc"
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
 

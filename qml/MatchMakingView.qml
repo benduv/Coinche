@@ -117,11 +117,14 @@ Rectangle {
                 }
             }
 
-            // Icône centrale
-            Text {
-                text: "🪐"
-                font.pixelSize: 120 * root.minRatio
+            // Icône centrale - Saturne
+            Image {
+                width: 150 * root.minRatio
+                height: 150 * root.minRatio
                 anchors.centerIn: parent
+                source: "qrc:/resources/saturn-svgrepo-com.svg"
+                fillMode: Image.PreserveAspectFit
+                smooth: true
 
                 RotationAnimation on rotation {
                     from: 0

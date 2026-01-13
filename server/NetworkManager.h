@@ -11,6 +11,7 @@
 #include <QTimer>
 #include <QDateTime>
 #include <QAbstractSocket>
+#include <QSettings>
 #include "GameModel.h"
 
 class NetworkManager : public QObject {
@@ -24,6 +25,8 @@ class NetworkManager : public QObject {
     Q_PROPERTY(QString playerAvatar READ playerAvatar NOTIFY playerAvatarChanged)
     Q_PROPERTY(QVariantList lobbyPlayers READ lobbyPlayers NOTIFY lobbyPlayersChanged)
     Q_PROPERTY(QString pendingBotReplacement READ pendingBotReplacement NOTIFY pendingBotReplacementChanged)
+    Q_PROPERTY(bool hasStoredCredentials READ hasStoredCredentials NOTIFY storedCredentialsChanged)
+    Q_PROPERTY(QString storedEmail READ storedEmail NOTIFY storedCredentialsChanged)
 
 public:
     explicit NetworkManager(QObject *parent = nullptr)
@@ -66,6 +69,17 @@ public:
     QString playerAvatar() const { return m_playerAvatar; }
     QVariantList lobbyPlayers() const { return m_lobbyPlayers; }
     QString pendingBotReplacement() const { return m_pendingBotReplacement; }
+
+    // Auto-login - vérifier si des credentials sont stockés
+    bool hasStoredCredentials() const {
+        QSettings settings("Coinche", "CoincheGame");
+        return settings.contains("auth/email") && settings.contains("auth/password");
+    }
+
+    QString storedEmail() const {
+        QSettings settings("Coinche", "CoincheGame");
+        return settings.value("auth/email", "").toString();
+    }
 
     // Méthode pour consommer le message de remplacement par bot en attente
     Q_INVOKABLE QString consumePendingBotReplacement() {
@@ -252,6 +266,40 @@ public:
         qDebug() << "Quitte le lobby";
     }
 
+    // Sauvegarder les credentials pour l'auto-login
+    Q_INVOKABLE void saveCredentials(const QString &email, const QString &password) {
+        QSettings settings("Coinche", "CoincheGame");
+        settings.setValue("auth/email", email);
+        settings.setValue("auth/password", password);
+        qDebug() << "Credentials sauvegardés pour:" << email;
+        emit storedCredentialsChanged();
+    }
+
+    // Supprimer les credentials stockés (déconnexion)
+    Q_INVOKABLE void clearCredentials() {
+        QSettings settings("Coinche", "CoincheGame");
+        settings.remove("auth/email");
+        settings.remove("auth/password");
+        qDebug() << "Credentials supprimés";
+        emit storedCredentialsChanged();
+    }
+
+    // Tenter l'auto-login avec les credentials stockés
+    Q_INVOKABLE bool tryAutoLogin() {
+        QSettings settings("Coinche", "CoincheGame");
+        QString email = settings.value("auth/email", "").toString();
+        QString password = settings.value("auth/password", "").toString();
+
+        if (email.isEmpty() || password.isEmpty()) {
+            qDebug() << "Pas de credentials stockés pour auto-login";
+            return false;
+        }
+
+        qDebug() << "Tentative d'auto-login pour:" << email;
+        loginAccount(email, password);
+        return true;
+    }
+
 signals:
     void connectedChanged();
     void matchmakingStatusChanged();
@@ -285,6 +333,9 @@ signals:
 
     // Signal pour l'animation de nouvelle manche
     void newMancheAnimation();
+
+    // Signal pour les credentials stockés
+    void storedCredentialsChanged();
 
 private slots:
     void onConnected() {

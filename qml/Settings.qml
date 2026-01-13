@@ -43,6 +43,13 @@ Rectangle {
         color: "transparent"
         z: 100
 
+        Rectangle {
+            anchors.centerIn: parent
+            width: parent.width * 0.6
+            height: parent.height * 0.6
+            color: "lightgrey"
+        }
+
         Image {
             anchors.fill: parent
             source: "qrc:/resources/back-square-svgrepo-com.svg"

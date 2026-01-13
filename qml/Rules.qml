@@ -23,12 +23,21 @@ Rectangle {
         color: "transparent"
         z: 100
 
+        Rectangle {
+            anchors.centerIn: parent
+            width: parent.width * 0.6
+            height: parent.height * 0.6
+            color: "lightgrey"
+        }
+
         Image {
             anchors.fill: parent
             source: "qrc:/resources/back-square-svgrepo-com.svg"
             fillMode: Image.PreserveAspectFit
             smooth: true
         }
+
+
 
         MouseArea {
             anchors.fill: parent
@@ -55,6 +64,7 @@ Rectangle {
 
     // ScrollView pour les règles
     ScrollView {
+        id: rulesScrollView
         anchors.top: titleText.bottom
         anchors.topMargin: 30 * rulesRoot.minRatio
         anchors.left: parent.left
@@ -63,11 +73,12 @@ Rectangle {
         anchors.leftMargin: 80 * rulesRoot.minRatio
         anchors.rightMargin: 80 * rulesRoot.minRatio
         anchors.bottomMargin: 40 * rulesRoot.minRatio
+        clip: true
 
         ScrollBar.vertical.policy: ScrollBar.AlwaysOn
 
         Column {
-            width: parent.width - 20 * rulesRoot.minRatio
+            width: rulesScrollView.width - 30 * rulesRoot.minRatio
             spacing: 25 * rulesRoot.minRatio
 
             // But du jeu

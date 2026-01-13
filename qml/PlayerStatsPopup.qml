@@ -118,7 +118,7 @@ Rectangle {
 
                     // Section: Parties
                     StatsSection {
-                        title: "🎮 PARTIES"
+                        title: "🏆 VICTOIRES"
                         titleColor: "#4CAF50"
                     }
 
@@ -134,43 +134,9 @@ Rectangle {
                         StatItem { label: "Série de victoires"; value: statsPopup.maxWinStreak }
                     }
 
-                    // Section: Capot
-                    StatsSection {
-                        title: "🎯 CAPOT"
-                        titleColor: "#2196F3"
-                    }
-
-                    Grid {
-                        columns: 3
-                        columnSpacing: 10
-                        rowSpacing: 10
-                        width: parent.width
-
-                        StatItem { label: "Capots annoncés"; value: statsPopup.capotsAnnonces }
-                        StatItem { label: "Capots réussis"; value: statsPopup.capotsReussis }
-                        StatItem { label: "Taux capot"; value: statsPopup.tauxCapotReussite + " %" }
-                    }
-
-                    // Section: Générale
-                    StatsSection {
-                        title: "🏆 GÉNÉRALE"
-                        titleColor: "#E91E63"
-                    }
-
-                    Grid {
-                        columns: 3
-                        columnSpacing: 10
-                        rowSpacing: 10
-                        width: parent.width
-
-                        StatItem { label: "Générales tentées"; value: statsPopup.generalesTentees }
-                        StatItem { label: "Générales réussies"; value: statsPopup.generalesReussies }
-                        StatItem { label: "Taux générale"; value: statsPopup.tauxGeneraleReussite + " %" }
-                    }
-
                     // Section: Coinches
                     StatsSection {
-                        title: "⚔️ COINCHES"
+                        title: "🎯️ COINCHES"
                         titleColor: "#FF9800"
                     }
 
@@ -183,23 +149,6 @@ Rectangle {
                         StatItem { label: "Coinches tentées"; value: statsPopup.coinches }
                         StatItem { label: "Coinches réussies"; value: statsPopup.coinchesReussies }
                         StatItem { label: "Taux coinche"; value: statsPopup.tauxCoincheReussite + " %" }
-                    }
-
-                    // Section: Coinches
-                    StatsSection {
-                        title: "⚔️ SURCOINCHES"
-                        titleColor: "#FF9800"
-                    }
-
-                    Grid {
-                        columns: 3
-                        columnSpacing: 10
-                        rowSpacing: 10
-                        width: parent.width
-
-                        StatItem { label: "Surcoinches tentées"; value: statsPopup.surcoinchesTentees }
-                        StatItem { label: "Surcoinches réussies"; value: statsPopup.surcoincheReussies }
-                        StatItem { label: "Taux surcoinche"; value: statsPopup.tauxSurcoincheReussite + " %" }
                     }
 
                     // Section: Coinches subies
@@ -219,6 +168,23 @@ Rectangle {
                         StatItem { label: "Taux de victoire"; value: statsPopup.tauxCoincheeReussite + " %" }
                     }
 
+                    // Section: Surcoinches
+                    StatsSection {
+                        title: "🔥️ SURCOINCHES"
+                        titleColor: "#FF9800"
+                    }
+
+                    Grid {
+                        columns: 3
+                        columnSpacing: 10
+                        rowSpacing: 10
+                        width: parent.width
+
+                        StatItem { label: "Surcoinches tentées"; value: statsPopup.surcoinchesTentees }
+                        StatItem { label: "Surcoinches réussies"; value: statsPopup.surcoincheReussies }
+                        StatItem { label: "Taux surcoinche"; value: statsPopup.tauxSurcoincheReussite + " %" }
+                    }
+
                     // Section: Surcoinches subies
                     StatsSection {
                         title: "🛡️ SURCOINCHES SUBIES"
@@ -234,6 +200,40 @@ Rectangle {
                         StatItem { label: "Surcoinches subies"; value: statsPopup.annoncesSurcoinchees }
                         StatItem { label: "Victoires"; value: statsPopup.annoncesSurcoincheesGagnees }
                         StatItem { label: "Taux de victoire"; value: statsPopup.tauxSurcoincheesReussite + " %" }
+                    }
+
+                    // Section: Capot
+                    StatsSection {
+                        title: "💥 CAPOTS"
+                        titleColor: "#2196F3"
+                    }
+
+                    Grid {
+                        columns: 3
+                        columnSpacing: 10
+                        rowSpacing: 10
+                        width: parent.width
+
+                        StatItem { label: "Capots annoncés"; value: statsPopup.capotsAnnonces }
+                        StatItem { label: "Capots réussis"; value: statsPopup.capotsReussis }
+                        StatItem { label: "Taux capot"; value: statsPopup.tauxCapotReussite + " %" }
+                    }
+
+                    // Section: Générale
+                    StatsSection {
+                        title: "⭐ GÉNÉRALE"
+                        titleColor: "#E91E63"
+                    }
+
+                    Grid {
+                        columns: 3
+                        columnSpacing: 10
+                        rowSpacing: 10
+                        width: parent.width
+
+                        StatItem { label: "Générales tentées"; value: statsPopup.generalesTentees }
+                        StatItem { label: "Générales réussies"; value: statsPopup.generalesReussies }
+                        StatItem { label: "Taux générale"; value: statsPopup.tauxGeneraleReussite + " %" }
                     }
                 }
             }
