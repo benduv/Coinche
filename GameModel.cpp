@@ -751,38 +751,8 @@ void GameModel::updateGameState(const QJsonObject& state)
         }
     }
 
-    // RECONNEXION: Resynchroniser complètement la main du joueur avec les cartes actuelles du serveur
-    if (state.contains("reconnectionCards")) {
-        QJsonArray reconnectionCardsArray = state["reconnectionCards"].toArray();
-        qDebug() << "Reconnexion: Resynchronisation de" << reconnectionCardsArray.size() << "cartes";
-
-        Player* localPlayer = getPlayerByPosition(m_myPosition);
-        if (localPlayer) {
-            // Vider complètement la main actuelle
-            localPlayer->clearHand();
-
-            // Recréer la main avec les cartes du serveur
-            for (const QJsonValue& cardVal : reconnectionCardsArray) {
-                QJsonObject cardObj = cardVal.toObject();
-                int value = cardObj["value"].toInt();
-                int suit = cardObj["suit"].toInt();
-
-                // Attention: le constructeur Carte prend (Couleur, Chiffre) dans cet ordre
-                Carte* newCard = new Carte(static_cast<Carte::Couleur>(suit),
-                                          static_cast<Carte::Chiffre>(value));
-                localPlayer->addCardToHand(newCard);
-            }
-
-            qDebug() << "Reconnexion: Main resynchronisée avec" << localPlayer->getMain().size() << "cartes";
-
-            // Rafraîchir le HandModel pour que QML affiche les bonnes cartes
-            HandModel* hand = getHandModelByPosition(m_myPosition);
-            if (hand) {
-                hand->refresh();
-                qDebug() << "Reconnexion: HandModel rafraîchi";
-            }
-        }
-    }
+    // Note: La resynchronisation des cartes est maintenant gérée par resyncCards()
+    // appelée directement depuis NetworkManager lors de la réception de gameFound avec reconnection=true
 
     // RECONNEXION: Resynchroniser le pli en cours
     if (state.contains("reconnectionPli")) {
@@ -1355,6 +1325,39 @@ void GameModel::receiveCardsDealt(const QJsonArray& cards)
             });
         });
     });
+}
+
+void GameModel::resyncCards(const QJsonArray& cards)
+{
+    qDebug() << "GameModel::resyncCards - Resynchronisation de" << cards.size() << "cartes";
+
+    Player* localPlayer = getPlayerByPosition(m_myPosition);
+    if (!localPlayer) {
+        qDebug() << "resyncCards - Joueur local non trouvé";
+        return;
+    }
+
+    // Vider complètement la main actuelle
+    localPlayer->clearHand();
+
+    // Recréer la main avec les cartes du serveur
+    for (const QJsonValue& val : cards) {
+        QJsonObject cardObj = val.toObject();
+        Carte* carte = new Carte(
+            static_cast<Carte::Couleur>(cardObj["suit"].toInt()),
+            static_cast<Carte::Chiffre>(cardObj["value"].toInt())
+        );
+        localPlayer->addCardToHand(carte);
+    }
+
+    qDebug() << "resyncCards - Main resynchronisée avec" << localPlayer->getMain().size() << "cartes";
+
+    // Rafraîchir le HandModel pour que QML affiche les bonnes cartes
+    HandModel* hand = getHandModelByPosition(m_myPosition);
+    if (hand) {
+        hand->refresh();
+        qDebug() << "resyncCards - HandModel rafraîchi";
+    }
 }
 
 void GameModel::refreshAllHands()

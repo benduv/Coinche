@@ -374,14 +374,14 @@ private slots:
             qDebug() << "Nombre d'adversaires:" << m_opponents.size();
             qDebug() << "Reconnexion:" << isReconnection;
 
-            // Si c'est une reconnexion et qu'on a déjà un GameModel, on le met à jour au lieu d'en créer un nouveau
+            // Si c'est une reconnexion et qu'on a déjà un GameModel, on met à jour les cartes
             if (isReconnection && m_gameModel != nullptr) {
-                qDebug() << "Reconnexion detectee - GameModel existe deja, pas besoin de mise a jour";
-                qDebug() << "Le message gameState qui suit va tout mettre a jour (currentPlayer, atout, scores, cartes jouees, etc.)";
-                // Note: Les cartes seront mises à jour directement par le message gameState du serveur
-                // qui contient les playableCards, donc pas besoin de receiveCardsDealt ici
+                qDebug() << "Reconnexion detectee - GameModel existe deja, mise a jour des cartes";
+                // Mettre à jour les cartes du joueur avec celles envoyées par le serveur
+                m_gameModel->resyncCards(m_myCards);
+                qDebug() << "Cartes resynchronisees:" << m_myCards.size();
             } else {
-                // Nouvelle partie - émettre le signal pour créer un nouveau GameModel
+                // Nouvelle partie (ou relance d'app) - émettre le signal pour créer un nouveau GameModel
                 emit gameDataChanged();
                 emit gameFound(m_myPosition, m_opponents);
                 qDebug() << "Signal gameFound emis";

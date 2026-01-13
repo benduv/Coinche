@@ -119,6 +119,7 @@ public:
     Q_INVOKABLE void updateGameState(const QJsonObject& state);
     Q_INVOKABLE void receivePlayerAction(int playerIndex, const QString& action, const QVariant& data);
     Q_INVOKABLE void receiveCardsDealt(const QJsonArray& cards);
+    Q_INVOKABLE void resyncCards(const QJsonArray& cards);  // Resynchroniser les cartes après reconnexion
     Q_INVOKABLE void refreshAllHands();
 
 signals:

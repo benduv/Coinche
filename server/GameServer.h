@@ -415,15 +415,8 @@ private:
 
         // Vérifier si le joueur était un bot (remplacé pendant sa déconnexion)
         bool wasBot = room->isBot[playerIndex];
-        if (wasBot) {
-            qDebug() << "GameServer - Le joueur" << playerIndex << "était un bot, envoi de la notification";
-            // NE PAS réhumaniser automatiquement - attendre que le joueur clique OK
-            // Envoyer la notification pour afficher la popup
-            QJsonObject notification;
-            notification["type"] = "botReplacement";
-            notification["message"] = "Vous avez été remplacé par un bot pendant votre absence.";
-            sendMessage(conn->socket, notification);
-        }
+        // Note: On enverra la notification botReplacement APRÈS gameFound et gameState
+        // pour que le client ait le temps de se configurer
 
         // Préparer les données de l'état actuel de la partie pour le joueur qui se reconnecte
         QJsonObject reconnectMsg;
@@ -503,20 +496,8 @@ private:
             stateMsg["scoreTotalTeam1"] = room->scoreTeam1;
             stateMsg["scoreTotalTeam2"] = room->scoreTeam2;
 
-            // IMPORTANT: Pour la reconnexion, envoyer toutes les cartes actuelles du joueur
-            // Cela permet de resynchroniser complètement la main côté client
-            QJsonArray allCurrentCards;
-            const auto& playerHand = room->players[playerIndex]->getMain();
-            for (const auto* carte : playerHand) {
-                if (carte) {
-                    QJsonObject cardObj;
-                    cardObj["value"] = static_cast<int>(carte->getChiffre());
-                    cardObj["suit"] = static_cast<int>(carte->getCouleur());
-                    allCurrentCards.append(cardObj);
-                }
-            }
-            stateMsg["reconnectionCards"] = allCurrentCards;
-            qDebug() << "GameServer - Reconnexion: Envoi de" << allCurrentCards.size() << "cartes au joueur" << playerIndex;
+            // Note: Les cartes du joueur sont déjà envoyées dans gameFound.myCards
+            // Pas besoin de les renvoyer ici, cela évite la duplication
 
             // Si c'est le tour du joueur, envoyer aussi les cartes jouables
             if (room->currentPlayerIndex == playerIndex) {
@@ -539,6 +520,24 @@ private:
             }
 
             sendMessage(conn->socket, stateMsg);
+        }
+
+        // IMPORTANT: Envoyer botReplacement APRÈS gameFound et gameState
+        // pour que le client ait le temps de créer le GameModel et charger CoincheView
+        if (wasBot) {
+            qDebug() << "GameServer - Le joueur" << playerIndex << "était un bot, envoi de la notification (après gameState)";
+            // Utiliser un petit délai pour laisser le temps au client de se configurer
+            QTimer::singleShot(500, this, [this, connectionId, playerIndex]() {
+                if (!m_connections.contains(connectionId)) return;
+                PlayerConnection* conn = m_connections[connectionId];
+                if (!conn || !conn->socket) return;
+
+                QJsonObject notification;
+                notification["type"] = "botReplacement";
+                notification["message"] = "Vous avez été remplacé par un bot pendant votre absence.";
+                sendMessage(conn->socket, notification);
+                qDebug() << "GameServer - Notification botReplacement envoyée au joueur" << playerIndex;
+            });
         }
     }
 
