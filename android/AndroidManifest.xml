@@ -28,7 +28,9 @@
         android:fullBackupContent="false"
         android:requestLegacyExternalStorage="true"
         android:hardwareAccelerated="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="false">
 
         <!-- Activity principale Qt -->
         <activity

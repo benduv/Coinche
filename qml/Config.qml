@@ -18,7 +18,7 @@ QtObject {
         "localhost": "ws://localhost:1234",
         "emulator": "ws://10.0.2.2:1234",
         "local-network": "ws://172.20.10.13:1234",  // IP du PC sur le réseau local
-        "remote": "wss://game.nebuludik.fr:1234"  // VPS OVH via nom de domaine - WSS sécurisé    })
+        "remote": "wss://game.nebuludik.fr"})  // VPS OVH via nginx reverse proxy (port 443 par défaut)    
 
     // URL active selon l'environnement
     readonly property string serverUrl: serverUrls[environment]

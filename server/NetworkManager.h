@@ -46,6 +46,18 @@ public:
         connect(m_socket, &QWebSocket::textMessageReceived,
                 this, &NetworkManager::onMessageReceived);
 
+        // Gestion des erreurs SSL (seulement pour debugging, pas d'ignoreSslErrors)
+        // Avec un certificat Let's Encrypt valide via nginx, il ne devrait pas y avoir d'erreurs
+        connect(m_socket, QOverload<const QList<QSslError>&>::of(&QWebSocket::sslErrors),
+                this, [this](const QList<QSslError> &errors) {
+            qDebug() << "ERREURS SSL détectées (" << errors.size() << "):";
+            for (const auto &error : errors) {
+                qDebug() << "  - Type:" << error.error() << "Message:" << error.errorString();
+            }
+            // NE PAS ignorer les erreurs sur Android - le certificat Let's Encrypt doit être valide
+            // m_socket->ignoreSslErrors();
+        });
+
         // Timer pour les tentatives de reconnexion
         connect(m_reconnectTimer, &QTimer::timeout, this, &NetworkManager::attemptReconnect);
         m_reconnectTimer->setInterval(3000); // Tenter de se reconnecter toutes les 3 secondes
@@ -131,6 +143,12 @@ public:
     Q_INVOKABLE void connectToServer(const QString &url) {
         qDebug() << "Connexion au serveur:" << url;
         m_serverUrl = url;  // Sauvegarder l'URL pour les reconnexions
+
+        // Avec certificat Let's Encrypt valide via nginx, pas besoin d'ignorer les erreurs SSL
+        if (url.startsWith("wss://")) {
+            qDebug() << "Connexion WSS détectée - Certificat valide attendu";
+        }
+
         m_socket->open(QUrl(url));
     }
 

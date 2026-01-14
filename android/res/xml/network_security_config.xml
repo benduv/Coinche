@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Configuration pour la production - HTTPS/WSS uniquement -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Faire confiance aux certificats système (Let's Encrypt inclus) -->
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Domaine de production avec WSS -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">nebuludik.fr</domain>
+        <trust-anchors>
+            <!-- Faire confiance aux certificats système (Let's Encrypt) -->
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Configuration pour le développement local (seulement pour tests) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">172.20.10.13</domain>
+    </domain-config>
+
+    <!-- Debug: Autoriser le trafic cleartext pour les tests (à désactiver en production) -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>
