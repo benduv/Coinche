@@ -70,15 +70,29 @@ int main(int argc, char *argv[]) {
     // Vérifier si le mode verbeux est activé
     // Via argument: --verbose ou -v
     // Via variable d'environnement: COINCHE_VERBOSE=1
+    QString sslCertPath;
+    QString sslKeyPath;
+
     for (int i = 1; i < argc; ++i) {
         QString arg = QString::fromLocal8Bit(argv[i]);
         if (arg == "--verbose" || arg == "-v") {
             verboseLogging = true;
-            break;
+        } else if (arg == "--ssl-cert" && i + 1 < argc) {
+            sslCertPath = QString::fromLocal8Bit(argv[++i]);
+        } else if (arg == "--ssl-key" && i + 1 < argc) {
+            sslKeyPath = QString::fromLocal8Bit(argv[++i]);
         }
     }
     if (!verboseLogging) {
         verboseLogging = qEnvironmentVariableIsSet("COINCHE_VERBOSE");
+    }
+
+    // Vérifier aussi les variables d'environnement pour SSL
+    if (sslCertPath.isEmpty()) {
+        sslCertPath = qEnvironmentVariable("COINCHE_SSL_CERT");
+    }
+    if (sslKeyPath.isEmpty()) {
+        sslKeyPath = qEnvironmentVariable("COINCHE_SSL_KEY");
     }
 
     // Ouvrir le fichier de log
@@ -92,13 +106,21 @@ int main(int argc, char *argv[]) {
         qInfo() << "========================================";
         qInfo() << "Serveur de jeu démarre...";
         qInfo() << "Mode verbeux:" << (verboseLogging ? "ACTIVE" : "DESACTIVE");
+        if (!sslCertPath.isEmpty() && !sslKeyPath.isEmpty()) {
+            qInfo() << "Mode SSL: ACTIVE (WSS)";
+            qInfo() << "Certificat:" << sslCertPath;
+            qInfo() << "Clé privée:" << sslKeyPath;
+        } else {
+            qInfo() << "Mode SSL: DESACTIVE (WS) - Utilisez --ssl-cert et --ssl-key pour activer";
+        }
         qInfo() << "Logs écrits dans: server_log.txt";
         qInfo() << "========================================";
     } else {
         qWarning() << "Impossible d'ouvrir le fichier de log!";
     }
 
-    GameServer server(1234); // port du serveur
+    // Créer le serveur avec ou sans SSL
+    GameServer server(1234, nullptr, sslCertPath, sslKeyPath);
 
     int result = app.exec();
 

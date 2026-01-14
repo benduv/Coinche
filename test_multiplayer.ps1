@@ -29,9 +29,10 @@ $players = @(
 
 # Lancer les 4 clients avec auto-login (le positionnement est automatique via WindowPositioner)
 # Les avatars sont récupérés automatiquement depuis la base de données lors du login
+# Utiliser --no-autologin pour empêcher l'auto-login depuis QSettings (qui partage les credentials entre instances)
 foreach ($player in $players) {
     Write-Host "Lancement du client: $($player.Email) (avatar: $($player.Avatar))" -ForegroundColor Cyan
-    Start-Process -FilePath ".\build\Desktop_Qt_6_9_3_MinGW_64_bit-Debug\coinche.exe" -ArgumentList "--email", $player.Email, "--password", $player.Password -WindowStyle Normal
+    Start-Process -FilePath ".\build\Desktop_Qt_6_9_3_MinGW_64_bit-Debug\coinche.exe" -ArgumentList "--email", $player.Email, "--password", $player.Password, "--no-autologin" -WindowStyle Normal
     Start-Sleep -Milliseconds 800
 }
 

@@ -49,16 +49,26 @@ int main(int argc, char *argv[])
     );
     parser.addOption(avatarOption);
 
+    QCommandLineOption noAutoLoginOption(
+        "no-autologin",
+        "Désactiver l'auto-login avec les credentials stockés"
+    );
+    parser.addOption(noAutoLoginOption);
+
     parser.process(app);
 
     QString playerName = parser.value(playerNameOption);
     QString autoLoginEmail = parser.value(emailOption);
     QString autoLoginPassword = parser.value(passwordOption);
     QString autoLoginAvatar = parser.value(avatarOption);
+    bool disableAutoLogin = parser.isSet(noAutoLoginOption);
 
     qDebug() << "Nom du joueur:" << playerName;
     if (!autoLoginEmail.isEmpty()) {
         qDebug() << "Auto-login activé pour:" << autoLoginEmail << "avec avatar:" << autoLoginAvatar;
+    }
+    if (disableAutoLogin) {
+        qDebug() << "Auto-login depuis QSettings désactivé";
     }
 
     QQuickStyle::setStyle("Material");
@@ -72,6 +82,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("autoLoginEmail", autoLoginEmail);
     engine.rootContext()->setContextProperty("autoLoginPassword", autoLoginPassword);
     engine.rootContext()->setContextProperty("autoLoginAvatar", autoLoginAvatar);
+    engine.rootContext()->setContextProperty("disableAutoLogin", disableAutoLogin);
 
     // WindowPositioner pour positionner automatiquement les fenêtres
     WindowPositioner windowPositioner;

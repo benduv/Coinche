@@ -4,6 +4,10 @@
 #include <QObject>
 #include <QWebSocketServer>
 #include <QWebSocket>
+#include <QSslConfiguration>
+#include <QSslCertificate>
+#include <QSslKey>
+#include <QFile>
 #include <QMap>
 #include <QQueue>
 #include <QJsonDocument>
@@ -151,9 +155,14 @@ class GameServer : public QObject {
     Q_OBJECT
 
 public:
-    explicit GameServer(quint16 port, QObject *parent = nullptr)
+    // Constructeur avec support SSL optionnel
+    // Si certPath et keyPath sont fournis, le serveur démarre en mode sécurisé (WSS)
+    // Sinon, il démarre en mode non sécurisé (WS)
+    explicit GameServer(quint16 port, QObject *parent = nullptr,
+                        const QString &certPath = QString(),
+                        const QString &keyPath = QString())
         : QObject(parent)
-        , m_server(new QWebSocketServer("CoinchServer", QWebSocketServer::NonSecureMode, this))
+        , m_server(nullptr)
         , m_nextRoomId(1)
         , m_dbManager(new DatabaseManager(this))
     {
@@ -162,8 +171,49 @@ public:
             qCritical() << "Echec de l'initialisation de la base de donnees";
         }
 
+        // Déterminer le mode (sécurisé ou non)
+        bool useSecureMode = !certPath.isEmpty() && !keyPath.isEmpty();
+
+        if (useSecureMode) {
+            // Mode sécurisé WSS
+            m_server = new QWebSocketServer("CoinchServer", QWebSocketServer::SecureMode, this);
+
+            // Charger le certificat SSL
+            QFile certFile(certPath);
+            if (!certFile.open(QIODevice::ReadOnly)) {
+                qCritical() << "Impossible d'ouvrir le certificat:" << certPath;
+                return;
+            }
+            QSslCertificate certificate(&certFile, QSsl::Pem);
+            certFile.close();
+
+            // Charger la clé privée
+            QFile keyFile(keyPath);
+            if (!keyFile.open(QIODevice::ReadOnly)) {
+                qCritical() << "Impossible d'ouvrir la clé privée:" << keyPath;
+                return;
+            }
+            QSslKey sslKey(&keyFile, QSsl::Rsa, QSsl::Pem);
+            keyFile.close();
+
+            // Configurer SSL
+            QSslConfiguration sslConfig;
+            sslConfig.setPeerVerifyMode(QSslSocket::VerifyNone);
+            sslConfig.setLocalCertificate(certificate);
+            sslConfig.setPrivateKey(sslKey);
+            sslConfig.setProtocol(QSsl::TlsV1_2OrLater);
+
+            m_server->setSslConfiguration(sslConfig);
+
+            qDebug() << "Mode sécurisé (WSS) activé";
+        } else {
+            // Mode non sécurisé WS (pour développement local)
+            m_server = new QWebSocketServer("CoinchServer", QWebSocketServer::NonSecureMode, this);
+            qDebug() << "Mode non sécurisé (WS) - Utilisez SSL en production!";
+        }
+
         if (m_server->listen(QHostAddress::Any, port)) {
-            qDebug() << "Serveur demarre sur le port" << port;
+            qDebug() << "Serveur demarre sur le port" << port << (useSecureMode ? "(WSS)" : "(WS)");
             connect(m_server, &QWebSocketServer::newConnection,
                     this, &GameServer::onNewConnection);
         } else {

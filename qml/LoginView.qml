@@ -128,10 +128,20 @@ Rectangle {
     property bool autoLoginAttempted: false
 
     Component.onCompleted: {
-        // Vérifier si on a des credentials stockés pour auto-login
-        if (networkManager.hasStoredCredentials) {
+        // Priorité 1: Auto-login via arguments en ligne de commande (--email --password)
+        if (autoLoginEmail !== "" && autoLoginPassword !== "") {
+            console.log("Auto-login via arguments pour:", autoLoginEmail)
+            autoLoginPending = true
+            return
+        }
+
+        // Priorité 2: Auto-login via credentials stockés (QSettings)
+        // Sauf si --no-autologin a été spécifié (pour les tests multi-clients)
+        if (networkManager.hasStoredCredentials && !disableAutoLogin) {
             console.log("Credentials stockés trouvés pour:", networkManager.storedEmail)
             autoLoginPending = true
+        } else if (disableAutoLogin) {
+            console.log("Auto-login désactivé via --no-autologin")
         }
     }
 
@@ -139,7 +149,16 @@ Rectangle {
         if (autoLoginPending && networkManager.connected && !autoLoginAttempted) {
             console.log("Tentative d'auto-login...")
             autoLoginAttempted = true
-            networkManager.tryAutoLogin()
+
+            // Priorité 1: Utiliser les arguments en ligne de commande si fournis
+            if (autoLoginEmail !== "" && autoLoginPassword !== "") {
+                console.log("Auto-login avec arguments CLI:", autoLoginEmail)
+                networkManager.loginAccount(autoLoginEmail, autoLoginPassword)
+            } else {
+                // Priorité 2: Utiliser QSettings
+                console.log("Auto-login avec QSettings")
+                networkManager.tryAutoLogin()
+            }
         }
     }
 
