@@ -23,6 +23,14 @@ if(ANDROID)
     if(NOT ANDROID_ABI)
         set(ANDROID_ABI "arm64-v8a")
     endif()
+
+    # Configuration OpenSSL pour Android (nécessaire pour WSS)
+    # Utiliser qt_add_executable avec MANUAL_FINALIZATION pour Qt 6.5+
+    set(ANDROID_EXTRA_LIBS
+        "${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libssl_3.so"
+        "${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libcrypto_3.so"
+        CACHE INTERNAL ""
+    )
 endif()
 
 # ========================================
@@ -104,6 +112,30 @@ target_link_libraries(coinche PRIVATE
     Qt6::Network
     Qt6::Multimedia
 )
+
+# Configuration OpenSSL pour Android - Inclure les libs dans l'APK
+if(ANDROID)
+    # Méthode 1: Via QT_ANDROID_EXTRA_LIBS (pour Qt 6.5+)
+    set_target_properties(coinche PROPERTIES
+        QT_ANDROID_EXTRA_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libssl_3.so;${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libcrypto_3.so"
+    )
+
+    # Méthode 2: Copier automatiquement les libs dans le dossier de build
+    # Ceci garantit qu'elles seront incluses dans l'APK
+    add_custom_command(TARGET coinche POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libssl_3.so"
+            "${CMAKE_BINARY_DIR}/android-build-coinche/libs/${ANDROID_ABI}/libssl_3.so"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libcrypto_3.so"
+            "${CMAKE_BINARY_DIR}/android-build-coinche/libs/${ANDROID_ABI}/libcrypto_3.so"
+        COMMENT "Copie des bibliothèques OpenSSL pour Android (${ANDROID_ABI})"
+    )
+
+    message(STATUS "OpenSSL Android: Bibliothèques configurées pour ${ANDROID_ABI}")
+    message(STATUS "  - libssl_3.so: ${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libssl_3.so")
+    message(STATUS "  - libcrypto_3.so: ${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libcrypto_3.so")
+endif()
 
 # ========================================
 # Exécutable SERVEUR (server) - Desktop uniquement

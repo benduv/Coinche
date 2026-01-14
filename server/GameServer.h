@@ -432,6 +432,7 @@ private:
                 // 1. Le joueur est marqué comme bot (déconnexion détectée par le serveur)
                 // 2. OU le joueur a une ancienne connexion différente (reconnexion rapide avant détection)
                 bool isDifferentConnection = (playerIndex != -1 &&
+                                             playerIndex < room->connectionIds.size() &&
                                              room->connectionIds[playerIndex] != connectionId);
 
                 if (playerIndex != -1 && (room->isBot[playerIndex] || isDifferentConnection)) {
@@ -794,8 +795,16 @@ private:
                         }
                     }
 
-                    if (playerIndex != -1 && room->isBot[playerIndex]) {
+                    // Reconnexion si:
+                    // 1. Le joueur est marqué comme bot (déconnexion détectée par le serveur)
+                    // 2. OU le joueur a une ancienne connexion différente (reconnexion rapide avant détection)
+                    bool isDifferentConnection = (playerIndex != -1 &&
+                                                 playerIndex < room->connectionIds.size() &&
+                                                 room->connectionIds[playerIndex] != connectionId);
+
+                    if (playerIndex != -1 && (room->isBot[playerIndex] || isDifferentConnection)) {
                         qDebug() << "Reconnexion detectee pour" << pseudo << "a la partie" << roomId << "position" << playerIndex;
+                        qDebug() << "  isBot:" << room->isBot[playerIndex] << "isDifferentConnection:" << isDifferentConnection;
                         handleReconnection(connectionId, roomId, playerIndex);
                     }
                 }
