@@ -205,6 +205,14 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void deleteAccount(const QString &pseudo) {
+        qDebug() << "Demande de suppression du compte:" << pseudo;
+        QJsonObject msg;
+        msg["type"] = "deleteAccount";
+        msg["pseudo"] = pseudo;
+        sendMessage(msg);
+    }
+
     Q_INVOKABLE void requestStats(const QString &pseudo) {
         QJsonObject msg;
         msg["type"] = "getStats";
@@ -334,6 +342,8 @@ signals:
     void registerFailed(QString error);
     void loginSuccess(QString playerName, QString avatar);
     void loginFailed(QString error);
+    void deleteAccountSuccess();
+    void deleteAccountFailed(QString error);
     void messageReceived(QString message);  // Pour que QML puisse écouter tous les messages
     void playerAvatarChanged();
 
@@ -669,6 +679,15 @@ private slots:
             QString error = obj["error"].toString();
             qDebug() << "NetworkManager - Echec connexion:" << error;
             emit loginFailed(error);
+        }
+        else if (type == "deleteAccountSuccess") {
+            qDebug() << "NetworkManager - Compte supprime avec succes";
+            emit deleteAccountSuccess();
+        }
+        else if (type == "deleteAccountFailed") {
+            QString error = obj["error"].toString();
+            qDebug() << "NetworkManager - Echec suppression compte:" << error;
+            emit deleteAccountFailed(error);
         }
         else if (type == "error") {
             QString errorMsg = obj["message"].toString();

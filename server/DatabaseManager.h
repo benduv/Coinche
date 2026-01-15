@@ -84,6 +84,9 @@ public:
     // Mettre à jour les statistiques de surcoinche subies
     bool updateAnnonceSurcoinchee(const QString &pseudo, bool won);
 
+    // Supprimer un compte utilisateur et toutes ses données
+    bool deleteAccount(const QString &pseudo, QString &errorMsg);
+
 private:
     QSqlDatabase m_db;
 

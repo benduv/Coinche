@@ -292,11 +292,30 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "• Les points sont multipliés par 2 (coinche) ou 4 (surcoinche)\n• Important : N'importe quel joueur de l'équipe adverse peut coincher un contrat, à condition qu'il le fasse avant que le joueur suivant ne fasse son annonce (coinche à la volée)"
+                text: "• Les points sont multipliés par 2 (coinche) ou 4 (surcoinche)"
                 font.pixelSize: 28 * rulesRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
                 lineHeight: 1.3
+            }
+
+            // Coinche à la volée
+            Text {
+                width: parent.width
+                text: "COINCHE À LA VOLÉE"
+                font.pixelSize: 40 * rulesRoot.minRatio
+                font.bold: true
+                color: "#FFD700"
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                width: parent.width
+                text: "Dans cette version de la Coinche, la coinche à la volée est autorisée :\n\n• N'importe quel joueur de l'équipe adverse peut coincher immédiatement après l'annonce d'un contrat\n\n• Il n'est pas nécessaire d'attendre son tour pour coincher\n\n• Le bouton \"Coinche\" apparaît pendant quelques secondes après chaque annonce adverse, permettant à tout joueur de l'équipe défensive de coincher\n\n• Une fois qu'un joueur a coinché, seule l'équipe attaquante peut surcoincher\n\nCette règle ajoute du dynamisme aux enchères et permet de réagir rapidement à une annonce jugée trop ambitieuse !"
+                font.pixelSize: 28 * rulesRoot.minRatio
+                color: "white"
+                wrapMode: Text.WordWrap
+                lineHeight: 1.4
             }
 
             // Belote et rebelote
@@ -343,8 +362,72 @@ Rectangle {
                 font.pixelSize: 28 * rulesRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
-                bottomPadding: 40 * rulesRoot.minRatio
                 lineHeight: 1.3
+            }
+
+            // Déconnexion et reconnexion
+            Text {
+                width: parent.width
+                text: "DÉCONNEXION ET RECONNEXION"
+                font.pixelSize: 40 * rulesRoot.minRatio
+                font.bold: true
+                color: "#FFD700"
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                width: parent.width
+                text: "En cas de déconnexion involontaire :"
+                font.pixelSize: 32 * rulesRoot.minRatio
+                font.bold: true
+                color: "#FFD700"
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                width: parent.width
+                text: "• Si vous perdez la connexion (problème réseau, fermeture accidentelle de l'app), votre place est temporairement prise par un bot\n\n• Vous pouvez rejoindre la partie en cours automatiquement en vous reconnectant\n\n• Vos cartes et votre position sont conservées\n\n• Si vous ne revenez pas avant la fin de la partie, une défaite est comptabilisée dans vos statistiques, quel que soit le résultat de votre équipe"
+                font.pixelSize: 28 * rulesRoot.minRatio
+                color: "white"
+                wrapMode: Text.WordWrap
+                lineHeight: 1.4
+            }
+
+            Text {
+                width: parent.width
+                text: "En cas d'abandon volontaire (bouton Quitter) :"
+                font.pixelSize: 32 * rulesRoot.minRatio
+                font.bold: true
+                color: "#FFD700"
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                width: parent.width
+                text: "• Si vous cliquez sur le bouton \"Quitter\" pendant une partie, vous abandonnez définitivement\n\n• Votre place est remplacée par un bot pour le reste de la partie\n\n• Une défaite est comptabilisée immédiatement dans vos statistiques\n\n• Vous ne pourrez pas rejoindre cette partie, mais vous pouvez en commencer une nouvelle"
+                font.pixelSize: 28 * rulesRoot.minRatio
+                color: "white"
+                wrapMode: Text.WordWrap
+                lineHeight: 1.4
+            }
+
+            Text {
+                width: parent.width
+                text: "Impact sur les statistiques :"
+                font.pixelSize: 32 * rulesRoot.minRatio
+                font.bold: true
+                color: "#FFD700"
+                wrapMode: Text.WordWrap
+            }
+
+            Text {
+                width: parent.width
+                text: "• Victoire : comptabilisée uniquement si vous êtes présent à la fin de la partie quand votre équipe gagne\n\n• Défaite par abandon : comptabilisée immédiatement lorsque vous cliquez sur \"Quitter\"\n\n• Déconnexion sans retour : comptabilisée comme une défaite, même si votre équipe gagne grâce au bot qui vous a remplacé"
+                font.pixelSize: 28 * rulesRoot.minRatio
+                color: "white"
+                wrapMode: Text.WordWrap
+                bottomPadding: 40 * rulesRoot.minRatio
+                lineHeight: 1.4
             }
         }
     }

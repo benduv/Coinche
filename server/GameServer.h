@@ -271,6 +271,8 @@ private slots:
             handleRegisterAccount(sender, obj);
         } else if (type == "loginAccount") {
             handleLoginAccount(sender, obj);
+        } else if (type == "deleteAccount") {
+            handleDeleteAccount(sender, obj);
         } else if (type == "getStats") {
             handleGetStats(sender, obj);
         } else if (type == "joinMatchmaking") {
@@ -822,6 +824,58 @@ private:
             response["error"] = errorMsg;
             sendMessage(socket, response);
             qDebug() << "Echec connexion:" << errorMsg;
+        }
+    }
+
+    void handleDeleteAccount(QWebSocket *socket, const QJsonObject &data) {
+        QString pseudo = data["pseudo"].toString();
+
+        qDebug() << "GameServer - Demande suppression compte:" << pseudo;
+
+        // Vérifier que le joueur est bien connecté avec ce pseudo
+        QString connectionId = getConnectionIdBySocket(socket);
+        if (connectionId.isEmpty()) {
+            QJsonObject response;
+            response["type"] = "deleteAccountFailed";
+            response["error"] = "Non connecte";
+            sendMessage(socket, response);
+            return;
+        }
+
+        PlayerConnection* conn = m_connections[connectionId];
+        if (conn->playerName != pseudo) {
+            QJsonObject response;
+            response["type"] = "deleteAccountFailed";
+            response["error"] = "Pseudo ne correspond pas";
+            sendMessage(socket, response);
+            return;
+        }
+
+        // Supprimer le compte
+        QString errorMsg;
+        if (m_dbManager->deleteAccount(pseudo, errorMsg)) {
+            // Succès
+            QJsonObject response;
+            response["type"] = "deleteAccountSuccess";
+            sendMessage(socket, response);
+            qDebug() << "Compte supprime avec succes:" << pseudo;
+
+            // Déconnecter le joueur de toute partie en cours
+            if (conn->gameRoomId != -1) {
+                // Le joueur est en partie, le traiter comme un forfait
+                handleForfeit(socket);
+            }
+
+            // Supprimer la connexion
+            m_connections.remove(connectionId);
+            delete conn;
+        } else {
+            // Echec
+            QJsonObject response;
+            response["type"] = "deleteAccountFailed";
+            response["error"] = errorMsg;
+            sendMessage(socket, response);
+            qDebug() << "Echec suppression compte:" << errorMsg;
         }
     }
 

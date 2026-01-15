@@ -730,3 +730,44 @@ bool DatabaseManager::updateAnnonceSurcoinchee(const QString &pseudo, bool won)
     qDebug() << "Stats annonce surcoinchee mises a jour pour:" << pseudo << "Gagnee:" << won;
     return true;
 }
+
+bool DatabaseManager::deleteAccount(const QString &pseudo, QString &errorMsg)
+{
+    if (pseudo.isEmpty()) {
+        errorMsg = "Pseudo invalide";
+        return false;
+    }
+
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        errorMsg = "Compte non trouve";
+        return false;
+    }
+
+    // Supprimer d'abord les statistiques (table stats)
+    QSqlQuery deleteStatsQuery(m_db);
+    deleteStatsQuery.prepare("DELETE FROM stats WHERE user_id = :user_id");
+    deleteStatsQuery.bindValue(":user_id", userId);
+
+    if (!deleteStatsQuery.exec()) {
+        errorMsg = "Erreur lors de la suppression des statistiques: " + deleteStatsQuery.lastError().text();
+        qCritical() << "Erreur suppression stats:" << deleteStatsQuery.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Statistiques supprimees pour user_id:" << userId;
+
+    // Supprimer ensuite le compte utilisateur (table users)
+    QSqlQuery deleteUserQuery(m_db);
+    deleteUserQuery.prepare("DELETE FROM users WHERE id = :user_id");
+    deleteUserQuery.bindValue(":user_id", userId);
+
+    if (!deleteUserQuery.exec()) {
+        errorMsg = "Erreur lors de la suppression du compte: " + deleteUserQuery.lastError().text();
+        qCritical() << "Erreur suppression utilisateur:" << deleteUserQuery.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Compte supprime avec succes pour:" << pseudo;
+    return true;
+}

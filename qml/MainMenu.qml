@@ -727,8 +727,23 @@ ApplicationWindow {
             id: configViewComponent
 
             Settings {
+                playerName: mainWindow.loggedInPlayerName
+                accountType: mainWindow.accountType
+
                 onBackToMenu: {
                     stackView.pop()
+                }
+
+                onAccountDeleted: {
+                    // Retourner à l'écran de login après suppression du compte
+                    console.log("Compte supprimé - Retour à l'écran de login")
+                    mainWindow.loggedInPlayerName = ""
+                    mainWindow.accountType = ""
+                    networkManager.clearCredentials()
+                    while (stackView.depth > 1) {
+                        stackView.pop()
+                    }
+                    stackView.replace(loginViewComponent)
                 }
             }
         }
