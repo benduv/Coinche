@@ -14,13 +14,41 @@ ApplicationWindow {
     MediaPlayer {
         id: startupSound
         source: "qrc:/resources/sons/watr-double-overhead-11517.mp3"
-        audioOutput: AudioOutput {}
+        audioOutput: AudioOutput {
+            id: audioOutput
+        }
+
+        onErrorOccurred: function(error, errorString) {
+            console.log("MediaPlayer ERREUR:", error, "-", errorString)
+        }
+
+        onPlaybackStateChanged: {
+            console.log("MediaPlayer playbackState:", playbackState)
+        }
+
+        onMediaStatusChanged: {
+            console.log("MediaPlayer mediaStatus:", mediaStatus)
+        }
+    }
+
+    // Fonction pour jouer la musique avec logs
+    function playMusic() {
+        console.log("playMusic() appelé - musicEnabled:", AudioSettings.musicEnabled)
+        console.log("startupSound.source:", startupSound.source)
+        console.log("startupSound.playbackState:", startupSound.playbackState)
+        console.log("startupSound.mediaStatus:", startupSound.mediaStatus)
+
+        if (AudioSettings.musicEnabled) {
+            console.log("Tentative de lecture de la musique...")
+            startupSound.play()
+        }
     }
 
     // Surveiller les changements de paramètres audio
     Connections {
         target: AudioSettings
         function onMusicEnabledChanged() {
+            console.log("Signal musicEnabledChanged reçu - musicEnabled:", AudioSettings.musicEnabled)
             if (AudioSettings.musicEnabled) {
                 startupSound.play()
             } else {
@@ -29,13 +57,26 @@ ApplicationWindow {
         }
     }
 
+    // Timer pour retarder le démarrage de la musique (laisse le temps à AudioSettings de charger)
+    Timer {
+        id: musicStartTimer
+        interval: 500  // Attendre 500ms après le chargement
+        repeat: false
+        onTriggered: {
+            console.log("musicStartTimer déclenché")
+            playMusic()
+        }
+    }
+
     Component.onCompleted: {
+        console.log("MainMenu.onCompleted - Démarrage")
         // Positionner automatiquement la fenêtre au démarrage
         windowPositioner.positionWindow(mainWindow)
-        // Jouer le son de démarrage si les effets sont activés
-        if (AudioSettings.musicEnabled) {
-            startupSound.play()
-        }
+
+        console.log("MainMenu - AudioSettings.musicEnabled:", AudioSettings.musicEnabled)
+
+        // Utiliser un timer pour laisser le temps à AudioSettings de charger
+        musicStartTimer.start()
     }
 
     // Variable pour stocker le nom du joueur connecté

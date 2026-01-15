@@ -5,36 +5,50 @@ import QtCore
 QtObject {
     id: audioSettings
 
+    // Signaux pour notifier les changements (plus fiable sur Android)
+    signal musicEnabledChanged()
+    signal effectsEnabledChanged()
+
+    // État des sons - valeurs locales
+    property bool musicEnabled: true
+    property bool effectsEnabled: true
+
     // QSettings pour persister les préférences audio
-    // Les propriétés déclarées ici sont automatiquement sauvegardées/restaurées
     property Settings storage: Settings {
         id: persistentStorage
         category: "Audio"
 
         // Ces propriétés sont automatiquement persistées par Qt
-        property bool musicEnabled: true
-        property bool effectsEnabled: true
+        property bool storedMusicEnabled: true
+        property bool storedEffectsEnabled: true
     }
-
-    // État des sons - liés aux valeurs persistées
-    property bool musicEnabled: persistentStorage.musicEnabled
-    property bool effectsEnabled: persistentStorage.effectsEnabled
 
     // Charger les préférences au démarrage
     Component.onCompleted: {
-        console.log("AudioSettings chargé - Musique:", persistentStorage.musicEnabled, "Effets:", persistentStorage.effectsEnabled)
+        console.log("AudioSettings - Chargement des préférences...")
+        console.log("AudioSettings - Valeurs stockées: Musique:", persistentStorage.storedMusicEnabled, "Effets:", persistentStorage.storedEffectsEnabled)
+
+        // Charger les valeurs depuis le stockage
+        audioSettings.musicEnabled = persistentStorage.storedMusicEnabled
+        audioSettings.effectsEnabled = persistentStorage.storedEffectsEnabled
+
+        console.log("AudioSettings - Valeurs chargées: Musique:", audioSettings.musicEnabled, "Effets:", audioSettings.effectsEnabled)
     }
 
     // Fonction pour sauvegarder les paramètres
     function saveMusicEnabled(enabled) {
-        persistentStorage.musicEnabled = enabled
+        console.log("AudioSettings.saveMusicEnabled appelé avec:", enabled)
+        persistentStorage.storedMusicEnabled = enabled
         audioSettings.musicEnabled = enabled
+        audioSettings.musicEnabledChanged()
         console.log("Musique:", enabled ? "activee" : "désactivee", "(sauvegardé)")
     }
 
     function saveEffectsEnabled(enabled) {
-        persistentStorage.effectsEnabled = enabled
+        console.log("AudioSettings.saveEffectsEnabled appelé avec:", enabled)
+        persistentStorage.storedEffectsEnabled = enabled
         audioSettings.effectsEnabled = enabled
+        audioSettings.effectsEnabledChanged()
         console.log("Effets sonores:", enabled ? "actives" : "désactives", "(sauvegardé)")
     }
 }

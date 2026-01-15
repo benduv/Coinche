@@ -1228,7 +1228,7 @@ private:
                     opp["name"] = room->playerNames[j];
                     opp["avatar"] = room->playerAvatars[j];
                     opp["cardCount"] = int(room->players[j]->getMain().size());
-                    opp["isBot"] = room->isBot[j];
+                    opp["isBot"] = static_cast<bool>(room->isBot[j]);
                     opponents.append(opp);
                 }
             }
