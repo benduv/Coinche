@@ -5,11 +5,8 @@ import QtCore
 QtObject {
     id: audioSettings
 
-    // Signaux pour notifier les changements (plus fiable sur Android)
-    signal musicEnabledChanged()
-    signal effectsEnabledChanged()
-
     // État des sons - valeurs locales
+    // Le signal onMusicEnabledChanged est généré automatiquement par QML
     property bool musicEnabled: true
     property bool effectsEnabled: true
 
@@ -40,7 +37,6 @@ QtObject {
         console.log("AudioSettings.saveMusicEnabled appelé avec:", enabled)
         persistentStorage.storedMusicEnabled = enabled
         audioSettings.musicEnabled = enabled
-        audioSettings.musicEnabledChanged()
         console.log("Musique:", enabled ? "activee" : "désactivee", "(sauvegardé)")
     }
 
@@ -48,7 +44,6 @@ QtObject {
         console.log("AudioSettings.saveEffectsEnabled appelé avec:", enabled)
         persistentStorage.storedEffectsEnabled = enabled
         audioSettings.effectsEnabled = enabled
-        audioSettings.effectsEnabledChanged()
         console.log("Effets sonores:", enabled ? "actives" : "désactives", "(sauvegardé)")
     }
 }

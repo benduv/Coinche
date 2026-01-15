@@ -2581,6 +2581,46 @@ private:
         forfeitMsg["playerName"] = conn->playerName;
         broadcastToRoom(roomId, forfeitMsg);
 
+        // Vérifier si tous les joueurs sont maintenant des bots
+        bool allBots = true;
+        for (int i = 0; i < 4; i++) {
+            if (!room->isBot[i]) {
+                allBots = false;
+                break;
+            }
+        }
+
+        if (allBots) {
+            // Tous les joueurs humains ont quitté volontairement - supprimer la GameRoom
+            qDebug() << "Tous les joueurs ont quitté la partie" << roomId << "- Suppression de la GameRoom";
+
+            // Arrêter les timers
+            if (room->turnTimeout) {
+                room->turnTimeout->stop();
+                delete room->turnTimeout;
+                room->turnTimeout = nullptr;
+            }
+            if (room->bidTimeout) {
+                room->bidTimeout->stop();
+                delete room->bidTimeout;
+                room->bidTimeout = nullptr;
+            }
+            if (room->surcoincheTimer) {
+                room->surcoincheTimer->stop();
+                delete room->surcoincheTimer;
+                room->surcoincheTimer = nullptr;
+            }
+
+            // Retirer la room des maps
+            m_gameRooms.remove(roomId);
+
+            // Supprimer la room
+            delete room;
+
+            qDebug() << "GameRoom" << roomId << "supprimée";
+            return;
+        }
+
         // Si c'est le tour du joueur qui abandonne, faire jouer le bot immédiatement
         if (room->currentPlayerIndex == playerIndex) {
             if (room->gameState == "bidding") {
