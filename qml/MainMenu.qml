@@ -21,7 +21,9 @@ ApplicationWindow {
     Connections {
         target: AudioSettings
         function onMusicEnabledChanged() {
-            if (!AudioSettings.musicEnabled) {
+            if (AudioSettings.musicEnabled) {
+                startupSound.play()
+            } else {
                 startupSound.stop()
             }
         }
@@ -31,7 +33,7 @@ ApplicationWindow {
         // Positionner automatiquement la fenêtre au démarrage
         windowPositioner.positionWindow(mainWindow)
         // Jouer le son de démarrage si les effets sont activés
-        if (AudioSettings.effectsEnabled) {
+        if (AudioSettings.musicEnabled) {
             startupSound.play()
         }
     }

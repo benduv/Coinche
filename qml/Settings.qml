@@ -14,23 +14,31 @@ Rectangle {
 
     signal backToMenu()
 
+    // Flag pour éviter de sauvegarder pendant l'initialisation
+    property bool initialized: false
+
     // Synchroniser avec les paramètres globaux
     Component.onCompleted: {
         musicEnabled = AudioSettings.musicEnabled
         effectsEnabled = AudioSettings.effectsEnabled
+        initialized = true
     }
 
     // Propriétés pour l'état des sons
     property bool musicEnabled: AudioSettings.musicEnabled
     property bool effectsEnabled: AudioSettings.effectsEnabled
 
-    // Watcher pour mettre à jour les paramètres globaux
+    // Watcher pour mettre à jour les paramètres globaux (seulement après initialisation)
     onMusicEnabledChanged: {
-        AudioSettings.saveMusicEnabled(musicEnabled)
+        if (initialized) {
+            AudioSettings.saveMusicEnabled(musicEnabled)
+        }
     }
 
     onEffectsEnabledChanged: {
-        AudioSettings.saveEffectsEnabled(effectsEnabled)
+        if (initialized) {
+            AudioSettings.saveEffectsEnabled(effectsEnabled)
+        }
     }
 
     // Bouton retour

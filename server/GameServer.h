@@ -219,6 +219,12 @@ public:
         } else {
             qDebug() << "Erreur: impossible de demarrer le serveur";
         }
+
+        // Initialiser le timer de matchmaking avec bots (30 secondes)
+        m_matchmakingTimer = new QTimer(this);
+        m_matchmakingTimer->setInterval(30000);  // 30 secondes
+        m_lastQueueSize = 0;
+        connect(m_matchmakingTimer, &QTimer::timeout, this, &GameServer::onMatchmakingTimeout);
     }
 
     ~GameServer() {
@@ -879,6 +885,12 @@ private:
                 }
             }
 
+            // Redémarrer le timer de matchmaking (30 secondes d'inactivité)
+            // Le timer est réinitialisé à chaque nouveau joueur
+            m_lastQueueSize = m_matchmakingQueue.size();
+            m_matchmakingTimer->start();
+            qDebug() << "Timer matchmaking démarré/redémarré - 30 secondes avant création avec bots";
+
             // Essaye de créer une partie si 4 joueurs
             tryCreateGame();
         }
@@ -897,6 +909,12 @@ private:
         response["type"] = "matchmakingStatus";
         response["status"] = "left";
         sendMessage(socket, response);
+
+        // Si la queue est vide, arrêter le timer
+        if (m_matchmakingQueue.isEmpty()) {
+            m_matchmakingTimer->stop();
+            qDebug() << "Timer matchmaking arrêté - queue vide";
+        }
 
         // Notifier TOUS les joueurs restants du nouveau nombre de joueurs
         QJsonObject updateResponse;
@@ -1026,6 +1044,139 @@ private:
                 startBidTimeout(roomId, room->currentPlayerIndex);
             }
 
+            // Arrêter le timer de matchmaking car la partie a commencé
+            m_matchmakingTimer->stop();
+        }
+    }
+
+    // Slot appelé après 30 secondes d'inactivité dans la queue de matchmaking
+    void onMatchmakingTimeout() {
+        qDebug() << "MATCHMAKING TIMEOUT - 30 secondes écoulées sans nouveaux joueurs";
+        qDebug() << "Joueurs dans la queue:" << m_matchmakingQueue.size();
+
+        // S'il y a au moins 1 joueur dans la queue, créer une partie avec des bots
+        if (m_matchmakingQueue.size() > 0 && m_matchmakingQueue.size() < 4) {
+            createGameWithBots();
+        }
+
+        // Arrêter le timer
+        m_matchmakingTimer->stop();
+    }
+
+    // Génère un avatar aléatoire parmi les 24 disponibles
+    QString getRandomBotAvatar() {
+        int avatarNumber = 1 + QRandomGenerator::global()->bounded(24);  // 1 à 24
+        return QString("avataaars%1.svg").arg(avatarNumber);
+    }
+
+    // Crée une partie en complétant avec des bots
+    void createGameWithBots() {
+        int humanPlayers = m_matchmakingQueue.size();
+        int botsNeeded = 4 - humanPlayers;
+
+        qDebug() << "Création d'une partie avec" << humanPlayers << "humain(s) et" << botsNeeded << "bot(s)";
+
+        // Prendre tous les joueurs humains de la queue
+        QList<QString> connectionIds;
+        while (!m_matchmakingQueue.isEmpty()) {
+            connectionIds.append(m_matchmakingQueue.dequeue());
+        }
+
+        // Créer la room
+        int roomId = m_nextRoomId++;
+        GameRoom* room = new GameRoom();
+        room->roomId = roomId;
+        room->gameState = "waiting";
+
+        // Ajouter les joueurs humains
+        for (int i = 0; i < humanPlayers; i++) {
+            PlayerConnection* conn = m_connections[connectionIds[i]];
+            conn->gameRoomId = roomId;
+            conn->playerIndex = i;
+
+            room->connectionIds.append(connectionIds[i]);
+            room->originalConnectionIds.append(connectionIds[i]);
+            room->playerNames.append(conn->playerName);
+            room->playerAvatars.append(conn->avatar);
+            m_playerNameToRoomId[conn->playerName] = roomId;
+
+            std::vector<Carte*> emptyHand;
+            auto player = std::make_unique<Player>(
+                conn->playerName.toStdString(),
+                emptyHand,
+                i
+            );
+            room->players.push_back(std::move(player));
+            room->isBot.push_back(false);
+        }
+
+        // Ajouter les bots
+        for (int i = humanPlayers; i < 4; i++) {
+            // Générer un nom de bot aléatoire (Bot + nombre entre 100 et 999)
+            int botNumber = 100 + QRandomGenerator::global()->bounded(900);
+            QString botName = QString("Bot%1").arg(botNumber);
+
+            // Vérifier que le nom n'est pas déjà pris
+            while (m_playerNameToRoomId.contains(botName)) {
+                botNumber = 100 + QRandomGenerator::global()->bounded(900);
+                botName = QString("Bot%1").arg(botNumber);
+            }
+
+            // Avatar aléatoire pour le bot
+            QString botAvatar = getRandomBotAvatar();
+
+            qDebug() << "Ajout du bot:" << botName << "avec avatar:" << botAvatar << "à la position" << i;
+
+            room->connectionIds.append("");  // Pas de connexion pour les bots
+            room->originalConnectionIds.append("");
+            room->playerNames.append(botName);
+            room->playerAvatars.append(botAvatar);
+
+            std::vector<Carte*> emptyHand;
+            auto player = std::make_unique<Player>(
+                botName.toStdString(),
+                emptyHand,
+                i
+            );
+            room->players.push_back(std::move(player));
+            room->isBot.push_back(true);  // Marquer comme bot
+        }
+
+        // Distribuer les cartes
+        room->deck.shuffleDeck();
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 8; j++) {
+                Carte* carte = room->deck.drawCard();
+                if (carte) {
+                    room->players[i]->addCardToHand(carte);
+                }
+            }
+        }
+
+        m_gameRooms[roomId] = room;
+
+        // Initialiser le premier joueur
+        room->firstPlayerIndex = 0;
+        room->currentPlayerIndex = 0;
+        room->biddingPlayer = 0;
+        room->gameState = "bidding";
+
+        qDebug() << "Partie avec bots créée! Room ID:" << roomId;
+
+        // Notifier les joueurs humains
+        notifyGameStart(roomId, connectionIds);
+
+        // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
+        if (room->isBot[room->currentPlayerIndex]) {
+            QTimer::singleShot(800, this, [this, roomId]() {
+                GameRoom* room = m_gameRooms.value(roomId);
+                if (room && room->gameState == "bidding") {
+                    playBotBid(roomId, room->currentPlayerIndex);
+                }
+            });
+        } else {
+            // Joueur humain : démarrer le timer de timeout pour les enchères
+            startBidTimeout(roomId, room->currentPlayerIndex);
         }
     }
 
@@ -4706,6 +4857,10 @@ private:
     QMap<QString, PrivateLobby*> m_privateLobbies;  // code → PrivateLobby
     int m_nextRoomId;
     DatabaseManager *m_dbManager;
+
+    // Timer pour démarrer une partie avec des bots après 30 secondes d'inactivité
+    QTimer *m_matchmakingTimer;
+    int m_lastQueueSize;  // Pour détecter si de nouveaux joueurs arrivent
 };
 
 #endif // GAMESERVER_H
