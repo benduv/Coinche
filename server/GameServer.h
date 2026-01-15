@@ -1184,25 +1184,30 @@ private:
         GameRoom* room = m_gameRooms[roomId];
         if (!room) return;
 
-        qDebug() << "Envoi des notifications gameFound à" << connectionIds.size() << "joueurs";
+        qDebug() << "Envoi des notifications gameFound à" << connectionIds.size() << "joueurs humains";
 
-        
+        // Parcourir uniquement les joueurs humains (ceux avec une connexion)
         for (int i = 0; i < connectionIds.size(); i++) {
+            if (connectionIds[i].isEmpty()) continue;  // Skip les bots
+
             PlayerConnection *conn = m_connections[connectionIds[i]];
             if (!conn) {
                 qDebug() << "Erreur: Connexion introuvable pour ID" << connectionIds[i];
                 continue;
-            } 
+            }
+
+            // Trouver la position réelle du joueur dans la room
+            int playerPosition = conn->playerIndex;
 
             QJsonObject msg;
             msg["type"] = "gameFound";
             msg["roomId"] = roomId;
-            msg["playerPosition"] = i;
+            msg["playerPosition"] = playerPosition;
 
             // Envoi les cartes du joueur
             QJsonArray myCards;
-            const auto& playerHand = room->players[i]->getMain();
-            qDebug() << "Envoi de" << playerHand.size() << "cartes au joueur" << i;
+            const auto& playerHand = room->players[playerPosition]->getMain();
+            qDebug() << "Envoi de" << playerHand.size() << "cartes au joueur" << playerPosition;
 
             for (const auto* carte : playerHand) {
                 if (carte) {
@@ -1213,22 +1218,22 @@ private:
                 }
             }
             msg["myCards"] = myCards;
-            
-            // Infos sur les adversaires
+
+            // Infos sur TOUS les autres joueurs (humains et bots) depuis room->playerNames
             QJsonArray opponents;
-            for (int j = 0; j < connectionIds.size(); j++) {
-                if (i != j) {
+            for (int j = 0; j < 4; j++) {
+                if (playerPosition != j) {
                     QJsonObject opp;
                     opp["position"] = j;
-                    opp["name"] = m_connections[connectionIds[j]]->playerName;
-                    opp["avatar"] = m_connections[connectionIds[j]]->avatar;
+                    opp["name"] = room->playerNames[j];
+                    opp["avatar"] = room->playerAvatars[j];
                     opp["cardCount"] = int(room->players[j]->getMain().size());
+                    opp["isBot"] = room->isBot[j];
                     opponents.append(opp);
                 }
             }
             msg["opponents"] = opponents;
-            qDebug() << "Envoi gameFound a" << conn->playerName << "position" << i;
-
+            qDebug() << "Envoi gameFound a" << conn->playerName << "position" << playerPosition;
 
             sendMessage(conn->socket, msg);
         }
