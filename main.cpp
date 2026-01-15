@@ -11,7 +11,11 @@
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    
+
+    // Configuration pour QSettings (utilisé par QtCore.Settings en QML)
+    app.setOrganizationName("Nebuludik");
+    app.setApplicationName("CoincheDelEspace");
+
     // Parser les arguments
     QCommandLineParser parser;
     parser.setApplicationDescription("Coinche Game Client");

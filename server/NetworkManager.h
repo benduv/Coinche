@@ -84,12 +84,12 @@ public:
 
     // Auto-login - vérifier si des credentials sont stockés
     bool hasStoredCredentials() const {
-        QSettings settings("Coinche", "CoincheGame");
+        QSettings settings("Nebuludik", "CoincheDelEspace");
         return settings.contains("auth/email") && settings.contains("auth/password");
     }
 
     QString storedEmail() const {
-        QSettings settings("Coinche", "CoincheGame");
+        QSettings settings("Nebuludik", "CoincheDelEspace");
         return settings.value("auth/email", "").toString();
     }
 
@@ -286,7 +286,7 @@ public:
 
     // Sauvegarder les credentials pour l'auto-login
     Q_INVOKABLE void saveCredentials(const QString &email, const QString &password) {
-        QSettings settings("Coinche", "CoincheGame");
+        QSettings settings("Nebuludik", "CoincheDelEspace");
         settings.setValue("auth/email", email);
         settings.setValue("auth/password", password);
         qDebug() << "Credentials sauvegardés pour:" << email;
@@ -295,7 +295,7 @@ public:
 
     // Supprimer les credentials stockés (déconnexion)
     Q_INVOKABLE void clearCredentials() {
-        QSettings settings("Coinche", "CoincheGame");
+        QSettings settings("Nebuludik", "CoincheDelEspace");
         settings.remove("auth/email");
         settings.remove("auth/password");
         qDebug() << "Credentials supprimés";
@@ -304,7 +304,7 @@ public:
 
     // Tenter l'auto-login avec les credentials stockés
     Q_INVOKABLE bool tryAutoLogin() {
-        QSettings settings("Coinche", "CoincheGame");
+        QSettings settings("Nebuludik", "CoincheDelEspace");
         QString email = settings.value("auth/email", "").toString();
         QString password = settings.value("auth/password", "").toString();
 
