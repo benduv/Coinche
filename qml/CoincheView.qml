@@ -40,9 +40,28 @@ Rectangle {
     Connections {
         target: AudioSettings
         function onMusicEnabledChanged() {
-            if (AudioSettings.musicEnabled) {
+            if (AudioSettings.musicEnabled && Qt.application.state === Qt.ApplicationActive) {
                 gameMusic.play()
             } else {
+                gameMusic.pause()
+            }
+        }
+    }
+
+    // Surveiller l'état de l'application (premier plan / arrière-plan)
+    Connections {
+        target: Qt.application
+        function onStateChanged() {
+            console.log("CoincheView - Application state changed:", Qt.application.state)
+            if (Qt.application.state === Qt.ApplicationActive) {
+                // L'application revient au premier plan
+                if (AudioSettings.musicEnabled) {
+                    gameMusic.play()
+                }
+            } else if (Qt.application.state === Qt.ApplicationSuspended ||
+                       Qt.application.state === Qt.ApplicationHidden ||
+                       Qt.application.state === Qt.ApplicationInactive) {
+                // L'application passe en arrière-plan ou écran verrouillé
                 gameMusic.pause()
             }
         }
@@ -440,7 +459,7 @@ Rectangle {
                         running: false
                         repeat: false
                         onTriggered: {
-                            if (AudioSettings.effectsEnabled) {
+                            if (AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
                                 cardSound.stop()
                                 cardSound.play()
                             }
@@ -520,7 +539,7 @@ Rectangle {
                         target: gameModel
                         function onPliWinnerIdChanged() {
                             if (gameModel.pliWinnerId >= 0) {
-                                if(AudioSettings.effectsEnabled) {
+                                if(AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
                                     pliWonSound.stop()
                                     pliWonSound.play()
                                 }
@@ -2183,7 +2202,7 @@ Rectangle {
 
             // Position de départ selon le dealer
             Component.onCompleted: {
-                if(AudioSettings.effectsEnabled) {
+                if(AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
                     //dealingSound.stop()
                     dealingSound.play()
                 }

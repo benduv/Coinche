@@ -72,6 +72,7 @@ int main(int argc, char *argv[]) {
     // Via variable d'environnement: COINCHE_VERBOSE=1
     QString sslCertPath;
     QString sslKeyPath;
+    QString smtpPassword;
 
     for (int i = 1; i < argc; ++i) {
         QString arg = QString::fromLocal8Bit(argv[i]);
@@ -81,6 +82,8 @@ int main(int argc, char *argv[]) {
             sslCertPath = QString::fromLocal8Bit(argv[++i]);
         } else if (arg == "--ssl-key" && i + 1 < argc) {
             sslKeyPath = QString::fromLocal8Bit(argv[++i]);
+        } else if (arg == "--smtp-password" && i + 1 < argc) {
+            smtpPassword = QString::fromLocal8Bit(argv[++i]);
         }
     }
     if (!verboseLogging) {
@@ -93,6 +96,10 @@ int main(int argc, char *argv[]) {
     }
     if (sslKeyPath.isEmpty()) {
         sslKeyPath = qEnvironmentVariable("COINCHE_SSL_KEY");
+    }
+    // Mot de passe SMTP depuis variable d'environnement si non fourni en argument
+    if (smtpPassword.isEmpty()) {
+        smtpPassword = qEnvironmentVariable("COINCHE_SMTP_PASSWORD");
     }
 
     // Ouvrir le fichier de log
@@ -113,14 +120,15 @@ int main(int argc, char *argv[]) {
         } else {
             qInfo() << "Mode SSL: DESACTIVE (WS) - Utilisez --ssl-cert et --ssl-key pour activer";
         }
+        qInfo() << "SMTP Contact:" << (smtpPassword.isEmpty() ? "DESACTIVE" : "ACTIVE");
         qInfo() << "Logs écrits dans: server_log.txt";
         qInfo() << "========================================";
     } else {
         qWarning() << "Impossible d'ouvrir le fichier de log!";
     }
 
-    // Créer le serveur avec ou sans SSL
-    GameServer server(1234, nullptr, sslCertPath, sslKeyPath);
+    // Créer le serveur avec ou sans SSL, et mot de passe SMTP pour les emails de contact
+    GameServer server(1234, nullptr, sslCertPath, sslKeyPath, smtpPassword);
 
     int result = app.exec();
 

@@ -220,6 +220,16 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void sendContactMessage(const QString &senderName, const QString &subject, const QString &message) {
+        qDebug() << "Envoi message de contact - Sujet:" << subject;
+        QJsonObject msg;
+        msg["type"] = "sendContactMessage";
+        msg["senderName"] = senderName;
+        msg["subject"] = subject;
+        msg["message"] = message;
+        sendMessage(msg);
+    }
+
     Q_INVOKABLE void forfeitGame() {
         QJsonObject msg;
         msg["type"] = "forfeit";
@@ -364,6 +374,10 @@ signals:
 
     // Signal pour les credentials stockés
     void storedCredentialsChanged();
+
+    // Signaux pour les messages de contact
+    void contactMessageSuccess();
+    void contactMessageFailed(QString error);
 
 private slots:
     void onConnected() {
@@ -688,6 +702,15 @@ private slots:
             QString error = obj["error"].toString();
             qDebug() << "NetworkManager - Echec suppression compte:" << error;
             emit deleteAccountFailed(error);
+        }
+        else if (type == "contactMessageSuccess") {
+            qDebug() << "NetworkManager - Message de contact envoye avec succes";
+            emit contactMessageSuccess();
+        }
+        else if (type == "contactMessageFailed") {
+            QString error = obj["error"].toString();
+            qDebug() << "NetworkManager - Echec envoi message de contact:" << error;
+            emit contactMessageFailed(error);
         }
         else if (type == "error") {
             QString errorMsg = obj["message"].toString();

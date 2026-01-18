@@ -105,3 +105,27 @@ target_link_libraries(test_gameserver PRIVATE
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
 gtest_discover_tests(test_gameserver)
+
+# ========================================
+# Tests unitaires DatabaseManager
+# ========================================
+add_executable(test_databasemanager
+    databasemanager_test.cpp
+    ../server/DatabaseManager.cpp
+)
+
+target_include_directories(test_databasemanager PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_databasemanager PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Sql
+)
+
+# Découvrir automatiquement les tests Google Test
+include(GoogleTest)
+gtest_discover_tests(test_databasemanager)

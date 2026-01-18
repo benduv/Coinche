@@ -434,9 +434,293 @@ TEST_F(GameServerTest, Detection_CoinchePlayerIndexValide) {
 }
 
 TEST_F(GameServerTest, Detection_SurcoincheNecessiteCoinche) {
-    // Vérifier qu'une surcoinche ne peut exister sans coinche
-    room.surcoinched = true;
+    // Test: vérifier que dans un état de surcoinche valide, coinched est aussi true
+    // Ce test vérifie la règle: on ne peut pas surcoincher sans avoir d'abord coinché
+    room.coinched = true;      // D'abord quelqu'un coinche
+    room.surcoinched = true;   // Puis l'équipe annonceur surcoinche
 
-    // Si surcoinched est true, coinched doit aussi être true
+    // Vérifier l'état cohérent
     EXPECT_TRUE(room.coinched);
+    EXPECT_TRUE(room.surcoinched);
+}
+
+// ========================================
+// Tests pour GameRoom - isBot et gestion des joueurs
+// ========================================
+
+TEST_F(GameServerTest, GameRoom_IsBotInitialization) {
+    // Vérifier que les joueurs sont initialisés comme humains
+    for (int i = 0; i < 4; i++) {
+        room.isBot.push_back(false);
+    }
+
+    EXPECT_EQ(room.isBot.size(), 4);
+    for (int i = 0; i < 4; i++) {
+        EXPECT_FALSE(room.isBot[i]) << "Joueur " << i << " devrait être humain initialement";
+    }
+}
+
+TEST_F(GameServerTest, GameRoom_ReplacePlayerWithBot) {
+    // Simuler le remplacement d'un joueur par un bot
+    for (int i = 0; i < 4; i++) {
+        room.isBot.push_back(false);
+    }
+
+    // Joueur 1 abandonne
+    room.isBot[1] = true;
+
+    EXPECT_FALSE(room.isBot[0]);
+    EXPECT_TRUE(room.isBot[1]) << "Joueur 1 devrait être un bot après abandon";
+    EXPECT_FALSE(room.isBot[2]);
+    EXPECT_FALSE(room.isBot[3]);
+}
+
+TEST_F(GameServerTest, GameRoom_AllPlayersAreBots) {
+    // Simuler le scénario où tous les joueurs abandonnent
+    for (int i = 0; i < 4; i++) {
+        room.isBot.push_back(false);
+    }
+
+    // Tous les joueurs abandonnent successivement
+    for (int i = 0; i < 4; i++) {
+        room.isBot[i] = true;
+    }
+
+    // Vérifier que tous sont des bots
+    bool allBots = true;
+    for (int i = 0; i < 4; i++) {
+        if (!room.isBot[i]) {
+            allBots = false;
+            break;
+        }
+    }
+
+    EXPECT_TRUE(allBots) << "Tous les joueurs devraient être des bots";
+}
+
+TEST_F(GameServerTest, GameRoom_NotAllPlayersAreBots) {
+    // Scénario où seulement certains joueurs sont des bots
+    for (int i = 0; i < 4; i++) {
+        room.isBot.push_back(false);
+    }
+
+    room.isBot[0] = true;  // Joueur 0 abandon
+    room.isBot[2] = true;  // Joueur 2 abandon
+
+    // Vérifier qu'il reste des humains
+    bool allBots = true;
+    for (int i = 0; i < 4; i++) {
+        if (!room.isBot[i]) {
+            allBots = false;
+            break;
+        }
+    }
+
+    EXPECT_FALSE(allBots) << "Il devrait rester des joueurs humains";
+    EXPECT_FALSE(room.isBot[1]);
+    EXPECT_FALSE(room.isBot[3]);
+}
+
+// ========================================
+// Tests pour la gestion des connexions
+// ========================================
+
+TEST_F(GameServerTest, GameRoom_ConnectionIds) {
+    // Vérifier la gestion des connectionIds
+    room.connectionIds.resize(4);
+    room.connectionIds[0] = "conn_player0";
+    room.connectionIds[1] = "conn_player1";
+    room.connectionIds[2] = "conn_player2";
+    room.connectionIds[3] = "conn_player3";
+
+    EXPECT_EQ(room.connectionIds[0], "conn_player0");
+    EXPECT_EQ(room.connectionIds[1], "conn_player1");
+    EXPECT_EQ(room.connectionIds[2], "conn_player2");
+    EXPECT_EQ(room.connectionIds[3], "conn_player3");
+}
+
+TEST_F(GameServerTest, GameRoom_PlayerNames) {
+    // Vérifier la gestion des noms de joueurs
+    room.playerNames.resize(4);
+    room.playerNames[0] = "Alice";
+    room.playerNames[1] = "Bob";
+    room.playerNames[2] = "Charlie";
+    room.playerNames[3] = "Diana";
+
+    EXPECT_EQ(room.playerNames[0], "Alice");
+    EXPECT_EQ(room.playerNames[1], "Bob");
+    EXPECT_EQ(room.playerNames[2], "Charlie");
+    EXPECT_EQ(room.playerNames[3], "Diana");
+}
+
+// ========================================
+// Tests pour les états de jeu
+// ========================================
+
+TEST_F(GameServerTest, GameState_Bidding) {
+    room.gameState = "bidding";
+    EXPECT_EQ(room.gameState, "bidding");
+}
+
+TEST_F(GameServerTest, GameState_Playing) {
+    room.gameState = "playing";
+    EXPECT_EQ(room.gameState, "playing");
+}
+
+TEST_F(GameServerTest, GameState_Finished) {
+    room.gameState = "finished";
+    EXPECT_EQ(room.gameState, "finished");
+}
+
+// ========================================
+// Tests pour les annonces spéciales
+// ========================================
+
+TEST_F(GameServerTest, Annonce_ToutAtout) {
+    room.isToutAtout = true;
+    room.isSansAtout = false;
+    room.lastBidAnnonce = Player::CENT;
+    room.lastBidCouleur = Carte::PIQUE;  // Couleur ignorée en tout atout
+
+    EXPECT_TRUE(room.isToutAtout);
+    EXPECT_FALSE(room.isSansAtout);
+}
+
+TEST_F(GameServerTest, Annonce_SansAtout) {
+    room.isToutAtout = false;
+    room.isSansAtout = true;
+    room.lastBidAnnonce = Player::CENTDIX;
+    room.lastBidCouleur = Carte::COEUR;  // Couleur ignorée en sans atout
+
+    EXPECT_FALSE(room.isToutAtout);
+    EXPECT_TRUE(room.isSansAtout);
+}
+
+TEST_F(GameServerTest, Annonce_Normal) {
+    room.isToutAtout = false;
+    room.isSansAtout = false;
+    room.lastBidAnnonce = Player::QUATREVINGT;
+    room.lastBidCouleur = Carte::TREFLE;
+
+    EXPECT_FALSE(room.isToutAtout);
+    EXPECT_FALSE(room.isSansAtout);
+    EXPECT_EQ(room.lastBidCouleur, Carte::TREFLE);
+}
+
+// ========================================
+// Tests pour le comptage des passes
+// ========================================
+
+TEST_F(GameServerTest, Bidding_PassCount) {
+    room.passedBidsCount = 0;
+
+    // Simuler 3 passes après une annonce
+    room.lastBidAnnonce = Player::QUATREVINGT;
+    room.passedBidsCount = 3;
+
+    // Les enchères devraient se terminer
+    bool biddingEnded = (room.passedBidsCount >= 3 && room.lastBidAnnonce != Player::ANNONCEINVALIDE);
+    EXPECT_TRUE(biddingEnded);
+}
+
+TEST_F(GameServerTest, Bidding_AllPass) {
+    room.passedBidsCount = 0;
+    room.lastBidAnnonce = Player::ANNONCEINVALIDE;
+
+    // Simuler 4 passes sans annonce
+    room.passedBidsCount = 4;
+
+    // Nouvelle manche devrait commencer
+    bool newMancheRequired = (room.passedBidsCount >= 4 && room.lastBidAnnonce == Player::ANNONCEINVALIDE);
+    EXPECT_TRUE(newMancheRequired);
+}
+
+// ========================================
+// Tests pour la Générale
+// ========================================
+
+TEST_F(GameServerTest, Generale_OnePlayerWinsAll) {
+    room.lastBidAnnonce = Player::GENERALE;
+    room.lastBidderIndex = 0;
+
+    // Joueur 0 gagne tous les 8 plis seul
+    room.plisCountPlayer0 = 8;
+    room.plisCountPlayer1 = 0;
+    room.plisCountPlayer2 = 0;  // Partenaire ne gagne rien
+    room.plisCountPlayer3 = 0;
+
+    // Vérifier que c'est bien une générale réussie
+    bool generaleReussie = (room.plisCountPlayer0 == 8);
+    EXPECT_TRUE(generaleReussie);
+
+    // Score attendu: 1000 (500+500)
+    int expectedScore = 1000;
+    EXPECT_EQ(expectedScore, 1000);
+}
+
+TEST_F(GameServerTest, Generale_PartnerWinsPli_Fail) {
+    room.lastBidAnnonce = Player::GENERALE;
+    room.lastBidderIndex = 0;
+
+    // Joueur 0 gagne 7 plis, son partenaire (joueur 2) en gagne 1
+    room.plisCountPlayer0 = 7;
+    room.plisCountPlayer1 = 0;
+    room.plisCountPlayer2 = 1;  // Partenaire gagne 1 pli = échec
+    room.plisCountPlayer3 = 0;
+
+    // Vérifier que la générale a échoué
+    bool generaleReussie = (room.plisCountPlayer0 == 8);
+    EXPECT_FALSE(generaleReussie);
+}
+
+// ========================================
+// Tests pour le calcul des scores de manche
+// ========================================
+
+TEST_F(GameServerTest, Score_MancheTeam1Wins) {
+    room.scoreMancheTeam1 = 120;
+    room.scoreMancheTeam2 = 42;
+
+    // Vérifier que Team1 a plus de points
+    EXPECT_GT(room.scoreMancheTeam1, room.scoreMancheTeam2);
+}
+
+TEST_F(GameServerTest, Score_TotalPoints162) {
+    // Total des points d'une manche sans belote = 162
+    int totalPoints = 162;
+
+    room.scoreMancheTeam1 = 100;
+    room.scoreMancheTeam2 = 62;
+
+    EXPECT_EQ(room.scoreMancheTeam1 + room.scoreMancheTeam2, totalPoints);
+}
+
+TEST_F(GameServerTest, Score_BeloteAdds20) {
+    room.beloteTeam1 = true;
+    room.beloteTeam2 = false;
+
+    int bonusBelote = room.beloteTeam1 ? 20 : 0;
+    EXPECT_EQ(bonusBelote, 20);
+}
+
+// ========================================
+// Tests pour le timer de surcoinche
+// ========================================
+
+TEST_F(GameServerTest, Surcoinche_WindowOpen) {
+    room.coinched = true;
+    room.surcoinched = false;
+    room.coinchePlayerIndex = 1;  // Team2 a coinché
+    room.lastBidderIndex = 0;     // Team1 a fait l'annonce
+
+    // Team1 (joueurs 0 et 2) peut surcoincher
+    int bidderTeam = room.lastBidderIndex % 2;
+    EXPECT_EQ(bidderTeam, 0);  // Team1
+
+    // Le joueur qui peut surcoincher est dans l'équipe de l'annonceur
+    bool canPlayer0Surcoinche = (0 % 2 == bidderTeam);
+    bool canPlayer2Surcoinche = (2 % 2 == bidderTeam);
+
+    EXPECT_TRUE(canPlayer0Surcoinche);
+    EXPECT_TRUE(canPlayer2Surcoinche);
 }

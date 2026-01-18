@@ -276,14 +276,14 @@ Rectangle {
 
                     Text {
                         text: "Connecté en tant que : " + settingsRoot.playerName
-                        font.pixelSize: 25 * settingsRoot.minRatio
+                        font.pixelSize: 28 * settingsRoot.minRatio
                         color: "white"
                     }
 
                     // Bouton Supprimer mon compte
                     Button {
                         width: parent.width
-                        height: 60 * settingsRoot.minRatio
+                        height: 100 * settingsRoot.minRatio
 
                         background: Rectangle {
                             color: parent.down ? "#cc0000" : (parent.hovered ? "#bb0000" : "#aa0000")
@@ -294,7 +294,7 @@ Rectangle {
 
                         contentItem: Text {
                             text: "Supprimer mon compte"
-                            font.pixelSize: 28 * settingsRoot.minRatio
+                            font.pixelSize: 34 * settingsRoot.minRatio
                             font.bold: true
                             color: "white"
                             horizontalAlignment: Text.AlignHCenter
@@ -345,7 +345,7 @@ Rectangle {
             Text {
                 width: parent.width
                 text: "Cette action est irréversible. Toutes vos données seront supprimées :"
-                font.pixelSize: 24 * settingsRoot.minRatio
+                font.pixelSize: 26 * settingsRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
@@ -354,7 +354,7 @@ Rectangle {
             Text {
                 width: parent.width
                 text: "• Toutes vos statistiques de jeu\n• Votre adresse email\n• Votre mot de passe"
-                font.pixelSize: 22 * settingsRoot.minRatio
+                font.pixelSize: 24 * settingsRoot.minRatio
                 color: "#cccccc"
                 wrapMode: Text.WordWrap
                 lineHeight: 1.3
@@ -365,7 +365,7 @@ Rectangle {
                 id: deleteErrorText
                 width: parent.width
                 text: ""
-                font.pixelSize: 20 * settingsRoot.minRatio
+                font.pixelSize: 22 * settingsRoot.minRatio
                 color: "#ff6666"
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
@@ -378,8 +378,8 @@ Rectangle {
 
                 // Bouton Annuler
                 Button {
-                    width: 150 * settingsRoot.minRatio
-                    height: 50 * settingsRoot.minRatio
+                    width: 170 * settingsRoot.minRatio
+                    height: 100 * settingsRoot.minRatio
 
                     background: Rectangle {
                         color: parent.down ? "#444444" : (parent.hovered ? "#555555" : "#333333")
@@ -403,8 +403,8 @@ Rectangle {
 
                 // Bouton Confirmer
                 Button {
-                    width: 150 * settingsRoot.minRatio
-                    height: 50 * settingsRoot.minRatio
+                    width: 170 * settingsRoot.minRatio
+                    height: 100 * settingsRoot.minRatio
 
                     background: Rectangle {
                         color: parent.down ? "#cc0000" : (parent.hovered ? "#bb0000" : "#aa0000")

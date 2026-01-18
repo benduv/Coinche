@@ -49,10 +49,35 @@ ApplicationWindow {
         target: AudioSettings
         function onMusicEnabledChanged() {
             console.log("Signal musicEnabledChanged reçu - musicEnabled:", AudioSettings.musicEnabled)
-            if (AudioSettings.musicEnabled) {
+            if (AudioSettings.musicEnabled && Qt.application.state === Qt.ApplicationActive) {
                 startupSound.play()
             } else {
                 startupSound.stop()
+            }
+        }
+    }
+
+    // Surveiller l'état de l'application (premier plan / arrière-plan)
+    Connections {
+        target: Qt.application
+        function onStateChanged() {
+            console.log("Application state changed:", Qt.application.state)
+            if (Qt.application.state === Qt.ApplicationActive) {
+                // L'application revient au premier plan
+                // Ne pas relancer la musique du menu si on est en partie (CoincheView)
+                var isInGame = mainWindow.shouldLoadCoincheView ||
+                               (stackView.currentItem && stackView.currentItem.toString().indexOf("coincheViewLoader") >= 0)
+                console.log("Application active - isInGame:", isInGame)
+                if (AudioSettings.musicEnabled && !isInGame) {
+                    console.log("Reprise de la musique du menu")
+                    startupSound.play()
+                }
+            } else if (Qt.application.state === Qt.ApplicationSuspended ||
+                       Qt.application.state === Qt.ApplicationHidden ||
+                       Qt.application.state === Qt.ApplicationInactive) {
+                // L'application passe en arrière-plan ou écran verrouillé
+                console.log("Application en arrière-plan - arrêt de la musique du menu")
+                startupSound.pause()
             }
         }
     }
@@ -74,6 +99,7 @@ ApplicationWindow {
         windowPositioner.positionWindow(mainWindow)
 
         console.log("MainMenu - AudioSettings.musicEnabled:", AudioSettings.musicEnabled)
+        console.log("MainMenu - Application state:", Qt.application.state)
 
         // Utiliser un timer pour laisser le temps à AudioSettings de charger
         musicStartTimer.start()
@@ -586,6 +612,36 @@ ApplicationWindow {
                     }
                 }
 
+                // Bouton Contact en haut à gauche
+                Button {
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.leftMargin: 50 * mainWindow.minRatio
+                    anchors.topMargin: 50 * mainWindow.minRatio
+                    width: 120 * mainWindow.minRatio
+                    height: 120 * mainWindow.minRatio
+                    z: 2
+
+                    background: Rectangle {
+                        color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
+                        radius: 10 * mainWindow.minRatio
+                        border.color: "#FFD700"
+                        border.width: 3 * mainWindow.minRatio
+                    }
+
+                    contentItem: Image {
+                        source: "qrc:/resources/message-svgrepo-com.svg"
+                        fillMode: Image.PreserveAspectFit
+                        anchors.fill: parent
+                        anchors.margins: 20 * mainWindow.minRatio
+                        smooth: true
+                    }
+
+                    onClicked: {
+                        stackView.push(contactViewComponent)
+                    }
+                }
+
                 // Bouton Statistiques en bas à gauche (uniquement pour les comptes enregistrés)
                 Button {
                     anchors.left: parent.left
@@ -752,6 +808,16 @@ ApplicationWindow {
             id: rulesViewComponent
 
             Rules {
+                onBackToMenu: {
+                    stackView.pop()
+                }
+            }
+        }
+
+        Component {
+            id: contactViewComponent
+
+            Contact {
                 onBackToMenu: {
                     stackView.pop()
                 }

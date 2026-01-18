@@ -20,6 +20,7 @@
 #include "Carte.h"
 #include "GameModel.h"
 #include "DatabaseManager.h"
+#include "SmtpClient.h"
 
 // Connexion réseau d'un joueur (pas la logique métier)
 struct PlayerConnection {
@@ -158,13 +159,16 @@ public:
     // Constructeur avec support SSL optionnel
     // Si certPath et keyPath sont fournis, le serveur démarre en mode sécurisé (WSS)
     // Sinon, il démarre en mode non sécurisé (WS)
+    // smtpPassword: mot de passe pour l'envoi d'emails via SMTP
     explicit GameServer(quint16 port, QObject *parent = nullptr,
                         const QString &certPath = QString(),
-                        const QString &keyPath = QString())
+                        const QString &keyPath = QString(),
+                        const QString &smtpPassword = QString())
         : QObject(parent)
         , m_server(nullptr)
         , m_nextRoomId(1)
         , m_dbManager(new DatabaseManager(this))
+        , m_smtpPassword(smtpPassword)
     {
         // Initialiser la base de donnees
         if (!m_dbManager->initialize("coinche.db")) {
@@ -299,6 +303,8 @@ private slots:
             handleUpdateAvatar(sender, obj);
         } else if (type == "rehumanize") {
             handleRehumanize(sender);
+        } else if (type == "sendContactMessage") {
+            handleSendContactMessage(sender, obj);
         }
     }
 
@@ -877,6 +883,59 @@ private:
             sendMessage(socket, response);
             qDebug() << "Echec suppression compte:" << errorMsg;
         }
+    }
+
+    void handleSendContactMessage(QWebSocket *socket, const QJsonObject &data) {
+        QString senderName = data["senderName"].toString();
+        QString subject = data["subject"].toString();
+        QString message = data["message"].toString();
+
+        qDebug() << "GameServer - Message de contact de:" << senderName << "Sujet:" << subject;
+
+        // Valider les donnees
+        if (subject.isEmpty() || message.isEmpty()) {
+            QJsonObject response;
+            response["type"] = "contactMessageFailed";
+            response["error"] = "Sujet et message requis";
+            sendMessage(socket, response);
+            return;
+        }
+
+        // Creer le client SMTP
+        SmtpClient *smtp = new SmtpClient(this);
+
+        // Configuration SMTP OVH
+        smtp->setHost("ssl0.ovh.net", 587);
+        smtp->setCredentials("contact@nebuludik.fr", m_smtpPassword);
+        smtp->setFrom("contact@nebuludik.fr", "Coinche Game");
+
+        // Construire le corps du message
+        QString body = QString("Nouveau message depuis l'application Coinche\n\n"
+                               "De: %1\n"
+                               "Sujet: %2\n\n"
+                               "Message:\n%3\n\n"
+                               "---\nEnvoye depuis l'application Coinche")
+                               .arg(senderName.isEmpty() ? "Anonyme" : senderName)
+                               .arg(subject)
+                               .arg(message);
+
+        // Connecter le signal de resultat
+        connect(smtp, &SmtpClient::emailSent, this, [this, socket, smtp](bool success, const QString &error) {
+            QJsonObject response;
+            if (success) {
+                response["type"] = "contactMessageSuccess";
+                qDebug() << "Email de contact envoye avec succes";
+            } else {
+                response["type"] = "contactMessageFailed";
+                response["error"] = error.isEmpty() ? "Erreur lors de l'envoi" : error;
+                qWarning() << "Echec envoi email de contact:" << error;
+            }
+            sendMessage(socket, response);
+            smtp->deleteLater();
+        });
+
+        // Envoyer l'email
+        smtp->sendEmail("contact@nebuludik.fr", "[Coinche] " + subject, body);
     }
 
     void handleGetStats(QWebSocket *socket, const QJsonObject &data) {
@@ -3098,7 +3157,7 @@ private:
             playBotBid(roomId, currentBidder);
         });
 
-        room->bidTimeout->start(15000);  // 15 secondes
+        room->bidTimeout->start(19800);  // Un peu avant 20 secondes (20 sec dans le front end)
     }
 
     // Vérifie si le partenaire est le joueur qui gagne actuellement le pli
@@ -4956,6 +5015,7 @@ private:
     QMap<QString, PrivateLobby*> m_privateLobbies;  // code → PrivateLobby
     int m_nextRoomId;
     DatabaseManager *m_dbManager;
+    QString m_smtpPassword;  // Mot de passe SMTP pour l'envoi d'emails
 
     // Timer pour démarrer une partie avec des bots après 30 secondes d'inactivité
     QTimer *m_matchmakingTimer;
