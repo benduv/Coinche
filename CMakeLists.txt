@@ -146,6 +146,8 @@ if(NOT ANDROID)
         server/GameServer.h  # Header-only, mis directement dans le serveur
         server/DatabaseManager.h
         server/DatabaseManager.cpp
+        server/SmtpClient.h
+        server/SmtpClient.cpp
     )
 
     target_include_directories(server PRIVATE
