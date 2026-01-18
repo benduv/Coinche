@@ -39,6 +39,7 @@ public:
         m_subject = subject;
         m_body = body;
         m_state = Init;
+        m_responseBuffer.clear();
 
         // Creer le socket SSL
         if (m_socket) {
@@ -78,11 +79,41 @@ private slots:
     }
 
     void onReadyRead() {
-        QString response = QString::fromUtf8(m_socket->readAll());
-        qDebug() << "SmtpClient: Reponse:" << response.trimmed();
+        // Accumuler les donnees recues
+        m_responseBuffer += QString::fromUtf8(m_socket->readAll());
 
-        // Extraire le code de reponse
-        int responseCode = response.left(3).toInt();
+        // Traiter toutes les reponses completes dans le buffer
+        while (true) {
+            // Chercher une ligne complete (terminee par \r\n)
+            int endPos = m_responseBuffer.indexOf("\r\n");
+            if (endPos == -1) {
+                // Pas de ligne complete, attendre plus de donnees
+                return;
+            }
+
+            QString line = m_responseBuffer.left(endPos);
+            m_responseBuffer = m_responseBuffer.mid(endPos + 2);
+
+            qDebug() << "SmtpClient: Reponse ligne:" << line;
+
+            // Verifier si c'est une reponse multi-ligne (format: "250-xxx")
+            // ou la derniere ligne (format: "250 xxx" ou juste "250")
+            if (line.length() >= 4 && line[3] == '-') {
+                // Reponse multi-ligne, continuer a accumuler
+                // Stocker le code pour verification
+                m_lastResponseCode = line.left(3).toInt();
+                continue;
+            }
+
+            // C'est la derniere ligne de la reponse
+            int responseCode = line.left(3).toInt();
+            processResponse(responseCode, line);
+            return;
+        }
+    }
+
+    void processResponse(int responseCode, const QString &fullResponse) {
+        qDebug() << "SmtpClient: Traitement reponse code" << responseCode << "etat" << m_state;
 
         switch (m_state) {
             case Init:
@@ -91,7 +122,7 @@ private slots:
                     sendCommand("EHLO coinche-game.local");
                     m_state = Ehlo;
                 } else {
-                    handleError("Reponse initiale invalide");
+                    handleError(QString("Reponse initiale invalide: %1").arg(responseCode));
                 }
                 break;
 
@@ -101,13 +132,14 @@ private slots:
                     sendCommand("STARTTLS");
                     m_state = StartTls;
                 } else {
-                    handleError("EHLO echoue");
+                    handleError(QString("EHLO echoue: %1").arg(responseCode));
                 }
                 break;
 
             case StartTls:
                 if (responseCode == 220) {
                     // Passer en mode SSL
+                    m_responseBuffer.clear(); // Vider le buffer avant TLS
                     m_socket->startClientEncryption();
                     m_state = TlsReady;
                     // Attendre l'encryption puis renvoyer EHLO
@@ -116,7 +148,7 @@ private slots:
                         m_state = EhloAfterTls;
                     }, Qt::SingleShotConnection);
                 } else {
-                    handleError("STARTTLS echoue");
+                    handleError(QString("STARTTLS echoue: %1").arg(responseCode));
                 }
                 break;
 
@@ -126,7 +158,7 @@ private slots:
                     sendCommand("AUTH LOGIN");
                     m_state = Auth;
                 } else {
-                    handleError("EHLO apres TLS echoue");
+                    handleError(QString("EHLO apres TLS echoue: %1").arg(responseCode));
                 }
                 break;
 
@@ -136,7 +168,7 @@ private slots:
                     sendCommand(m_user.toUtf8().toBase64());
                     m_state = AuthUser;
                 } else {
-                    handleError("AUTH LOGIN echoue");
+                    handleError(QString("AUTH LOGIN echoue: %1 - %2").arg(responseCode).arg(fullResponse));
                 }
                 break;
 
@@ -146,7 +178,7 @@ private slots:
                     sendCommand(m_password.toUtf8().toBase64());
                     m_state = AuthPass;
                 } else {
-                    handleError("Authentification utilisateur echoue");
+                    handleError(QString("Authentification utilisateur echoue: %1 - %2").arg(responseCode).arg(fullResponse));
                 }
                 break;
 
@@ -156,7 +188,7 @@ private slots:
                     sendCommand(QString("MAIL FROM:<%1>").arg(m_from));
                     m_state = MailFrom;
                 } else {
-                    handleError("Mot de passe incorrect");
+                    handleError(QString("Mot de passe incorrect: %1 - %2").arg(responseCode).arg(fullResponse));
                 }
                 break;
 
@@ -166,7 +198,7 @@ private slots:
                     sendCommand(QString("RCPT TO:<%1>").arg(m_to));
                     m_state = RcptTo;
                 } else {
-                    handleError("MAIL FROM echoue");
+                    handleError(QString("MAIL FROM echoue: %1").arg(responseCode));
                 }
                 break;
 
@@ -176,7 +208,7 @@ private slots:
                     sendCommand("DATA");
                     m_state = Data;
                 } else {
-                    handleError("RCPT TO echoue");
+                    handleError(QString("RCPT TO echoue: %1").arg(responseCode));
                 }
                 break;
 
@@ -189,7 +221,7 @@ private slots:
                     m_socket->flush();
                     m_state = Body;
                 } else {
-                    handleError("DATA echoue");
+                    handleError(QString("DATA echoue: %1").arg(responseCode));
                 }
                 break;
 
@@ -200,7 +232,7 @@ private slots:
                     m_state = Quit;
                     emit emailSent(true, QString());
                 } else {
-                    handleError("Envoi du corps echoue");
+                    handleError(QString("Envoi du corps echoue: %1").arg(responseCode));
                 }
                 break;
 
@@ -225,7 +257,9 @@ private slots:
 
 private:
     void sendCommand(const QString &cmd) {
-        qDebug() << "SmtpClient: Envoi:" << (cmd.contains("AUTH") || m_state == AuthUser || m_state == AuthPass ? "***" : cmd);
+        // Masquer les donnees sensibles dans les logs
+        bool sensitive = (m_state == Auth || m_state == AuthUser || m_state == AuthPass);
+        qDebug() << "SmtpClient: Envoi:" << (sensitive ? "***" : cmd);
         m_socket->write((cmd + "\r\n").toUtf8());
         m_socket->flush();
     }
@@ -279,6 +313,8 @@ private:
     QString m_body;
     State m_state;
     int m_timeout;
+    QString m_responseBuffer;  // Buffer pour accumuler les reponses
+    int m_lastResponseCode = 0;  // Dernier code de reponse multi-ligne
 };
 
 #endif // SMTPCLIENT_H

@@ -287,7 +287,7 @@ Rectangle {
             spacing: 20 * contactRoot.minRatio
 
             Text {
-                text: "Message envoye !"
+                text: "Message envoyé !"
                 font.pixelSize: 32 * contactRoot.minRatio
                 font.bold: true
                 color: "#00cc00"
@@ -296,7 +296,7 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "Merci pour votre message ! Nous vous repondrons dans les plus brefs delais."
+                text: "Merci pour votre message ! Nous vous répondrons dans les plus brefs délais."
                 font.pixelSize: 22 * contactRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
@@ -377,7 +377,7 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "Vous pouvez aussi nous contacter directement a : " + contactRoot.contactEmail
+                text: "Vous pouvez aussi nous contacter directement à : " + contactRoot.contactEmail
                 font.pixelSize: 18 * contactRoot.minRatio
                 color: "#aaaaaa"
                 wrapMode: Text.WordWrap
