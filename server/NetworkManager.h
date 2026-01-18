@@ -19,6 +19,7 @@ class NetworkManager : public QObject {
     Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged)
     Q_PROPERTY(QString matchmakingStatus READ matchmakingStatus NOTIFY matchmakingStatusChanged)
     Q_PROPERTY(int playersInQueue READ playersInQueue NOTIFY playersInQueueChanged)
+    Q_PROPERTY(int matchmakingCountdown READ matchmakingCountdown NOTIFY matchmakingCountdownChanged)
     Q_PROPERTY(QJsonArray myCards READ myCards NOTIFY gameDataChanged)
     Q_PROPERTY(int myPosition READ myPosition NOTIFY gameDataChanged)
     Q_PROPERTY(QJsonArray opponents READ opponents NOTIFY gameDataChanged)
@@ -34,6 +35,7 @@ public:
         , m_socket(new QWebSocket)
         , m_connected(false)
         , m_playersInQueue(0)
+        , m_matchmakingCountdown(0)
         , m_myPosition(-1)
         , m_gameModel(nullptr)
         , m_playerAvatar("avataaars1.svg")
@@ -74,6 +76,7 @@ public:
     bool connected() const { return m_connected; }
     QString matchmakingStatus() const { return m_matchmakingStatus; }
     int playersInQueue() const { return m_playersInQueue; }
+    int matchmakingCountdown() const { return m_matchmakingCountdown; }
     QJsonArray myCards() const { return m_myCards; }
     int myPosition() const { return m_myPosition; }
     QJsonArray opponents() const { return m_opponents; }
@@ -340,6 +343,7 @@ signals:
     void connectedChanged();
     void matchmakingStatusChanged();
     void playersInQueueChanged();
+    void matchmakingCountdownChanged();
     void gameDataChanged();
     void gameFound(int playerPosition, QJsonArray opponents);
     void gameModelReady();
@@ -464,8 +468,18 @@ private slots:
         else if (type == "matchmakingStatus") {
             m_matchmakingStatus = obj["status"].toString();
             m_playersInQueue = obj["playersInQueue"].toInt();
+            // Réinitialiser le countdown quand on reçoit un status (nouveau joueur rejoint)
+            if (m_matchmakingCountdown > 0) {
+                m_matchmakingCountdown = 0;
+                emit matchmakingCountdownChanged();
+            }
             emit matchmakingStatusChanged();
             emit playersInQueueChanged();
+        }
+        else if (type == "matchmakingCountdown") {
+            m_matchmakingCountdown = obj["seconds"].toInt();
+            qDebug() << "Countdown reçu:" << m_matchmakingCountdown << "secondes";
+            emit matchmakingCountdownChanged();
         }
         else if (type == "gameFound") {
             qDebug() << "=============== GAME FOUND ===============";
@@ -810,7 +824,8 @@ private:
     QString m_playerId;
     QString m_matchmakingStatus;
     int m_playersInQueue;
-    
+    int m_matchmakingCountdown;
+
     QJsonArray m_myCards;
     int m_myPosition;
     QJsonArray m_opponents;

@@ -144,6 +144,35 @@ Rectangle {
             Layout.alignment: Qt.AlignHCenter
         }
 
+        // Compte à rebours avant remplacement par des bots
+        Rectangle {
+            id: countdownRect
+            Layout.preferredWidth: 700 * root.widthRatio
+            Layout.preferredHeight: 80 * root.heightRatio
+            Layout.alignment: Qt.AlignHCenter
+            color: "#442200"
+            radius: 10 * root.minRatio
+            border.color: "#ff9900"
+            border.width: 3 * root.minRatio
+            visible: networkManager.matchmakingCountdown > 0
+
+            Text {
+                anchors.centerIn: parent
+                text: "Bots dans " + networkManager.matchmakingCountdown + " seconde" + (networkManager.matchmakingCountdown > 1 ? "s" : "") + "..."
+                font.pixelSize: 32 * root.minRatio
+                font.bold: true
+                color: "#ffcc00"
+            }
+
+            // Animation de pulsation pour attirer l'attention
+            SequentialAnimation on opacity {
+                running: networkManager.matchmakingCountdown > 0
+                loops: Animation.Infinite
+                NumberAnimation { to: 0.7; duration: 300 }
+                NumberAnimation { to: 1.0; duration: 300 }
+            }
+        }
+
         // Nombre de joueurs
         Rectangle {
             Layout.preferredWidth: 800 * root.widthRatio

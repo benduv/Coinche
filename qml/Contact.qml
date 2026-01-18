@@ -35,36 +35,61 @@ Rectangle {
     }
 
     // Bouton retour
-    Button {
-        anchors.left: parent.left
+    Rectangle {
         anchors.top: parent.top
-        anchors.leftMargin: 20 * contactRoot.minRatio
-        anchors.topMargin: 20 * contactRoot.minRatio
-        width: 80 * contactRoot.minRatio
-        height: 80 * contactRoot.minRatio
-        z: 10
+        anchors.left: parent.left
+        anchors.margins: 40 * minRatio
+        width: 100 * minRatio
+        height: 100 * minRatio
+        color: "transparent"
+        z: 100
 
-        background: Rectangle {
-            color: parent.down ? "#444444" : (parent.hovered ? "#555555" : "#333333")
-            radius: 10 * contactRoot.minRatio
-            border.color: "#FFD700"
-            border.width: 2 * contactRoot.minRatio
+        Rectangle {
+            anchors.centerIn: parent
+            width: parent.width * 0.6
+            height: parent.height * 0.6
+            color: "lightgrey"
         }
 
-        contentItem: Image {
+        Image {
+            anchors.fill: parent
             source: "qrc:/resources/back-square-svgrepo-com.svg"
             fillMode: Image.PreserveAspectFit
-            anchors.fill: parent
-            anchors.margins: 10 * contactRoot.minRatio
+            smooth: true
         }
 
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                backToMenu()
+            }
+            onEntered: {
+                parent.scale = 1.1
+            }
+            onExited: {
+                parent.scale = 1.0
+            }
+        }
+
+        Behavior on scale {
+            NumberAnimation { duration: 100 }
+        }
+    }
+
+    // MouseArea pour fermer le clavier en cliquant ailleurs
+    MouseArea {
+        anchors.fill: parent
         onClicked: {
-            contactRoot.backToMenu()
+            // Retirer le focus des champs de texte pour fermer le clavier
+            contactRoot.forceActiveFocus()
         }
     }
 
     // Contenu principal scrollable
     Flickable {
+        id: mainFlickable
         anchors.fill: parent
         anchors.topMargin: 120 * contactRoot.minRatio
         anchors.leftMargin: 40 * contactRoot.minRatio
@@ -101,7 +126,7 @@ Rectangle {
 
             // Formulaire
             Rectangle {
-                width: Math.min(parent.width, 700 * contactRoot.minRatio)
+                width: Math.min(parent.width, 750 * contactRoot.minRatio)
                 height: formColumn.height + 40 * contactRoot.minRatio
                 color: "#2a2a2a"
                 radius: 15 * contactRoot.minRatio
@@ -142,6 +167,9 @@ Rectangle {
                                 font.pixelSize: 22 * contactRoot.minRatio
                                 color: "white"
                                 clip: true
+                                // Bouton "Suivant" pour passer au champ message
+                                inputMethodHints: Qt.ImhNone
+                                Keys.onReturnPressed: messageArea.forceActiveFocus()
 
                                 Text {
                                     anchors.fill: parent
@@ -168,29 +196,94 @@ Rectangle {
                         }
 
                         Rectangle {
+                            id: messageFieldRect
                             width: parent.width
-                            height: 200 * contactRoot.minRatio
+                            height: 150 * contactRoot.minRatio
                             color: "#3a3a3a"
                             radius: 8 * contactRoot.minRatio
                             border.color: messageArea.activeFocus ? "#FFD700" : "#555555"
                             border.width: 2 * contactRoot.minRatio
 
-                            ScrollView {
-                                id: messageScrollView
+                            Flickable {
+                                id: messageFlickable
                                 anchors.fill: parent
                                 anchors.margins: 10 * contactRoot.minRatio
+                                contentWidth: messageArea.width
+                                contentHeight: messageArea.height
                                 clip: true
+                                flickableDirection: Flickable.VerticalFlick
+                                boundsBehavior: Flickable.StopAtBounds
 
-                                TextArea {
+                                TextEdit {
                                     id: messageArea
-                                    width: messageScrollView.availableWidth
-                                    height: Math.max(messageScrollView.availableHeight, contentHeight)
+                                    width: messageFlickable.width
+                                    height: Math.max(contentHeight, messageFlickable.height)
                                     font.pixelSize: 22 * contactRoot.minRatio
                                     color: "white"
-                                    wrapMode: TextArea.Wrap
-                                    background: null
-                                    placeholderText: "Ecrivez votre message ici..."
-                                    placeholderTextColor: "#888888"
+                                    wrapMode: TextEdit.Wrap
+                                    // Combinaison de flags pour éviter le mode extract sur Android
+                                    inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhHiddenText
+
+                                    Text {
+                                        anchors.top: parent.top
+                                        width: parent.width
+                                        text: "Ecrivez votre message ici..."
+                                        font.pixelSize: 22 * contactRoot.minRatio
+                                        color: "#888888"
+                                        visible: !messageArea.text && !messageArea.activeFocus
+                                    }
+
+                                    // Scroll automatique vers le curseur dans le TextEdit
+                                    onCursorRectangleChanged: {
+                                        if (cursorRectangle.y + cursorRectangle.height > messageFlickable.contentY + messageFlickable.height) {
+                                            messageFlickable.contentY = cursorRectangle.y + cursorRectangle.height - messageFlickable.height
+                                        } else if (cursorRectangle.y < messageFlickable.contentY) {
+                                            messageFlickable.contentY = cursorRectangle.y
+                                        }
+                                    }
+
+                                    // Scroll automatique du formulaire vers le champ message quand il obtient le focus
+                                    onActiveFocusChanged: {
+                                        if (activeFocus) {
+                                            // Calculer la position Y du champ message dans le contentColumn
+                                            var targetY = messageFieldRect.mapToItem(contentColumn, 0, 0).y
+                                            // Scroller pour que le champ message soit visible en haut de la zone visible
+                                            // avec une petite marge
+                                            var scrollTarget = targetY - 20 * contactRoot.minRatio
+                                            if (scrollTarget > 0) {
+                                                mainFlickable.contentY = Math.min(scrollTarget, mainFlickable.contentHeight - mainFlickable.height)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Bouton OK intégré en bas à droite du champ message
+                            Rectangle {
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                anchors.margins: 8 * contactRoot.minRatio
+                                width: 70 * contactRoot.minRatio
+                                height: 35 * contactRoot.minRatio
+                                color: okMouseArea.pressed ? "#cc9900" : "#FFD700"
+                                radius: 6 * contactRoot.minRatio
+                                visible: messageArea.activeFocus
+                                z: 10
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "OK"
+                                    font.pixelSize: 18 * contactRoot.minRatio
+                                    font.bold: true
+                                    color: "#1a1a1a"
+                                }
+
+                                MouseArea {
+                                    id: okMouseArea
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        contactRoot.forceActiveFocus()
+                                    }
                                 }
                             }
                         }
@@ -200,7 +293,7 @@ Rectangle {
                     Button {
                         id: sendButton
                         width: parent.width
-                        height: 70 * contactRoot.minRatio
+                        height: 75 * contactRoot.minRatio
                         enabled: subjectField.text.trim() !== "" && messageArea.text.trim() !== "" && !contactRoot.isSending && networkManager.connected
 
                         background: Rectangle {
@@ -232,6 +325,7 @@ Rectangle {
                                 font.bold: true
                                 color: sendButton.enabled ? "white" : "#aaaaaa"
                                 anchors.verticalCenter: parent.verticalCenter
+                                anchors.horizontalCenter: parent.horizontalCenter
                             }
                         }
 
@@ -296,7 +390,7 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "Merci pour votre message ! Nous vous répondrons dans les plus brefs délais."
+                text: "Merci pour votre message ! Nous prendrons en compte vos remarques au plus vite"
                 font.pixelSize: 22 * contactRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
@@ -305,7 +399,7 @@ Rectangle {
 
             Button {
                 width: parent.width * 0.6
-                height: 50 * contactRoot.minRatio
+                height: 75 * contactRoot.minRatio
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 background: Rectangle {
@@ -386,7 +480,7 @@ Rectangle {
 
             Button {
                 width: parent.width * 0.6
-                height: 50 * contactRoot.minRatio
+                height: 75 * contactRoot.minRatio
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 background: Rectangle {

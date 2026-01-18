@@ -225,10 +225,17 @@ public:
         }
 
         // Initialiser le timer de matchmaking avec bots (30 secondes)
+        // Le timer principal attend 20 secondes, puis le countdown démarre pour 10 secondes
         m_matchmakingTimer = new QTimer(this);
-        m_matchmakingTimer->setInterval(30000);  // 30 secondes
+        m_matchmakingTimer->setInterval(20000);  // 20 secondes avant le début du compte à rebours
         m_lastQueueSize = 0;
-        connect(m_matchmakingTimer, &QTimer::timeout, this, &GameServer::onMatchmakingTimeout);
+        connect(m_matchmakingTimer, &QTimer::timeout, this, &GameServer::onMatchmakingStartCountdown);
+
+        // Timer de compte à rebours (10 dernières secondes)
+        m_countdownTimer = new QTimer(this);
+        m_countdownTimer->setInterval(1000);  // 1 seconde
+        m_countdownSeconds = 0;
+        connect(m_countdownTimer, &QTimer::timeout, this, &GameServer::onCountdownTick);
     }
 
     ~GameServer() {
@@ -998,11 +1005,12 @@ private:
                 }
             }
 
-            // Redémarrer le timer de matchmaking (30 secondes d'inactivité)
+            // Redémarrer le timer de matchmaking (20 secondes + 10 secondes de compte à rebours)
             // Le timer est réinitialisé à chaque nouveau joueur
             m_lastQueueSize = m_matchmakingQueue.size();
+            m_countdownTimer->stop();  // Arrêter le compte à rebours s'il était en cours
             m_matchmakingTimer->start();
-            qDebug() << "Timer matchmaking démarré/redémarré - 30 secondes avant création avec bots";
+            qDebug() << "Timer matchmaking démarré/redémarré - 20s + 10s countdown avant création avec bots";
 
             // Essaye de créer une partie si 4 joueurs
             tryCreateGame();
@@ -1023,10 +1031,11 @@ private:
         response["status"] = "left";
         sendMessage(socket, response);
 
-        // Si la queue est vide, arrêter le timer
+        // Si la queue est vide, arrêter les timers
         if (m_matchmakingQueue.isEmpty()) {
             m_matchmakingTimer->stop();
-            qDebug() << "Timer matchmaking arrêté - queue vide";
+            m_countdownTimer->stop();
+            qDebug() << "Timers matchmaking arrêtés - queue vide";
         }
 
         // Notifier TOUS les joueurs restants du nouveau nombre de joueurs
@@ -1157,23 +1166,65 @@ private:
                 startBidTimeout(roomId, room->currentPlayerIndex);
             }
 
-            // Arrêter le timer de matchmaking car la partie a commencé
+            // Arrêter les timers de matchmaking car la partie a commencé
             m_matchmakingTimer->stop();
+            m_countdownTimer->stop();
         }
     }
 
-    // Slot appelé après 30 secondes d'inactivité dans la queue de matchmaking
-    void onMatchmakingTimeout() {
-        qDebug() << "MATCHMAKING TIMEOUT - 30 secondes écoulées sans nouveaux joueurs";
+    // Slot appelé après 20 secondes d'inactivité - démarre le compte à rebours de 10 secondes
+    void onMatchmakingStartCountdown() {
+        qDebug() << "MATCHMAKING - Début du compte à rebours de 10 secondes";
         qDebug() << "Joueurs dans la queue:" << m_matchmakingQueue.size();
 
-        // S'il y a au moins 1 joueur dans la queue, créer une partie avec des bots
-        if (m_matchmakingQueue.size() > 0 && m_matchmakingQueue.size() < 4) {
-            createGameWithBots();
-        }
-
-        // Arrêter le timer
+        // Arrêter le timer principal
         m_matchmakingTimer->stop();
+
+        // S'il y a des joueurs mais pas assez pour une partie complète
+        if (m_matchmakingQueue.size() > 0 && m_matchmakingQueue.size() < 4) {
+            // Démarrer le compte à rebours
+            m_countdownSeconds = 10;
+            sendCountdownToQueue(m_countdownSeconds);
+            m_countdownTimer->start();
+        }
+    }
+
+    // Slot appelé chaque seconde pendant le compte à rebours
+    void onCountdownTick() {
+        m_countdownSeconds--;
+        qDebug() << "MATCHMAKING COUNTDOWN:" << m_countdownSeconds << "secondes";
+
+        if (m_countdownSeconds > 0) {
+            // Envoyer le compte à rebours aux joueurs dans la queue
+            sendCountdownToQueue(m_countdownSeconds);
+        } else {
+            // Fin du compte à rebours - créer la partie avec des bots
+            m_countdownTimer->stop();
+            qDebug() << "MATCHMAKING - Fin du compte à rebours, création de la partie avec bots";
+
+            if (m_matchmakingQueue.size() > 0 && m_matchmakingQueue.size() < 4) {
+                createGameWithBots();
+            }
+        }
+    }
+
+    // Envoie le compte à rebours à tous les joueurs dans la queue
+    void sendCountdownToQueue(int seconds) {
+        QJsonObject msg;
+        msg["type"] = "matchmakingCountdown";
+        msg["seconds"] = seconds;
+        msg["message"] = QString("Les joueurs manquants seront remplacés par des bots dans %1 seconde%2")
+                         .arg(seconds)
+                         .arg(seconds > 1 ? "s" : "");
+
+        for (const QString& connectionId : m_matchmakingQueue) {
+            if (m_connections.contains(connectionId)) {
+                PlayerConnection* conn = m_connections[connectionId];
+                if (conn && conn->socket) {
+                    sendMessage(conn->socket, msg);
+                }
+            }
+        }
     }
 
     // Génère un avatar aléatoire parmi les 24 disponibles
@@ -5020,6 +5071,10 @@ private:
     // Timer pour démarrer une partie avec des bots après 30 secondes d'inactivité
     QTimer *m_matchmakingTimer;
     int m_lastQueueSize;  // Pour détecter si de nouveaux joueurs arrivent
+
+    // Timer pour le compte à rebours (10 dernières secondes)
+    QTimer *m_countdownTimer;
+    int m_countdownSeconds;
 };
 
 #endif // GAMESERVER_H

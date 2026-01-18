@@ -666,7 +666,7 @@ ApplicationWindow {
                         source: "qrc:/resources/stats-svgrepo-com.svg"
                         fillMode: Image.PreserveAspectFit
                         anchors.fill: parent
-                        anchors.margins: 15 * mainWindow.minRatio
+                        anchors.margins: 20 * mainWindow.minRatio
                         smooth: true
                     }
 
@@ -696,7 +696,7 @@ ApplicationWindow {
                         source: "qrc:/resources/question-svgrepo-com.svg"
                         fillMode: Image.PreserveAspectFit
                         anchors.fill: parent
-                        anchors.margins: 15 * mainWindow.minRatio
+                        anchors.margins: 17 * mainWindow.minRatio
                         smooth: true
                     }
 
@@ -726,7 +726,7 @@ ApplicationWindow {
                         source: "qrc:/resources/setting-svgrepo-com.svg"
                         fillMode: Image.PreserveAspectFit
                         anchors.fill: parent
-                        anchors.margins: 15 * mainWindow.minRatio
+                        anchors.margins: 20 * mainWindow.minRatio
                         smooth: true
                     }
 
