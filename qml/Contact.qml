@@ -90,7 +90,7 @@ Rectangle {
             // Description
             Text {
                 width: parent.width
-                text: "Vous avez une suggestion, un bug a signaler ou simplement envie de nous faire part de vos impressions ? N'hesitez pas a nous ecrire !"
+                text: "Vous avez une suggestion, un bug à signaler ou simplement envie de nous faire part de vos impressions ? N'hésitez pas à nous écrire via ce formulaire ou bien directement via contact@nebuludik.fr"
                 font.pixelSize: 28 * contactRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
@@ -175,16 +175,16 @@ Rectangle {
                             border.color: messageArea.activeFocus ? "#FFD700" : "#555555"
                             border.width: 2 * contactRoot.minRatio
 
-                            Flickable {
-                                id: messageFlickable
+                            ScrollView {
+                                id: messageScrollView
                                 anchors.fill: parent
                                 anchors.margins: 10 * contactRoot.minRatio
-                                contentHeight: messageArea.contentHeight
                                 clip: true
 
                                 TextArea {
                                     id: messageArea
-                                    width: messageFlickable.width
+                                    width: messageScrollView.availableWidth
+                                    height: Math.max(messageScrollView.availableHeight, contentHeight)
                                     font.pixelSize: 22 * contactRoot.minRatio
                                     color: "white"
                                     wrapMode: TextArea.Wrap
