@@ -80,9 +80,9 @@ void StatsReporter::sendDailyReport()
     // Générer le contenu HTML
     QString htmlContent = generateReportHtml(today, yesterday);
 
-    // Créer et configurer le client SMTP
+    // Créer et configurer le client SMTP (même config que Contact)
     SmtpClient *smtp = new SmtpClient(this);
-    smtp->setHost("ssl0.ovh.net", 465);
+    smtp->setHost("ssl0.ovh.net", 587);  // Port 587 = STARTTLS (comme Contact)
     smtp->setCredentials("contact@nebuludik.fr", m_smtpPassword);
     smtp->setFrom("contact@nebuludik.fr", "Coinche Server");
 
