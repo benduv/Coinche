@@ -5,34 +5,18 @@ import QtQuick.Layouts
 Rectangle {
     id: statsRoot
     anchors.fill: parent
-    color: "#0a0a2e"  // Fond bleu foncé comme MainMenu
+    color: "transparent"
 
     // Ratio responsive pour adapter la taille des composants
     property real widthRatio: width / 1024
     property real heightRatio: height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
 
-    // Étoiles scintillantes en arrière-plan
-    Repeater {
-        model: 80
-        Rectangle {
-            x: Math.random() * statsRoot.width
-            y: Math.random() * statsRoot.height
-            width: (Math.random() * 2 + 1) * minRatio
-            height: width
-            radius: width / 2
-            color: "white"
-            opacity: 0.3
-            z: 0
-
-            SequentialAnimation on opacity {
-                running: true
-                loops: Animation.Infinite
-                PauseAnimation { duration: Math.random() * 2000 }
-                NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
-                NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
-            }
-        }
+    // Fond étoilé
+    StarryBackground {
+        anchors.fill: parent
+        minRatio: statsRoot.minRatio
+        z: -1
     }
 
     // Propriétés pour les statistiques
@@ -1230,12 +1214,12 @@ Rectangle {
 
                     Text {
                         text: "🏠"
-                        font.pixelSize: Math.min(28 * minRatio, 24)
+                        font.pixelSize: Math.min(32 * minRatio, 24)
                     }
 
                     Text {
                         text: "RETOUR AU MENU"
-                        font.pixelSize: Math.min(24 * minRatio, 20)
+                        font.pixelSize: Math.min(32 * minRatio, 20)
                         font.bold: true
                         color: "white"
                         style: Text.Outline

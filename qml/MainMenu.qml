@@ -101,8 +101,8 @@ ApplicationWindow {
         console.log("MainMenu - AudioSettings.musicEnabled:", AudioSettings.musicEnabled)
         console.log("MainMenu - Application state:", Qt.application.state)
 
-        // Utiliser un timer pour laisser le temps à AudioSettings de charger
-        musicStartTimer.start()
+        // Note: La musique est maintenant lancée quand on arrive sur mainMenuComponent
+        // pour éviter qu'elle joue pendant le SplashScreen
     }
 
     // Variable pour stocker le nom du joueur connecté
@@ -204,6 +204,15 @@ ApplicationWindow {
                 anchors.fill: parent
                 source: "qrc:/qml/SplashScreen.qml"
                 onLoaded: {
+                    // Auto-login réussi pendant le splash -> aller directement au menu principal
+                    item.autoLoginSuccess.connect(function(playerName) {
+                        console.log("MainMenu - Auto-login réussi, passage direct au menu principal")
+                        mainWindow.loggedInPlayerName = playerName
+                        mainWindow.accountType = "account"
+                        stackView.replace(mainMenuComponent)
+                    })
+
+                    // Pas d'auto-login ou échec -> aller vers LoginView
                     item.loadingComplete.connect(function() {
                         stackView.replace(loginViewComponent)
                     })
@@ -260,10 +269,18 @@ ApplicationWindow {
                     }
                 }
 
+                // Note: La connexion au serveur est maintenant initiée par SplashScreen
+                // Le timer de reconnexion reste actif pour gérer les déconnexions
                 Component.onCompleted: {
-                    var serverUrl = config.getServerUrl()
-                    console.log("Connexion au serveur:", serverUrl)
-                    networkManager.connectToServer(serverUrl)
+                    console.log("LoginView chargé - connexion déjà établie par SplashScreen")
+                    // Démarrer le timer de reconnexion seulement si déconnecté
+                    if (!networkManager.connected) {
+                        console.log("Pas connecté, démarrage du timer de reconnexion")
+                        reconnectTimer.start()
+                    }
+                    // Lancer la musique quand on arrive sur le LoginView
+                    console.log("LoginView - Lancement de la musique")
+                    musicStartTimer.start()
                 }
             }
         }
@@ -274,6 +291,13 @@ ApplicationWindow {
                 anchors.fill: parent
                 //color: "#1a1a1a"
                 color: "#0a0a2e"
+
+                // Lancer la musique quand on arrive sur le menu principal
+                Component.onCompleted: {
+                    console.log("mainMenuComponent.onCompleted - Lancement de la musique")
+                    musicStartTimer.start()
+                }
+
                 // Étoiles scintillantes en arrière-plan
                 Repeater {
                     model: 80
@@ -468,11 +492,12 @@ ApplicationWindow {
                                 radius: 15 * mainWindow.minRatio
                                 color: "#FFD700"
 
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "✎"
-                                    font.pixelSize: 18 * mainWindow.minRatio
-                                    color: "#000000"
+                                Image {
+                                    anchors.fill: parent
+                                    anchors.margins: 3 * mainWindow.minRatio
+                                    source: "qrc:/resources/pencil-svgrepo-com.svg"
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
                                 }
                             }
 

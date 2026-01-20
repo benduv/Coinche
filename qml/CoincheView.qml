@@ -36,6 +36,53 @@ Rectangle {
         audioOutput: AudioOutput {}
     }
 
+    // Son coinche
+    MediaPlayer {
+        id: coincheSound
+        source: "qrc:/resources/sons/167242__nfrae__fireworkblast.wav"
+        audioOutput: AudioOutput {}
+    }
+
+    // Son coinche
+    MediaPlayer {
+        id: surcoincheSound
+        source: "qrc:/resources/sons/75328__oddworld__oddworld_explosionecho.wav"
+        audioOutput: AudioOutput {}
+    }
+
+    // Son d'alerte quand le temps est presque écoulé
+    MediaPlayer {
+        id: timeAlertSound
+        source: "qrc:/resources/sons/342299__kruud__clock-128-bpm-half-speed.wav"
+        audioOutput: AudioOutput {}
+    }
+
+    // Flag pour éviter de jouer le son d'alerte plusieurs fois par tour
+    property bool playTimeAlertPlayed: false
+
+    // Surveiller le temps restant pour jouer une carte
+    Connections {
+        target: gameModel
+        function onPlayTimeRemainingChanged() {
+            // Jouer le son d'alerte à 4 secondes restantes si c'est notre tour
+            if (gameModel.playTimeRemaining === 4 &&
+                !rootArea.playTimeAlertPlayed &&
+                !gameModel.biddingPhase &&
+                gameModel.currentPlayer === gameModel.myPosition) {
+                rootArea.playTimeAlertPlayed = true
+                if (AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
+                    timeAlertSound.stop()
+                    timeAlertSound.play()
+                }
+            }
+        }
+        function onCurrentPlayerChanged() {
+            // Réinitialiser le flag quand le joueur actuel change
+            rootArea.playTimeAlertPlayed = false
+            timeAlertSound.stop()
+        }
+    }
+
     // Surveiller les changements de paramètres audio
     Connections {
         target: AudioSettings
@@ -87,9 +134,6 @@ Rectangle {
     property bool showBotReplacementPopup: false
     property string botReplacementMessage: ""
 
-    // Propriété pour l'animation "Nouvelle Manche"
-    property bool showNewMancheAnimation: false
-
     Image {
         anchors.fill: parent
         source: "qrc:/resources/cielEtoile.jpg"
@@ -132,20 +176,8 @@ Rectangle {
         }
 
         function onNewMancheAnimation() {
-            console.log("CoincheView - Animation Nouvelle Manche!")
-            rootArea.showNewMancheAnimation = true
-            // L'animation dure 3 secondes côté serveur, on la cache après 2.8s pour être synchronisé
-            newMancheAnimationTimer.start()
-        }
-    }
-
-    // Timer pour masquer l'animation "Nouvelle Manche"
-    Timer {
-        id: newMancheAnimationTimer
-        interval: 2800
-        repeat: false
-        onTriggered: {
-            rootArea.showNewMancheAnimation = false
+            console.log("CoincheView - Animation Nouvelle Manche (UFO)!")
+            ufoNewMancheAnimation.start()
         }
     }
 
@@ -604,18 +636,6 @@ Rectangle {
             rootArea.showGameOverPopup = true
         }
     }
-
-    // Connexion pour jouer le son quand un pli est remporté
-    /*Connections {
-        target: gameModel
-        function onPliWinnerIdChanged() {
-            if (gameModel.pliWinnerId >= 0 && AudioSettings.effectsEnabled) {
-                console.log("Pli remporte par joueur", gameModel.pliWinnerId)
-                pliWonSound.stop()
-                pliWonSound.play()
-            }
-        }
-    }*/
 
         // =====================
         // JOUEUR SUD (vous)
@@ -1634,6 +1654,15 @@ Rectangle {
             particleColor3: "#FFCC00"
             running: gameModel.showCoincheAnimation
             minRatio: rootArea.minRatio
+
+            onRunningChanged: {
+                if(running === true) {
+                    if(AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
+                        coincheSound.stop()
+                        coincheSound.play()
+                    }
+                }
+            }
         }
 
         // =====================
@@ -1652,6 +1681,15 @@ Rectangle {
             particleColor3: "#FF66BB"
             running: gameModel.showSurcoincheAnimation
             minRatio: rootArea.minRatio
+
+            onRunningChanged: {
+                if(running === true) {
+                    if(AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
+                        surcoincheSound.stop()
+                        surcoincheSound.play()
+                    }
+                }
+            }
         }
 
         // =====================
@@ -1786,118 +1824,13 @@ Rectangle {
         }
 
         // =====================
-        // ANIMATION "NOUVELLE MANCHE"
+        // ANIMATION "NOUVELLE MANCHE" (UFO)
         // =====================
-        Item {
-            id: newMancheAnimationItem
-            anchors.centerIn: playArea
-            width: playArea.width * 0.7
-            height: playArea.height * 0.4
-            visible: rootArea.showNewMancheAnimation
+        UfoNewMancheAnimation {
+            id: ufoNewMancheAnimation
+            anchors.fill: playArea
+            minRatio: rootArea.minRatio
             z: 150
-
-            // Animation d'apparition avec zoom et fade
-            scale: rootArea.showNewMancheAnimation ? 1 : 0.3
-            opacity: rootArea.showNewMancheAnimation ? 1 : 0
-
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 500
-                    easing.type: Easing.OutBack
-                }
-            }
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 400
-                    easing.type: Easing.InOutQuad
-                }
-            }
-
-            // Texte principal "Nouvelle Manche"
-            Text {
-                id: newMancheText
-                anchors.centerIn: parent
-                text: "Nouvelle Manche"
-                font.pixelSize: parent.height * 0.35
-                font.bold: true
-                font.family: "Arial"
-                color: "#FFD700"  // Or
-                style: Text.Outline
-                styleColor: "#8B4513"  // Marron pour le contour
-            }
-
-            // Étoiles scintillantes autour du texte
-            Repeater {
-                model: 12
-                delegate: Text {
-                    id: starItem
-                    text: "\u2605"  // Étoile pleine Unicode
-                    font.pixelSize: parent.height * (0.08 + Math.random() * 0.06)
-                    color: "#FFD700"
-                    opacity: 0
-
-                    // Position autour du texte central
-                    x: parent.width / 2 + Math.cos(index * Math.PI / 6) * (parent.width * 0.4 + Math.random() * 30) - width / 2
-                    y: parent.height / 2 + Math.sin(index * Math.PI / 6) * (parent.height * 0.4 + Math.random() * 20) - height / 2
-
-                    // Animation de scintillement
-                    SequentialAnimation on opacity {
-                        running: rootArea.showNewMancheAnimation
-                        loops: Animation.Infinite
-
-                        PauseAnimation { duration: index * 100 }  // Décalage pour chaque étoile
-
-                        NumberAnimation {
-                            from: 0
-                            to: 1
-                            duration: 300
-                            easing.type: Easing.InOutQuad
-                        }
-                        NumberAnimation {
-                            from: 1
-                            to: 0.3
-                            duration: 400
-                            easing.type: Easing.InOutQuad
-                        }
-                        NumberAnimation {
-                            from: 0.3
-                            to: 1
-                            duration: 300
-                            easing.type: Easing.InOutQuad
-                        }
-                        NumberAnimation {
-                            from: 1
-                            to: 0
-                            duration: 400
-                            easing.type: Easing.InOutQuad
-                        }
-
-                        PauseAnimation { duration: 200 }
-                    }
-
-                    // Animation de scale pour effet de pulsation
-                    SequentialAnimation on scale {
-                        running: rootArea.showNewMancheAnimation
-                        loops: Animation.Infinite
-
-                        PauseAnimation { duration: index * 80 }
-
-                        NumberAnimation {
-                            from: 0.8
-                            to: 1.2
-                            duration: 500
-                            easing.type: Easing.InOutQuad
-                        }
-                        NumberAnimation {
-                            from: 1.2
-                            to: 0.8
-                            duration: 500
-                            easing.type: Easing.InOutQuad
-                        }
-                    }
-                }
-            }
         }
 
         // =====================

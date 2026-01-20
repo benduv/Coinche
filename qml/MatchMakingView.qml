@@ -77,7 +77,7 @@ Rectangle {
 
     ColumnLayout {
         anchors.centerIn: parent
-        spacing: 40 * root.minRatio
+        spacing: 35 * root.minRatio
         z: 10  // Au-dessus des étoiles
 
         // Animation de recherche
@@ -138,7 +138,7 @@ Rectangle {
         // Texte de statut
         Text {
             text: "Recherche de joueurs..."
-            font.pixelSize: 46 * root.minRatio
+            font.pixelSize: 42 * root.minRatio
             font.bold: true
             color: "#FFD700"
             Layout.alignment: Qt.AlignHCenter
@@ -147,19 +147,19 @@ Rectangle {
         // Compte à rebours avant remplacement par des bots
         Rectangle {
             id: countdownRect
-            Layout.preferredWidth: 700 * root.widthRatio
+            Layout.preferredWidth: 800 * root.widthRatio
             Layout.preferredHeight: 80 * root.heightRatio
             Layout.alignment: Qt.AlignHCenter
             color: "#442200"
             radius: 10 * root.minRatio
             border.color: "#ff9900"
             border.width: 3 * root.minRatio
-            visible: networkManager.matchmakingCountdown > 0
+            opacity: networkManager.matchmakingCountdown > 0 ? 1 : 0
 
             Text {
                 anchors.centerIn: parent
-                text: "Bots dans " + networkManager.matchmakingCountdown + " seconde" + (networkManager.matchmakingCountdown > 1 ? "s" : "") + "..."
-                font.pixelSize: 32 * root.minRatio
+                text: "Joueurs manquant remplacés par des bots: " + networkManager.matchmakingCountdown + " seconde" + (networkManager.matchmakingCountdown > 1 ? "s" : "") + "..."
+                font.pixelSize: 36 * root.minRatio
                 font.bold: true
                 color: "#ffcc00"
             }
@@ -176,12 +176,13 @@ Rectangle {
         // Nombre de joueurs
         Rectangle {
             Layout.preferredWidth: 800 * root.widthRatio
-            Layout.preferredHeight: 200 * root.heightRatio
+            Layout.preferredHeight: 175 * root.heightRatio
             Layout.alignment: Qt.AlignHCenter
             color: "#2a2a2a"
             radius: 10 * root.minRatio
             border.color: "#00cc00"
             border.width: 3 * root.minRatio
+            opacity: 0.6
 
             ColumnLayout {
                 anchors.centerIn: parent
@@ -239,7 +240,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: index < networkManager.playersInQueue ? "✓" : "?"
-                        font.pixelSize: 60 * root.minRatio
+                        font.pixelSize: 50 * root.minRatio
                         color: "white"
                     }
                 }

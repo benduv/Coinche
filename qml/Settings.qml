@@ -5,12 +5,19 @@ import QtQuick.Layouts
 Rectangle {
     id: settingsRoot
     anchors.fill: parent
-    color: "#1a1a1a"
+    color: "transparent"
 
     // Ratio responsive
     property real widthRatio: width / 1024
     property real heightRatio: height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
+
+    // Fond étoilé
+    StarryBackground {
+        anchors.fill: parent
+        minRatio: settingsRoot.minRatio
+        z: -1
+    }
 
     // Propriétés passées par le parent
     property string playerName: ""
@@ -122,6 +129,7 @@ Rectangle {
                 radius: 10 * settingsRoot.minRatio
                 border.color: "#FFD700"
                 border.width: 2 * settingsRoot.minRatio
+                opacity: 0.6
 
                 Column {
                     id: audioColumn
@@ -220,37 +228,6 @@ Rectangle {
                 }
             }
 
-            // Section Affichage (pour futures options)
-            Rectangle {
-                width: parent.width
-                height: displayColumn.height + 40 * settingsRoot.minRatio
-                color: "#2a2a2a"
-                radius: 10 * settingsRoot.minRatio
-                border.color: "#FFD700"
-                border.width: 2 * settingsRoot.minRatio
-
-                Column {
-                    id: displayColumn
-                    anchors.centerIn: parent
-                    width: parent.width - 40 * settingsRoot.minRatio
-                    spacing: 20 * settingsRoot.minRatio
-
-                    Text {
-                        text: "🎨 AFFICHAGE"
-                        font.pixelSize: 40 * settingsRoot.minRatio
-                        font.bold: true
-                        color: "#FFD700"
-                    }
-
-                    Text {
-                        text: "(Options d'affichage à venir...)"
-                        font.pixelSize: 25 * settingsRoot.minRatio
-                        color: "#888888"
-                        font.italic: true
-                    }
-                }
-            }
-
             // Section Compte (visible uniquement pour les comptes enregistrés)
             Rectangle {
                 width: parent.width
@@ -260,6 +237,7 @@ Rectangle {
                 border.color: "#FFD700"
                 border.width: 2 * settingsRoot.minRatio
                 visible: settingsRoot.accountType !== "guest"
+                opacity: 0.6
 
                 Column {
                     id: accountColumn
@@ -305,6 +283,38 @@ Rectangle {
                             deleteErrorText.visible = false
                             deleteConfirmPopup.open()
                         }
+                    }
+                }
+            }
+
+            // Section Affichage (pour futures options)
+            Rectangle {
+                width: parent.width
+                height: displayColumn.height + 40 * settingsRoot.minRatio
+                color: "#2a2a2a"
+                radius: 10 * settingsRoot.minRatio
+                border.color: "#FFD700"
+                border.width: 2 * settingsRoot.minRatio
+                opacity: 0.6
+
+                Column {
+                    id: displayColumn
+                    anchors.centerIn: parent
+                    width: parent.width - 40 * settingsRoot.minRatio
+                    spacing: 20 * settingsRoot.minRatio
+
+                    Text {
+                        text: "🎨 AFFICHAGE"
+                        font.pixelSize: 40 * settingsRoot.minRatio
+                        font.bold: true
+                        color: "#FFD700"
+                    }
+
+                    Text {
+                        text: "(Options d'affichage à venir...)"
+                        font.pixelSize: 25 * settingsRoot.minRatio
+                        color: "#888888"
+                        font.italic: true
                     }
                 }
             }

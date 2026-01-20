@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 
 Rectangle {
     id: root
@@ -19,6 +20,14 @@ Rectangle {
     property int timeRemaining: 20
     property int maxTime: 20
 
+    // Son d'alerte quand le temps est presque écoulé
+    property bool alertSoundPlayed: false
+    MediaPlayer {
+        id: alertSound
+        source: "qrc:/resources/sons/342299__kruud__clock-128-bpm-half-speed.wav"
+        audioOutput: AudioOutput {}
+    }
+
     Timer {
         id: bidTimer
         interval: 1000
@@ -27,6 +36,14 @@ Rectangle {
         onTriggered: {
             if (timeRemaining > 0) {
                 timeRemaining--
+                // Jouer le son d'alerte à 4 secondes restantes (une seule fois)
+                if (timeRemaining === 4 && !root.alertSoundPlayed) {
+                    root.alertSoundPlayed = true
+                    if (AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
+                        alertSound.stop()
+                        alertSound.play()
+                    }
+                }
             } else {
                 // Temps ecoule, fermer la popup si ouverte et passer automatiquement
                 if (suitSelector.opened) {
@@ -42,9 +59,11 @@ Rectangle {
     onVisibleChanged: {
         if (visible) {
             timeRemaining = maxTime
+            alertSoundPlayed = false
             bidTimer.restart()
         } else {
             bidTimer.stop()
+            alertSound.stop()
         }
     }
 

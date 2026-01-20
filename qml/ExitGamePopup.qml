@@ -59,7 +59,7 @@ Rectangle {
             // Message
             Text {
                 text: "Êtes-vous sûr de vouloir quitter ?"
-                font.pixelSize: popup.height * 0.08
+                font.pixelSize: popup.height * 0.07
                 color: "white"
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
@@ -68,7 +68,7 @@ Rectangle {
             }
             Text {
                 text: "Cela comptera comme une défaite."
-                font.pixelSize: popup.height * 0.08
+                font.pixelSize: popup.height * 0.07
                 color: "white"
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
@@ -85,7 +85,7 @@ Rectangle {
 
                 // Bouton Non
                 Button {
-                    width: popup.width * 0.3
+                    width: popup.width * 0.35
                     height: popup.height * 0.25
 
                     background: Rectangle {
@@ -97,7 +97,7 @@ Rectangle {
 
                     contentItem: Text {
                         text: "Non, continuer"
-                        font.pixelSize: popup.height * 0.08
+                        font.pixelSize: popup.height * 0.07
                         font.bold: true
                         color: "white"
                         horizontalAlignment: Text.AlignHCenter
@@ -112,7 +112,7 @@ Rectangle {
 
                 // Bouton Oui
                 Button {
-                    width: popup.width * 0.3
+                    width: popup.width * 0.35
                     height: popup.height * 0.25
 
                     background: Rectangle {
@@ -124,7 +124,7 @@ Rectangle {
 
                     contentItem: Text {
                         text: "Oui, quitter"
-                        font.pixelSize: popup.height * 0.08
+                        font.pixelSize: popup.height * 0.07
                         font.bold: true
                         color: "white"
                         horizontalAlignment: Text.AlignHCenter

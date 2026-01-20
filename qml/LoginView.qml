@@ -123,67 +123,8 @@ Rectangle {
     property real heightRatio: height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
 
-    // Auto-login avec credentials stockés
-    property bool autoLoginPending: false
-    property bool autoLoginAttempted: false
-
-    Component.onCompleted: {
-        // Priorité 1: Auto-login via arguments en ligne de commande (--email --password)
-        if (autoLoginEmail !== "" && autoLoginPassword !== "") {
-            console.log("Auto-login via arguments pour:", autoLoginEmail)
-            autoLoginPending = true
-            return
-        }
-
-        // Priorité 2: Auto-login via credentials stockés (QSettings)
-        // Sauf si --no-autologin a été spécifié (pour les tests multi-clients)
-        if (networkManager.hasStoredCredentials && !disableAutoLogin) {
-            console.log("Credentials stockés trouvés pour:", networkManager.storedEmail)
-            autoLoginPending = true
-        } else if (disableAutoLogin) {
-            console.log("Auto-login désactivé via --no-autologin")
-        }
-    }
-
-    function performAutoLogin() {
-        if (autoLoginPending && networkManager.connected && !autoLoginAttempted) {
-            console.log("Tentative d'auto-login...")
-            autoLoginAttempted = true
-
-            // Priorité 1: Utiliser les arguments en ligne de commande si fournis
-            if (autoLoginEmail !== "" && autoLoginPassword !== "") {
-                console.log("Auto-login avec arguments CLI:", autoLoginEmail)
-                networkManager.loginAccount(autoLoginEmail, autoLoginPassword)
-            } else {
-                // Priorité 2: Utiliser QSettings
-                console.log("Auto-login avec QSettings")
-                networkManager.tryAutoLogin()
-            }
-        }
-    }
-
-    Connections {
-        target: networkManager
-
-        function onConnectedChanged() {
-            if (networkManager.connected && autoLoginPending && !autoLoginAttempted) {
-                performAutoLogin()
-            }
-        }
-
-        function onLoginSuccess(playerName) {
-            loginRoot.loginSuccess(playerName, "account")
-        }
-        function onLoginFailed(error) {
-            console.error("Erreur auto-login:", error)
-            // Si l'auto-login échoue, effacer les credentials invalides
-            if (autoLoginAttempted) {
-                console.log("Auto-login échoué, suppression des credentials stockés")
-                networkManager.clearCredentials()
-                autoLoginPending = false
-            }
-        }
-    }
+    // Note: L'auto-login est maintenant géré par SplashScreen.qml
+    // LoginView ne gère que les connexions manuelles
 
     StackView {
         id: loginStack

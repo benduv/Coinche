@@ -4,7 +4,7 @@ import QtQuick.Controls
 Rectangle {
     id: rulesRoot
     anchors.fill: parent
-    color: "#1a1a1a"  // Fond gris comme les autres menus
+    color: "transparent"
 
     signal backToMenu()
 
@@ -12,6 +12,13 @@ Rectangle {
     property real widthRatio: width / 1024
     property real heightRatio: height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
+
+    // Fond étoilé
+    StarryBackground {
+        anchors.fill: parent
+        minRatio: rulesRoot.minRatio
+        z: -1
+    }
 
     // Bouton retour
     Rectangle {

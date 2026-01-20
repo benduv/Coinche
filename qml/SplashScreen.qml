@@ -5,6 +5,11 @@ Rectangle {
     id: splashRoot
     anchors.fill: parent
 
+    // Configuration pour l'URL du serveur
+    Config {
+        id: config
+    }
+
     // Dégradé spatial pour le fond
     gradient: Gradient {
         GradientStop { position: 0.0; color: "#0a0a2e" }  // Bleu très foncé
@@ -13,9 +18,15 @@ Rectangle {
     }
 
     signal loadingComplete()
+    signal autoLoginSuccess(string playerName)
 
     // Propriété pour suivre la progression (0.0 à 1.0)
     property real progress: 0.0
+
+    // État de l'auto-login
+    property bool autoLoginAttempted: false
+    property bool autoLoginSucceeded: false
+    property string loggedInPlayerName: ""
 
     // Ratio responsive
     property real widthRatio: width / 1024
@@ -263,6 +274,72 @@ Rectangle {
         }
     }
 
+    // Tentative d'auto-login pendant le splash
+    function tryAutoLogin() {
+        if (splashRoot.autoLoginAttempted) return
+
+        // Priorité 1: Arguments en ligne de commande
+        if (typeof autoLoginEmail !== 'undefined' && autoLoginEmail !== "" &&
+            typeof autoLoginPassword !== 'undefined' && autoLoginPassword !== "") {
+            console.log("SplashScreen - Auto-login via arguments CLI:", autoLoginEmail)
+            splashRoot.autoLoginAttempted = true
+            networkManager.loginAccount(autoLoginEmail, autoLoginPassword)
+            return
+        }
+
+        // Priorité 2: Credentials stockés (QSettings)
+        if (networkManager.hasStoredCredentials &&
+            (typeof disableAutoLogin === 'undefined' || !disableAutoLogin)) {
+            console.log("SplashScreen - Auto-login via QSettings:", networkManager.storedEmail)
+            splashRoot.autoLoginAttempted = true
+            networkManager.tryAutoLogin()
+            return
+        }
+
+        console.log("SplashScreen - Pas de credentials pour auto-login")
+    }
+
+    // Connexions au networkManager pour l'auto-login
+    Connections {
+        target: networkManager
+
+        function onConnectedChanged() {
+            console.log("SplashScreen - onConnectedChanged, connected:", networkManager.connected, "autoLoginAttempted:", splashRoot.autoLoginAttempted)
+            if (networkManager.connected && !splashRoot.autoLoginAttempted) {
+                console.log("SplashScreen - Connexion établie, tentative d'auto-login...")
+                splashRoot.tryAutoLogin()
+            }
+        }
+
+        function onLoginSuccess(playerName, avatar) {
+            console.log("SplashScreen - Auto-login réussi pour:", playerName)
+            splashRoot.autoLoginSucceeded = true
+            splashRoot.loggedInPlayerName = playerName
+        }
+
+        function onLoginFailed(error) {
+            console.log("SplashScreen - Auto-login échoué:", error)
+            // Effacer les credentials invalides
+            if (splashRoot.autoLoginAttempted) {
+                networkManager.clearCredentials()
+            }
+        }
+    }
+
+    // Connexion au serveur et auto-login dès que possible
+    Component.onCompleted: {
+        console.log("SplashScreen - Component.onCompleted")
+        if (networkManager.connected) {
+            console.log("SplashScreen - Déjà connecté, tentative d'auto-login")
+            splashRoot.tryAutoLogin()
+        } else {
+            // Initier la connexion au serveur
+            var serverUrl = config.getServerUrl()
+            console.log("SplashScreen - Connexion au serveur:", serverUrl)
+            networkManager.connectToServer(serverUrl)
+        }
+    }
+
     // Animation de progression automatique
     SequentialAnimation {
         id: progressAnimation
@@ -283,7 +360,15 @@ Rectangle {
 
         // Déclencher la fin du chargement
         ScriptAction {
-            script: splashRoot.loadingComplete()
+            script: {
+                if (splashRoot.autoLoginSucceeded) {
+                    // Auto-login réussi -> émettre le signal spécifique
+                    splashRoot.autoLoginSuccess(splashRoot.loggedInPlayerName)
+                } else {
+                    // Pas d'auto-login ou échec -> aller vers LoginView
+                    splashRoot.loadingComplete()
+                }
+            }
         }
     }
 

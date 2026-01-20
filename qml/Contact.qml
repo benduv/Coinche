@@ -5,12 +5,19 @@ import QtQuick.Layouts
 Rectangle {
     id: contactRoot
     anchors.fill: parent
-    color: "#1a1a1a"
+    color: "transparent"
 
     // Ratio responsive
     property real widthRatio: width / 1024
     property real heightRatio: height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
+
+    // Fond étoilé
+    StarryBackground {
+        anchors.fill: parent
+        minRatio: contactRoot.minRatio
+        z: -1
+    }
 
     // Email de contact (pour affichage uniquement)
     property string contactEmail: "contact@nebuludik.fr"

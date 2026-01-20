@@ -22,8 +22,11 @@
         <file>qml/Contact.qml</file>
         <file>qml/SplashScreen.qml</file>
         <file>qml/ShootingStar.qml</file>
+        <file>qml/StarryBackground.qml</file>
         <file>qml/BotReplacementPopup.qml</file>
         <file>qml/ExplosionAnimation.qml</file>
+        <file>qml/UfoNewMancheAnimation.qml</file>
+        <file>resources/animations/UFO_404.gif</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>
@@ -68,6 +71,7 @@
         <file>resources/question-svgrepo-com.svg</file>
         <file>resources/message-svgrepo-com.svg</file>
         <file>resources/saturn-svgrepo-com.svg</file>
+        <file>resources/pencil-svgrepo-com.svg</file>
         <file>resources/avatar/avataaars1.svg</file>
         <file>resources/avatar/avataaars2.svg</file>
         <file>resources/avatar/avataaars3.svg</file>
@@ -97,5 +101,9 @@
         <file>resources/sons/card-sounds-35956.mp3</file>
         <file>resources/sons/701848__perduuus__card-step-2.wav</file>
         <file>resources/sons/827603__elliottliu__card3.wav</file>
+        <file>resources/sons/727968__nomentero__ufo-flying-retro.wav</file>
+        <file>resources/sons/342299__kruud__clock-128-bpm-half-speed.wav</file>
+        <file>resources/sons/75328__oddworld__oddworld_explosionecho.wav</file>
+        <file>resources/sons/167242__nfrae__fireworkblast.wav</file>
     </qresource>
 </RCC>
