@@ -322,6 +322,8 @@ private slots:
             handleRehumanize(sender);
         } else if (type == "sendContactMessage") {
             handleSendContactMessage(sender, obj);
+        } else if (type == "reportCrash") {
+            handleReportCrash(sender, obj);
         }
     }
 
@@ -333,10 +335,12 @@ private slots:
 
         // Trouve la connexion
         QString connectionId;
+        QString playerName;
         bool wasInQueue = false;
         for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
             if (it.value()->socket == socket) {
                 connectionId = it.key();
+                playerName = it.value()->playerName;
 
                 // Retire de la file d'attente et note si le joueur était en attente
                 wasInQueue = m_matchmakingQueue.contains(connectionId);
@@ -345,6 +349,11 @@ private slots:
                 // Notifie la room si le joueur était en partie
                 if (it.value()->gameRoomId != -1) {
                     handlePlayerDisconnect(connectionId);
+                }
+
+                // Terminer le tracking de session (lightweight)
+                if (!playerName.isEmpty()) {
+                    m_dbManager->recordSessionEnd(playerName);
                 }
 
                 delete it.value();
@@ -817,6 +826,9 @@ private:
             // Enregistrer la connexion dans les statistiques quotidiennes
             m_dbManager->recordLogin(pseudo);
 
+            // Démarrer le tracking de session (lightweight - pas de timer)
+            m_dbManager->recordSessionStart(pseudo);
+
             // Vérifier si le joueur peut se reconnecter à une partie en cours
             if (m_playerNameToRoomId.contains(pseudo)) {
                 int roomId = m_playerNameToRoomId[pseudo];
@@ -959,6 +971,31 @@ private:
 
         // Envoyer l'email
         smtp->sendEmail("contact@nebuludik.fr", "[Coinche] " + subject, body);
+    }
+
+    void handleReportCrash(QWebSocket *socket, const QJsonObject &data) {
+        QString errorMsg = data["error"].toString();
+        QString stackTrace = data["stackTrace"].toString();
+        QString playerName = data["playerName"].toString();
+
+        qWarning() << "CRASH REPORT reçu de:" << playerName << "- Erreur:" << errorMsg;
+
+        // Enregistrer le crash dans les statistiques
+        m_dbManager->recordCrash();
+
+        // Log détaillé pour debug
+        if (!stackTrace.isEmpty()) {
+            qWarning() << "Stack trace:" << stackTrace;
+        }
+
+        // Répondre au client
+        QJsonObject response;
+        response["type"] = "crashReported";
+        response["success"] = true;
+        sendMessage(socket, response);
+
+        // Note: On pourrait aussi envoyer un email d'alerte pour les crashes critiques
+        // ou stocker plus de détails dans une table dédiée
     }
 
     void handleGetStats(QWebSocket *socket, const QJsonObject &data) {

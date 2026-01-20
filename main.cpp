@@ -8,9 +8,41 @@
 #include "GameModel.h"
 #include "WindowPositioner.h"
 
+// Pointeur global vers NetworkManager pour le crash reporter
+static NetworkManager* g_networkManager = nullptr;
+
+// Handler de messages Qt personnalisé pour capturer et reporter les crashes
+void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+    // Formatter le message normalement
+    QString formattedMessage = qFormatLogMessage(type, context, msg);
+
+    // Afficher dans la console (comportement par défaut)
+    fprintf(stderr, "%s\n", formattedMessage.toLocal8Bit().constData());
+    fflush(stderr);
+
+    // Reporter seulement les erreurs critiques au serveur
+    if ((type == QtCriticalMsg || type == QtFatalMsg) && g_networkManager) {
+        QString errorMsg = QString("%1").arg(msg);
+        QString stackTrace = QString("File: %1:%2, Function: %3")
+                                .arg(context.file ? context.file : "unknown")
+                                .arg(context.line)
+                                .arg(context.function ? context.function : "unknown");
+
+        // Envoyer au serveur via la méthode publique
+        g_networkManager->reportCrash(errorMsg, stackTrace);
+
+        qWarning() << "🔴 Crash reporté au serveur:" << errorMsg;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+
+    // Installer le handler de messages personnalisé pour le crash reporting
+    qInstallMessageHandler(customMessageHandler);
+    qInfo() << "✅ Crash reporter initialisé";
 
     // Configuration pour QSettings (utilisé par QtCore.Settings en QML)
     app.setOrganizationName("Nebuludik");
@@ -76,11 +108,15 @@ int main(int argc, char *argv[])
     }
 
     QQuickStyle::setStyle("Material");
-    
+
     QQmlApplicationEngine engine;
-        
+
     // NetworkManager global
     NetworkManager networkManager;
+
+    // Initialiser le pointeur global pour le crash reporter
+    g_networkManager = &networkManager;
+
     engine.rootContext()->setContextProperty("networkManager", &networkManager);
     engine.rootContext()->setContextProperty("defaultPlayerName", playerName);
     engine.rootContext()->setContextProperty("autoLoginEmail", autoLoginEmail);
@@ -99,7 +135,31 @@ int main(int argc, char *argv[])
         qDebug() << "Exposition de gameModel au contexte QML";
         engine.rootContext()->setContextProperty("gameModel", networkManager.gameModel());
     });
-    
+
+    // Capturer les erreurs/warnings QML spécifiques
+    QObject::connect(&engine, &QQmlApplicationEngine::warnings, [&networkManager](const QList<QQmlError> &warnings) {
+        for (const QQmlError &warning : warnings) {
+            if (!warning.isValid()) continue;
+
+            QString msg = warning.toString();
+
+            // Reporter seulement les vraies erreurs (pas les warnings mineurs)
+            if (msg.contains("Error", Qt::CaseInsensitive) ||
+                msg.contains("TypeError", Qt::CaseInsensitive) ||
+                msg.contains("ReferenceError", Qt::CaseInsensitive)) {
+
+                QString errorMsg = QString("QML Error: %1").arg(warning.description());
+                QString stackTrace = QString("URL: %1, Line: %2, Column: %3")
+                                        .arg(warning.url().toString())
+                                        .arg(warning.line())
+                                        .arg(warning.column());
+
+                networkManager.reportCrash(errorMsg, stackTrace);
+                qWarning() << "🔴 QML crash reporté au serveur:" << msg;
+            }
+        }
+    });
+
     const QUrl url(QStringLiteral("qrc:/qml/MainMenu.qml"));
     engine.load(url);
     

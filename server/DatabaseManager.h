@@ -100,11 +100,32 @@ public:
         int gameRoomsCreated;
         int newAccounts;
         int playerQuits;
+        int crashes;
+        int totalSessionTime;
+        int sessionCount;
     };
     DailyStats getDailyStats(const QString &date = QString());
 
     // Récupérer les stats de la veille (pour comparaison)
     DailyStats getYesterdayStats();
+
+    // Tracking du temps de session (lightweight: pas de timers)
+    bool recordSessionStart(const QString &pseudo);
+    bool recordSessionEnd(const QString &pseudo);
+
+    // Tracking des crashes
+    bool recordCrash();
+
+    // Calcul des taux de rétention
+    struct RetentionStats {
+        double d1Retention;  // % de joueurs revenus J+1
+        double d7Retention;  // % de joueurs revenus J+7
+        double d30Retention; // % de joueurs revenus J+30
+    };
+    RetentionStats getRetentionStats();
+
+    // Obtenir les tendances sur N jours
+    QList<DailyStats> getTrendStats(int days);
 
 private:
     QSqlDatabase m_db;

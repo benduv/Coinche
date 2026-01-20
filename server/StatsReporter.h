@@ -35,10 +35,19 @@ private:
     int m_reportMinute;
 
     // Générer le contenu HTML de l'email
-    QString generateReportHtml(const DatabaseManager::DailyStats &today, const DatabaseManager::DailyStats &yesterday);
+    QString generateReportHtml(
+        const DatabaseManager::DailyStats &today,
+        const DatabaseManager::DailyStats &yesterday,
+        const DatabaseManager::RetentionStats &retention,
+        const QList<DatabaseManager::DailyStats> &trends7d,
+        const QList<DatabaseManager::DailyStats> &trends30d
+    );
 
     // Calculer le pourcentage de changement
     QString calculateTrend(int today, int yesterday);
+
+    // Générer un graphique SVG simple pour les tendances
+    QString generateTrendChart(const QList<DatabaseManager::DailyStats> &trends, const QString &metricName);
 
     // Planifier le prochain envoi
     void scheduleNextReport();

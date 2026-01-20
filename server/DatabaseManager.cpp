@@ -246,6 +246,9 @@ bool DatabaseManager::createTables()
             game_rooms_created INTEGER DEFAULT 0,
             new_accounts INTEGER DEFAULT 0,
             player_quits INTEGER DEFAULT 0,
+            crashes INTEGER DEFAULT 0,
+            total_session_time INTEGER DEFAULT 0,
+            session_count INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     )";
@@ -256,6 +259,54 @@ bool DatabaseManager::createTables()
     }
 
     qDebug() << "Table 'daily_stats' creee/verifiee";
+
+    // Migration: Ajouter les nouvelles colonnes si elles n'existent pas
+    if (!query.exec("PRAGMA table_info(daily_stats)")) {
+        qWarning() << "Erreur lecture schema daily_stats:" << query.lastError().text();
+    } else {
+        bool hasCrashes = false, hasTotalSessionTime = false, hasSessionCount = false;
+        while (query.next()) {
+            QString colName = query.value(1).toString();
+            if (colName == "crashes") hasCrashes = true;
+            if (colName == "total_session_time") hasTotalSessionTime = true;
+            if (colName == "session_count") hasSessionCount = true;
+        }
+
+        if (!hasCrashes) {
+            if (!query.exec("ALTER TABLE daily_stats ADD COLUMN crashes INTEGER DEFAULT 0")) {
+                qWarning() << "Erreur ajout colonne crashes:" << query.lastError().text();
+            }
+        }
+        if (!hasTotalSessionTime) {
+            if (!query.exec("ALTER TABLE daily_stats ADD COLUMN total_session_time INTEGER DEFAULT 0")) {
+                qWarning() << "Erreur ajout colonne total_session_time:" << query.lastError().text();
+            }
+        }
+        if (!hasSessionCount) {
+            if (!query.exec("ALTER TABLE daily_stats ADD COLUMN session_count INTEGER DEFAULT 0")) {
+                qWarning() << "Erreur ajout colonne session_count:" << query.lastError().text();
+            }
+        }
+    }
+
+    // Table des sessions utilisateurs (pour calcul de retention)
+    QString createUserSessionsTable = R"(
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pseudo TEXT NOT NULL,
+            login_time TIMESTAMP NOT NULL,
+            logout_time TIMESTAMP,
+            session_duration INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    )";
+
+    if (!query.exec(createUserSessionsTable)) {
+        qCritical() << "Erreur creation table user_sessions:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Table 'user_sessions' creee/verifiee";
 
     return true;
 }
@@ -904,9 +955,12 @@ DatabaseManager::DailyStats DatabaseManager::getDailyStats(const QString &date)
     stats.gameRoomsCreated = 0;
     stats.newAccounts = 0;
     stats.playerQuits = 0;
+    stats.crashes = 0;
+    stats.totalSessionTime = 0;
+    stats.sessionCount = 0;
 
     QSqlQuery query(m_db);
-    query.prepare("SELECT logins, game_rooms_created, new_accounts, player_quits FROM daily_stats WHERE date = :date");
+    query.prepare("SELECT logins, game_rooms_created, new_accounts, player_quits, crashes, total_session_time, session_count FROM daily_stats WHERE date = :date");
     query.bindValue(":date", targetDate);
 
     if (!query.exec()) {
@@ -919,6 +973,9 @@ DatabaseManager::DailyStats DatabaseManager::getDailyStats(const QString &date)
         stats.gameRoomsCreated = query.value(1).toInt();
         stats.newAccounts = query.value(2).toInt();
         stats.playerQuits = query.value(3).toInt();
+        stats.crashes = query.value(4).toInt();
+        stats.totalSessionTime = query.value(5).toInt();
+        stats.sessionCount = query.value(6).toInt();
     }
 
     return stats;
@@ -928,4 +985,196 @@ DatabaseManager::DailyStats DatabaseManager::getYesterdayStats()
 {
     QString yesterday = QDate::currentDate().addDays(-1).toString("yyyy-MM-dd");
     return getDailyStats(yesterday);
+}
+
+// Tracking du temps de session - Lightweight (pas de timers)
+bool DatabaseManager::recordSessionStart(const QString &pseudo)
+{
+    QSqlQuery query(m_db);
+    query.prepare("INSERT INTO user_sessions (pseudo, login_time) VALUES (:pseudo, datetime('now'))");
+    query.bindValue(":pseudo", pseudo);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur recordSessionStart:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Session démarrée pour:" << pseudo;
+    return true;
+}
+
+bool DatabaseManager::recordSessionEnd(const QString &pseudo)
+{
+    QSqlQuery query(m_db);
+
+    // Trouver la session active la plus récente sans logout_time
+    query.prepare("SELECT id, login_time FROM user_sessions WHERE pseudo = :pseudo AND logout_time IS NULL ORDER BY login_time DESC LIMIT 1");
+    query.bindValue(":pseudo", pseudo);
+
+    if (!query.exec() || !query.next()) {
+        qWarning() << "Aucune session active trouvée pour:" << pseudo;
+        return false;
+    }
+
+    int sessionId = query.value(0).toInt();
+    QDateTime loginTime = query.value(1).toDateTime();
+    QDateTime logoutTime = QDateTime::currentDateTime();
+    int duration = loginTime.secsTo(logoutTime);
+
+    // Mettre à jour la session avec le logout_time et la durée
+    query.prepare("UPDATE user_sessions SET logout_time = datetime('now'), session_duration = :duration WHERE id = :id");
+    query.bindValue(":duration", duration);
+    query.bindValue(":id", sessionId);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur recordSessionEnd:" << query.lastError().text();
+        return false;
+    }
+
+    // Mettre à jour les stats quotidiennes
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+    query.prepare(R"(
+        INSERT INTO daily_stats (date, total_session_time, session_count)
+        VALUES (:date, :duration, 1)
+        ON CONFLICT(date) DO UPDATE SET
+            total_session_time = total_session_time + :duration,
+            session_count = session_count + 1
+    )");
+    query.bindValue(":date", today);
+    query.bindValue(":duration", duration);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur mise à jour stats session:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Session terminée pour" << pseudo << "- Durée:" << duration << "secondes";
+    return true;
+}
+
+// Tracking des crashes
+bool DatabaseManager::recordCrash()
+{
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+
+    QSqlQuery query(m_db);
+    query.prepare(R"(
+        INSERT INTO daily_stats (date, crashes)
+        VALUES (:date, 1)
+        ON CONFLICT(date) DO UPDATE SET crashes = crashes + 1
+    )");
+    query.bindValue(":date", today);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur recordCrash:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Crash enregistré pour:" << today;
+    return true;
+}
+
+// Calcul des taux de rétention
+DatabaseManager::RetentionStats DatabaseManager::getRetentionStats()
+{
+    RetentionStats retention;
+    retention.d1Retention = 0.0;
+    retention.d7Retention = 0.0;
+    retention.d30Retention = 0.0;
+
+    QSqlQuery query(m_db);
+
+    // Calcul D1 : % de joueurs actifs il y a 2 jours qui se sont reconnectés le lendemain
+    query.prepare(R"(
+        SELECT
+            COUNT(DISTINCT s1.pseudo) as total_users,
+            COUNT(DISTINCT CASE WHEN s2.pseudo IS NOT NULL THEN s1.pseudo END) as returned_users
+        FROM user_sessions s1
+        LEFT JOIN user_sessions s2 ON s1.pseudo = s2.pseudo
+            AND date(s2.login_time) = date(s1.login_time, '+1 day')
+        WHERE date(s1.login_time) = date('now', '-2 days')
+    )");
+
+    if (query.exec() && query.next()) {
+        int total = query.value(0).toInt();
+        int returned = query.value(1).toInt();
+        if (total > 0) {
+            retention.d1Retention = (returned * 100.0) / total;
+        }
+    }
+
+    // Calcul D7
+    query.prepare(R"(
+        SELECT
+            COUNT(DISTINCT s1.pseudo) as total_users,
+            COUNT(DISTINCT CASE WHEN s2.pseudo IS NOT NULL THEN s1.pseudo END) as returned_users
+        FROM user_sessions s1
+        LEFT JOIN user_sessions s2 ON s1.pseudo = s2.pseudo
+            AND date(s2.login_time) BETWEEN date(s1.login_time, '+6 days') AND date(s1.login_time, '+8 days')
+        WHERE date(s1.login_time) = date('now', '-9 days')
+    )");
+
+    if (query.exec() && query.next()) {
+        int total = query.value(0).toInt();
+        int returned = query.value(1).toInt();
+        if (total > 0) {
+            retention.d7Retention = (returned * 100.0) / total;
+        }
+    }
+
+    // Calcul D30
+    query.prepare(R"(
+        SELECT
+            COUNT(DISTINCT s1.pseudo) as total_users,
+            COUNT(DISTINCT CASE WHEN s2.pseudo IS NOT NULL THEN s1.pseudo END) as returned_users
+        FROM user_sessions s1
+        LEFT JOIN user_sessions s2 ON s1.pseudo = s2.pseudo
+            AND date(s2.login_time) BETWEEN date(s1.login_time, '+29 days') AND date(s1.login_time, '+31 days')
+        WHERE date(s1.login_time) = date('now', '-32 days')
+    )");
+
+    if (query.exec() && query.next()) {
+        int total = query.value(0).toInt();
+        int returned = query.value(1).toInt();
+        if (total > 0) {
+            retention.d30Retention = (returned * 100.0) / total;
+        }
+    }
+
+    return retention;
+}
+
+// Obtenir les tendances sur N jours
+QList<DatabaseManager::DailyStats> DatabaseManager::getTrendStats(int days)
+{
+    QList<DailyStats> trends;
+
+    QSqlQuery query(m_db);
+    query.prepare(R"(
+        SELECT date, logins, game_rooms_created, new_accounts, player_quits, crashes, total_session_time, session_count
+        FROM daily_stats
+        WHERE date >= date('now', '-' || :days || ' days')
+        ORDER BY date ASC
+    )");
+    query.bindValue(":days", days);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur getTrendStats:" << query.lastError().text();
+        return trends;
+    }
+
+    while (query.next()) {
+        DailyStats stats;
+        stats.date = query.value(0).toString();
+        stats.logins = query.value(1).toInt();
+        stats.gameRoomsCreated = query.value(2).toInt();
+        stats.newAccounts = query.value(3).toInt();
+        stats.playerQuits = query.value(4).toInt();
+        stats.crashes = query.value(5).toInt();
+        stats.totalSessionTime = query.value(6).toInt();
+        stats.sessionCount = query.value(7).toInt();
+        trends.append(stats);
+    }
+
+    return trends;
 }

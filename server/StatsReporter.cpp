@@ -2,6 +2,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <cmath>
+#include <numeric>
 
 StatsReporter::StatsReporter(DatabaseManager *dbManager, const QString &smtpPassword, QObject *parent)
     : QObject(parent)
@@ -77,8 +78,15 @@ void StatsReporter::sendDailyReport()
     DatabaseManager::DailyStats today = m_dbManager->getDailyStats();
     DatabaseManager::DailyStats yesterday = m_dbManager->getYesterdayStats();
 
+    // Récupérer les taux de rétention
+    DatabaseManager::RetentionStats retention = m_dbManager->getRetentionStats();
+
+    // Récupérer les tendances (7 jours et 30 jours)
+    QList<DatabaseManager::DailyStats> trends7d = m_dbManager->getTrendStats(7);
+    QList<DatabaseManager::DailyStats> trends30d = m_dbManager->getTrendStats(30);
+
     // Générer le contenu HTML
-    QString htmlContent = generateReportHtml(today, yesterday);
+    QString htmlContent = generateReportHtml(today, yesterday, retention, trends7d, trends30d);
 
     // Créer et configurer le client SMTP (même config que Contact)
     SmtpClient *smtp = new SmtpClient(this);
@@ -106,7 +114,12 @@ void StatsReporter::sendDailyReport()
     smtp->sendEmail(to, subject, htmlContent, true);
 }
 
-QString StatsReporter::generateReportHtml(const DatabaseManager::DailyStats &today, const DatabaseManager::DailyStats &yesterday)
+QString StatsReporter::generateReportHtml(
+    const DatabaseManager::DailyStats &today,
+    const DatabaseManager::DailyStats &yesterday,
+    const DatabaseManager::RetentionStats &retention,
+    const QList<DatabaseManager::DailyStats> &trends7d,
+    const QList<DatabaseManager::DailyStats> &trends30d)
 {
     QString html = R"(
 <!DOCTYPE html>
@@ -248,6 +261,61 @@ QString StatsReporter::generateReportHtml(const DatabaseManager::DailyStats &tod
             </div>
         </div>
 
+        <!-- Nouvelles statistiques avancées -->
+        <div class="stats-grid" style="margin-top: 20px;">
+            <div class="stat-card" style="border-left-color: #9C27B0;">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-label">Temps de session moyen</div>
+                <div class="stat-value">)" + QString::number(today.sessionCount > 0 ? today.totalSessionTime / today.sessionCount / 60 : 0) + R"( min</div>
+                <div class="stat-trend trend-stable">
+                    )" + QString::number(today.sessionCount) + R"( sessions
+                </div>
+            </div>
+
+            <div class="stat-card" style="border-left-color: #E91E63;">
+                <div class="stat-icon">💥</div>
+                <div class="stat-label">Crashes détectés</div>
+                <div class="stat-value">)" + QString::number(today.crashes) + R"(</div>
+                <div class="stat-trend )" + (today.crashes >= yesterday.crashes ? "trend-down" : "trend-up") + R"(">
+                    )" + calculateTrend(today.crashes, yesterday.crashes) + R"(
+                </div>
+            </div>
+        </div>
+
+        <!-- Taux de rétention -->
+        <div style="margin-top: 30px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+            <h2 style="color: #FFD700; margin: 0 0 15px 0; font-size: 20px;">📊 Taux de Rétention</h2>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 150px; text-align: center; padding: 15px; background: rgba(76, 175, 80, 0.1); border-radius: 8px;">
+                    <div style="font-size: 14px; color: #cccccc; margin-bottom: 5px;">Jour 1</div>
+                    <div style="font-size: 32px; font-weight: bold; color: #4CAF50;">)" + QString::number(retention.d1Retention, 'f', 1) + R"(%</div>
+                </div>
+                <div style="flex: 1; min-width: 150px; text-align: center; padding: 15px; background: rgba(33, 150, 243, 0.1); border-radius: 8px;">
+                    <div style="font-size: 14px; color: #cccccc; margin-bottom: 5px;">Jour 7</div>
+                    <div style="font-size: 32px; font-weight: bold; color: #2196F3;">)" + QString::number(retention.d7Retention, 'f', 1) + R"(%</div>
+                </div>
+                <div style="flex: 1; min-width: 150px; text-align: center; padding: 15px; background: rgba(255, 152, 0, 0.1); border-radius: 8px;">
+                    <div style="font-size: 14px; color: #cccccc; margin-bottom: 5px;">Jour 30</div>
+                    <div style="font-size: 32px; font-weight: bold; color: #FF9800;">)" + QString::number(retention.d30Retention, 'f', 1) + R"(%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphiques de tendance -->
+        <div style="margin-top: 30px;">
+            <h2 style="color: #FFD700; margin: 0 0 15px 0; font-size: 20px;">📈 Tendances sur 7 jours</h2>
+            <div style="background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 20px;">
+                )" + generateTrendChart(trends7d, "logins") + R"(
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h2 style="color: #FFD700; margin: 0 0 15px 0; font-size: 20px;">📈 Tendances sur 30 jours</h2>
+            <div style="background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 20px;">
+                )" + generateTrendChart(trends30d, "logins") + R"(
+            </div>
+        </div>
+
         <div class="footer">
             © 2026 NEBULUDIK - Coinche Beta Statistics<br>
             Généré automatiquement par le serveur de jeu
@@ -278,4 +346,73 @@ QString StatsReporter::calculateTrend(int today, int yesterday)
     } else {
         return QString("📉 %1%").arg(QString::number(change, 'f', 1));
     }
+}
+
+QString StatsReporter::generateTrendChart(const QList<DatabaseManager::DailyStats> &trends, const QString &metricName)
+{
+    if (trends.isEmpty()) {
+        return "<p style='color: #888;'>Pas assez de données pour générer un graphique</p>";
+    }
+
+    // Extraire les valeurs selon la métrique demandée
+    QList<int> values;
+    QStringList labels;
+    int maxValue = 1;
+
+    for (const auto &stat : trends) {
+        int value = 0;
+        if (metricName == "logins") value = stat.logins;
+        else if (metricName == "games") value = stat.gameRoomsCreated;
+        else if (metricName == "newAccounts") value = stat.newAccounts;
+        else if (metricName == "quits") value = stat.playerQuits;
+
+        values.append(value);
+        labels.append(stat.date.mid(5)); // Garder seulement MM-DD
+        if (value > maxValue) maxValue = value;
+    }
+
+    // Générer un graphique SVG simple (graphique en barres)
+    const int width = 600;
+    const int height = 200;
+    const int barWidth = width / values.size();
+    const int padding = 10;
+
+    QString svg = QString("<svg width='%1' height='%2' style='background: rgba(0,0,0,0.2); border-radius: 8px;'>").arg(width).arg(height);
+
+    // Dessiner les barres
+    for (int i = 0; i < values.size(); ++i) {
+        int barHeight = (values[i] * (height - 40)) / (maxValue > 0 ? maxValue : 1);
+        int x = i * barWidth + padding;
+        int y = height - barHeight - 20;
+
+        // Couleur de la barre (gradient de bleu)
+        QString color = "#2196F3";
+
+        svg += QString("<rect x='%1' y='%2' width='%3' height='%4' fill='%5' opacity='0.8'/>")
+                .arg(x).arg(y).arg(barWidth - 4).arg(barHeight).arg(color);
+
+        // Valeur au-dessus de la barre
+        svg += QString("<text x='%1' y='%2' fill='white' font-size='10' text-anchor='middle'>%3</text>")
+                .arg(x + (barWidth - 4) / 2).arg(y - 5).arg(values[i]);
+
+        // Label de date (tous les 2 jours pour éviter le chevauchement)
+        if (i % 2 == 0 || values.size() <= 7) {
+            svg += QString("<text x='%1' y='%2' fill='#cccccc' font-size='9' text-anchor='middle' transform='rotate(-45 %1 %2)'>%3</text>")
+                    .arg(x + (barWidth - 4) / 2).arg(height - 5).arg(labels[i]);
+        }
+    }
+
+    svg += "</svg>";
+
+    // Ajouter une légende
+    QString legend = QString("<div style='margin-top: 10px; color: #cccccc; font-size: 12px; text-align: center;'>"
+                            "Métrique: <strong>%1</strong> | Max: <strong>%2</strong> | Moy: <strong>%3</strong>"
+                            "</div>")
+                        .arg(metricName == "logins" ? "Connexions" :
+                             metricName == "games" ? "Parties créées" :
+                             metricName == "newAccounts" ? "Nouveaux comptes" : "Abandons")
+                        .arg(maxValue)
+                        .arg(values.isEmpty() ? 0 : std::accumulate(values.begin(), values.end(), 0) / values.size());
+
+    return svg + legend;
 }
