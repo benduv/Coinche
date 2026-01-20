@@ -34,10 +34,11 @@ public:
     }
 
     // Envoie un email de maniere asynchrone
-    void sendEmail(const QString &to, const QString &subject, const QString &body) {
+    void sendEmail(const QString &to, const QString &subject, const QString &body, bool isHtml = false) {
         m_to = to;
         m_subject = subject;
         m_body = body;
+        m_isHtml = isHtml;
         m_state = Init;
         m_responseBuffer.clear();
 
@@ -278,7 +279,14 @@ private:
         email += QString("To: <%1>\r\n").arg(m_to);
         email += QString("Subject: %1\r\n").arg(m_subject);
         email += "MIME-Version: 1.0\r\n";
-        email += "Content-Type: text/plain; charset=utf-8\r\n";
+
+        // Choisir le Content-Type selon le format
+        if (m_isHtml) {
+            email += "Content-Type: text/html; charset=utf-8\r\n";
+        } else {
+            email += "Content-Type: text/plain; charset=utf-8\r\n";
+        }
+
         email += "Content-Transfer-Encoding: 8bit\r\n";
         email += "\r\n";
         email += m_body;
@@ -311,6 +319,7 @@ private:
     QString m_to;
     QString m_subject;
     QString m_body;
+    bool m_isHtml = false;  // Format HTML ou texte brut
     State m_state;
     int m_timeout;
     QString m_responseBuffer;  // Buffer pour accumuler les reponses

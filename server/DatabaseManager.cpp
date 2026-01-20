@@ -237,6 +237,26 @@ bool DatabaseManager::createTables()
         }
     }
 
+    // Table des statistiques quotidiennes
+    QString createDailyStatsTable = R"(
+        CREATE TABLE IF NOT EXISTS daily_stats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT UNIQUE NOT NULL,
+            logins INTEGER DEFAULT 0,
+            game_rooms_created INTEGER DEFAULT 0,
+            new_accounts INTEGER DEFAULT 0,
+            player_quits INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    )";
+
+    if (!query.exec(createDailyStatsTable)) {
+        qCritical() << "Erreur creation table daily_stats:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Table 'daily_stats' creee/verifiee";
+
     return true;
 }
 
@@ -770,4 +790,142 @@ bool DatabaseManager::deleteAccount(const QString &pseudo, QString &errorMsg)
 
     qDebug() << "Compte supprime avec succes pour:" << pseudo;
     return true;
+}
+
+// ==================== STATISTIQUES QUOTIDIENNES ====================
+
+bool DatabaseManager::recordLogin(const QString &pseudo)
+{
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+
+    // S'assurer que l'entrée du jour existe
+    QSqlQuery checkQuery(m_db);
+    checkQuery.prepare("SELECT id FROM daily_stats WHERE date = :date");
+    checkQuery.bindValue(":date", today);
+
+    if (!checkQuery.exec()) {
+        qWarning() << "Erreur verif daily_stats:" << checkQuery.lastError().text();
+        return false;
+    }
+
+    if (!checkQuery.next()) {
+        // Créer l'entrée du jour
+        QSqlQuery insertQuery(m_db);
+        insertQuery.prepare("INSERT INTO daily_stats (date, logins) VALUES (:date, 1)");
+        insertQuery.bindValue(":date", today);
+
+        if (!insertQuery.exec()) {
+            qWarning() << "Erreur creation daily_stats:" << insertQuery.lastError().text();
+            return false;
+        }
+    } else {
+        // Incrémenter le compteur de logins
+        QSqlQuery updateQuery(m_db);
+        updateQuery.prepare("UPDATE daily_stats SET logins = logins + 1 WHERE date = :date");
+        updateQuery.bindValue(":date", today);
+
+        if (!updateQuery.exec()) {
+            qWarning() << "Erreur update logins:" << updateQuery.lastError().text();
+            return false;
+        }
+    }
+
+    qDebug() << "Login enregistré pour:" << pseudo << "à la date:" << today;
+    return true;
+}
+
+bool DatabaseManager::recordGameRoomCreated()
+{
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+
+    QSqlQuery query(m_db);
+    query.prepare(R"(
+        INSERT INTO daily_stats (date, game_rooms_created) VALUES (:date, 1)
+        ON CONFLICT(date) DO UPDATE SET game_rooms_created = game_rooms_created + 1
+    )");
+    query.bindValue(":date", today);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur recordGameRoomCreated:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "GameRoom créée enregistrée pour:" << today;
+    return true;
+}
+
+bool DatabaseManager::recordNewAccount()
+{
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+
+    QSqlQuery query(m_db);
+    query.prepare(R"(
+        INSERT INTO daily_stats (date, new_accounts) VALUES (:date, 1)
+        ON CONFLICT(date) DO UPDATE SET new_accounts = new_accounts + 1
+    )");
+    query.bindValue(":date", today);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur recordNewAccount:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Nouveau compte enregistré pour:" << today;
+    return true;
+}
+
+bool DatabaseManager::recordPlayerQuit()
+{
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+
+    QSqlQuery query(m_db);
+    query.prepare(R"(
+        INSERT INTO daily_stats (date, player_quits) VALUES (:date, 1)
+        ON CONFLICT(date) DO UPDATE SET player_quits = player_quits + 1
+    )");
+    query.bindValue(":date", today);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur recordPlayerQuit:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Abandon de partie enregistré pour:" << today;
+    return true;
+}
+
+DatabaseManager::DailyStats DatabaseManager::getDailyStats(const QString &date)
+{
+    QString targetDate = date.isEmpty() ? QDate::currentDate().toString("yyyy-MM-dd") : date;
+
+    DailyStats stats;
+    stats.date = targetDate;
+    stats.logins = 0;
+    stats.gameRoomsCreated = 0;
+    stats.newAccounts = 0;
+    stats.playerQuits = 0;
+
+    QSqlQuery query(m_db);
+    query.prepare("SELECT logins, game_rooms_created, new_accounts, player_quits FROM daily_stats WHERE date = :date");
+    query.bindValue(":date", targetDate);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur getDailyStats:" << query.lastError().text();
+        return stats;
+    }
+
+    if (query.next()) {
+        stats.logins = query.value(0).toInt();
+        stats.gameRoomsCreated = query.value(1).toInt();
+        stats.newAccounts = query.value(2).toInt();
+        stats.playerQuits = query.value(3).toInt();
+    }
+
+    return stats;
+}
+
+DatabaseManager::DailyStats DatabaseManager::getYesterdayStats()
+{
+    QString yesterday = QDate::currentDate().addDays(-1).toString("yyyy-MM-dd");
+    return getDailyStats(yesterday);
 }

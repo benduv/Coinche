@@ -148,6 +148,8 @@ if(NOT ANDROID)
         server/DatabaseManager.cpp
         server/SmtpClient.h
         server/SmtpClient.cpp
+        server/StatsReporter.h
+        server/StatsReporter.cpp
     )
 
     target_include_directories(server PRIVATE

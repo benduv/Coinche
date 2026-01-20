@@ -87,6 +87,25 @@ public:
     // Supprimer un compte utilisateur et toutes ses données
     bool deleteAccount(const QString &pseudo, QString &errorMsg);
 
+    // Tracking des statistiques quotidiennes
+    bool recordLogin(const QString &pseudo);
+    bool recordGameRoomCreated();
+    bool recordNewAccount();
+    bool recordPlayerQuit();
+
+    // Récupérer les statistiques du jour
+    struct DailyStats {
+        QString date;
+        int logins;
+        int gameRoomsCreated;
+        int newAccounts;
+        int playerQuits;
+    };
+    DailyStats getDailyStats(const QString &date = QString());
+
+    // Récupérer les stats de la veille (pour comparaison)
+    DailyStats getYesterdayStats();
+
 private:
     QSqlDatabase m_db;
 

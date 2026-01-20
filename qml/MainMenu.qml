@@ -120,12 +120,18 @@ ApplicationWindow {
         // Nettoyer le gameModel
         networkManager.clearGameModel()
 
-        // Pop toutes les pages jusqu'au MainMenu (depth 2)
-        while (stackView.depth > 2) {
+        // Pop toutes les pages jusqu'au MainMenu (depth 1)
+        while (stackView.depth > 1) {
             console.log("MainMenu.returnToMainMenu - Pop, depth:", stackView.depth)
             stackView.pop()
         }
         console.log("MainMenu.returnToMainMenu - Termine, depth final:", stackView.depth)
+
+        // Relancer la musique du menu
+        console.log("MainMenu.returnToMainMenu - Relance de la musique du menu")
+        if (AudioSettings.musicEnabled && Qt.application.state === Qt.ApplicationActive) {
+            startupSound.play()
+        }
     }
 
     // Ratio responsive pour adapter la taille des composants

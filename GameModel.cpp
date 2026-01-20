@@ -20,6 +20,10 @@ GameModel::GameModel(QObject *parent)
     , m_surcoincheTimeLeft(0)
     , m_showCoincheAnimation(false)
     , m_showSurcoincheAnimation(false)
+    , m_isCoinched(false)
+    , m_isSurcoinched(false)
+    , m_coinchedByPlayerIndex(-1)
+    , m_surcoinchedByPlayerIndex(-1)
     , m_showBeloteAnimation(false)
     , m_showRebeloteAnimation(false)
     , m_showCapotAnimation(false)
@@ -227,6 +231,26 @@ bool GameModel::showCoincheAnimation() const
 bool GameModel::showSurcoincheAnimation() const
 {
     return m_showSurcoincheAnimation;
+}
+
+bool GameModel::isCoinched() const
+{
+    return m_isCoinched;
+}
+
+bool GameModel::isSurcoinched() const
+{
+    return m_isSurcoinched;
+}
+
+int GameModel::coinchedByPlayerIndex() const
+{
+    return m_coinchedByPlayerIndex;
+}
+
+int GameModel::surcoinchedByPlayerIndex() const
+{
+    return m_surcoinchedByPlayerIndex;
 }
 
 bool GameModel::showBeloteAnimation() const
@@ -928,11 +952,23 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         } else if (annonce == Player::COINCHE) {
             qDebug() << "GameModel::receivePlayerAction - Joueur" << playerIndex << "COINCHE";
 
+            // Marquer que l'annonce actuelle a été coinchée
+            m_isCoinched = true;
+            m_coinchedByPlayerIndex = playerIndex;
+            emit isCoinchedChanged();
+            emit coinchedByPlayerIndexChanged();
+
             // Afficher l'animation Coinche pour tous les joueurs
             m_showCoincheAnimation = true;
             emit showCoincheAnimationChanged();
         } else if (annonce == Player::SURCOINCHE) {
             qDebug() << "GameModel::receivePlayerAction - Joueur" << playerIndex << "SURCOINCHE";
+
+            // Marquer que l'annonce actuelle a été surcoinchée
+            m_isSurcoinched = true;
+            m_surcoinchedByPlayerIndex = playerIndex;
+            emit isSurcoinchedChanged();
+            emit surcoinchedByPlayerIndexChanged();
 
             // Afficher l'animation Surcoinche pour tous les joueurs
             m_showSurcoincheAnimation = true;
@@ -1127,6 +1163,12 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         qDebug() << "  Joueur qui commence les encheres:" << biddingPlayer;
         qDebug() << "  Nouvelles cartes:" << myCards.size();
 
+        // Prévenir la distribution en double si une distribution est déjà en cours
+        if (m_distributionPhase > 0) {
+            qDebug() << "GameModel::receivePlayerAction - Distribution déjà en cours (phase" << m_distributionPhase << "), newManche ignoré";
+            return;
+        }
+
         // Le biddingPlayer au début de la manche est le firstPlayerIndex
         m_firstPlayerIndex = biddingPlayer;
         emit dealerPositionChanged();  // Le dealer change avec le nouveau firstPlayerIndex
@@ -1154,6 +1196,10 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_lastBidAnnonce = Player::ANNONCEINVALIDE;
         m_lastBidCouleur = Carte::COULEURINVALIDE;
         m_lastBidderIndex = -1;
+        m_isCoinched = false;
+        m_isSurcoinched = false;
+        m_coinchedByPlayerIndex = -1;
+        m_surcoinchedByPlayerIndex = -1;
 
         // Reinitialiser les annonces de chaque joueur
         for (int i = 0; i < 4; i++) {
@@ -1283,6 +1329,12 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
 void GameModel::receiveCardsDealt(const QJsonArray& cards)
 {
     qDebug() << "GameModel::receiveCardsDealt - Réception de" << cards.size() << "cartes";
+
+    // Prévenir la distribution en double si une distribution est déjà en cours
+    if (m_distributionPhase > 0) {
+        qDebug() << "GameModel::receiveCardsDealt - Distribution déjà en cours (phase" << m_distributionPhase << "), ignoré";
+        return;
+    }
 
     // Convertir les cartes JSON en vecteur de Carte*
     std::vector<Carte*> myNewCartes;

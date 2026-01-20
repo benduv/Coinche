@@ -21,6 +21,7 @@
 #include "GameModel.h"
 #include "DatabaseManager.h"
 #include "SmtpClient.h"
+#include "StatsReporter.h"
 
 // Connexion réseau d'un joueur (pas la logique métier)
 struct PlayerConnection {
@@ -236,16 +237,25 @@ public:
         m_countdownTimer->setInterval(1000);  // 1 seconde
         m_countdownSeconds = 0;
         connect(m_countdownTimer, &QTimer::timeout, this, &GameServer::onCountdownTick);
+
+        // Initialiser le StatsReporter (rapports quotidiens)
+        m_statsReporter = new StatsReporter(m_dbManager, m_smtpPassword, this);
+        qInfo() << "StatsReporter initialisé - Rapports quotidiens activés";
     }
 
     ~GameServer() {
         m_server->close();
-        
+
         // Libére toutes les GameRooms
         qDeleteAll(m_gameRooms.values());
-        
+
         // Libére toutes les connexions
         qDeleteAll(m_connections.values());
+    }
+
+    // Accès au StatsReporter (pour tests et monitoring)
+    StatsReporter* getStatsReporter() const {
+        return m_statsReporter;
     }
 
 private slots:
@@ -760,6 +770,9 @@ private:
             response["avatar"] = avatar;
             sendMessage(socket, response);
             qDebug() << "Compte cree avec succes:" << pseudo;
+
+            // Enregistrer la création de compte dans les statistiques quotidiennes
+            m_dbManager->recordNewAccount();
         } else {
             // Echec
             QJsonObject response;
@@ -800,6 +813,9 @@ private:
             response["connectionId"] = connectionId;
             sendMessage(socket, response);
             qDebug() << "Connexion reussie:" << pseudo << "avatar:" << avatar << "ID:" << connectionId;
+
+            // Enregistrer la connexion dans les statistiques quotidiennes
+            m_dbManager->recordLogin(pseudo);
 
             // Vérifier si le joueur peut se reconnecter à une partie en cours
             if (m_playerNameToRoomId.contains(pseudo)) {
@@ -1105,6 +1121,9 @@ private:
             room->connectionIds = connectionIds;
             room->originalConnectionIds = connectionIds;  // Sauvegarder les IDs originaux
             room->gameState = "waiting";
+
+            // Enregistrer la création de GameRoom dans les statistiques quotidiennes
+            m_dbManager->recordGameRoomCreated();
 
             // Crée les joueurs du jeu
             for (int i = 0; i < 4; i++) {
@@ -4549,6 +4568,9 @@ private:
         if (!conn->playerName.isEmpty()) {
             m_dbManager->updateGameStats(conn->playerName, false);  // false = défaite
             qDebug() << "Stats mises a jour pour" << conn->playerName << "- Defaite enregistree (deconnexion)";
+
+            // Enregistrer l'abandon dans les statistiques quotidiennes
+            m_dbManager->recordPlayerQuit();
         }
 
         // Remplacer le joueur par un bot
@@ -5067,6 +5089,7 @@ private:
     int m_nextRoomId;
     DatabaseManager *m_dbManager;
     QString m_smtpPassword;  // Mot de passe SMTP pour l'envoi d'emails
+    StatsReporter *m_statsReporter;  // Rapports quotidiens de statistiques
 
     // Timer pour démarrer une partie avec des bots après 30 secondes d'inactivité
     QTimer *m_matchmakingTimer;

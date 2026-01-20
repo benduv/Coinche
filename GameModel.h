@@ -50,6 +50,10 @@ class GameModel : public QObject {
     Q_PROPERTY(int surcoincheTimeLeft READ surcoincheTimeLeft NOTIFY surcoincheTimeLeftChanged)
     Q_PROPERTY(bool showCoincheAnimation READ showCoincheAnimation NOTIFY showCoincheAnimationChanged)
     Q_PROPERTY(bool showSurcoincheAnimation READ showSurcoincheAnimation NOTIFY showSurcoincheAnimationChanged)
+    Q_PROPERTY(bool isCoinched READ isCoinched NOTIFY isCoinchedChanged)
+    Q_PROPERTY(bool isSurcoinched READ isSurcoinched NOTIFY isSurcoinchedChanged)
+    Q_PROPERTY(int coinchedByPlayerIndex READ coinchedByPlayerIndex NOTIFY coinchedByPlayerIndexChanged)
+    Q_PROPERTY(int surcoinchedByPlayerIndex READ surcoinchedByPlayerIndex NOTIFY surcoinchedByPlayerIndexChanged)
     Q_PROPERTY(bool showBeloteAnimation READ showBeloteAnimation NOTIFY showBeloteAnimationChanged)
     Q_PROPERTY(bool showRebeloteAnimation READ showRebeloteAnimation NOTIFY showRebeloteAnimationChanged)
     Q_PROPERTY(bool showCapotAnimation READ showCapotAnimation NOTIFY showCapotAnimationChanged)
@@ -90,6 +94,10 @@ public:
     int surcoincheTimeLeft() const;
     bool showCoincheAnimation() const;
     bool showSurcoincheAnimation() const;
+    bool isCoinched() const;
+    bool isSurcoinched() const;
+    int coinchedByPlayerIndex() const;
+    int surcoinchedByPlayerIndex() const;
     bool showBeloteAnimation() const;
     bool showRebeloteAnimation() const;
     bool showCapotAnimation() const;
@@ -138,6 +146,10 @@ signals:
     void surcoincheTimeLeftChanged();
     void showCoincheAnimationChanged();
     void showSurcoincheAnimationChanged();
+    void isCoinchedChanged();
+    void isSurcoinchedChanged();
+    void coinchedByPlayerIndexChanged();
+    void surcoinchedByPlayerIndexChanged();
     void showBeloteAnimationChanged();
     void showRebeloteAnimationChanged();
     void showCapotAnimationChanged();
@@ -185,6 +197,10 @@ private:
     int m_surcoincheTimeLeft;
     bool m_showCoincheAnimation;
     bool m_showSurcoincheAnimation;
+    bool m_isCoinched;          // Indique si l'annonce actuelle a été coinchée
+    bool m_isSurcoinched;       // Indique si l'annonce actuelle a été surcoinchée
+    int m_coinchedByPlayerIndex;    // Index du joueur qui a coinché (-1 si pas de coinche)
+    int m_surcoinchedByPlayerIndex; // Index du joueur qui a surcoinché (-1 si pas de surcoinche)
     bool m_showBeloteAnimation;
     bool m_showRebeloteAnimation;
     bool m_showCapotAnimation;

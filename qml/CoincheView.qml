@@ -67,8 +67,7 @@ Rectangle {
             // Jouer le son d'alerte à 4 secondes restantes si c'est notre tour
             if (gameModel.playTimeRemaining === 4 &&
                 !rootArea.playTimeAlertPlayed &&
-                !gameModel.biddingPhase &&
-                gameModel.currentPlayer === gameModel.myPosition) {
+                !gameModel.biddingPhase) {
                 rootArea.playTimeAlertPlayed = true
                 if (AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
                     timeAlertSound.stop()
@@ -713,12 +712,15 @@ Rectangle {
                             Row {
                                 id: bidRowSouth
                                 anchors.centerIn: parent
-                                visible: rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) !== ""
+                                visible: rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) !== "" ||
+                                        (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex)
                                 spacing: rootArea.width * 0.005
+                                // Afficher "COINCHE" si ce joueur a coinché, sinon afficher son annonce
                                 Text {
-                                    text: rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex)
+                                    text: (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex) ?
+                                          "Coinche" : rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex)
                                     color: "white"
-                                    font.pixelSize: rootArea.height * 0.04
+                                    font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
                                     font.bold: true
                                 }
                                 Text {
@@ -726,6 +728,7 @@ Rectangle {
                                     color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerSouthRow.actualPlayerIndex) : "D4AF37"
                                     font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
                                     font.bold: true
+                                    visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex)
                                 }
                             }
                         }
@@ -1011,12 +1014,15 @@ Rectangle {
                         Row {
                             id: bidRowNorth
                             anchors.centerIn: parent
-                            visible: rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) !== ""
+                            visible: rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) !== "" ||
+                                    (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex)
                             spacing: rootArea.width * 0.005
+                            // Afficher "COINCHE" si ce joueur a coinché, sinon afficher son annonce
                             Text {
-                                text: rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex)
+                                text: (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex) ?
+                                      "Coinche" : rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex)
                                 color: "white"
-                                font.pixelSize: rootArea.height * 0.04
+                                font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
                                 font.bold: true
                             }
                             Text {
@@ -1024,6 +1030,7 @@ Rectangle {
                                 color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerNorthColumn.actualPlayerIndex) : "D4AF37"
                                 font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
                                 font.bold: true
+                                visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex)
                             }
                         }
                     }
@@ -1113,12 +1120,15 @@ Rectangle {
                     Row {
                         id: bidRowWest
                         anchors.centerIn: parent
-                        visible: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) !== ""
+                        visible: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) !== "" ||
+                                (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex)
                         spacing: rootArea.width * 0.005
+                        // Afficher "COINCHE" si ce joueur a coinché, sinon afficher son annonce
                         Text {
-                            text: rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex)
+                            text: (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex) ?
+                                  "Coinche" : rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex)
                             color: "white"
-                            font.pixelSize: rootArea.height * 0.04
+                            font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
                             font.bold: true
                         }
                         Text {
@@ -1126,6 +1136,7 @@ Rectangle {
                             color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerWestRow.actualPlayerIndex) : "D4AF37"
                             font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
                             font.bold: true
+                            visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex)
                         }
                     }
                 }
@@ -1317,12 +1328,15 @@ Rectangle {
                     Row {
                         id: bidRowEast
                         anchors.centerIn: parent
-                        visible: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) !== ""
+                        visible: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) !== "" ||
+                                (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex)
                         spacing: rootArea.width * 0.005
+                        // Afficher "COINCHE" si ce joueur a coinché, sinon afficher son annonce
                         Text {
-                            text: rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex)
+                            text: (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex) ?
+                                  "Coinche" : rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex)
                             color: "white"
-                            font.pixelSize: rootArea.height * 0.04
+                            font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
                             font.bold: true
                         }
                         Text {
@@ -1330,6 +1344,7 @@ Rectangle {
                             color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerEastRow.actualPlayerIndex) : "#D4AF37"
                             font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
                             font.bold: true
+                            visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex)
                         }
                     }
                 }
@@ -1589,8 +1604,8 @@ Rectangle {
             visible: gameModel.biddingPhase &&
                      gameModel.lastBidValue > 0 &&
                      gameModel.lastBidValue !== 14 &&  // Pas PASSE (14)
-                     gameModel.lastBidValue !== 12 &&  // Pas déjà COINCHE (12)
-                     gameModel.lastBidValue !== 13 &&  // Pas déjà SURCOINCHE (13)
+                     !gameModel.isCoinched &&  // Pas déjà coinché
+                     !gameModel.isSurcoinched &&  // Pas déjà surcoinché
                      (gameModel.lastBidderIndex % 2) !== (gameModel.playerIndex % 2) &&
                      !gameModel.showCoincheAnimation &&  // Cacher pendant l'animation Coinche
                      !gameModel.showSurcoincheAnimation  // Cacher pendant l'animation Surcoinche
@@ -1601,8 +1616,8 @@ Rectangle {
             // 3. Pas déjà COINCHE ou SURCOINCHE
             enabled: gameModel.lastBidValue > 0 &&
                      gameModel.lastBidValue !== 14 &&  // Pas PASSE (14)
-                     gameModel.lastBidValue !== 12 &&  // Pas déjà COINCHE (12)
-                     gameModel.lastBidValue !== 13 &&  // Pas déjà SURCOINCHE (13)
+                     !gameModel.isCoinched &&  // Pas déjà coinché
+                     !gameModel.isSurcoinched &&  // Pas déjà surcoinché
                      (gameModel.lastBidderIndex % 2) !== (gameModel.playerIndex % 2)
 
             background: Rectangle {
