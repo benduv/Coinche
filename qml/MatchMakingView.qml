@@ -283,9 +283,6 @@ Rectangle {
                 // MainMenu gère la création du GameModel et le chargement de CoincheView
             }
         }
-
-        // Note: onGameFound est géré par MainMenu qui appelle createGameModel
-        // Ne pas dupliquer l'appel ici pour éviter de créer 2 instances de CoincheView
     }
 
     Component.onCompleted: {

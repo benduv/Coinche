@@ -166,12 +166,12 @@ ApplicationWindow {
             console.log("StackView depth:", stackView.depth)
 
             if (!isAlreadyLoading) {
-                console.log("MainMenu - PUSH coincheViewLoaderComponent")
+                console.log("MainMenu - REPLACE avec coincheViewLoaderComponent")
                 mainWindow.shouldLoadCoincheView = false
-                stackView.push(coincheViewLoaderComponent)
+                stackView.replace(coincheViewLoaderComponent)
                 loadDelayTimer.start()
             } else {
-                console.log("MainMenu - PAS de push, deja en chargement")
+                console.log("MainMenu - PAS de replace, deja en chargement")
             }
         }
 
@@ -215,7 +215,22 @@ ApplicationWindow {
                         console.log("MainMenu - Auto-login réussi, passage direct au menu principal")
                         mainWindow.loggedInPlayerName = playerName
                         mainWindow.accountType = "account"
-                        stackView.replace(mainMenuComponent)
+
+                        // Ne pas remplacer si on est déjà dans CoincheView (reconnexion à une partie)
+                        var currentItem = stackView.currentItem
+                        var currentItemStr = currentItem ? currentItem.toString() : ""
+                        console.log("MainMenu - autoLoginSuccess - currentItem:", currentItem)
+                        console.log("MainMenu - autoLoginSuccess - currentItemStr:", currentItemStr)
+                        console.log("MainMenu - autoLoginSuccess - stackView.depth:", stackView.depth)
+                        var isInGame = currentItemStr.indexOf("CoincheView") >= 0 || currentItemStr.indexOf("coincheViewLoader") >= 0
+                        console.log("MainMenu - autoLoginSuccess - isInGame:", isInGame)
+
+                        if (!isInGame) {
+                            console.log("MainMenu - autoLoginSuccess - Pas dans une partie, navigation vers menu")
+                            stackView.replace(mainMenuComponent)
+                        } else {
+                            console.log("MainMenu - Déjà dans une partie, pas de navigation vers menu")
+                        }
                     })
 
                     // Pas d'auto-login ou échec -> aller vers LoginView

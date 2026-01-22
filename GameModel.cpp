@@ -955,6 +955,7 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             // Marquer que l'annonce actuelle a été coinchée
             m_isCoinched = true;
             m_coinchedByPlayerIndex = playerIndex;
+            qDebug() << "GameModel - Coinche detectee! isCoinched=" << m_isCoinched << "coinchedByPlayerIndex=" << m_coinchedByPlayerIndex;
             emit isCoinchedChanged();
             emit coinchedByPlayerIndexChanged();
 
@@ -1200,6 +1201,10 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_isSurcoinched = false;
         m_coinchedByPlayerIndex = -1;
         m_surcoinchedByPlayerIndex = -1;
+        emit isCoinchedChanged();
+        emit isSurcoinchedChanged();
+        emit coinchedByPlayerIndexChanged();
+        emit surcoinchedByPlayerIndexChanged();
 
         // Reinitialiser les annonces de chaque joueur
         for (int i = 0; i < 4; i++) {

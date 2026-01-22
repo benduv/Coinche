@@ -519,6 +519,7 @@ private:
 
         // Envoyer les cartes actuelles du joueur
         QJsonArray myCards;
+        room->players[playerIndex]->sortHand();  // Trier selon l'atout actuel
         const auto& playerHand = room->players[playerIndex]->getMain();
         for (const auto* carte : playerHand) {
             if (carte) {
@@ -2003,9 +2004,6 @@ private:
                 }
             }
         }
-
-        // Note: Les points de belote ont déjà été ajoutés à pointsRealisesTeam1/Team2
-        // au début de finishManche (lignes 1794-1801), donc pas besoin de les ajouter ici
 
         // Ajoute les scores de la manche aux scores totaux
         room->scoreTeam1 += scoreToAddTeam1;
