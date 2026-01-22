@@ -27,6 +27,38 @@ bool DatabaseManager::initialize(const QString &dbPath)
 
     qDebug() << "Base de donnees ouverte:" << dbPath;
 
+    // Optimisations SQLite essentielles
+    QSqlQuery pragmaQuery(m_db);
+
+    // 1. WAL Mode (Write-Ahead Logging) - permet lectures pendant écritures
+    if (!pragmaQuery.exec("PRAGMA journal_mode = WAL")) {
+        qWarning() << "Impossible d'activer WAL mode:" << pragmaQuery.lastError().text();
+    } else {
+        qInfo() << "✅ SQLite WAL mode activé (lectures non bloquantes)";
+    }
+
+    // 2. Synchronous = NORMAL (bon compromis perf/sécurité)
+    if (!pragmaQuery.exec("PRAGMA synchronous = NORMAL")) {
+        qWarning() << "Impossible de définir synchronous:" << pragmaQuery.lastError().text();
+    }
+
+    // 3. Cache size = 10MB (au lieu de 2MB par défaut)
+    if (!pragmaQuery.exec("PRAGMA cache_size = -10000")) {  // -10000 = 10MB
+        qWarning() << "Impossible de définir cache_size:" << pragmaQuery.lastError().text();
+    } else {
+        qInfo() << "✅ SQLite cache: 10 MB";
+    }
+
+    // 4. Temp store en RAM (plus rapide)
+    if (!pragmaQuery.exec("PRAGMA temp_store = MEMORY")) {
+        qWarning() << "Impossible de définir temp_store:" << pragmaQuery.lastError().text();
+    }
+
+    // 5. Mmap pour meilleure performance sur gros fichiers
+    if (!pragmaQuery.exec("PRAGMA mmap_size = 30000000000")) {  // 30GB max mmap
+        qWarning() << "Impossible de définir mmap_size:" << pragmaQuery.lastError().text();
+    }
+
     // Créer les tables si nécessaire
     if (!createTables()) {
         qCritical() << "Erreur creation des tables";

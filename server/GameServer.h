@@ -22,6 +22,7 @@
 #include "DatabaseManager.h"
 #include "SmtpClient.h"
 #include "StatsReporter.h"
+#include "ScoreCalculator.h"
 
 // Connexion réseau d'un joueur (pas la logique métier)
 struct PlayerConnection {
@@ -1862,11 +1863,31 @@ private:
                      << (generaleReussie ? "REUSSIE" : "ECHOUEE");
         }
 
-        // Applique les règles du contrat
-        int scoreToAddTeam1 = 0;
-        int scoreToAddTeam2 = 0;
+        // Utiliser ScoreCalculator pour calculer les scores
+        auto scoreResult = ScoreCalculator::calculateMancheScore(
+            pointsRealisesTeam1,
+            pointsRealisesTeam2,
+            valeurContrat,
+            team1HasBid,
+            room->coinched,
+            room->surcoinched,
+            isCapotAnnonce,
+            capotReussi,
+            isGeneraleAnnonce,
+            generaleReussie,
+            capotNonAnnonceTeam1,
+            capotNonAnnonceTeam2
+        );
 
-        // Multiplicateur COINCHE/SURCOINCHE
+        int scoreToAddTeam1 = scoreResult.scoreTeam1;
+        int scoreToAddTeam2 = scoreResult.scoreTeam2;
+
+        // Log des scores calculés
+        qDebug() << "GameServer - Scores calcules:";
+        qDebug() << "  Team1 marque:" << scoreToAddTeam1;
+        qDebug() << "  Team2 marque:" << scoreToAddTeam2;
+
+        // Gestion des stats pour coinche/surcoinche (code existant maintenu)
         int multiplicateur = 1;
         if (room->surcoinched) {
             multiplicateur = 4;
@@ -1874,147 +1895,13 @@ private:
             multiplicateur = 2;
         }
 
-        // Regles speciales pour CAPOT et GENERALE
-        if (isCapotAnnonce) {
-            if (capotReussi) {
-                // CAPOT reussi
-                // Normal: 250 + 250 = 500
-                // Coinché: 500 * 2 = 1000
-                // Surcoinché: 500 * 4 = 2000
-                int scoreCapot = 500 * multiplicateur;
-                if (team1HasBid) {
-                    scoreToAddTeam1 = scoreCapot;
-                    scoreToAddTeam2 = 0;
-                    qDebug() << "GameServer - Equipe 1 reussit son CAPOT!";
-                    if (multiplicateur > 1) {
-                        qDebug() << "  Team1 marque:" << scoreCapot << "(500*" << multiplicateur << ")";
-                    } else {
-                        qDebug() << "  Team1 marque:" << scoreCapot << "(250+250)";
-                    }
-                    qDebug() << "  Team2 marque: 0";
-                } else {
-                    scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = scoreCapot;
-                    qDebug() << "GameServer - Equipe 2 reussit son CAPOT!";
-                    qDebug() << "  Team1 marque: 0";
-                    if (multiplicateur > 1) {
-                        qDebug() << "  Team2 marque:" << scoreCapot << "(500*" << multiplicateur << ")";
-                    } else {
-                        qDebug() << "  Team2 marque:" << scoreCapot << "(250+250)";
-                    }
-                }
-            } else {
-                // CAPOT echoue: equipe adverse marque les memes points
-                // Normal: 160 + 250 = 410
-                // Coinché: (160 + 250) * 2 = 820
-                // Surcoinché: (160 + 250) * 4 = 1640
-                int scoreCapotEchoue = (160 + 250) * multiplicateur;
-                if (team1HasBid) {
-                    scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = scoreCapotEchoue;
-                    qDebug() << "GameServer - Equipe 1 echoue son CAPOT!";
-                    qDebug() << "  Team1 marque: 0";
-                    if (multiplicateur > 1) {
-                        qDebug() << "  Team2 marque:" << scoreCapotEchoue << "((160+250)*" << multiplicateur << ")";
-                    } else {
-                        qDebug() << "  Team2 marque:" << scoreCapotEchoue << "(160+250)";
-                    }
-                } else {
-                    scoreToAddTeam1 = scoreCapotEchoue;
-                    scoreToAddTeam2 = 0;
-                    qDebug() << "GameServer - Equipe 2 echoue son CAPOT!";
-                    if (multiplicateur > 1) {
-                        qDebug() << "  Team1 marque:" << scoreCapotEchoue << "((160+250)*" << multiplicateur << ")";
-                    } else {
-                        qDebug() << "  Team1 marque:" << scoreCapotEchoue << "(160+250)";
-                    }
-                    qDebug() << "  Team2 marque: 0";
-                }
-            }
-        } else if (isGeneraleAnnonce) {
-            if (generaleReussie) {
-                // GENERALE reussie
-                // Normal: 500 + 500 = 1000
-                // Coinché: 1000 * 2 = 2000
-                // Surcoinché: 1000 * 4 = 4000
-                int scoreGenerale = 1000 * multiplicateur;
-                if (team1HasBid) {
-                    scoreToAddTeam1 = scoreGenerale;
-                    scoreToAddTeam2 = 0;
-                    qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 1) reussit sa GENERALE!";
-                    if (multiplicateur > 1) {
-                        qDebug() << "  Team1 marque:" << scoreGenerale << "(1000*" << multiplicateur << ")";
-                    } else {
-                        qDebug() << "  Team1 marque:" << scoreGenerale << "(500+500)";
-                    }
-                    qDebug() << "  Team2 marque: 0";
-                } else {
-                    scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = scoreGenerale;
-                    qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 2) reussit sa GENERALE!";
-                    qDebug() << "  Team1 marque: 0";
-                    if (multiplicateur > 1) {
-                        qDebug() << "  Team2 marque:" << scoreGenerale << "(1000*" << multiplicateur << ")";
-                    } else {
-                        qDebug() << "  Team2 marque:" << scoreGenerale << "(500+500)";
-                    }
-                }
-            } else {
-                // GENERALE echouee: equipe adverse marque les memes points
-                // Normal: 160 + 500 = 660
-                // Coinché: (160 + 500) * 2 = 1320
-                // Surcoinché: (160 + 500) * 4 = 2640
-                int scoreGeneraleEchoue = (160 + 500) * multiplicateur;
-                if (team1HasBid) {
-                    scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = scoreGeneraleEchoue;
-                    qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 1) echoue sa GENERALE!";
-                    qDebug() << "  Team1 marque: 0";
-                    if (multiplicateur > 1) {
-                        qDebug() << "  Team2 marque:" << scoreGeneraleEchoue << "((160+500)*" << multiplicateur << ")";
-                    } else {
-                        qDebug() << "  Team2 marque:" << scoreGeneraleEchoue << "(160+500)";
-                    }
-                } else {
-                    scoreToAddTeam1 = scoreGeneraleEchoue;
-                    scoreToAddTeam2 = 0;
-                    qDebug() << "GameServer - Joueur" << room->lastBidderIndex << "(Equipe 2) echoue sa GENERALE!";
-                    if (multiplicateur > 1) {
-                        qDebug() << "  Team1 marque:" << scoreGeneraleEchoue << "((160+500)*" << multiplicateur << ")";
-                    } else {
-                        qDebug() << "  Team1 marque:" << scoreGeneraleEchoue << "(160+500)";
-                    }
-                    qDebug() << "  Team2 marque: 0";
-                }
-            }
-        } else if (room->coinched || room->surcoinched) {
-            // COINCHE ou SURCOINCHE: scoring spécial
-            // Si réussi par l'équipe qui a annoncé: (valeurContrat + pointsRealisés) × multiplicateur
-            // Si échoué: équipe adverse marque (valeurContrat + 160) × multiplicateur
-            int multiplicateur = room->surcoinched ? 4 : 2;  // SURCOINCHE = ×4, COINCHE = ×2
-
+        // Gestion des stats pour coinche/surcoinche
+        if (room->coinched || room->surcoinched) {
             if (team1HasBid) {
                 // Team1 a annoncé, vérifie si elle réussit
                 bool contractReussi = (pointsRealisesTeam1 >= valeurContrat);
 
                 if (contractReussi) {
-                    // Vérifier si Team1 a fait un CAPOT non annoncé (tous les 8 plis)
-                    if (capotNonAnnonceTeam1) {
-                        // CAPOT non annoncé coinché: (250 + pointsRéalisés) × multiplicateur
-                        scoreToAddTeam1 = (250 + pointsRealisesTeam1) * multiplicateur;
-                        scoreToAddTeam2 = 0;
-                        qDebug() << "GameServer - Equipe 1 fait un CAPOT non annonce COINCHE!";
-                        qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "((250+" << pointsRealisesTeam1 << ")*" << multiplicateur << ")";
-                        qDebug() << "  Team2 marque: 0";
-                    } else {
-                        // Contrat réussi: (valeurContrat + pointsRealisés) × multiplicateur
-                        scoreToAddTeam1 = (valeurContrat + pointsRealisesTeam1) * multiplicateur;
-                        scoreToAddTeam2 = 0;
-                        qDebug() << "GameServer - Equipe 1 reussit son contrat COINCHE!";
-                        qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "((" << valeurContrat << "+" << pointsRealisesTeam1 << ")*" << multiplicateur << ")";
-                        qDebug() << "  Team2 marque: 0";
-                    }
-
                     // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
                     if (room->surcoinched && room->surcoinchePlayerIndex != -1 && !room->isBot[room->surcoinchePlayerIndex]) {
                         PlayerConnection* surcoincheConn = m_connections[room->connectionIds[room->surcoinchePlayerIndex]];
@@ -2024,13 +1911,6 @@ private:
                         }
                     }
                 } else {
-                    // Contrat échoué: équipe adverse marque (valeurContrat + 160) × multiplicateur
-                    scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = (valeurContrat + 160) * multiplicateur;
-                    qDebug() << "GameServer - Equipe 1 echoue son contrat COINCHE!";
-                    qDebug() << "  Team1 marque: 0";
-                    qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((" << valeurContrat << "+160)*" << multiplicateur << ")";
-
                     // Mettre à jour les stats de coinche réussie (le contrat a échoué, donc la coinche a réussi)
                     if (room->coinched && room->coinchePlayerIndex != -1 && !room->isBot[room->coinchePlayerIndex]) {
                         PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
@@ -2074,23 +1954,6 @@ private:
                 bool contractReussi = (pointsRealisesTeam2 >= valeurContrat);
 
                 if (contractReussi) {
-                    // Vérifier si Team2 a fait un CAPOT non annoncé (tous les 8 plis)
-                    if (capotNonAnnonceTeam2) {
-                        // CAPOT non annoncé coinché: (250 + pointsRéalisés) × multiplicateur
-                        scoreToAddTeam1 = 0;
-                        scoreToAddTeam2 = (250 + pointsRealisesTeam2) * multiplicateur;
-                        qDebug() << "GameServer - Equipe 2 fait un CAPOT non annonce COINCHE!";
-                        qDebug() << "  Team1 marque: 0";
-                        qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((250+" << pointsRealisesTeam2 << ")*" << multiplicateur << ")";
-                    } else {
-                        // Contrat réussi: (valeurContrat + pointsRealisés) × multiplicateur
-                        scoreToAddTeam1 = 0;
-                        scoreToAddTeam2 = (valeurContrat + pointsRealisesTeam2) * multiplicateur;
-                        qDebug() << "GameServer - Equipe 2 reussit son contrat COINCHE!";
-                        qDebug() << "  Team1 marque: 0";
-                        qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "((" << valeurContrat << "+" << pointsRealisesTeam2 << ")*" << multiplicateur << ")";
-                    }
-
                     // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
                     if (room->surcoinched && room->surcoinchePlayerIndex != -1 && !room->isBot[room->surcoinchePlayerIndex]) {
                         PlayerConnection* surcoincheConn = m_connections[room->connectionIds[room->surcoinchePlayerIndex]];
@@ -2100,13 +1963,6 @@ private:
                         }
                     }
                 } else {
-                    // Contrat échoué: équipe adverse marque (valeurContrat + 160) × multiplicateur
-                    scoreToAddTeam1 = (valeurContrat + 160) * multiplicateur;
-                    scoreToAddTeam2 = 0;
-                    qDebug() << "GameServer - Equipe 2 echoue son contrat COINCHE!";
-                    qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "((" << valeurContrat << "+160)*" << multiplicateur << ")";
-                    qDebug() << "  Team2 marque: 0";
-
                     // Mettre à jour les stats de coinche réussie (le contrat a échoué, donc la coinche a réussi)
                     if (room->coinched && room->coinchePlayerIndex != -1 && !room->isBot[room->coinchePlayerIndex]) {
                         PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
@@ -2146,71 +2002,10 @@ private:
                     }
                 }
             }
-        } else if (team1HasBid) {
-            // L'équipe 1 a annoncé (contrat normal)
-            if (pointsRealisesTeam1 >= valeurContrat) {
-                // Vérifier si Team1 a fait un CAPOT non annoncé (tous les 8 plis)
-                if (capotNonAnnonceTeam1) {
-                    // CAPOT non annoncé: 250 + pointsRéalisés
-                    scoreToAddTeam1 = 250 + pointsRealisesTeam1;
-                    scoreToAddTeam2 = 0;
-                    qDebug() << "GameServer - Equipe 1 fait un CAPOT non annonce!";
-                    qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(250+" << pointsRealisesTeam1 << ")";
-                    qDebug() << "  Team2 marque: 0";
-                } else {
-                    // Contrat réussi: valeurContrat + pointsRéalisés
-                    scoreToAddTeam1 = valeurContrat + pointsRealisesTeam1;
-                    scoreToAddTeam2 = pointsRealisesTeam2;
-                    qDebug() << "GameServer - Equipe 1 reussit son contrat!";
-                    qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(" << valeurContrat << "+" << pointsRealisesTeam1 << ")";
-                    qDebug() << "  Team2 marque:" << scoreToAddTeam2;
-                }
-            } else {
-                // Contrat échoué: équipe 1 marque 0, équipe 2 marque 160 + valeurContrat
-                scoreToAddTeam1 = 0;
-                scoreToAddTeam2 = 160 + valeurContrat;
-                qDebug() << "GameServer - Equipe 1 echoue son contrat!";
-                qDebug() << "  Team1 marque: 0";
-                qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(160+" << valeurContrat << ")";
-            }
-        } else {
-            // L'équipe 2 a annoncé (contrat normal)
-            if (pointsRealisesTeam2 >= valeurContrat) {
-                // Vérifier si Team2 a fait un CAPOT non annoncé (tous les 8 plis)
-                if (capotNonAnnonceTeam2) {
-                    // CAPOT non annoncé: 250 + pointsRéalisés
-                    scoreToAddTeam1 = 0;
-                    scoreToAddTeam2 = 250 + pointsRealisesTeam2;
-                    qDebug() << "GameServer - Equipe 2 fait un CAPOT non annonce!";
-                    qDebug() << "  Team1 marque: 0";
-                    qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(250+" << pointsRealisesTeam2 << ")";
-                } else {
-                    // Contrat réussi: valeurContrat + pointsRéalisés
-                    scoreToAddTeam1 = pointsRealisesTeam1;
-                    scoreToAddTeam2 = valeurContrat + pointsRealisesTeam2;
-                    qDebug() << "GameServer - Équipe 2 réussit son contrat!";
-                    qDebug() << "  Team1 marque:" << scoreToAddTeam1;
-                    qDebug() << "  Team2 marque:" << scoreToAddTeam2 << "(" << valeurContrat << "+" << pointsRealisesTeam2 << ")";
-                }
-            } else {
-                // Contrat échoué: équipe 2 marque 0, équipe 1 marque 160 + valeurContrat
-                scoreToAddTeam1 = 160 + valeurContrat;
-                scoreToAddTeam2 = 0;
-                qDebug() << "GameServer - Équipe 2 échoue son contrat!";
-                qDebug() << "  Team1 marque:" << scoreToAddTeam1 << "(160+" << valeurContrat << ")";
-                qDebug() << "  Team2 marque: 0";
-            }
         }
 
-        // Ajouter les points de belote (20 points)
-        if (room->beloteTeam1) {
-            scoreToAddTeam1 += 20;
-            qDebug() << "GameServer - Equipe 1 a la belote: +20 points";
-        }
-        if (room->beloteTeam2) {
-            scoreToAddTeam2 += 20;
-            qDebug() << "GameServer - Equipe 2 a la belote: +20 points";
-        }
+        // Note: Les points de belote ont déjà été ajoutés à pointsRealisesTeam1/Team2
+        // au début de finishManche (lignes 1794-1801), donc pas besoin de les ajouter ici
 
         // Ajoute les scores de la manche aux scores totaux
         room->scoreTeam1 += scoreToAddTeam1;

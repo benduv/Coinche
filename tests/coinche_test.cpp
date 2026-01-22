@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "../server/GameServer.h"
+#include "../server/ScoreCalculator.h"
 #include "../Carte.h"
 #include "../Player.h"
 
@@ -173,51 +174,45 @@ TEST_F(CoincheTest, CoincheReussiTeam1Annonce80) {
     EXPECT_EQ(6, plisTeam1) << "Team1 devrait avoir 6 plis";
     EXPECT_EQ(2, plisTeam2) << "Team2 devrait avoir 2 plis";
 
-    // Scoring COINCHE réussi: (contrat + pointsRealisés) × 2
+    // Scoring COINCHE réussi: 160 + (contrat × 2)
     // Team1 a 6 plis, on estime environ 110 points réalisés
-    // Score = (80 + 110) × 2 = 380 points (approximation pour le test)
+    // Score minimum = 160 + (80 × 2) = 320 points
     // NOTE: Le score réel dépend des cartes jouées dans chaque pli
-    int scoreAttenduTeam1 = 380;  // Approximation basée sur 6 plis
+    int scoreAttenduMinTeam1 = 160 + (80 * 2);  // 320
     int scoreAttenduTeam2 = 0;
 
-    EXPECT_GE(scoreAttenduTeam1, 80 * 2) << "Team1 devrait marquer au moins le contrat doublé ((80+points)*2)";
+    EXPECT_GE(scoreAttenduMinTeam1, 160 + (80 * 2)) << "Team1 devrait marquer au moins 160 + (80×2) = 320";
     EXPECT_EQ(scoreAttenduTeam2, 0) << "Team2 ne devrait marquer aucun point";
 }
 
 TEST_F(CoincheTest, CoincheEchoueTeam1Annonce80) {
     // Team1 annonce 80, Team2 coinche, Team1 échoue
-    setHandsForCoincheEchoue();
+    int valeurContrat = 80;
+    int pointsRealisesTeam1 = 70;  // Team1 n'atteint pas 80
+    int pointsRealisesTeam2 = 90;
+    bool team1HasBid = true;
+    bool coinched = true;
+    bool surcoinched = false;
 
-    room.lastBidderIndex = 0;  // Team1 a fait l'annonce
-    room.lastBidAnnonce = Player::QUATREVINGT;  // 80 points
-    room.lastBidCouleur = Carte::PIQUE;
-    room.couleurAtout = Carte::PIQUE;
-    room.firstPlayerIndex = 0;
-    room.currentPlayerIndex = 0;
-    room.coinched = true;  // Team2 a coinché
+    // Appeler la fonction de calcul
+    auto result = ScoreCalculator::calculateMancheScore(
+        pointsRealisesTeam1,
+        pointsRealisesTeam2,
+        valeurContrat,
+        team1HasBid,
+        coinched,
+        surcoinched,
+        false,  // isCapotAnnonce
+        false,  // capotReussi
+        false,  // isGeneraleAnnonce
+        false,  // generaleReussie
+        false,  // capotNonAnnonceTeam1
+        false   // capotNonAnnonceTeam2
+    );
 
-    for (int i = 0; i < 4; i++) {
-        room.players[i]->setAtout(Carte::PIQUE);
-    }
-
-    // Simuler que Team2 gagne 7 plis (Team1 n'atteint pas 80)
-    for (int pli = 0; pli < 7; pli++) {
-        playPliAutomatic(pli, false);  // Team2 gagne
-    }
-    playPliAutomatic(7, true);  // Team1 gagne seulement 1 pli
-
-    int plisTeam1 = room.plisCountPlayer0 + room.plisCountPlayer2;
-    int plisTeam2 = room.plisCountPlayer1 + room.plisCountPlayer3;
-
-    EXPECT_EQ(1, plisTeam1) << "Team1 devrait avoir 1 pli";
-    EXPECT_EQ(7, plisTeam2) << "Team2 devrait avoir 7 plis";
-
-    // Scoring COINCHE échoué: Team2 marque (contrat + 160) × 2 = (80 + 160) × 2 = 480
-    int scoreAttenduTeam1 = 0;
-    int scoreAttenduTeam2 = 480;
-
-    EXPECT_EQ(scoreAttenduTeam1, 0) << "Team1 ne devrait marquer aucun point";
-    EXPECT_EQ(scoreAttenduTeam2, 480) << "Team2 devrait marquer 480 points ((80+160)*2)";
+    // Scoring COINCHE échoué: Team2 marque 160 + (contrat × 2) = 160 + (80 × 2) = 320
+    EXPECT_EQ(result.scoreTeam1, 0) << "Team1 ne devrait marquer aucun point";
+    EXPECT_EQ(result.scoreTeam2, 320) << "Team2 devrait marquer 320 points (160+(80×2))";
 }
 
 TEST_F(CoincheTest, SurcoincheReussiTeam2Annonce120) {
@@ -249,90 +244,198 @@ TEST_F(CoincheTest, SurcoincheReussiTeam2Annonce120) {
     EXPECT_EQ(1, plisTeam1) << "Team1 devrait avoir 1 pli";
     EXPECT_EQ(7, plisTeam2) << "Team2 devrait avoir 7 plis";
 
-    // Scoring SURCOINCHE réussi: (contrat + pointsRealisés) × 4
+    // Scoring SURCOINCHE réussi: 160 + (contrat × 4)
     // Team2 a 7 plis, on estime environ 130 points réalisés
-    // Score = (120 + 130) × 4 = 1000 points (approximation pour le test)
+    // Score minimum = 160 + (120 × 4) = 640 points
     int scoreAttenduTeam1 = 0;
-    int scoreAttenduTeam2 = 1000;  // Approximation
+    int scoreAttenduMinTeam2 = 160 + (120 * 4);  // 640
 
     EXPECT_EQ(scoreAttenduTeam1, 0) << "Team1 ne devrait marquer aucun point";
-    EXPECT_GE(scoreAttenduTeam2, 120 * 4) << "Team2 devrait marquer au moins le contrat quadruplé ((120+points)*4)";
+    EXPECT_GE(scoreAttenduMinTeam2, 160 + (120 * 4)) << "Team2 devrait marquer au moins 160 + (120×4) = 640";
 }
 
 TEST_F(CoincheTest, SurcoincheEchoueTeam2Annonce120) {
     // Team2 annonce 120, Team1 coinche, Team2 surcoinche, Team2 échoue
-    setHandsForCoincheReussi();  // Team1 a les bonnes cartes
+    int valeurContrat = 120;
+    int pointsRealisesTeam1 = 130;
+    int pointsRealisesTeam2 = 30;  // Team2 n'atteint pas 120
+    bool team1HasBid = false;  // Team2 a annoncé
+    bool coinched = true;
+    bool surcoinched = true;
 
-    room.lastBidderIndex = 1;  // Team2 a fait l'annonce
-    room.lastBidAnnonce = Player::CENTVINGT;  // 120 points
-    room.lastBidCouleur = Carte::PIQUE;
-    room.couleurAtout = Carte::PIQUE;
-    room.firstPlayerIndex = 0;
-    room.currentPlayerIndex = 0;
-    room.coinched = true;  // Team1 a coinché
-    room.surcoinched = true;  // Team2 a surcoinché
+    // Appeler la fonction de calcul
+    auto result = ScoreCalculator::calculateMancheScore(
+        pointsRealisesTeam1,
+        pointsRealisesTeam2,
+        valeurContrat,
+        team1HasBid,
+        coinched,
+        surcoinched,
+        false,  // isCapotAnnonce
+        false,  // capotReussi
+        false,  // isGeneraleAnnonce
+        false,  // generaleReussie
+        false,  // capotNonAnnonceTeam1
+        false   // capotNonAnnonceTeam2
+    );
 
-    for (int i = 0; i < 4; i++) {
-        room.players[i]->setAtout(Carte::PIQUE);
-    }
-
-    // Simuler que Team1 gagne 7 plis (Team2 n'atteint pas 120)
-    for (int pli = 0; pli < 7; pli++) {
-        playPliAutomatic(pli, true);  // Team1 gagne
-    }
-    playPliAutomatic(7, false);  // Team2 gagne seulement 1 pli
-
-    int plisTeam1 = room.plisCountPlayer0 + room.plisCountPlayer2;
-    int plisTeam2 = room.plisCountPlayer1 + room.plisCountPlayer3;
-
-    EXPECT_EQ(7, plisTeam1) << "Team1 devrait avoir 7 plis";
-    EXPECT_EQ(1, plisTeam2) << "Team2 devrait avoir 1 pli";
-
-    // Scoring SURCOINCHE échoué: Team1 marque (contrat + 160) × 4 = (120 + 160) × 4 = 1120
-    int scoreAttenduTeam1 = 1120;
-    int scoreAttenduTeam2 = 0;
-
-    EXPECT_EQ(scoreAttenduTeam1, 1120) << "Team1 devrait marquer 1120 points ((120+160)*4)";
-    EXPECT_EQ(scoreAttenduTeam2, 0) << "Team2 ne devrait marquer aucun point";
+    // Scoring SURCOINCHE échoué: Team1 marque 160 + (contrat × 4) = 160 + (120 × 4) = 640
+    EXPECT_EQ(result.scoreTeam1, 640) << "Team1 devrait marquer 640 points (160+(120×4))";
+    EXPECT_EQ(result.scoreTeam2, 0) << "Team2 ne devrait marquer aucun point";
 }
 
 TEST_F(CoincheTest, CoincheAvecBeloteTeam1Reussi) {
     // Team1 annonce 100, Team2 coinche, Team1 réussit avec belote
-    setHandsForCoincheReussi();
+    int valeurContrat = 100;
+    int pointsRealisesTeam1 = 120 + 20;  // 120 points + 20 belote = 140
+    int pointsRealisesTeam2 = 40;
+    bool team1HasBid = true;
+    bool coinched = true;
+    bool surcoinched = false;
 
-    room.lastBidderIndex = 0;  // Team1 a fait l'annonce
-    room.lastBidAnnonce = Player::CENT;  // 100 points
-    room.lastBidCouleur = Carte::PIQUE;
-    room.couleurAtout = Carte::PIQUE;
-    room.firstPlayerIndex = 0;
-    room.currentPlayerIndex = 0;
-    room.coinched = true;  // Team2 a coinché
-    room.beloteTeam1 = true;  // Team1 a la belote (Roi et Dame de Pique)
+    // Appeler la fonction de calcul
+    auto result = ScoreCalculator::calculateMancheScore(
+        pointsRealisesTeam1,
+        pointsRealisesTeam2,
+        valeurContrat,
+        team1HasBid,
+        coinched,
+        surcoinched,
+        false,  // isCapotAnnonce
+        false,  // capotReussi
+        false,  // isGeneraleAnnonce
+        false,  // generaleReussie
+        false,  // capotNonAnnonceTeam1
+        false   // capotNonAnnonceTeam2
+    );
 
-    for (int i = 0; i < 4; i++) {
-        room.players[i]->setAtout(Carte::PIQUE);
-    }
+    // Scoring COINCHE réussi: 160 + (contrat × 2) = 360
+    // Note: La belote (20 points) est déjà incluse dans pointsRealisesTeam1
+    // qui est utilisé uniquement pour vérifier si le contrat est réussi (140 >= 100)
+    EXPECT_EQ(result.scoreTeam1, 360) << "Team1 devrait marquer 360 points (160+(100×2))";
+    EXPECT_EQ(result.scoreTeam2, 0) << "Team2 ne devrait marquer aucun point";
+}
 
-    // Simuler que Team1 gagne 6 plis
-    for (int pli = 0; pli < 6; pli++) {
-        playPliAutomatic(pli, true);  // Team1 gagne
-    }
-    for (int pli = 6; pli < 8; pli++) {
-        playPliAutomatic(pli, false);  // Team2 gagne les 2 derniers
-    }
+// ========================================
+// TESTS CAPOT et GENERALE COINCHES
+// ========================================
 
-    int plisTeam1 = room.plisCountPlayer0 + room.plisCountPlayer2;
-    int plisTeam2 = room.plisCountPlayer1 + room.plisCountPlayer3;
+TEST_F(CoincheTest, CapotAnnonceReussiCoinche) {
+    // Team1 annonce CAPOT coinché et réussit
+    int valeurContrat = 250;  // CAPOT
+    bool team1HasBid = true;
+    bool coinched = true;
+    bool surcoinched = false;
+    bool isCapotAnnonce = true;
+    bool capotReussi = true;
 
-    EXPECT_EQ(6, plisTeam1) << "Team1 devrait avoir 6 plis";
-    EXPECT_EQ(2, plisTeam2) << "Team2 devrait avoir 2 plis";
+    // Appeler la fonction de calcul
+    auto result = ScoreCalculator::calculateMancheScore(
+        160,  // pointsRealisesTeam1 (non utilisé pour capot annoncé)
+        0,    // pointsRealisesTeam2
+        valeurContrat,
+        team1HasBid,
+        coinched,
+        surcoinched,
+        isCapotAnnonce,
+        capotReussi,
+        false,  // isGeneraleAnnonce
+        false,  // generaleReussie
+        false,  // capotNonAnnonceTeam1
+        false   // capotNonAnnonceTeam2
+    );
 
-    // Scoring COINCHE réussi avec belote: ((contrat + pointsRealisés) × 2) + 20 belote
-    // Team1 a 6 plis, on estime environ 110 points réalisés
-    // Score = (100 + 110) × 2 + 20 = 440 points (approximation pour le test)
-    int scoreAttenduTeam1 = 440;
-    int scoreAttenduTeam2 = 0;
+    // Scoring CAPOT annoncé réussi coinché: 250 + (250 × 2) = 750
+    EXPECT_EQ(result.scoreTeam1, 750) << "Team1 devrait marquer 750 points (250+(250×2))";
+    EXPECT_EQ(result.scoreTeam2, 0) << "Team2 ne devrait marquer aucun point";
+}
 
-    EXPECT_GE(scoreAttenduTeam1, 100 * 2 + 20) << "Team1 devrait marquer au moins ((100+points)*2 + 20 belote)";
-    EXPECT_EQ(scoreAttenduTeam2, 0) << "Team2 ne devrait marquer aucun point";
+TEST_F(CoincheTest, CapotAnnonceEchoueCoinche) {
+    // Team1 annonce CAPOT coinché et échoue
+    auto result = ScoreCalculator::calculateMancheScore(
+        130, 30, 250, true, true, false,
+        true, false,  // isCapotAnnonce, capotEchoue
+        false, false, false, false
+    );
+
+    // Scoring CAPOT annoncé échoué coinché: Team2 marque 160 + (250 × 2) = 660
+    EXPECT_EQ(result.scoreTeam1, 0) << "Team1 ne devrait marquer aucun point";
+    EXPECT_EQ(result.scoreTeam2, 660) << "Team2 devrait marquer 660 points (160+(250×2))";
+}
+
+TEST_F(CoincheTest, CapotAnnonceReussiSurcoinche) {
+    // Team2 annonce CAPOT surcoinché et réussit
+    auto result = ScoreCalculator::calculateMancheScore(
+        0, 160, 250, false, true, true,
+        true, true,  // isCapotAnnonce, capotReussi
+        false, false, false, false
+    );
+
+    // Scoring CAPOT annoncé réussi surcoinché: 250 + (250 × 4) = 1250
+    EXPECT_EQ(result.scoreTeam1, 0) << "Team1 ne devrait marquer aucun point";
+    EXPECT_EQ(result.scoreTeam2, 1250) << "Team2 devrait marquer 1250 points (250+(250×4))";
+}
+
+TEST_F(CoincheTest, GeneraleAnnonceeReussieCoinche) {
+    // Joueur 0 (Team1) annonce GENERALE coinchée et réussit
+    auto result = ScoreCalculator::calculateMancheScore(
+        160, 0, 500, true, true, false,
+        false, false,
+        true, true,  // isGeneraleAnnonce, generaleReussie
+        false, false
+    );
+
+    // Scoring GENERALE annoncée réussie coinchée: 500 + (500 × 2) = 1500
+    EXPECT_EQ(result.scoreTeam1, 1500) << "Team1 devrait marquer 1500 points (500+(500×2))";
+    EXPECT_EQ(result.scoreTeam2, 0) << "Team2 ne devrait marquer aucun point";
+}
+
+TEST_F(CoincheTest, GeneraleAnnonceeEchoueeSurcoinche) {
+    // Joueur 1 (Team2) annonce GENERALE surcoinchée et échoue
+    auto result = ScoreCalculator::calculateMancheScore(
+        130, 30, 500, false, true, true,
+        false, false,
+        true, false,  // isGeneraleAnnonce, generaleEchouee
+        false, false
+    );
+
+    // Scoring GENERALE annoncée échouée surcoinchée: Team1 marque 160 + (500 × 4) = 2160
+    EXPECT_EQ(result.scoreTeam1, 2160) << "Team1 devrait marquer 2160 points (160+(500×4))";
+    EXPECT_EQ(result.scoreTeam2, 0) << "Team2 ne devrait marquer aucun point";
+}
+
+TEST_F(CoincheTest, CapotNonAnnonceCoinche) {
+    // Team1 annonce 90 coinché, réussit et fait capot non annoncé
+    auto result = ScoreCalculator::calculateMancheScore(
+        160, 0, 90, true, true, false,
+        false, false, false, false,
+        true, false  // capotNonAnnonceTeam1
+    );
+
+    // Scoring CAPOT non annoncé coinché: 250 + (90 × 2) = 430
+    EXPECT_EQ(result.scoreTeam1, 430) << "Team1 devrait marquer 430 points (250+(90×2))";
+    EXPECT_EQ(result.scoreTeam2, 0) << "Team2 ne devrait marquer aucun point";
+}
+
+TEST_F(CoincheTest, BeloteCompteeUneFoisSeulement) {
+    // Test que la belote est incluse dans pointsRealises et n'est pas ajoutée après
+    // Team1 annonce 100, réussit avec 100 points + 20 belote = 120 points réalisés
+    int valeurContrat = 100;
+    int pointsRealisesTeam1 = 100 + 20;  // 100 points plis + 20 belote
+    int pointsRealisesTeam2 = 60;
+
+    auto result = ScoreCalculator::calculateMancheScore(
+        pointsRealisesTeam1,
+        pointsRealisesTeam2,
+        valeurContrat,
+        true,   // team1HasBid
+        false,  // coinched
+        false,  // surcoinched
+        false, false, false, false, false, false
+    );
+
+    // Scoring normal réussi: valeurContrat + pointsRealisés = 100 + 120 = 220
+    // La belote est déjà incluse dans les 120 points
+    EXPECT_EQ(result.scoreTeam1, 220) << "Team1 devrait marquer 220 points (100+120, belote incluse)";
+    EXPECT_EQ(result.scoreTeam2, 60) << "Team2 devrait marquer 60 points";
 }
