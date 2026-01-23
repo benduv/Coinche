@@ -2621,8 +2621,24 @@ private:
         }
 
         if (allBots) {
-            // Tous les joueurs humains ont quitté volontairement - supprimer la GameRoom
-            qDebug() << "Tous les joueurs ont quitté la partie" << roomId << "- Suppression de la GameRoom";
+            // Vérifier si certains joueurs peuvent encore se reconnecter (AFK) ou si tous ont vraiment quitté
+            bool anyPlayerCanReconnect = false;
+            for (int i = 0; i < 4; i++) {
+                QString playerName = room->playerNames[i];
+                // Si le joueur est encore dans la map de reconnexion, il peut revenir (AFK)
+                if (m_playerNameToRoomId.contains(playerName) && m_playerNameToRoomId[playerName] == roomId) {
+                    anyPlayerCanReconnect = true;
+                    qDebug() << "Joueur" << playerName << "peut encore se reconnecter (AFK, pas abandon volontaire)";
+                    break;
+                }
+            }
+
+            if (anyPlayerCanReconnect) {
+                qDebug() << "Tous les joueurs sont des bots, mais certains peuvent se reconnecter - GameRoom conservée";
+                // Ne pas supprimer la room, les joueurs AFK peuvent revenir
+            } else {
+                // Tous les joueurs humains ont quitté volontairement - supprimer la GameRoom
+                qDebug() << "Tous les joueurs ont quitté volontairement la partie" << roomId << "- Suppression de la GameRoom";
 
             // Arrêter les timers
             if (room->turnTimeout) {
@@ -2649,6 +2665,7 @@ private:
 
             qDebug() << "GameRoom" << roomId << "supprimée";
             return;
+            }
         }
 
         // Si c'est le tour du joueur qui abandonne, faire jouer le bot immédiatement
