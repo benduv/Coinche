@@ -113,7 +113,7 @@ public:
     Q_INVOKABLE void setPlayerAvatar(int position, const QString& avatar);
 
     // Initialiser la partie avec les données du serveur
-    Q_INVOKABLE void initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents, const QString& myPseudo = "Moi");
+    Q_INVOKABLE void initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents, const QString& myPseudo = "Moi", bool isReconnection = false);
     
     // Actions du joueur local
     Q_INVOKABLE void playCard(int cardIndex);

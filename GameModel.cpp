@@ -343,9 +343,9 @@ void GameModel::setPlayerAvatar(int position, const QString& avatar)
     qDebug() << "Avatar défini pour position" << position << ":" << avatar;
 }
 
-void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents, const QString& myPseudo)
+void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const QJsonArray& opponents, const QString& myPseudo, bool isReconnection)
 {
-    qDebug() << "Initialisation partie online - Position:" << myPosition << "Pseudo:" << myPseudo;
+    qDebug() << "Initialisation partie online - Position:" << myPosition << "Pseudo:" << myPseudo << "Reconnexion:" << isReconnection;
     qDebug() << "Nombre de cartes reçues:" << myCards.size();
     qDebug() << "Nombre d'adversaires:" << opponents.size();
 
@@ -422,35 +422,61 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
 
     emit myPositionChanged();
 
-    // Animation de distribution 3-2-3
-    qDebug() << "Animation de distribution 3-2-3 demarree (debut de partie)";
+    // Lors d'une reconnexion, ajouter toutes les cartes d'un coup sans animation
+    if (isReconnection) {
+        qDebug() << "Reconnexion: Ajout immediat de toutes les cartes sans animation";
 
-    // Phase 1 : 3 cartes (apres 250ms)
-    QTimer::singleShot(250, this, [this, myNewCartes]() {
-        distributeCards(0, 3, myNewCartes);
+        // Ajouter toutes les cartes instantanément
+        Player* localPlayer = getPlayerByPosition(myPosition);
+        if (localPlayer) {
+            for (Carte* carte : myNewCartes) {
+                localPlayer->addCardToHand(carte);
+            }
+            qDebug() << "Reconnexion: " << myNewCartes.size() << "cartes ajoutees";
 
-        // Phase 2 : 2 cartes (après 1000ms supplémentaires)
-        QTimer::singleShot(1000, this, [this, myNewCartes]() {
-            m_distributionPhase = 2;
-            emit distributionPhaseChanged();
-            distributeCards(3, 5, myNewCartes);
+            // Rafraîchir le HandModel
+            HandModel* hand = getHandModelByPosition(myPosition);
+            if (hand) {
+                hand->refresh();
+            }
+        }
 
-            // Phase 3 : 3 cartes (après 1000ms supplémentaires)
-            QTimer::singleShot(1000 , this, [this, myNewCartes]() {
-                m_distributionPhase = 3;
+        // Pas d'animation, signaler immédiatement que c'est prêt
+        m_distributionPhase = 0;
+        emit distributionPhaseChanged();
+        qDebug() << "Reconnexion: Partie initialisee sans animation";
+        emit gameInitialized();
+    } else {
+        // Animation de distribution 3-2-3 pour une nouvelle partie
+        qDebug() << "Animation de distribution 3-2-3 demarree (debut de partie)";
+
+        // Phase 1 : 3 cartes (apres 250ms)
+        QTimer::singleShot(250, this, [this, myNewCartes]() {
+            distributeCards(0, 3, myNewCartes);
+
+            // Phase 2 : 2 cartes (après 1000ms supplémentaires)
+            QTimer::singleShot(1000, this, [this, myNewCartes]() {
+                m_distributionPhase = 2;
                 emit distributionPhaseChanged();
-                distributeCards(5, 8, myNewCartes);
+                distributeCards(3, 5, myNewCartes);
 
-                // Fin de distribution (après 1000ms supplémentaires)
-                QTimer::singleShot(1000, this, [this]() {
-                    m_distributionPhase = 0;
+                // Phase 3 : 3 cartes (après 1000ms supplémentaires)
+                QTimer::singleShot(1000 , this, [this, myNewCartes]() {
+                    m_distributionPhase = 3;
                     emit distributionPhaseChanged();
-                    qDebug() << "Partie initialisee - Distribution terminée";
-                    emit gameInitialized();
+                    distributeCards(5, 8, myNewCartes);
+
+                    // Fin de distribution (après 1000ms supplémentaires)
+                    QTimer::singleShot(1000, this, [this]() {
+                        m_distributionPhase = 0;
+                        emit distributionPhaseChanged();
+                        qDebug() << "Partie initialisee - Distribution terminée";
+                        emit gameInitialized();
+                    });
                 });
             });
         });
-    });
+    }
 
     qDebug() << "Partie initialisee avec" << m_onlinePlayers.size() << "joueurs";
 }
@@ -806,6 +832,43 @@ void GameModel::updateGameState(const QJsonObject& state)
 
         qDebug() << "Reconnexion: Pli resynchronisé avec" << m_currentPli.size() << "cartes";
         emit currentPliChanged();
+    }
+
+    // RECONNEXION: Resynchroniser les informations d'annonce
+    if (state.contains("lastBidderIndex")) {
+        m_lastBidderIndex = state["lastBidderIndex"].toInt();
+        emit lastBidderIndexChanged();
+        qDebug() << "Reconnexion: lastBidderIndex resynchronisé:" << m_lastBidderIndex;
+    }
+
+    if (state.contains("lastBidAnnonce")) {
+        m_lastBidAnnonce = static_cast<Player::Annonce>(state["lastBidAnnonce"].toInt());
+        emit lastBidChanged();
+        qDebug() << "Reconnexion: lastBidAnnonce resynchronisé:" << static_cast<int>(m_lastBidAnnonce);
+    }
+
+    if (state.contains("isCoinched")) {
+        m_isCoinched = state["isCoinched"].toBool();
+        emit isCoinchedChanged();
+        qDebug() << "Reconnexion: isCoinched resynchronisé:" << m_isCoinched;
+    }
+
+    if (state.contains("isSurcoinched")) {
+        m_isSurcoinched = state["isSurcoinched"].toBool();
+        emit isSurcoinchedChanged();
+        qDebug() << "Reconnexion: isSurcoinched resynchronisé:" << m_isSurcoinched;
+    }
+
+    if (state.contains("coinchedByPlayerIndex")) {
+        m_coinchedByPlayerIndex = state["coinchedByPlayerIndex"].toInt();
+        emit coinchedByPlayerIndexChanged();
+        qDebug() << "Reconnexion: coinchedByPlayerIndex resynchronisé:" << m_coinchedByPlayerIndex;
+    }
+
+    if (state.contains("surcoinchedByPlayerIndex")) {
+        m_surcoinchedByPlayerIndex = state["surcoinchedByPlayerIndex"].toInt();
+        emit surcoinchedByPlayerIndexChanged();
+        qDebug() << "Reconnexion: surcoinchedByPlayerIndex resynchronisé:" << m_surcoinchedByPlayerIndex;
     }
 
     // Mettre à jour les cartes jouables pour le joueur actuel

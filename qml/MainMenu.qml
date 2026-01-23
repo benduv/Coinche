@@ -143,12 +143,13 @@ ApplicationWindow {
     Connections {
         target: networkManager
 
-        function onGameFound(playerPosition, opponents) {
-            console.log("MainMenu - gameFound recu! Position:", playerPosition)
+        function onGameFound(playerPosition, opponents, isReconnection) {
+            console.log("MainMenu - gameFound recu! Position:", playerPosition, "Reconnexion:", isReconnection)
             networkManager.createGameModel(
                 networkManager.myPosition,
                 networkManager.myCards,
-                networkManager.opponents
+                networkManager.opponents,
+                isReconnection
             )
         }
 

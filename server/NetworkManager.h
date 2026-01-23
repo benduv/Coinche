@@ -104,23 +104,23 @@ public:
     }
 
     // Nouvelle méthode pour créer le GameModel
-    Q_INVOKABLE void createGameModel(int position, const QJsonArray& cards, const QJsonArray& opps) {
-        qDebug() << "Creation du GameModel en C++";
-        
+    Q_INVOKABLE void createGameModel(int position, const QJsonArray& cards, const QJsonArray& opps, bool isReconnection = false) {
+        qDebug() << "Creation du GameModel en C++ - Reconnexion:" << isReconnection;
+
         // Supprimer l'ancien si existant
         if (m_gameModel) {
             delete m_gameModel;
         }
-        
+
         // Créer le nouveau GameModel
         m_gameModel = new GameModel(this);
-        
+
         // Connecter les signaux
         connect(m_gameModel, &GameModel::cardPlayedLocally, this, [this](int cardIndex) {
             qDebug() << "Envoi playCard au serveur:" << cardIndex;
             playCard(cardIndex);
         });
-        
+
         connect(m_gameModel, &GameModel::bidMadeLocally, this, [this](int bidValue, int suitValue) {
             qDebug() << "Envoi makeBid au serveur:" << bidValue << suitValue;
             makeBid(bidValue, suitValue);
@@ -131,8 +131,8 @@ public:
             forfeitGame();
         });
 
-        // Initialiser avec les données en passant le pseudo du joueur
-        m_gameModel->initOnlineGame(position, cards, opps, m_playerPseudo);
+        // Initialiser avec les données en passant le pseudo du joueur et le flag de reconnexion
+        m_gameModel->initOnlineGame(position, cards, opps, m_playerPseudo, isReconnection);
 
         // Définir l'avatar du joueur local
         m_gameModel->setPlayerAvatar(position, m_playerAvatar);
@@ -358,7 +358,7 @@ signals:
     void playersInQueueChanged();
     void matchmakingCountdownChanged();
     void gameDataChanged();
-    void gameFound(int playerPosition, QJsonArray opponents);
+    void gameFound(int playerPosition, QJsonArray opponents, bool isReconnection = false);
     void gameModelReady();
     void cardPlayed(QString playerId, int cardIndex);
     void bidMade(QString playerId, int bidValue, int suit);
@@ -516,8 +516,8 @@ private slots:
             } else {
                 // Nouvelle partie (ou relance d'app) - émettre le signal pour créer un nouveau GameModel
                 emit gameDataChanged();
-                emit gameFound(m_myPosition, m_opponents);
-                qDebug() << "Signal gameFound emis";
+                emit gameFound(m_myPosition, m_opponents, isReconnection);
+                qDebug() << "Signal gameFound emis - Reconnexion:" << isReconnection;
             }
         }
         else if (type == "cardPlayed") {

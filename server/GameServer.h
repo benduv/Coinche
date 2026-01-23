@@ -589,6 +589,19 @@ private:
             stateMsg["scoreTotalTeam1"] = room->scoreTeam1;
             stateMsg["scoreTotalTeam2"] = room->scoreTeam2;
 
+            // RECONNEXION: Envoyer les informations sur les annonces
+            if (room->lastBidderIndex >= 0) {
+                stateMsg["lastBidderIndex"] = room->lastBidderIndex;
+                stateMsg["lastBidAnnonce"] = static_cast<int>(room->lastBidAnnonce);
+                stateMsg["isCoinched"] = room->coinched;
+                stateMsg["isSurcoinched"] = room->surcoinched;
+                stateMsg["coinchedByPlayerIndex"] = room->coinchePlayerIndex;
+                stateMsg["surcoinchedByPlayerIndex"] = room->surcoinchePlayerIndex;
+                qDebug() << "GameServer - Reconnexion: Envoi des infos d'annonce - lastBidder:" << room->lastBidderIndex
+                         << "annonce:" << static_cast<int>(room->lastBidAnnonce)
+                         << "coinched:" << room->coinched << "by:" << room->coinchePlayerIndex;
+            }
+
             // Note: Les cartes du joueur sont déjà envoyées dans gameFound.myCards
             // Pas besoin de les renvoyer ici, cela évite la duplication
 
@@ -722,6 +735,10 @@ private:
         }
 
         GameRoom* room = m_gameRooms[roomId];
+        if (!room) {
+            qDebug() << "handleRehumanize - Room supprimée (tous les joueurs ont quitté)";
+            return;
+        }
 
         if (playerIndex < 0 || playerIndex >= 4) {
             qDebug() << "handleRehumanize - Index joueur invalide:" << playerIndex;
