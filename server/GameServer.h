@@ -142,6 +142,26 @@ struct GameRoom {
         return false;
     }
 
+    // Destructeur pour nettoyer les ressources
+    ~GameRoom() {
+        // Nettoyer les timers pour éviter les fuites mémoire
+        if (turnTimeout) {
+            turnTimeout->stop();
+            delete turnTimeout;
+            turnTimeout = nullptr;
+        }
+        if (bidTimeout) {
+            bidTimeout->stop();
+            delete bidTimeout;
+            bidTimeout = nullptr;
+        }
+        if (surcoincheTimer) {
+            surcoincheTimer->stop();
+            delete surcoincheTimer;
+            surcoincheTimer = nullptr;
+        }
+    }
+
     GameModel* gameModel = nullptr;
 };
 
@@ -249,9 +269,15 @@ public:
 
         // Libére toutes les GameRooms
         qDeleteAll(m_gameRooms.values());
+        m_gameRooms.clear();
 
         // Libére toutes les connexions
         qDeleteAll(m_connections.values());
+        m_connections.clear();
+
+        // Libére tous les lobbies privés
+        qDeleteAll(m_privateLobbies.values());
+        m_privateLobbies.clear();
     }
 
     // Accès au StatsReporter (pour tests et monitoring)
@@ -2644,31 +2670,14 @@ private:
                 // Tous les joueurs humains ont quitté volontairement - supprimer la GameRoom
                 qDebug() << "Tous les joueurs ont quitté volontairement la partie" << roomId << "- Suppression de la GameRoom";
 
-            // Arrêter les timers
-            if (room->turnTimeout) {
-                room->turnTimeout->stop();
-                delete room->turnTimeout;
-                room->turnTimeout = nullptr;
-            }
-            if (room->bidTimeout) {
-                room->bidTimeout->stop();
-                delete room->bidTimeout;
-                room->bidTimeout = nullptr;
-            }
-            if (room->surcoincheTimer) {
-                room->surcoincheTimer->stop();
-                delete room->surcoincheTimer;
-                room->surcoincheTimer = nullptr;
-            }
+                // Retirer la room des maps
+                m_gameRooms.remove(roomId);
 
-            // Retirer la room des maps
-            m_gameRooms.remove(roomId);
+                // Supprimer la room (le destructeur nettoie les timers automatiquement)
+                delete room;
 
-            // Supprimer la room
-            delete room;
-
-            qDebug() << "GameRoom" << roomId << "supprimée";
-            return;
+                qDebug() << "GameRoom" << roomId << "supprimée";
+                return;
             }
         }
 
@@ -4440,32 +4449,6 @@ private:
             // Enregistrer l'abandon dans les statistiques quotidiennes
             m_dbManager->recordPlayerQuit();
         }
-
-        // Remplacer le joueur par un bot
-        /*room->isBot[playerIndex] = true;
-        qDebug() << "Joueur" << playerIndex << "remplace par un bot (deconnexion)";
-
-        // Notifier tous les joueurs qu'un joueur s'est déconnecté et a été remplacé par un bot
-        QJsonObject dcMsg;
-        dcMsg["type"] = "playerDisconnected";
-        dcMsg["playerIndex"] = playerIndex;
-        dcMsg["playerName"] = conn->playerName;
-        broadcastToRoom(roomId, dcMsg, connectionId);
-
-        // Si c'est le tour du joueur déconnecté, faire jouer le bot immédiatement
-        if (room->currentPlayerIndex == playerIndex) {
-            if (room->gameState == "bidding") {
-                // Phase d'enchères : passer automatiquement
-                QTimer::singleShot(500, this, [this, roomId, playerIndex]() {
-                    playBotBid(roomId, playerIndex);
-                });
-            } else if (room->gameState == "playing") {
-                // Phase de jeu : jouer une carte aléatoire
-                QTimer::singleShot(500, this, [this, roomId, playerIndex]() {
-                    playBotCard(roomId, playerIndex);
-                });
-            }
-        }*/
     }
 
     QString getConnectionIdBySocket(QWebSocket *socket) {

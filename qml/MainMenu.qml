@@ -120,11 +120,11 @@ ApplicationWindow {
         // Nettoyer le gameModel
         networkManager.clearGameModel()
 
-        // Pop toutes les pages jusqu'au MainMenu (depth 1)
-        while (stackView.depth > 1) {
-            console.log("MainMenu.returnToMainMenu - Pop, depth:", stackView.depth)
-            stackView.pop()
-        }
+        // Toujours remplacer par le menu principal
+        // Cela fonctionne que ce soit depuis CoincheView, MatchMakingView, ou autre
+        console.log("MainMenu.returnToMainMenu - Replace vers mainMenuComponent")
+        stackView.replace(mainMenuComponent)
+
         console.log("MainMenu.returnToMainMenu - Termine, depth final:", stackView.depth)
 
         // Relancer la musique du menu

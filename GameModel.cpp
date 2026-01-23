@@ -392,9 +392,10 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         int position = oppObj["position"].toInt();
         QString name = oppObj["name"].toString();
         QString avatar = oppObj["avatar"].toString();
+        int cardCount = oppObj["cardCount"].toInt(0);  // Nombre de cartes pour cet adversaire (reconnexion)
         if (avatar.isEmpty()) avatar = "avataaars1.svg";
 
-        qDebug() << "Creation adversaire:" << name << "position:" << position << "avatar:" << avatar;
+        qDebug() << "Creation adversaire:" << name << "position:" << position << "avatar:" << avatar << "cardCount:" << cardCount;
 
         Player* opponent = new Player(name.toStdString(), std::vector<Carte*>(), position);
         m_onlinePlayers.append(opponent);
@@ -426,18 +427,43 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
     if (isReconnection) {
         qDebug() << "Reconnexion: Ajout immediat de toutes les cartes sans animation";
 
-        // Ajouter toutes les cartes instantanément
+        // Ajouter toutes les cartes instantanément au joueur local
         Player* localPlayer = getPlayerByPosition(myPosition);
         if (localPlayer) {
             for (Carte* carte : myNewCartes) {
                 localPlayer->addCardToHand(carte);
             }
-            qDebug() << "Reconnexion: " << myNewCartes.size() << "cartes ajoutees";
+            qDebug() << "Reconnexion: " << myNewCartes.size() << "cartes ajoutees au joueur local";
 
-            // Rafraîchir le HandModel
+            // Rafraîchir le HandModel du joueur local
             HandModel* hand = getHandModelByPosition(myPosition);
             if (hand) {
                 hand->refresh();
+            }
+        }
+
+        // Ajouter les cartes fantômes (face cachée) pour les adversaires
+        // Utiliser le cardCount envoyé par le serveur pour chaque adversaire
+        for (const QJsonValue& val : opponents) {
+            QJsonObject oppObj = val.toObject();
+            int position = oppObj["position"].toInt();
+            int cardCount = oppObj["cardCount"].toInt(0);
+
+            Player* opponent = getPlayerByPosition(position);
+            if (opponent && cardCount > 0) {
+                // Ajouter le bon nombre de cartes fantômes pour cet adversaire
+                for (int i = 0; i < cardCount; i++) {
+                    Carte* phantomCard = new Carte(Carte::COEUR, Carte::SEPT);
+                    opponent->addCardToHand(phantomCard);
+                }
+
+                // Rafraîchir le HandModel de l'adversaire
+                HandModel* hand = getHandModelByPosition(position);
+                if (hand) {
+                    hand->refresh();
+                }
+
+                qDebug() << "Reconnexion: " << cardCount << "cartes fantomes ajoutees pour joueur" << position;
             }
         }
 
@@ -845,6 +871,65 @@ void GameModel::updateGameState(const QJsonObject& state)
         m_lastBidAnnonce = static_cast<Player::Annonce>(state["lastBidAnnonce"].toInt());
         emit lastBidChanged();
         qDebug() << "Reconnexion: lastBidAnnonce resynchronisé:" << static_cast<int>(m_lastBidAnnonce);
+
+        // RECONNEXION: Reconstruire l'entrée playerBids pour afficher l'indicateur d'annonce
+        if (m_lastBidderIndex >= 0 && m_lastBidderIndex < m_playerBids.size()) {
+            QVariantMap bid;
+
+            // Convertir l'annonce en valeur textuelle
+            int bidValue = 0;
+            switch (m_lastBidAnnonce) {
+                case Player::QUATREVINGT: bidValue = 80; break;
+                case Player::QUATREVINGTDIX: bidValue = 90; break;
+                case Player::CENT: bidValue = 100; break;
+                case Player::CENTDIX: bidValue = 110; break;
+                case Player::CENTVINGT: bidValue = 120; break;
+                case Player::CENTTRENTE: bidValue = 130; break;
+                case Player::CENTQUARANTE: bidValue = 140; break;
+                case Player::CENTCINQUANTE: bidValue = 150; break;
+                case Player::CENTSOIXANTE: bidValue = 160; break;
+                case Player::CAPOT: bidValue = 250; break;
+                case Player::GENERALE: bidValue = 500; break;
+                default: bidValue = 0; break;
+            }
+
+            bid["bidValue"] = QString::number(bidValue);
+
+            // Déterminer le symbole de la couleur d'atout
+            int atout = state.contains("atout") ? state["atout"].toInt() : 0;
+            bool isToutAtout = state.contains("isToutAtout") ? state["isToutAtout"].toBool() : false;
+            bool isSansAtout = state.contains("isSansAtout") ? state["isSansAtout"].toBool() : false;
+
+            QString suitSymbol = "";
+            bool isRed = false;
+
+            if (isToutAtout) {
+                suitSymbol = "TA";
+                isRed = false;
+            } else if (isSansAtout) {
+                suitSymbol = "SA";
+                isRed = false;
+            } else {
+                // Convertir la couleur en symbole
+                switch (atout) {
+                    case 3: suitSymbol = "♥"; isRed = true; break;  // COEUR
+                    case 4: suitSymbol = "♣"; isRed = false; break; // TREFLE
+                    case 5: suitSymbol = "♦"; isRed = true; break;  // CARREAU
+                    case 6: suitSymbol = "♠"; isRed = false; break; // PIQUE
+                    default: suitSymbol = ""; break;
+                }
+            }
+
+            bid["suitSymbol"] = suitSymbol;
+            bid["isRed"] = isRed;
+
+            m_playerBids[m_lastBidderIndex] = bid;
+            emit playerBidsChanged();
+
+            qDebug() << "Reconnexion: playerBids reconstruit pour joueur" << m_lastBidderIndex
+                     << "- bidValue:" << bid["bidValue"].toString()
+                     << "suit:" << suitSymbol;
+        }
     }
 
     if (state.contains("isCoinched")) {
