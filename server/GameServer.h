@@ -2592,24 +2592,28 @@ private:
         room->isBot[playerIndex] = true;
         qDebug() << "Joueur" << playerIndex << "remplace par un bot";
 
+        // Notifier tous les joueurs qu'un joueur a abandonné et a été remplacé par un bot
+        // IMPORTANT: Envoyer ce message AVANT de retirer le joueur des listes
+        QJsonObject forfeitMsg;
+        forfeitMsg["type"] = "playerForfeited";
+        forfeitMsg["playerIndex"] = playerIndex;
+        forfeitMsg["playerName"] = conn->playerName;
+        broadcastToRoom(roomId, forfeitMsg);
+
         // Retirer le joueur de la partie - il ne pourra plus la rejoindre
         // Ceci s'applique UNIQUEMENT aux abandons volontaires (clic sur "Quitter")
         // Les déconnexions involontaires passent par onDisconnected() qui garde le joueur dans la partie
         conn->gameRoomId = -1;
         conn->playerIndex = -1;
 
+        // IMPORTANT: Retirer le connectionId de la room pour qu'il ne reçoive plus les messages de broadcast
+        room->connectionIds[playerIndex] = "";
+
         // IMPORTANT: Retirer le joueur de la map de reconnexion pour qu'il ne puisse pas
         // rejoindre cette partie, même s'il clique sur "Jouer" ensuite
         m_playerNameToRoomId.remove(conn->playerName);
 
         qDebug() << "Joueur" << conn->playerName << "retire de la partie (abandon volontaire), peut rejoindre une nouvelle partie";
-
-        // Notifier tous les joueurs qu'un joueur a abandonné et a été remplacé par un bot
-        QJsonObject forfeitMsg;
-        forfeitMsg["type"] = "playerForfeited";
-        forfeitMsg["playerIndex"] = playerIndex;
-        forfeitMsg["playerName"] = conn->playerName;
-        broadcastToRoom(roomId, forfeitMsg);
 
         // Vérifier si tous les joueurs sont maintenant des bots
         bool allBots = true;
