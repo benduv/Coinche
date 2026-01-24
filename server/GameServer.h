@@ -307,6 +307,13 @@ private slots:
         QWebSocket *sender = qobject_cast<QWebSocket*>(this->sender());
         if (!sender) return;
 
+        // Vérifier que le socket est encore connecté
+        // Des messages peuvent être en queue même après disconnected()
+        if (sender->state() != QAbstractSocket::ConnectedState) {
+            qDebug() << "GameServer - Message ignore (socket deconnecte)";
+            return;
+        }
+
         QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
         QJsonObject obj = doc.object();
         QString type = obj["type"].toString();
@@ -365,6 +372,12 @@ private slots:
         QString playerName;
         bool wasInQueue = false;
         for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+            // Vérifier que la connexion existe avant d'accéder à ses membres
+            if (!it.value()) {
+                qDebug() << "AVERTISSEMENT: Connexion nulle trouvée dans m_connections";
+                continue;
+            }
+
             if (it.value()->socket == socket) {
                 connectionId = it.key();
                 playerName = it.value()->playerName;
@@ -4452,8 +4465,14 @@ private:
     }
 
     QString getConnectionIdBySocket(QWebSocket *socket) {
+        // Vérifier que le socket est valide
+        if (!socket) {
+            return QString();
+        }
+
         for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
-            if (it.value()->socket == socket) {
+            // Vérifier que la connexion existe et n'a pas été supprimée
+            if (it.value() && it.value()->socket == socket) {
                 return it.key();
             }
         }
