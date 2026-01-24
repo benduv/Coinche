@@ -609,6 +609,14 @@ private:
             stateMsg["currentPlayer"] = room->currentPlayerIndex;
             stateMsg["biddingPlayer"] = room->biddingPlayer;
             stateMsg["biddingPhase"] = true;
+            stateMsg["firstPlayerIndex"] = room->firstPlayerIndex;
+
+            // RECONNEXION: Envoyer les scores même pendant la phase d'enchères
+            stateMsg["scoreTeam1"] = room->scoreMancheTeam1;
+            stateMsg["scoreTeam2"] = room->scoreMancheTeam2;
+            stateMsg["scoreTotalTeam1"] = room->scoreTeam1;
+            stateMsg["scoreTotalTeam2"] = room->scoreTeam2;
+
             sendMessage(conn->socket, stateMsg);
         } else if (room->gameState == "playing") {
             // Envoyer l'état de jeu avec l'atout et les cartes jouables si c'est son tour
@@ -616,6 +624,7 @@ private:
             stateMsg["type"] = "gameState";
             stateMsg["biddingPhase"] = false;
             stateMsg["currentPlayer"] = room->currentPlayerIndex;
+            stateMsg["firstPlayerIndex"] = room->firstPlayerIndex;
             stateMsg["atout"] = static_cast<int>(room->couleurAtout);
             stateMsg["isToutAtout"] = room->isToutAtout;
             stateMsg["isSansAtout"] = room->isSansAtout;

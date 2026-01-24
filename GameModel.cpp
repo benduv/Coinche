@@ -683,11 +683,17 @@ void GameModel::updateGameState(const QJsonObject& state)
                 emit currentPliChanged();
                 qDebug() << "Debut de la phase de jeu!";
 
-                // Réinitialiser les scores de manche (ils seront recalculés au prochain pli)
-                m_scoreTeam1 = 0;
-                m_scoreTeam2 = 0;
-                emit scoreTeam1Changed();
-                emit scoreTeam2Changed();
+                // Réinitialiser les scores de manche SEULEMENT si le message ne contient pas déjà les scores
+                // (lors d'une reconnexion, les scores sont envoyés dans le même message)
+                if (!state.contains("scoreTeam1") && !state.contains("scoreTeam2")) {
+                    m_scoreTeam1 = 0;
+                    m_scoreTeam2 = 0;
+                    emit scoreTeam1Changed();
+                    emit scoreTeam2Changed();
+                    qDebug() << "Scores de manche réinitialisés (fin des enchères)";
+                } else {
+                    qDebug() << "Scores de manche conservés (reconnexion)";
+                }
 
                 // Demarrer le timer pour le joueur actuel (quel qu'il soit)
                 m_playTimeRemaining = m_maxPlayTime;
@@ -730,6 +736,16 @@ void GameModel::updateGameState(const QJsonObject& state)
         if (m_biddingPlayer != newBiddingPlayer) {
             m_biddingPlayer = newBiddingPlayer;
             emit biddingPlayerChanged();
+        }
+    }
+
+    // RECONNEXION: Synchroniser le dealer (firstPlayerIndex)
+    if (state.contains("firstPlayerIndex")) {
+        int newFirstPlayer = state["firstPlayerIndex"].toInt();
+        if (m_firstPlayerIndex != newFirstPlayer) {
+            m_firstPlayerIndex = newFirstPlayer;
+            emit dealerPositionChanged();
+            qDebug() << "Reconnexion: Dealer resynchronisé:" << m_firstPlayerIndex;
         }
     }
 
