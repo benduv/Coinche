@@ -24,6 +24,7 @@ class NetworkManager : public QObject {
     Q_PROPERTY(int myPosition READ myPosition NOTIFY gameDataChanged)
     Q_PROPERTY(QJsonArray opponents READ opponents NOTIFY gameDataChanged)
     Q_PROPERTY(QString playerAvatar READ playerAvatar NOTIFY playerAvatarChanged)
+    Q_PROPERTY(QString playerPseudo READ playerPseudo NOTIFY playerPseudoChanged)
     Q_PROPERTY(QVariantList lobbyPlayers READ lobbyPlayers NOTIFY lobbyPlayersChanged)
     Q_PROPERTY(QString pendingBotReplacement READ pendingBotReplacement NOTIFY pendingBotReplacementChanged)
     Q_PROPERTY(bool hasStoredCredentials READ hasStoredCredentials NOTIFY storedCredentialsChanged)
@@ -82,6 +83,7 @@ public:
     QJsonArray opponents() const { return m_opponents; }
     GameModel* gameModel() const { return m_gameModel; }
     QString playerAvatar() const { return m_playerAvatar; }
+    QString playerPseudo() const { return m_playerPseudo; }
     QVariantList lobbyPlayers() const { return m_lobbyPlayers; }
     QString pendingBotReplacement() const { return m_pendingBotReplacement; }
 
@@ -373,6 +375,7 @@ signals:
     void deleteAccountFailed(QString error);
     void messageReceived(QString message);  // Pour que QML puisse écouter tous les messages
     void playerAvatarChanged();
+    void playerPseudoChanged();
 
     // Signaux pour les lobbies privés
     void lobbyCreated(QString code);
@@ -468,6 +471,7 @@ private slots:
             // Mettre à jour le pseudo (le serveur peut l'avoir modifié pour les invités)
             if (!playerName.isEmpty()) {
                 m_playerPseudo = playerName;
+                emit playerPseudoChanged();
             }
 
             if (!avatar.isEmpty()) {
@@ -694,6 +698,7 @@ private slots:
             m_playerAvatar = avatar;
             qDebug() << "NetworkManager - Compte cree avec succès:" << playerName << "Avatar:" << avatar;
             emit playerAvatarChanged();
+            emit playerPseudoChanged();
             emit registerSuccess(playerName, avatar);
         }
         else if (type == "registerAccountFailed") {
@@ -714,6 +719,7 @@ private slots:
             }
             qDebug() << "NetworkManager - Connexion reussie:" << playerName << "Avatar:" << avatar;
             emit playerAvatarChanged();
+            emit playerPseudoChanged();
             emit loginSuccess(playerName, avatar);
         }
         else if (type == "loginAccountFailed") {

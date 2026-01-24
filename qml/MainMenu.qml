@@ -572,7 +572,9 @@ ApplicationWindow {
                         }
 
                         onClicked: {
-                            networkManager.registerPlayer(mainWindow.loggedInPlayerName, networkManager.playerAvatar)
+                            // Utiliser le pseudo sauvegardé dans networkManager s'il existe, sinon loggedInPlayerName
+                            var pseudoToUse = networkManager.playerPseudo !== "" ? networkManager.playerPseudo : mainWindow.loggedInPlayerName
+                            networkManager.registerPlayer(pseudoToUse, networkManager.playerAvatar)
                             stackView.push("qrc:/qml/MatchMakingView.qml")
                         }
                     }
