@@ -693,21 +693,19 @@ private:
             return;
         }
 
-        // Trouver la connexion du joueur
-        QString connectionId;
-        for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
-            if (it.value()->socket == socket) {
-                connectionId = it.key();
-                break;
-            }
-        }
-
+        // Trouver la connexion du joueur en utilisant la fonction sécurisée
+        QString connectionId = getConnectionIdBySocket(socket);
         if (connectionId.isEmpty()) {
             qDebug() << "Impossible de trouver la connexion pour la mise à jour d'avatar";
             return;
         }
 
         PlayerConnection* conn = m_connections[connectionId];
+        if (!conn) {
+            qDebug() << "Connexion invalide pour la mise à jour d'avatar";
+            return;
+        }
+
         conn->avatar = newAvatar;
 
         qDebug() << "Avatar mis à jour pour" << conn->playerName << ":" << newAvatar;
@@ -747,21 +745,19 @@ private:
 
     // Handler pour réhumaniser un joueur après qu'il ait été remplacé par un bot
     void handleRehumanize(QWebSocket *socket) {
-        // Trouver la connexion du joueur
-        QString connectionId;
-        for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
-            if (it.value()->socket == socket) {
-                connectionId = it.key();
-                break;
-            }
-        }
-
+        // Trouver la connexion du joueur en utilisant la fonction sécurisée
+        QString connectionId = getConnectionIdBySocket(socket);
         if (connectionId.isEmpty()) {
             qDebug() << "handleRehumanize - Connexion non trouvée";
             return;
         }
 
         PlayerConnection* conn = m_connections[connectionId];
+        if (!conn) {
+            qDebug() << "handleRehumanize - Connexion invalide";
+            return;
+        }
+
         int roomId = conn->gameRoomId;
         int playerIndex = conn->playerIndex;  // Utiliser directement l'index stocké dans la connexion
 
@@ -4595,7 +4591,7 @@ private:
         // Trouver le lobby du joueur
         QString lobbyCode;
         for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ++it) {
-            if (it.value()->playerNames.contains(conn->playerName)) {
+            if (it.value() && it.value()->playerNames.contains(conn->playerName)) {
                 lobbyCode = it.key();
                 break;
             }
@@ -4622,7 +4618,7 @@ private:
         // Trouver le lobby du joueur
         QString lobbyCode;
         for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ++it) {
-            if (it.value()->hostPlayerName == conn->playerName) {
+            if (it.value() && it.value()->hostPlayerName == conn->playerName) {
                 lobbyCode = it.key();
                 break;
             }
@@ -4689,7 +4685,7 @@ private:
         // Trouver et quitter le lobby
         QString lobbyCode;
         for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ++it) {
-            if (it.value()->playerNames.contains(conn->playerName)) {
+            if (it.value() && it.value()->playerNames.contains(conn->playerName)) {
                 lobbyCode = it.key();
                 break;
             }
@@ -4754,7 +4750,7 @@ private:
         for (const QString &playerName : lobby->playerNames) {
             // Trouver la connexion du joueur
             for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
-                if (it.value()->playerName == playerName) {
+                if (it.value() && it.value()->playerName == playerName) {
                     sendMessage(it.value()->socket, message);
                     break;
                 }
@@ -4768,7 +4764,7 @@ private:
 
         for (const QString &playerName : lobby->playerNames) {
             for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
-                if (it.value()->playerName == playerName) {
+                if (it.value() && it.value()->playerName == playerName) {
                     connectionIds.append(it.key());
                     break;
                 }
@@ -4886,7 +4882,7 @@ private:
         // Récupérer les IDs de connexion des 2 joueurs du lobby
         for (const QString &playerName : lobby->playerNames) {
             for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
-                if (it.value()->playerName == playerName) {
+                if (it.value() && it.value()->playerName == playerName) {
                     lobbyConnectionIds.append(it.key());
                     break;
                 }
