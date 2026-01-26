@@ -4759,7 +4759,7 @@ private:
         for (const QString &playerName : lobby->playerNames) {
             // Trouver la connexion du joueur
             for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
-                if (it.value() && it.value()->playerName == playerName) {
+                if (it.value() && it.value()->socket && it.value()->playerName == playerName) {
                     sendMessage(it.value()->socket, message);
                     break;
                 }
@@ -4936,6 +4936,17 @@ private:
     }
 
     void sendMessage(QWebSocket *socket, const QJsonObject &message) {
+        // Protection contre les sockets null ou déconnectés
+        if (!socket) {
+            qDebug() << "AVERTISSEMENT: Tentative d'envoi à un socket null";
+            return;
+        }
+
+        if (socket->state() != QAbstractSocket::ConnectedState) {
+            qDebug() << "AVERTISSEMENT: Tentative d'envoi à un socket déconnecté";
+            return;
+        }
+
         QJsonDocument doc(message);
         socket->sendTextMessage(doc.toJson(QJsonDocument::Compact));
     }

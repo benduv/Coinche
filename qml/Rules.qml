@@ -299,7 +299,7 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "• Les points sont multipliés par 2 (coinche) ou 4 (surcoinche)"
+                text: "• Les points du contrat sont multipliés par 2 (coinche) ou 4 (surcoinche)"
                 font.pixelSize: 28 * rulesRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
