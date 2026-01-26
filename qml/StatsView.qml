@@ -166,12 +166,12 @@ Rectangle {
 
                 Text {
                     text: "👤"
-                    font.pixelSize: 24 * minRatio
+                    font.pixelSize: 26 * minRatio
                 }
 
                 Text {
                     text: playerName
-                    font.pixelSize: Math.min(24 * minRatio, 20)
+                    font.pixelSize: Math.min(28 * minRatio, 24)
                     font.bold: true
                     color: "#FFD700"
                 }
