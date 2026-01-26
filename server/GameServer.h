@@ -288,8 +288,8 @@ public:
 private slots:
     void onNewConnection() {
         QWebSocket *socket = m_server->nextPendingConnection();
-        
-        qDebug() << "Nouvelle connexion depuis" << socket->peerAddress();
+
+        qInfo() << "Nouvelle connexion depuis" << socket->peerAddress();
         
         connect(socket, &QWebSocket::textMessageReceived,
                 this, &GameServer::onTextMessageReceived);
@@ -365,7 +365,7 @@ private slots:
         QWebSocket *socket = qobject_cast<QWebSocket*>(this->sender());
         if (!socket) return;
 
-        qDebug() << "Client deconnecte";
+        qInfo() << "Client déconnecté";
 
         // Trouve la connexion
         QString connectionId;
@@ -374,7 +374,7 @@ private slots:
         for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
             // Vérifier que la connexion existe avant d'accéder à ses membres
             if (!it.value()) {
-                qDebug() << "AVERTISSEMENT: Connexion nulle trouvée dans m_connections";
+                qCritical() << "SEGFAULT évité - Connexion null dans m_connections";
                 continue;
             }
 
@@ -512,7 +512,7 @@ private:
         response["avatar"] = avatar;
         sendMessage(socket, response);
 
-        qDebug() << "Joueur enregistre:" << playerName << "Avatar:" << avatar << "ID:" << connectionId;
+        qInfo() << "Joueur enregistré:" << playerName << "ID:" << connectionId;
 
         // Vérifier si le joueur peut se reconnecter à une partie en cours
         qDebug() << "Verification reconnexion pour" << playerName << "- m_playerNameToRoomId.contains:" << m_playerNameToRoomId.contains(playerName);
@@ -567,7 +567,7 @@ private:
         PlayerConnection* conn = m_connections[connectionId];
         if (!conn) return;
 
-        qDebug() << "GameServer - Reconnexion du joueur" << playerIndex << "(" << conn->playerName << ") a la partie" << roomId;
+        qInfo() << "Reconnexion - Joueur" << conn->playerName << "(index" << playerIndex << ") rejoint partie" << roomId;
 
         // Mettre à jour la connexion
         conn->gameRoomId = roomId;
@@ -826,7 +826,7 @@ private:
         // Réhumaniser le joueur
         if (room->isBot[playerIndex]) {
             room->isBot[playerIndex] = false;
-            qDebug() << "handleRehumanize - Joueur" << playerIndex << "redevient humain";
+            qInfo() << "Réhumanisation - Joueur" << conn->playerName << "(index" << playerIndex << ") reprend la main dans partie" << roomId;
 
             // Confirmer au client
             QJsonObject response;
@@ -1297,7 +1297,9 @@ private:
             room->biddingPlayer = 0;
             room->gameState = "bidding";
 
-            qDebug() << "Partie creee! Room ID:" << roomId << "- Premier joueur:" << room->firstPlayerIndex;
+            qInfo() << "Partie créée - Room" << roomId << "- Joueurs:"
+                    << room->playerNames[0] << "," << room->playerNames[1] << ","
+                    << room->playerNames[2] << "," << room->playerNames[3];
 
             // Notifie tous les joueurs
             notifyGameStart(roomId, connectionIds);
@@ -1306,7 +1308,7 @@ private:
 
             // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
             if (room->isBot[room->currentPlayerIndex]) {
-                QTimer::singleShot(800, this, [this, roomId]() {
+                QTimer::singleShot(3000, this, [this, roomId]() {
                     GameRoom* room = m_gameRooms.value(roomId);
                     if (room && room->gameState == "bidding") {
                         playBotBid(roomId, room->currentPlayerIndex);
@@ -1483,7 +1485,7 @@ private:
 
         // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
         if (room->isBot[room->currentPlayerIndex]) {
-            QTimer::singleShot(800, this, [this, roomId]() {
+            QTimer::singleShot(3000, this, [this, roomId]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (room && room->gameState == "bidding") {
                     playBotBid(roomId, room->currentPlayerIndex);
@@ -1579,7 +1581,7 @@ private:
 
         // Check que le jeu est en phase de jeu (pas d'annonces)
         if (room->gameState != "playing") {
-            qDebug() << "GameServer - Erreur: tentative de jouer une carte pendant la phase d'annonces";
+            qWarning() << "Validation échouée - Tentative de jouer carte pendant enchères (joueur index" << playerIndex << "room" << roomId << ")";
             return;
         }
 
@@ -1591,13 +1593,13 @@ private:
 
         // Check que c'est bien le tour du joueur
         if (room->currentPlayerIndex != playerIndex) {
-            qDebug() << "GameServer - Erreur: ce n'est pas le tour du joueur" << playerIndex;
+            qWarning() << "Validation échouée - Pas le tour du joueur" << playerIndex << "(tour actuel:" << room->currentPlayerIndex << "room" << roomId << ")";
             return;
         }
 
         Player* player = room->players[playerIndex].get();
         if (!player || cardIndex < 0 || cardIndex >= player->getMain().size()) {
-            qDebug() << "GameServer - Erreur: index de carte invalide" << cardIndex;
+            qWarning() << "Validation échouée - Index carte invalide" << cardIndex << "(joueur index" << playerIndex << "room" << roomId << ")";
             return;
         }
 
@@ -1627,7 +1629,7 @@ private:
         );
 
         if (!isPlayable) {
-            qDebug() << "GameServer - Erreur: carte non jouable selon les regles";
+            qWarning() << "Validation échouée - Carte non jouable selon règles (joueur index" << playerIndex << "carte" << cardIndex << "room" << roomId << ")";
 
             // Envoi un message d'erreur au joueur
             QJsonObject errorMsg;
@@ -2204,15 +2206,15 @@ private:
             if (team1Won && team2Won) {
                 // Les deux équipes ont dépassé 1000, celle avec le plus de points gagne
                 winner = (room->scoreTeam1 > room->scoreTeam2) ? 1 : 2;
-                qDebug() << "GameServer - Les deux equipes ont depasse 1000 points!";
-                qDebug() << "GameServer - Equipe" << winner << "gagne avec"
-                         << ((winner == 1) ? room->scoreTeam1 : room->scoreTeam2) << "points";
+                qInfo() << "Partie terminée - Room" << roomId << "- Les deux équipes > 1000";
+                qInfo() << "  Équipe" << winner << "gagne avec"
+                        << ((winner == 1) ? room->scoreTeam1 : room->scoreTeam2) << "points";
             } else if (team1Won) {
                 winner = 1;
-                qDebug() << "GameServer - Equipe 1 gagne avec" << room->scoreTeam1 << "points!";
+                qInfo() << "Partie terminée - Room" << roomId << "- Équipe 1 gagne -" << room->scoreTeam1 << "vs" << room->scoreTeam2;
             } else {
                 winner = 2;
-                qDebug() << "GameServer - Equipe 2 gagne avec" << room->scoreTeam2 << "points!";
+                qInfo() << "Partie terminée - Room" << roomId << "- Équipe 2 gagne -" << room->scoreTeam1 << "vs" << room->scoreTeam2;
             }
 
             // Mettre à jour les statistiques pour tous les joueurs enregistrés
@@ -2387,7 +2389,7 @@ private:
         // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
         if (room->isBot[room->currentPlayerIndex]) {
             int firstBidder = room->currentPlayerIndex;
-            QTimer::singleShot(800, this, [this, roomId, firstBidder]() {
+            QTimer::singleShot(3000, this, [this, roomId, firstBidder]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (!room || room->gameState != "bidding") return;
 
@@ -2709,7 +2711,7 @@ private:
         // rejoindre cette partie, même s'il clique sur "Jouer" ensuite
         m_playerNameToRoomId.remove(conn->playerName);
 
-        qDebug() << "Joueur" << conn->playerName << "retire de la partie (abandon volontaire), peut rejoindre une nouvelle partie";
+        qInfo() << "Forfait - Joueur" << conn->playerName << "abandonne la partie" << roomId;
 
         // Vérifier si tous les joueurs sont maintenant des bots
         bool allBots = true;
@@ -2755,7 +2757,7 @@ private:
         if (room->currentPlayerIndex == playerIndex) {
             if (room->gameState == "bidding") {
                 // Phase d'enchères : passer automatiquement
-                QTimer::singleShot(500, this, [this, roomId, playerIndex]() {
+                QTimer::singleShot(3000, this, [this, roomId, playerIndex]() {
                     playBotBid(roomId, playerIndex);
                 });
             } else if (room->gameState == "playing") {
@@ -3099,7 +3101,7 @@ private:
 
         // Si le prochain joueur est aussi un bot, le faire jouer
         if (room->isBot[room->currentPlayerIndex]) {
-            QTimer::singleShot(800, this, [this, roomId]() {
+            QTimer::singleShot(3000, this, [this, roomId]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (room && room->gameState == "bidding") {
                     playBotBid(roomId, room->currentPlayerIndex);
@@ -3156,7 +3158,7 @@ private:
             // Marquer le joueur comme bot
             if (!room->isBot[currentBidder]) {
                 room->isBot[currentBidder] = true;
-                qDebug() << "BID TIMEOUT - Joueur" << currentBidder << "remplacé par un bot";
+                qInfo() << "Bot replacement (timeout enchères) - Joueur index" << currentBidder << "dans room" << roomId;
 
                 // Envoyer une notification au joueur
                 if (currentBidder < room->connectionIds.size()) {
@@ -4362,7 +4364,7 @@ private:
 
             // Vérifier que c'est toujours le même joueur (qu'aucune carte n'a été jouée entre-temps)
             if (room->currentPlayerIndex == currentPlayer && !room->isBot[currentPlayer]) {
-                qDebug() << "TIMEOUT - Joueur" << currentPlayer << "n'a pas joué à temps, marquage comme bot";
+                qInfo() << "Bot replacement (timeout jeu) - Joueur index" << currentPlayer << "dans room" << roomId;
 
                 // Marquer le joueur comme bot
                 room->isBot[currentPlayer] = true;
@@ -4510,13 +4512,13 @@ private:
         if (!room) return;
 
         int playerIndex = conn->playerIndex;
-        qDebug() << "GameServer - Joueur" << playerIndex << "(" << conn->playerName << ") déconnecté";
+        qInfo() << "Joueur" << conn->playerName << "(index" << playerIndex << ") déconnecté de la partie" << roomId;
 
         // IMPORTANT: Retirer le connectionId de room->connectionIds pour éviter
         // que broadcastToRoom tente d'envoyer à une connexion invalide
         if (playerIndex >= 0 && playerIndex < room->connectionIds.size()) {
             room->connectionIds[playerIndex] = QString();  // Vider le connectionId
-            qDebug() << "GameServer - ConnectionId retiré de room->connectionIds[" << playerIndex << "]";
+            qDebug() << "ConnectionId retiré de room->connectionIds[" << playerIndex << "] pour éviter envoi à socket invalide";
         }
 
         // Incrémenter le compteur de parties jouées (défaite) pour ce joueur
@@ -4895,7 +4897,9 @@ private:
         room->firstPlayerIndex = 0;
         room->currentPlayerIndex = 0;
 
-        qDebug() << "Partie créée depuis lobby (4 joueurs) - Room ID:" << roomId;
+        qInfo() << "Partie lobby créée - Room" << roomId << "- Joueurs:"
+                << room->playerNames[0] << "," << room->playerNames[1] << ","
+                << room->playerNames[2] << "," << room->playerNames[3];
 
         // Notifier tous les joueurs
         for (int i = 0; i < 4; i++) {
@@ -4998,12 +5002,12 @@ private:
     void sendMessage(QWebSocket *socket, const QJsonObject &message) {
         // Protection contre les sockets null ou déconnectés
         if (!socket) {
-            qDebug() << "AVERTISSEMENT: Tentative d'envoi à un socket null";
+            qCritical() << "SEGFAULT évité - Tentative d'envoi à socket null";
             return;
         }
 
         if (socket->state() != QAbstractSocket::ConnectedState) {
-            qDebug() << "AVERTISSEMENT: Tentative d'envoi à un socket déconnecté";
+            qWarning() << "Socket déconnecté - Message non envoyé";
             return;
         }
 

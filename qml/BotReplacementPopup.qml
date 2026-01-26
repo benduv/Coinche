@@ -110,8 +110,6 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            //Item { Layout.fillHeight: true }
-
             // Bouton OK
             Button {
                 Layout.fillWidth: true

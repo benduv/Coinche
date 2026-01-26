@@ -431,6 +431,12 @@ private slots:
         bool wasConnected = m_connected;
         m_connected = false;
 
+        // Arrêter les timers du GameModel pour éviter les conflits
+        if (m_gameModel) {
+            qDebug() << "Pause des timers GameModel lors de la déconnexion";
+            m_gameModel->pauseTimers();
+        }
+
         // Si on était en partie ou connecté, activer la reconnexion automatique
         if (wasConnected && (!m_playerPseudo.isEmpty() || m_gameModel != nullptr)) {
             qDebug() << "Perte de connexion detectee - Demarrage tentatives de reconnexion";
@@ -528,6 +534,9 @@ private slots:
                 // Mettre à jour les cartes du joueur avec celles envoyées par le serveur
                 m_gameModel->resyncCards(m_myCards);
                 qDebug() << "Cartes resynchronisees:" << m_myCards.size();
+
+                // Reprendre les timers (ils seront redémarrés par updateGameState si nécessaire)
+                m_gameModel->resumeTimers();
             } else {
                 // Nouvelle partie (ou relance d'app) - émettre le signal pour créer un nouveau GameModel
                 emit gameDataChanged();

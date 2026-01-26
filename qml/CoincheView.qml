@@ -1917,7 +1917,9 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: rootArea.width * 0.15
                 height: rootArea.width * 0.15
-                visible: gameModel.lastPliCards.length > 0
+                visible: gameModel.lastPliCards.length > 0 &&
+                         !gameModel.biddingPhase
+                         //gameModel.distributionPhase !== 0
 
                 // Fonction pour obtenir le symbole de la couleur
                 function getSuitSymbol(suitValue) {

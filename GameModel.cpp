@@ -1273,6 +1273,9 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         qDebug() << "  Scores de manche finaux: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
         qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
 
+        m_lastPliCards.clear();
+        emit lastPliCardsChanged();
+
         // Mettre à jour les scores de manche avec les points finaux attribués
         m_scoreTeam1 = scoreMancheTeam1;
         m_scoreTeam2 = scoreMancheTeam2;
@@ -1588,6 +1591,20 @@ void GameModel::refreshAllHands()
     m_player1Hand->refresh();
     m_player2Hand->refresh();
     m_player3Hand->refresh();
+}
+
+void GameModel::pauseTimers()
+{
+    qDebug() << "GameModel::pauseTimers - Arrêt du timer de jeu";
+    if (m_playTimer) {
+        m_playTimer->stop();
+    }
+}
+
+void GameModel::resumeTimers()
+{
+    qDebug() << "GameModel::resumeTimers - Reprise du timer de jeu si nécessaire";
+    // Le timer sera redémarré automatiquement par updateGameState si c'est le tour du joueur
 }
 
 HandModel* GameModel::getHandModelByPosition(int position)

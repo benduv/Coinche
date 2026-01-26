@@ -129,6 +129,8 @@ public:
     Q_INVOKABLE void receiveCardsDealt(const QJsonArray& cards);
     Q_INVOKABLE void resyncCards(const QJsonArray& cards);  // Resynchroniser les cartes après reconnexion
     Q_INVOKABLE void refreshAllHands();
+    Q_INVOKABLE void pauseTimers();  // Arrêter les timers (lors d'une déconnexion)
+    Q_INVOKABLE void resumeTimers();  // Reprendre les timers (lors d'une reconnexion)
 
 signals:
     void myPositionChanged();
