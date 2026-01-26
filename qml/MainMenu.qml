@@ -110,6 +110,15 @@ ApplicationWindow {
     property string accountType: ""
     property bool shouldLoadCoincheView: false
 
+    // Fonction helper pour obtenir le nom du joueur actuel
+    // Vérifie d'abord networkManager.playerPseudo, puis fallback sur loggedInPlayerName
+    function getPlayerName() {
+        if (networkManager.playerPseudo !== "") {
+            return networkManager.playerPseudo
+        }
+        return loggedInPlayerName
+    }
+
     // Fonction pour retourner au menu principal depuis n'importe où
     function returnToMainMenu() {
         console.log("MainMenu.returnToMainMenu - Debut, stackView depth:", stackView.depth)
@@ -535,7 +544,7 @@ ApplicationWindow {
                         }
 
                         Text {
-                            text: mainWindow.loggedInPlayerName +
+                            text: mainWindow.getPlayerName() +
                                   (mainWindow.accountType === "guest" ? " (Invité)" : "")
                             font.pixelSize: 42 * mainWindow.minRatio
                             font.bold: true
@@ -627,7 +636,7 @@ ApplicationWindow {
                         }
 
                         onClicked: {
-                            networkManager.registerPlayer(mainWindow.loggedInPlayerName, networkManager.playerAvatar)
+                            networkManager.registerPlayer(mainWindow.getPlayerName(), networkManager.playerAvatar)
                             stackView.push("qrc:/qml/PrivateLobbyView.qml")
                         }
                     }
@@ -820,7 +829,7 @@ ApplicationWindow {
             id: statsViewComponent
 
             StatsView {
-                playerName: mainWindow.loggedInPlayerName
+                playerName: mainWindow.getPlayerName()
 
                 onBackToMenu: {
                     stackView.pop()
@@ -832,7 +841,7 @@ ApplicationWindow {
             id: configViewComponent
 
             Settings {
-                playerName: mainWindow.loggedInPlayerName
+                playerName: mainWindow.getPlayerName()
                 accountType: mainWindow.accountType
 
                 onBackToMenu: {

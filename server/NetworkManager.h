@@ -334,7 +334,18 @@ public:
         QSettings settings("Nebuludik", "CoincheDelEspace");
         settings.remove("auth/email");
         settings.remove("auth/password");
-        qDebug() << "Credentials supprimés";
+
+        // Vider aussi le pseudo et l'avatar du joueur
+        if (!m_playerPseudo.isEmpty()) {
+            m_playerPseudo = "";
+            emit playerPseudoChanged();
+        }
+        if (!m_playerAvatar.isEmpty()) {
+            m_playerAvatar = "";
+            emit playerAvatarChanged();
+        }
+
+        qDebug() << "Credentials et données joueur supprimés";
         emit storedCredentialsChanged();
     }
 
