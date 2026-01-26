@@ -4846,29 +4846,25 @@ private:
                 }
             }
 
-            QJsonObject gameFoundMsg;
-            gameFoundMsg["type"] = "gameFound";
-            gameFoundMsg["playerPosition"] = i;
-            gameFoundMsg["opponents"] = opponentsArray;
-
-            sendMessage(m_connections[connectionIds[i]]->socket, gameFoundMsg);
-        }
-
-        // Envoyer les mains à chaque joueur
-        for (int i = 0; i < 4; i++) {
-            QJsonArray cardsArray;
+            // Préparer les cartes du joueur
+            QJsonArray myCards;
             for (Carte* carte : room->players[i]->getMain()) {
                 QJsonObject cardObj;
                 cardObj["suit"] = static_cast<int>(carte->getCouleur());
                 cardObj["value"] = static_cast<int>(carte->getChiffre());
-                cardsArray.append(cardObj);
+                myCards.append(cardObj);
             }
 
-            QJsonObject cardsMsg;
-            cardsMsg["type"] = "cardsDealt";
-            cardsMsg["cards"] = cardsArray;
-            sendMessage(m_connections[connectionIds[i]]->socket, cardsMsg);
+            QJsonObject gameFoundMsg;
+            gameFoundMsg["type"] = "gameFound";
+            gameFoundMsg["playerPosition"] = i;
+            gameFoundMsg["opponents"] = opponentsArray;
+            gameFoundMsg["myCards"] = myCards;  // Ajouter les cartes ici
+
+            sendMessage(m_connections[connectionIds[i]]->socket, gameFoundMsg);
         }
+
+        // Les cartes sont maintenant incluses dans gameFound, pas besoin de message séparé
 
         // Phase d'enchères
         room->gameState = "bidding";
