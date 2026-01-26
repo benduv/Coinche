@@ -257,6 +257,8 @@ public:
     Q_INVOKABLE void clearGameModel() {
         if (m_gameModel) {
             qDebug() << "Nettoyage du gameModel";
+            // IMPORTANT: Arrêter les timers AVANT de supprimer pour éviter accès mémoire invalide
+            m_gameModel->pauseTimers();
             m_gameModel->deleteLater();
             m_gameModel = nullptr;
         }

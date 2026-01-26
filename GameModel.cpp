@@ -67,11 +67,20 @@ GameModel::GameModel(QObject *parent)
 
 GameModel::~GameModel()
 {
+    qDebug() << "GameModel destruction - Nettoyage en cours";
+
+    // CRITIQUE: Arrêter le timer de jeu pour éviter qu'il ne se déclenche après destruction
+    if (m_playTimer) {
+        m_playTimer->stop();
+        m_playTimer->deleteLater();
+        m_playTimer = nullptr;
+    }
+
     // Nettoyer les joueurs
     qDeleteAll(m_onlinePlayers);
     m_onlinePlayers.clear();
-    
-    qDebug() << "GameModel detruit";
+
+    qDebug() << "GameModel détruit - Ressources libérées";
 }
 
 HandModel* GameModel::player0Hand() const
