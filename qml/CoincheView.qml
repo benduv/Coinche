@@ -318,7 +318,7 @@ Rectangle {
                      !gameModel.showCoincheAnimation &&      // Masquer si animation Coinche
                      !gameModel.showSurcoincheAnimation &&   // Masquer si animation Surcoinche
                      !gameModel.surcoincheAvailable &&       // Masquer si bouton Surcoinche visible
-                     !rootArea.showNewMancheAnimation
+                     !ufoNewMancheAnimation.visible // Masquer si animation Nouvelle Manche visible
             z: 5
 
             Row {
@@ -391,7 +391,7 @@ Rectangle {
                      !gameModel.showCoincheAnimation &&      // Masquer si animation Coinche
                      !gameModel.showSurcoincheAnimation &&   // Masquer si animation Surcoinche
                      !gameModel.surcoincheAvailable &&       // Masquer si bouton Surcoinche visible
-                     !rootArea.showNewMancheAnimation
+                     !ufoNewMancheAnimation.visible // Masquer si animation Nouvelle Manche visible
         }
 
         // ---- Zone du pli (cartes jouées) ----

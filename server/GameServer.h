@@ -1966,7 +1966,8 @@ private:
                 if (contractReussi) {
                     // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
                     if (room->surcoinched && room->surcoinchePlayerIndex != -1 && !room->isBot[room->surcoinchePlayerIndex]) {
-                        PlayerConnection* surcoincheConn = m_connections[room->connectionIds[room->surcoinchePlayerIndex]];
+                        QString connId = room->connectionIds[room->surcoinchePlayerIndex];
+                        PlayerConnection* surcoincheConn = connId.isEmpty() ? nullptr : m_connections.value(connId);
                         if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
                             m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, false, true);
                             qDebug() << "Stats surcoinche réussie pour:" << surcoincheConn->playerName;
@@ -1975,7 +1976,8 @@ private:
                 } else {
                     // Mettre à jour les stats de coinche réussie (le contrat a échoué, donc la coinche a réussi)
                     if (room->coinched && room->coinchePlayerIndex != -1 && !room->isBot[room->coinchePlayerIndex]) {
-                        PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
+                        QString connId = room->connectionIds[room->coinchePlayerIndex];
+                        PlayerConnection* coincheConn = connId.isEmpty() ? nullptr : m_connections.value(connId);
                         if (coincheConn && !coincheConn->playerName.isEmpty()) {
                             m_dbManager->updateCoincheStats(coincheConn->playerName, false, true);
                             qDebug() << "Stats coinche réussie pour:" << coincheConn->playerName;
@@ -1989,7 +1991,9 @@ private:
                 // Mettre à jour les stats d'annonces coinchées pour les joueurs de l'équipe 1
                 for (int i = 0; i < room->connectionIds.size(); i++) {
                     if (room->isBot[i]) continue;  // Skip bots
-                    PlayerConnection* conn = m_connections[room->connectionIds[i]];
+                    QString connId = room->connectionIds[i];
+                    if (connId.isEmpty()) continue;  // Skip déconnectés
+                    PlayerConnection* conn = m_connections.value(connId);
                     if (!conn || conn->playerName.isEmpty()) continue;
 
                     int playerTeam = (i % 2 == 0) ? 1 : 2;
@@ -2018,7 +2022,8 @@ private:
                 if (contractReussi) {
                     // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
                     if (room->surcoinched && room->surcoinchePlayerIndex != -1 && !room->isBot[room->surcoinchePlayerIndex]) {
-                        PlayerConnection* surcoincheConn = m_connections[room->connectionIds[room->surcoinchePlayerIndex]];
+                        QString connId = room->connectionIds[room->surcoinchePlayerIndex];
+                        PlayerConnection* surcoincheConn = connId.isEmpty() ? nullptr : m_connections.value(connId);
                         if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
                             m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, false, true);
                             qDebug() << "Stats surcoinche réussie pour:" << surcoincheConn->playerName;
@@ -2027,7 +2032,8 @@ private:
                 } else {
                     // Mettre à jour les stats de coinche réussie (le contrat a échoué, donc la coinche a réussi)
                     if (room->coinched && room->coinchePlayerIndex != -1 && !room->isBot[room->coinchePlayerIndex]) {
-                        PlayerConnection* coincheConn = m_connections[room->connectionIds[room->coinchePlayerIndex]];
+                        QString connId = room->connectionIds[room->coinchePlayerIndex];
+                        PlayerConnection* coincheConn = connId.isEmpty() ? nullptr : m_connections.value(connId);
                         if (coincheConn && !coincheConn->playerName.isEmpty()) {
                             m_dbManager->updateCoincheStats(coincheConn->playerName, false, true);
                             qDebug() << "Stats coinche réussie pour:" << coincheConn->playerName;
@@ -2041,7 +2047,9 @@ private:
                 // Mettre à jour les stats d'annonces coinchées pour les joueurs de l'équipe 2
                 for (int i = 0; i < room->connectionIds.size(); i++) {
                     if (room->isBot[i]) continue;  // Skip bots
-                    PlayerConnection* conn = m_connections[room->connectionIds[i]];
+                    QString connId = room->connectionIds[i];
+                    if (connId.isEmpty()) continue;  // Skip déconnectés
+                    PlayerConnection* conn = m_connections.value(connId);
                     if (!conn || conn->playerName.isEmpty()) continue;
 
                     int playerTeam = (i % 2 == 0) ? 1 : 2;
@@ -2078,7 +2086,9 @@ private:
         if (isCapotAnnonce) {
             // Un capot a été annoncé, mettre à jour les stats pour les joueurs de l'équipe qui a annoncé
             for (int i = 0; i < room->connectionIds.size(); i++) {
-                PlayerConnection* conn = m_connections[room->connectionIds[i]];
+                QString connId = room->connectionIds[i];
+                if (connId.isEmpty()) continue;  // Skip déconnectés
+                PlayerConnection* conn = m_connections.value(connId);
                 if (!conn || conn->playerName.isEmpty()) continue;
 
                 int playerTeam = (i % 2 == 0) ? 1 : 2;
@@ -2096,7 +2106,9 @@ private:
         } else if (capotReussi) {
             // Capot réalisé mais non annoncé
             for (int i = 0; i < room->connectionIds.size(); i++) {
-                PlayerConnection* conn = m_connections[room->connectionIds[i]];
+                QString connId = room->connectionIds[i];
+                if (connId.isEmpty()) continue;  // Skip déconnectés
+                PlayerConnection* conn = m_connections.value(connId);
                 if (!conn || conn->playerName.isEmpty()) continue;
 
                 int playerTeam = (i % 2 == 0) ? 1 : 2;
@@ -2113,7 +2125,8 @@ private:
         if (isGeneraleAnnonce) {
             // Une générale a été annoncée, mettre à jour les stats pour le joueur qui l'a annoncée
             if (room->lastBidderIndex >= 0 && room->lastBidderIndex < room->connectionIds.size() && !room->isBot[room->lastBidderIndex]) {
-                PlayerConnection* conn = m_connections[room->connectionIds[room->lastBidderIndex]];
+                QString connId = room->connectionIds[room->lastBidderIndex];
+                PlayerConnection* conn = connId.isEmpty() ? nullptr : m_connections.value(connId);
                 if (conn && !conn->playerName.isEmpty()) {
                     m_dbManager->updateGeneraleStats(conn->playerName, generaleReussie);
                     qDebug() << "Stats générale pour:" << conn->playerName << "(joueur" << room->lastBidderIndex << ") - Réussite:" << generaleReussie;
@@ -2172,7 +2185,9 @@ private:
 
             // Mettre à jour les statistiques pour tous les joueurs enregistrés
             for (int i = 0; i < room->connectionIds.size(); i++) {
-                PlayerConnection* conn = m_connections[room->connectionIds[i]];
+                QString connId = room->connectionIds[i];
+                if (connId.isEmpty()) continue;  // Skip déconnectés
+                PlayerConnection* conn = m_connections.value(connId);
                 if (!conn || conn->playerName.isEmpty()) continue;
 
                 // Vérifier si ce joueur est dans l'équipe gagnante
@@ -2367,7 +2382,12 @@ private:
         for (int i = 0; i < room->connectionIds.size(); i++) {
             // Envoyer à tous les joueurs connectés, même les bots
             // Car un joueur peut être bot temporairement et se réhumaniser
-            PlayerConnection *conn = m_connections.value(room->connectionIds[i]);
+            QString connId = room->connectionIds[i];
+            if (connId.isEmpty()) {
+                qDebug() << "Joueur" << i << "déconnecté (connectionId vide), skip";
+                continue;
+            }
+            PlayerConnection *conn = m_connections.value(connId);
             if (!conn || !conn->socket) {
                 qDebug() << "Joueur" << i << "pas de connexion valide, skip";
                 continue;
@@ -3108,7 +3128,8 @@ private:
 
                 // Envoyer une notification au joueur
                 if (currentBidder < room->connectionIds.size()) {
-                    PlayerConnection* conn = m_connections.value(room->connectionIds[currentBidder]);
+                    QString connId = room->connectionIds[currentBidder];
+                    PlayerConnection* conn = connId.isEmpty() ? nullptr : m_connections.value(connId);
                     if (conn && conn->socket) {
                         QJsonObject botMsg;
                         botMsg["type"] = "botReplacement";
@@ -4317,7 +4338,7 @@ private:
                 // Notifier le client qu'il a été remplacé par un bot
                 QString connectionId = room->connectionIds[currentPlayer];
                 if (!connectionId.isEmpty() && m_connections.contains(connectionId)) {
-                    PlayerConnection* conn = m_connections[connectionId];
+                    PlayerConnection* conn = m_connections.value(connectionId);
                     if (conn && conn->socket && conn->socket->state() == QAbstractSocket::ConnectedState) {
                         QJsonObject notification;
                         notification["type"] = "botReplacement";
@@ -4458,6 +4479,13 @@ private:
 
         int playerIndex = conn->playerIndex;
         qDebug() << "GameServer - Joueur" << playerIndex << "(" << conn->playerName << ") déconnecté";
+
+        // IMPORTANT: Retirer le connectionId de room->connectionIds pour éviter
+        // que broadcastToRoom tente d'envoyer à une connexion invalide
+        if (playerIndex >= 0 && playerIndex < room->connectionIds.size()) {
+            room->connectionIds[playerIndex] = QString();  // Vider le connectionId
+            qDebug() << "GameServer - ConnectionId retiré de room->connectionIds[" << playerIndex << "]";
+        }
 
         // Incrémenter le compteur de parties jouées (défaite) pour ce joueur
         if (!conn->playerName.isEmpty()) {
@@ -4795,7 +4823,11 @@ private:
 
         // Crée les joueurs du jeu
         for (int i = 0; i < 4; i++) {
-            PlayerConnection* conn = m_connections[connectionIds[i]];
+            PlayerConnection* conn = m_connections.value(connectionIds[i]);
+            if (!conn) {
+                qDebug() << "ERREUR: Connection non trouvée pour lobby player" << i;
+                continue;
+            }
             conn->gameRoomId = roomId;
             conn->playerIndex = i;
 
@@ -4947,14 +4979,15 @@ private:
         socket->sendTextMessage(doc.toJson(QJsonDocument::Compact));
     }
 
-    void broadcastToRoom(int roomId, const QJsonObject &message, 
+    void broadcastToRoom(int roomId, const QJsonObject &message,
                         const QString &excludeConnectionId = QString()) {
         if (!m_gameRooms.contains(roomId)) return;
 
         GameRoom* room = m_gameRooms[roomId];
         for (const QString &connId : room->connectionIds) {
-            if (connId == excludeConnectionId) continue;
-            
+            // Ignorer les connectionIds vides (joueurs déconnectés)
+            if (connId.isEmpty() || connId == excludeConnectionId) continue;
+
             PlayerConnection *conn = m_connections.value(connId);
             if (conn && conn->socket) {
                 sendMessage(conn->socket, message);
