@@ -459,7 +459,6 @@ private:
     }
 
     void handleRegister(QWebSocket *socket, const QJsonObject &data) {
-        QString connectionId = QUuid::createUuid().toString();
         QString playerName = data["playerName"].toString();
         QString avatar = data["avatar"].toString();
         if (avatar.isEmpty()) avatar = "avataaars1.svg";
@@ -470,15 +469,41 @@ private:
             playerName = QString("Invité %1").arg(++guestCounter);
         }
 
-        PlayerConnection *conn = new PlayerConnection{
-            socket,
-            connectionId,
-            playerName,
-            avatar,
-            -1,    // Pas encore en partie
-            -1     // Pas encore de position
-        };
-        m_connections[connectionId] = conn;
+        // IMPORTANT: Vérifier si une connexion existe déjà pour ce socket
+        // Si oui, la réutiliser au lieu d'en créer une nouvelle
+        QString existingConnectionId = getConnectionIdBySocket(socket);
+        QString connectionId;
+        PlayerConnection *conn = nullptr;
+
+        if (!existingConnectionId.isEmpty()) {
+            // Connexion existante trouvée, la réutiliser
+            connectionId = existingConnectionId;
+            conn = m_connections.value(connectionId);
+            if (conn) {
+                qDebug() << "Réutilisation de la connexion existante:" << connectionId
+                         << "pour" << playerName << "(ancien nom:" << conn->playerName << ")";
+
+                // Mettre à jour le nom et l'avatar si nécessaire
+                conn->playerName = playerName;
+                conn->avatar = avatar;
+                // NE PAS réinitialiser gameRoomId et playerIndex !
+            }
+        }
+
+        if (!conn) {
+            // Pas de connexion existante, en créer une nouvelle
+            connectionId = QUuid::createUuid().toString();
+            conn = new PlayerConnection{
+                socket,
+                connectionId,
+                playerName,
+                avatar,
+                -1,    // Pas encore en partie
+                -1     // Pas encore de position
+            };
+            m_connections[connectionId] = conn;
+            qDebug() << "Nouvelle connexion créée:" << connectionId << "pour" << playerName;
+        }
 
         QJsonObject response;
         response["type"] = "registered";
@@ -514,6 +539,13 @@ private:
                 bool isDifferentConnection = (playerIndex != -1 &&
                                              playerIndex < room->connectionIds.size() &&
                                              room->connectionIds[playerIndex] != connectionId);
+
+                qDebug() << "DEBUG reconnexion - playerIndex:" << playerIndex
+                         << "connectionIds.size:" << room->connectionIds.size()
+                         << "currentConnId:" << (playerIndex >= 0 && playerIndex < room->connectionIds.size() ? room->connectionIds[playerIndex] : "N/A")
+                         << "newConnId:" << connectionId
+                         << "isDifferentConnection:" << isDifferentConnection
+                         << "isBot:" << (playerIndex != -1 ? room->isBot[playerIndex] : false);
 
                 if (playerIndex != -1 && (room->isBot[playerIndex] || isDifferentConnection)) {
                     qDebug() << "Reconnexion detectee pour" << playerName << "a la partie" << roomId << "position" << playerIndex;
