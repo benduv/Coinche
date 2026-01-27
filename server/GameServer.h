@@ -61,6 +61,7 @@ struct GameRoom {
     int passedBidsCount = 0;
     Player::Annonce lastBidAnnonce = Player::ANNONCEINVALIDE;
     Carte::Couleur lastBidCouleur = Carte::COULEURINVALIDE;
+    int lastBidSuit = 0;  // Couleur originale de l'enchère (3=♥, 4=♣, 5=♦, 6=♠, 7=TA, 8=SA)
     int lastBidderIndex = -1;
     bool coinched = false;  // True si COINCHE a été annoncé
     bool surcoinched = false;  // True si SURCOINCHE a été annoncé
@@ -2380,6 +2381,7 @@ private:
         room->passedBidsCount = 0;
         room->lastBidAnnonce = Player::ANNONCEINVALIDE;
         room->lastBidCouleur = Carte::COULEURINVALIDE;
+        room->lastBidSuit = 0;
         room->lastBidderIndex = -1;
         room->couleurAtout = Carte::COULEURINVALIDE;
         room->isToutAtout = false;  // Réinitialiser le mode Tout Atout
@@ -2617,6 +2619,7 @@ private:
                      << room->passedBidsCount << "/3 passes)";
         } else {
             room->lastBidAnnonce = annonce;
+            room->lastBidSuit = suit;  // Stocker la couleur originale de l'enchère (3-8)
 
             // Gérer les modes spéciaux: Tout Atout (suit == 7) et Sans Atout (suit == 8)
             if (suit == 7) {
@@ -3075,6 +3078,7 @@ private:
             room->passedBidsCount = 0;  // Réinitialiser le compteur de passes
             room->lastBidAnnonce = annonce;
             room->lastBidCouleur = bestCouleur;
+            room->lastBidSuit = static_cast<int>(bestCouleur);  // Stocker la couleur originale de l'enchère
             room->lastBidderIndex = playerIndex;
             room->couleurAtout = bestCouleur;
 
