@@ -569,6 +569,13 @@ void GameModel::playRandomCard()
         return;
     }
 
+    // IMPORTANT: Vérifier que c'est toujours notre tour
+    // Le timer peut avoir expiré alors que le pli est déjà terminé
+    if (m_currentPlayer != m_myPosition) {
+        qDebug() << "Timer expiré mais ce n'est plus notre tour (joueur actuel:" << m_currentPlayer << ")";
+        return;
+    }
+
     Player* localPlayer = getPlayerByPosition(m_myPosition);
     if (!localPlayer) {
         qDebug() << "Erreur: joueur local non trouve";
@@ -1223,6 +1230,10 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
 
         qDebug() << "GameModel::receivePlayerAction - Pli terminé, gagnant: joueur" << winnerId;
         qDebug() << "  Scores de manche: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
+
+        // IMPORTANT: Arrêter le timer de jeu car le pli est terminé
+        m_playTimer->stop();
+        qDebug() << "Timer de jeu arrêté (pli terminé)";
 
         // Mettre à jour les scores de manche pour affichage dans l'UI
         m_scoreTeam1 = scoreMancheTeam1;

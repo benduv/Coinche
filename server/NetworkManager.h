@@ -451,8 +451,8 @@ private slots:
     }
 
     void attemptReconnect() {
-        // Limiter le nombre de tentatives (par exemple, 20 tentatives = 1 minute)
-        const int MAX_ATTEMPTS = 20;
+        // Limiter le nombre de tentatives (par exemple, 60 tentatives = 3 minute)
+        const int MAX_ATTEMPTS = 60;
 
         if (m_reconnectAttempts >= MAX_ATTEMPTS) {
             qDebug() << "Nombre maximum de tentatives de reconnexion atteint (" << MAX_ATTEMPTS << ")";
