@@ -1604,6 +1604,46 @@ void GameModel::resyncCards(const QJsonArray& cards)
     }
 }
 
+void GameModel::resyncOpponents(const QJsonArray& opponents)
+{
+    qInfo() << "GameModel::resyncOpponents - Resynchronisation de" << opponents.size() << "adversaires";
+
+    // Parcourir chaque adversaire et mettre à jour ses cartes fantômes
+    for (const QJsonValue& val : opponents) {
+        QJsonObject oppObj = val.toObject();
+        int position = oppObj["position"].toInt();
+        int cardCount = oppObj["cardCount"].toInt(0);
+        QString name = oppObj["name"].toString();
+
+        qInfo() << "resyncOpponents - Adversaire position" << position << ":" << name << "avec" << cardCount << "cartes";
+
+        // Récupérer le joueur à cette position
+        Player* opponent = getPlayerByPosition(position);
+        if (!opponent) {
+            qWarning() << "resyncOpponents - Joueur non trouvé à la position" << position;
+            continue;
+        }
+
+        // Vider complètement la main actuelle de cet adversaire
+        opponent->clearHand();
+
+        // Recréer les cartes fantômes selon le cardCount
+        for (int i = 0; i < cardCount; i++) {
+            Carte* phantomCard = new Carte(Carte::COEUR, Carte::SEPT);
+            opponent->addCardToHand(phantomCard);
+        }
+
+        qInfo() << "resyncOpponents - Adversaire position" << position << "resynchronisé avec" << cardCount << "cartes fantômes";
+
+        // Rafraîchir le HandModel pour que QML affiche les bonnes cartes
+        HandModel* hand = getHandModelByPosition(position);
+        if (hand) {
+            hand->refresh();
+            qInfo() << "resyncOpponents - HandModel position" << position << "rafraîchi";
+        }
+    }
+}
+
 void GameModel::refreshAllHands()
 {
     qDebug() << "Rafraichissement de toutes les mains";

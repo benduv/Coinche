@@ -530,12 +530,24 @@ private slots:
             qDebug() << "Nombre d'adversaires:" << m_opponents.size();
             qDebug() << "Reconnexion:" << isReconnection;
 
+            // Si c'est une NOUVELLE partie (pas une reconnexion), effacer le message de bot replacement en attente
+            // car il provient de la partie précédente
+            if (!isReconnection && !m_pendingBotReplacement.isEmpty()) {
+                qInfo() << "Nouvelle partie - Nettoyage du message bot replacement en attente de la partie précédente";
+                m_pendingBotReplacement.clear();
+                emit pendingBotReplacementChanged();
+            }
+
             // Si c'est une reconnexion et qu'on a déjà un GameModel, on met à jour les cartes
             if (isReconnection && m_gameModel != nullptr) {
-                qDebug() << "Reconnexion detectee - GameModel existe deja, mise a jour des cartes";
+                qInfo() << "Reconnexion detectee - GameModel existe deja, mise a jour des cartes et adversaires";
                 // Mettre à jour les cartes du joueur avec celles envoyées par le serveur
                 m_gameModel->resyncCards(m_myCards);
-                qDebug() << "Cartes resynchronisees:" << m_myCards.size();
+                qInfo() << "Cartes resynchronisees:" << m_myCards.size();
+
+                // Mettre à jour les mains des adversaires avec le cardCount correct
+                m_gameModel->resyncOpponents(m_opponents);
+                qInfo() << "Adversaires resynchronises:" << m_opponents.size();
 
                 // Reprendre les timers (ils seront redémarrés par updateGameState si nécessaire)
                 m_gameModel->resumeTimers();
