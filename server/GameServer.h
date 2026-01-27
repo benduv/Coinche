@@ -649,6 +649,18 @@ private:
             stateMsg["scoreTotalTeam1"] = room->scoreTeam1;
             stateMsg["scoreTotalTeam2"] = room->scoreTeam2;
 
+            // RECONNEXION: Envoyer les informations sur l'annonce en cours (si déjà une annonce)
+            if (room->lastBidderIndex >= 0) {
+                stateMsg["lastBidderIndex"] = room->lastBidderIndex;
+                stateMsg["lastBidAnnonce"] = static_cast<int>(room->lastBidAnnonce);
+                stateMsg["lastBidSuit"] = static_cast<int>(room->lastBidSuit);
+                stateMsg["isCoinched"] = room->coinched;
+                stateMsg["isSurcoinched"] = room->surcoinched;
+                qInfo() << "GameServer - Reconnexion (phase enchères): Envoi des infos d'annonce - lastBidder:" << room->lastBidderIndex
+                         << "annonce:" << static_cast<int>(room->lastBidAnnonce)
+                         << "suit:" << static_cast<int>(room->lastBidSuit);
+            }
+
             sendMessage(conn->socket, stateMsg);
         } else if (room->gameState == "playing") {
             // Envoyer l'état de jeu avec l'atout et les cartes jouables si c'est son tour
@@ -673,12 +685,14 @@ private:
             if (room->lastBidderIndex >= 0) {
                 stateMsg["lastBidderIndex"] = room->lastBidderIndex;
                 stateMsg["lastBidAnnonce"] = static_cast<int>(room->lastBidAnnonce);
+                stateMsg["lastBidSuit"] = static_cast<int>(room->lastBidSuit);
                 stateMsg["isCoinched"] = room->coinched;
                 stateMsg["isSurcoinched"] = room->surcoinched;
                 stateMsg["coinchedByPlayerIndex"] = room->coinchePlayerIndex;
                 stateMsg["surcoinchedByPlayerIndex"] = room->surcoinchePlayerIndex;
-                qDebug() << "GameServer - Reconnexion: Envoi des infos d'annonce - lastBidder:" << room->lastBidderIndex
+                qInfo() << "GameServer - Reconnexion (phase jeu): Envoi des infos d'annonce - lastBidder:" << room->lastBidderIndex
                          << "annonce:" << static_cast<int>(room->lastBidAnnonce)
+                         << "suit:" << static_cast<int>(room->lastBidSuit)
                          << "coinched:" << room->coinched << "by:" << room->coinchePlayerIndex;
             }
 

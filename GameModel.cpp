@@ -927,29 +927,21 @@ void GameModel::updateGameState(const QJsonObject& state)
 
             bid["bidValue"] = QString::number(bidValue);
 
-            // Déterminer le symbole de la couleur d'atout
-            int atout = state.contains("atout") ? state["atout"].toInt() : 0;
-            bool isToutAtout = state.contains("isToutAtout") ? state["isToutAtout"].toBool() : false;
-            bool isSansAtout = state.contains("isSansAtout") ? state["isSansAtout"].toBool() : false;
+            // Déterminer le symbole de la couleur d'atout depuis lastBidSuit (envoyé par le serveur)
+            int bidSuit = state.contains("lastBidSuit") ? state["lastBidSuit"].toInt() : 0;
 
             QString suitSymbol = "";
             bool isRed = false;
 
-            if (isToutAtout) {
-                suitSymbol = "TA";
-                isRed = false;
-            } else if (isSansAtout) {
-                suitSymbol = "SA";
-                isRed = false;
-            } else {
-                // Convertir la couleur en symbole
-                switch (atout) {
-                    case 3: suitSymbol = "♥"; isRed = true; break;  // COEUR
-                    case 4: suitSymbol = "♣"; isRed = false; break; // TREFLE
-                    case 5: suitSymbol = "♦"; isRed = true; break;  // CARREAU
-                    case 6: suitSymbol = "♠"; isRed = false; break; // PIQUE
-                    default: suitSymbol = ""; break;
-                }
+            // Convertir la couleur en symbole depuis lastBidSuit (même logique que receivePlayerAction makeBid)
+            switch (bidSuit) {
+                case 3: suitSymbol = "♥"; isRed = true; break;   // COEUR
+                case 4: suitSymbol = "♣"; isRed = false; break;  // TREFLE
+                case 5: suitSymbol = "♦"; isRed = true; break;   // CARREAU
+                case 6: suitSymbol = "♠"; isRed = false; break;  // PIQUE
+                case 7: suitSymbol = "TA"; isRed = false; break; // TOUT ATOUT
+                case 8: suitSymbol = "SA"; isRed = false; break; // SANS ATOUT
+                default: suitSymbol = ""; break;
             }
 
             bid["suitSymbol"] = suitSymbol;
