@@ -3538,11 +3538,16 @@ private:
             }
 
             // Si on attaque, jouer les cartes fortes (Roi, 10)
+            // Mais ne jouer le 10 QUE si l'As de cette couleur est déjà tombé
             if (isAttackingTeam) {
                 for (int idx : playableIndices) {
                     Carte* carte = main[idx];
-                    if (carte->getChiffre() == Carte::ROI || carte->getChiffre() == Carte::DIX) {
-                        qDebug() << "Bot" << playerIndex << "- [SA] Joue une carte forte";
+                    if (carte->getChiffre() == Carte::ROI) {
+                        qDebug() << "Bot" << playerIndex << "- [SA] Joue un Roi";
+                        return idx;
+                    }
+                    if (carte->getChiffre() == Carte::DIX && room->isCardPlayed(carte->getCouleur(), Carte::AS)) {
+                        qDebug() << "Bot" << playerIndex << "- [SA] Joue un 10 (As de cette couleur déjà tombé)";
                         return idx;
                     }
                 }
@@ -3609,21 +3614,32 @@ private:
                 }
             }
 
-            // Jouer un 9 si on l'a
+            // Jouer un 9 SEULEMENT si le Valet de la même couleur est déjà tombé
             for (int idx : playableIndices) {
                 Carte* carte = main[idx];
                 if (carte->getChiffre() == Carte::NEUF) {
-                    qDebug() << "Bot" << playerIndex << "- [TA] Joue un 9";
-                    return idx;
+                    // Vérifier si le Valet de cette couleur est tombé
+                    if (room->isCardPlayed(carte->getCouleur(), Carte::VALET)) {
+                        qDebug() << "Bot" << playerIndex << "- [TA] Joue un 9 (Valet de cette couleur déjà tombé)";
+                        return idx;
+                    } else {
+                        qDebug() << "Bot" << playerIndex << "- [TA] Ne joue PAS le 9 (Valet de cette couleur encore en jeu)";
+                    }
                 }
             }
 
-            // Jouer un As si on l'a
+            // Jouer un As SEULEMENT si le Valet ET le 9 de la même couleur sont déjà tombés
             for (int idx : playableIndices) {
                 Carte* carte = main[idx];
                 if (carte->getChiffre() == Carte::AS) {
-                    qDebug() << "Bot" << playerIndex << "- [TA] Joue un As";
-                    return idx;
+                    // Vérifier si le Valet ET le 9 de cette couleur sont tombés
+                    if (room->isCardPlayed(carte->getCouleur(), Carte::VALET) &&
+                        room->isCardPlayed(carte->getCouleur(), Carte::NEUF)) {
+                        qDebug() << "Bot" << playerIndex << "- [TA] Joue un As (Valet et 9 de cette couleur déjà tombés)";
+                        return idx;
+                    } else {
+                        qDebug() << "Bot" << playerIndex << "- [TA] Ne joue PAS l'As (Valet ou 9 de cette couleur encore en jeu)";
+                    }
                 }
             }
 

@@ -12,6 +12,8 @@
 #include <QDateTime>
 #include <QAbstractSocket>
 #include <QSettings>
+#include <QSslConfiguration>
+#include <QNetworkRequest>
 #include "GameModel.h"
 
 class NetworkManager : public QObject {
@@ -142,7 +144,7 @@ public:
             qDebug() << "Connexion WSS détectée - Certificat valide attendu";
         }
 
-        m_socket->open(QUrl(url));
+        openSocketWithFreshSsl(url);
     }
 
     Q_INVOKABLE void registerPlayer(const QString &playerName, const QString &avatar = "avataaars1.svg") {
@@ -462,7 +464,7 @@ private slots:
             recreateSocket();
 
             qDebug() << "Reconnexion à" << m_serverUrl;
-            m_socket->open(QUrl(m_serverUrl));
+            openSocketWithFreshSsl(m_serverUrl);
         }
     }
 
@@ -906,6 +908,31 @@ private:
         // Créer un nouveau socket avec un état SSL propre
         m_socket = new QWebSocket();
         setupSocketConnections();
+    }
+
+    // Ouvre le socket avec une configuration SSL fraîche qui évite le cache de session
+    void openSocketWithFreshSsl(const QString &url) {
+        QUrl qurl(url);
+
+        if (url.startsWith("wss://")) {
+            // Créer une configuration SSL qui désactive la reprise de session
+            QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
+
+            // Désactiver le cache de session SSL pour éviter les problèmes de SChannel Windows
+            sslConfig.setSslOption(QSsl::SslOptionDisableSessionTickets, true);
+            sslConfig.setSslOption(QSsl::SslOptionDisableSessionSharing, true);
+            sslConfig.setSslOption(QSsl::SslOptionDisableSessionPersistence, true);
+
+            // Créer une requête réseau avec cette configuration
+            QNetworkRequest request(qurl);
+            request.setSslConfiguration(sslConfig);
+
+            qDebug() << "Ouverture socket avec SSL frais (cache de session désactivé)";
+            m_socket->open(request);
+        } else {
+            // Connexion non sécurisée (ws://)
+            m_socket->open(qurl);
+        }
     }
 
     void sendMessage(const QJsonObject &message) {
