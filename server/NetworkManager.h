@@ -43,14 +43,20 @@ public:
         , m_gameModel(nullptr)
         , m_playerAvatar("avataaars1.svg")
         , m_reconnectTimer(new QTimer(this))
+        , m_heartbeatTimer(new QTimer(this))
         , m_wasInGame(false)
         , m_reconnectAttempts(0)
+        , m_lastPongReceived(0)
     {
         setupSocketConnections();
 
         // Timer pour les tentatives de reconnexion
         connect(m_reconnectTimer, &QTimer::timeout, this, &NetworkManager::attemptReconnect);
         m_reconnectTimer->setInterval(3000); // Tenter de se reconnecter toutes les 3 secondes
+
+        // Timer pour le heartbeat (détection de connexion morte)
+        connect(m_heartbeatTimer, &QTimer::timeout, this, &NetworkManager::sendHeartbeat);
+        m_heartbeatTimer->setInterval(5000); // Envoyer un ping toutes les 5 secondes
     }
 
     ~NetworkManager() {
@@ -409,6 +415,11 @@ private slots:
         m_reconnectTimer->stop();  // Arrêter les tentatives de reconnexion
         m_reconnectAttempts = 0;  // Réinitialiser le compteur
 
+        // Démarrer le heartbeat pour détecter les connexions mortes
+        m_lastPongReceived = QDateTime::currentMSecsSinceEpoch();
+        m_heartbeatTimer->start();
+        qDebug() << "Heartbeat démarré (ping toutes les 5 secondes)";
+
         // Si on se reconnecte et qu'on avait un pseudo et avatar, se réenregistrer
         if (!m_playerPseudo.isEmpty()) {
             qDebug() << "Reconnexion - Réenregistrement avec pseudo:" << m_playerPseudo;
@@ -419,9 +430,17 @@ private slots:
     }
 
     void onDisconnected() {
-        qDebug() << "Deconnecte du serveur";
+        qDebug() << "=== onDisconnected() appelé ===";
+        qDebug() << "  m_connected:" << m_connected;
+        qDebug() << "  m_playerPseudo:" << m_playerPseudo;
+        qDebug() << "  m_gameModel:" << (m_gameModel != nullptr);
+
         bool wasConnected = m_connected;
         m_connected = false;
+
+        // Arrêter le heartbeat
+        m_heartbeatTimer->stop();
+        qDebug() << "Heartbeat arrêté";
 
         // Arrêter les timers du GameModel pour éviter les conflits
         if (m_gameModel) {
@@ -432,9 +451,15 @@ private slots:
         // Si on était en partie ou connecté, activer la reconnexion automatique
         if (wasConnected && (!m_playerPseudo.isEmpty() || m_gameModel != nullptr)) {
             qDebug() << "Perte de connexion detectee - Demarrage tentatives de reconnexion";
+            qDebug() << "  Timer interval:" << m_reconnectTimer->interval() << "ms";
+            qDebug() << "  Timer active avant start:" << m_reconnectTimer->isActive();
             m_wasInGame = (m_gameModel != nullptr);  // Sauvegarder si on était en partie
             m_reconnectAttempts = 0;
             m_reconnectTimer->start();  // Démarrer les tentatives de reconnexion
+            qDebug() << "  Timer active après start:" << m_reconnectTimer->isActive();
+        } else {
+            qDebug() << "Pas de reconnexion automatique - conditions non remplies";
+            qDebug() << "  wasConnected:" << wasConnected;
         }
 
         emit connectedChanged();
@@ -888,6 +913,13 @@ private:
         connect(m_socket, &QWebSocket::textMessageReceived,
                 this, &NetworkManager::onMessageReceived);
 
+        // Réception du pong pour le heartbeat
+        connect(m_socket, &QWebSocket::pong, this, [this](quint64 elapsedTime, const QByteArray &payload) {
+            Q_UNUSED(payload);
+            m_lastPongReceived = QDateTime::currentMSecsSinceEpoch();
+            qDebug() << "Pong reçu - latence:" << elapsedTime << "ms";
+        });
+
         connect(m_socket, QOverload<const QList<QSslError>&>::of(&QWebSocket::sslErrors),
                 this, [this](const QList<QSslError> &errors) {
             qDebug() << "ERREURS SSL détectées (" << errors.size() << "):";
@@ -895,6 +927,33 @@ private:
                 qDebug() << "  - Type:" << error.error() << "Message:" << error.errorString();
             }
         });
+    }
+
+    // Envoie un ping et vérifie si la connexion est toujours active
+    void sendHeartbeat() {
+        if (!m_connected || !m_socket) {
+            return;
+        }
+
+        qint64 now = QDateTime::currentMSecsSinceEpoch();
+
+        // Si on n'a pas reçu de pong depuis plus de 15 secondes, la connexion est morte
+        if (m_lastPongReceived > 0 && (now - m_lastPongReceived) > 15000) {
+            qDebug() << "=== HEARTBEAT TIMEOUT - Connexion morte détectée ===";
+            qDebug() << "  Dernier pong reçu il y a" << (now - m_lastPongReceived) / 1000 << "secondes";
+
+            // Arrêter le heartbeat
+            m_heartbeatTimer->stop();
+
+            // Forcer la déconnexion et déclencher la reconnexion
+            m_socket->abort();  // Fermer brutalement le socket
+            onDisconnected();   // Déclencher manuellement le handler de déconnexion
+            return;
+        }
+
+        // Envoyer un ping
+        qDebug() << "Envoi ping heartbeat...";
+        m_socket->ping();
     }
 
     void recreateSocket() {
@@ -969,6 +1028,10 @@ private:
     QString m_serverUrl;
     bool m_wasInGame;
     int m_reconnectAttempts;
+
+    // Heartbeat pour détecter les connexions mortes
+    QTimer* m_heartbeatTimer;
+    qint64 m_lastPongReceived;
 };
 
 #endif // NETWORKMANAGER_H

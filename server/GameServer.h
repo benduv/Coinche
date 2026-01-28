@@ -1575,14 +1575,30 @@ private:
 
     void handlePlayCard(QWebSocket *socket, const QJsonObject &data) {
         QString connectionId = getConnectionIdBySocket(socket);
-        if (connectionId.isEmpty()) return;
+        if (connectionId.isEmpty()) {
+            qWarning() << "handlePlayCard - ERREUR: connectionId vide pour socket" << socket;
+            return;
+        }
 
         PlayerConnection* conn = m_connections[connectionId];
+        if (!conn) {
+            qWarning() << "handlePlayCard - ERREUR: connexion non trouvée pour" << connectionId;
+            return;
+        }
         int roomId = conn->gameRoomId;
-        if (roomId == -1) return;
+        if (roomId == -1) {
+            qWarning() << "handlePlayCard - ERREUR: joueur" << connectionId << "n'est pas dans une room";
+            return;
+        }
 
         GameRoom* room = m_gameRooms[roomId];
-        if (!room) return;
+        if (!room) {
+            qWarning() << "handlePlayCard - ERREUR: room" << roomId << "n'existe pas";
+            return;
+        }
+
+        qDebug() << "handlePlayCard - Réception: joueur" << conn->playerIndex << "veut jouer carte" << data["cardIndex"].toInt()
+                 << "currentPlayer:" << room->currentPlayerIndex << "gameState:" << room->gameState;
 
         // Arrêter le timer de timeout du tour et invalider les anciens callbacks
         if (room->turnTimeout) {
@@ -2470,14 +2486,30 @@ private:
 
     void handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
         QString connectionId = getConnectionIdBySocket(socket);
-        if (connectionId.isEmpty()) return;
+        if (connectionId.isEmpty()) {
+            qWarning() << "handleMakeBid - ERREUR: connectionId vide pour socket" << socket;
+            return;
+        }
 
         PlayerConnection* conn = m_connections[connectionId];
+        if (!conn) {
+            qWarning() << "handleMakeBid - ERREUR: connexion non trouvée pour" << connectionId;
+            return;
+        }
         int roomId = conn->gameRoomId;
-        if (roomId == -1) return;
+        if (roomId == -1) {
+            qWarning() << "handleMakeBid - ERREUR: joueur" << connectionId << "n'est pas dans une room";
+            return;
+        }
 
         GameRoom* room = m_gameRooms[roomId];
-        if (!room) return;
+        if (!room) {
+            qWarning() << "handleMakeBid - ERREUR: room" << roomId << "n'existe pas";
+            return;
+        }
+
+        qDebug() << "handleMakeBid - Réception: joueur" << conn->playerIndex << "veut annoncer" << data["bidValue"].toInt()
+                 << "couleur:" << data["suit"].toInt() << "currentPlayer:" << room->currentPlayerIndex;
 
         // Arrêter le timer de timeout des enchères et invalider les anciens callbacks
         if (room->bidTimeout) {
