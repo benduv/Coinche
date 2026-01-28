@@ -44,22 +44,7 @@ public:
         , m_wasInGame(false)
         , m_reconnectAttempts(0)
     {
-        connect(m_socket, &QWebSocket::connected, this, &NetworkManager::onConnected);
-        connect(m_socket, &QWebSocket::disconnected, this, &NetworkManager::onDisconnected);
-        connect(m_socket, &QWebSocket::textMessageReceived,
-                this, &NetworkManager::onMessageReceived);
-
-        // Gestion des erreurs SSL (seulement pour debugging, pas d'ignoreSslErrors)
-        // Avec un certificat Let's Encrypt valide via nginx, il ne devrait pas y avoir d'erreurs
-        connect(m_socket, QOverload<const QList<QSslError>&>::of(&QWebSocket::sslErrors),
-                this, [this](const QList<QSslError> &errors) {
-            qDebug() << "ERREURS SSL détectées (" << errors.size() << "):";
-            for (const auto &error : errors) {
-                qDebug() << "  - Type:" << error.error() << "Message:" << error.errorString();
-            }
-            // NE PAS ignorer les erreurs sur Android - le certificat Let's Encrypt doit être valide
-            // m_socket->ignoreSslErrors();
-        });
+        setupSocketConnections();
 
         // Timer pour les tentatives de reconnexion
         connect(m_reconnectTimer, &QTimer::timeout, this, &NetworkManager::attemptReconnect);
@@ -67,8 +52,11 @@ public:
     }
 
     ~NetworkManager() {
-        m_socket->close();
-        delete m_socket;
+        if (m_socket) {
+            m_socket->close();
+            delete m_socket;
+            m_socket = nullptr;
+        }
         if (m_gameModel) {
             delete m_gameModel;
         }
@@ -467,6 +455,12 @@ private slots:
         // Si le socket n'est pas en train de se connecter, tenter la connexion
         if (m_socket->state() != QAbstractSocket::ConnectingState &&
             m_socket->state() != QAbstractSocket::ConnectedState) {
+
+            // IMPORTANT: Créer un NOUVEAU socket pour éviter la corruption de l'état SSL
+            // Sur Windows, réutiliser un QWebSocket après close() corrompt le contexte SChannel
+            // ce qui cause des latences persistantes (même après redémarrage de l'app)
+            recreateSocket();
+
             qDebug() << "Reconnexion à" << m_serverUrl;
             m_socket->open(QUrl(m_serverUrl));
         }
@@ -708,6 +702,30 @@ private slots:
                 m_gameModel->receivePlayerAction(-1, "surcoincheTimeUpdate", timeData);
             }
         }
+        else if (type == "surcoincheWaiting") {
+            int timeLeft = obj["timeLeft"].toInt();
+
+            qDebug() << "NetworkManager - Attente surcoinche adverse, temps restant:" << timeLeft;
+
+            // Transmettre au GameModel
+            if (m_gameModel) {
+                QJsonObject waitingData;
+                waitingData["timeLeft"] = timeLeft;
+                m_gameModel->receivePlayerAction(-1, "surcoincheWaiting", waitingData);
+            }
+        }
+        else if (type == "surcoincheWaitingUpdate") {
+            int timeLeft = obj["timeLeft"].toInt();
+
+            qDebug() << "NetworkManager - Mise à jour attente surcoinche:" << timeLeft;
+
+            // Transmettre au GameModel
+            if (m_gameModel) {
+                QJsonObject waitingData;
+                waitingData["timeLeft"] = timeLeft;
+                m_gameModel->receivePlayerAction(-1, "surcoincheWaitingUpdate", waitingData);
+            }
+        }
         else if (type == "belote") {
             int playerIndex = obj["playerIndex"].toInt();
             qDebug() << "NetworkManager - BELOTE annoncee par joueur" << playerIndex;
@@ -862,6 +880,34 @@ private slots:
     }
 
 private:
+    void setupSocketConnections() {
+        connect(m_socket, &QWebSocket::connected, this, &NetworkManager::onConnected);
+        connect(m_socket, &QWebSocket::disconnected, this, &NetworkManager::onDisconnected);
+        connect(m_socket, &QWebSocket::textMessageReceived,
+                this, &NetworkManager::onMessageReceived);
+
+        connect(m_socket, QOverload<const QList<QSslError>&>::of(&QWebSocket::sslErrors),
+                this, [this](const QList<QSslError> &errors) {
+            qDebug() << "ERREURS SSL détectées (" << errors.size() << "):";
+            for (const auto &error : errors) {
+                qDebug() << "  - Type:" << error.error() << "Message:" << error.errorString();
+            }
+        });
+    }
+
+    void recreateSocket() {
+        qDebug() << "Recréation du QWebSocket pour un contexte SSL neuf";
+        // Déconnecter tous les signaux de l'ancien socket
+        if (m_socket) {
+            m_socket->disconnect(this);
+            m_socket->abort();
+            m_socket->deleteLater();
+        }
+        // Créer un nouveau socket avec un état SSL propre
+        m_socket = new QWebSocket();
+        setupSocketConnections();
+    }
+
     void sendMessage(const QJsonObject &message) {
         if (!m_connected) {
             qDebug() << "Erreur: non connecte au serveur";

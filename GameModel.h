@@ -175,7 +175,6 @@ private:
     Player* getPlayerByPosition(int position);
     void refreshHand(int playerIndex);
     void distributeCards(int startIdx, int endIdx, const std::vector<Carte*>& myCards, bool includePhantomCards = true);
-    void playRandomCard();
 
     HandModel* m_player0Hand;
     HandModel* m_player1Hand;

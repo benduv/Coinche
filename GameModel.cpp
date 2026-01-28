@@ -58,16 +58,19 @@ GameModel::GameModel(QObject *parent)
         } else {
             // Temps ecoule, jouer une carte aleatoire
             m_playTimer->stop();
-            playRandomCard();
         }
     });
 
+    qDebug() << "***********************************************************";
     qDebug() << "GameModel cree en mode online";
+    qDebug() << "***********************************************************";
 }
 
 GameModel::~GameModel()
 {
+    qDebug() << "***********************************************************";
     qDebug() << "GameModel destruction - Nettoyage en cours";
+    qDebug() << "***********************************************************";
 
     // CRITIQUE: Arrêter le timer de jeu pour éviter qu'il ne se déclenche après destruction
     if (m_playTimer) {
@@ -557,55 +560,6 @@ void GameModel::playCard(int cardIndex)
 
     // Émettre signal vers NetworkManager pour envoyer au serveur
     emit cardPlayedLocally(cardIndex);
-}
-
-void GameModel::playRandomCard()
-{
-    qDebug() << "Temps ecoule, jeu d'une carte aleatoire";
-
-    // Ne pas jouer de carte si on est en phase d'annonces
-    if (m_biddingPhase) {
-        qDebug() << "Erreur: tentative de jouer une carte pendant la phase d'annonces";
-        return;
-    }
-
-    // IMPORTANT: Vérifier que c'est toujours notre tour
-    // Le timer peut avoir expiré alors que le pli est déjà terminé
-    if (m_currentPlayer != m_myPosition) {
-        qDebug() << "Timer expiré mais ce n'est plus notre tour (joueur actuel:" << m_currentPlayer << ")";
-        return;
-    }
-
-    Player* localPlayer = getPlayerByPosition(m_myPosition);
-    if (!localPlayer) {
-        qDebug() << "Erreur: joueur local non trouve";
-        return;
-    }
-
-    HandModel* hand = getHandModelByPosition(m_myPosition);
-    if (!hand) {
-        qDebug() << "Erreur: main du joueur non trouvee";
-        return;
-    }
-
-    // Trouver toutes les cartes jouables
-    QList<int> playableIndices;
-    for (int i = 0; i < hand->rowCount(); i++) {
-        if (hand->data(hand->index(i), HandModel::IsPlayableRole).toBool()) {
-            playableIndices.append(i);
-        }
-    }
-
-    if (playableIndices.isEmpty()) {
-        qDebug() << "Aucune carte jouable trouvee";
-        return;
-    }
-
-    // Jouer une carte aleatoire parmi les cartes jouables
-    int randomIndex = playableIndices[QRandomGenerator::global()->bounded(playableIndices.size())];
-    qDebug() << "Carte aleatoire choisie a l'index:" << randomIndex;
-
-    playCard(randomIndex);
 }
 
 void GameModel::makeBid(int bidValue, int suitValue)
@@ -1187,6 +1141,23 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
     } else if (action == "surcoincheTimeUpdate") {
         QJsonObject timeData = data.toJsonObject();
         int timeLeft = timeData["timeLeft"].toInt();
+
+        m_surcoincheTimeLeft = timeLeft;
+        emit surcoincheTimeLeftChanged();
+    } else if (action == "surcoincheWaiting") {
+        QJsonObject waitingData = data.toJsonObject();
+        int timeLeft = waitingData["timeLeft"].toInt();
+
+        qDebug() << "GameModel::receivePlayerAction - Attente surcoinche adverse, temps:" << timeLeft;
+
+        // L'équipe adverse attend, pas de bouton mais on affiche le temps
+        m_surcoincheAvailable = false;
+        m_surcoincheTimeLeft = timeLeft;
+        emit surcoincheAvailableChanged();
+        emit surcoincheTimeLeftChanged();
+    } else if (action == "surcoincheWaitingUpdate") {
+        QJsonObject waitingData = data.toJsonObject();
+        int timeLeft = waitingData["timeLeft"].toInt();
 
         m_surcoincheTimeLeft = timeLeft;
         emit surcoincheTimeLeftChanged();

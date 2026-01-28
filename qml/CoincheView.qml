@@ -2145,6 +2145,89 @@ Rectangle {
         }
         }
 
+        // =====================
+        // MESSAGE D'ATTENTE SURCOINCHE (équipe adverse)
+        // =====================
+        Item {
+            anchors.centerIn: playArea
+            width: playArea.width * 0.4
+            height: playArea.height * 0.25
+            visible: !gameModel.surcoincheAvailable && gameModel.surcoincheTimeLeft > 0
+
+            // Couches d'ombre
+            Rectangle {
+                anchors.centerIn: parent
+                anchors.verticalCenterOffset: 8
+                width: parent.width + 4
+                height: parent.height + 4
+                color: "#40000000"
+                radius: 16
+            }
+
+            // Rectangle principal
+            Rectangle {
+                id: surcoincheWaitingContainer
+                anchors.fill: parent
+                color: "#1a1a1a"
+                radius: 15
+                border.color: "#FFD700"
+                border.width: 3
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: parent.height * 0.15
+                    spacing: parent.height * 0.1
+
+                    // Texte "Surcoinche..."
+                    Text {
+                        text: "Surcoinche..."
+                        font.pixelSize: surcoincheWaitingContainer.height * 0.35
+                        font.bold: true
+                        color: "#FFD700"
+                        horizontalAlignment: Text.AlignHCenter
+                        Layout.alignment: Qt.AlignHCenter
+
+                        // Animation de pulsation
+                        SequentialAnimation on opacity {
+                            running: true
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 1.0; to: 0.5; duration: 800; easing.type: Easing.InOutQuad }
+                            NumberAnimation { from: 0.5; to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
+                        }
+                    }
+
+                    // Barre de progression du temps restant
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: parent.height * 0.15
+                        color: "#333333"
+                        radius: height / 2
+                        border.color: "#FFD700"
+                        border.width: 2
+
+                        Rectangle {
+                            width: parent.width * (gameModel.surcoincheTimeLeft / 10)
+                            height: parent.height
+                            radius: parent.radius
+                            color: {
+                                if (gameModel.surcoincheTimeLeft <= 3) return "#ff3333"
+                                if (gameModel.surcoincheTimeLeft <= 6) return "#ffaa00"
+                                return "#00cc00"
+                            }
+
+                            Behavior on width {
+                                NumberAnimation { duration: 300 }
+                            }
+
+                            Behavior on color {
+                                ColorAnimation { duration: 300 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     // =====================
     // ANIMATION DE DISTRIBUTION
     // =====================

@@ -2974,6 +2974,15 @@ private:
             qDebug() << "playBotBid - Timer de timeout enchères arrêté, génération:" << room->bidTimeoutGeneration;
         }
 
+        // IMPORTANT: Vérifier si une COINCHE est en cours
+        if (room->coinched) {
+            // Après une coinche, biddingPlayer est mis à -1 et le timer de surcoinche prend le relais
+            // Les bots ne doivent RIEN faire pendant ce temps (pas de passe, pas d'annonce)
+            // Le timer de surcoinche gérera automatiquement la fin des enchères
+            qDebug() << "GameServer - Bot" << playerIndex << "ignore son tour (coinche en cours, timer actif)";
+            return;
+        }
+
         Player* player = room->players[playerIndex].get();
 
         // Évaluer la main pour chaque couleur d'atout possible (annonce propre)
@@ -3078,16 +3087,25 @@ private:
             room->passedBidsCount = 0;  // Réinitialiser le compteur de passes
             room->lastBidAnnonce = annonce;
             room->lastBidCouleur = bestCouleur;
-            room->lastBidSuit = static_cast<int>(bestCouleur);  // Stocker la couleur originale de l'enchère
             room->lastBidderIndex = playerIndex;
             room->couleurAtout = bestCouleur;
 
-            // IMPORTANT: Les bots ne parlent que des couleurs normales (COEUR, TREFLE, CARREAU, PIQUE)
-            // Si un joueur a parlé TA ou SA et qu'un bot surenchérit avec une couleur normale,
-            // il faut désactiver les modes TA/SA
-            room->isToutAtout = false;
-            room->isSansAtout = false;
-            qDebug() << "GameServer - Bot surenchérit avec couleur normale, désactivation TA/SA (isToutAtout=false, isSansAtout=false)";
+            // IMPORTANT: Quand un joueur annonce TA (7) ou SA (8), lastBidCouleur est COULEURINVALIDE
+            // Donc si le bot soutient son partenaire TA/SA, bestCouleur sera COULEURINVALIDE
+            if (bestCouleur == Carte::COULEURINVALIDE) {
+                // Le bot soutient une enchère TA ou SA du partenaire
+                // Conserver les flags isToutAtout/isSansAtout existants (ne rien changer)
+                // Ne pas toucher à lastBidSuit non plus (conserve 7 ou 8)
+                qDebug() << "GameServer - Bot soutient enchère TA/SA du partenaire (isToutAtout="
+                         << room->isToutAtout << ", isSansAtout=" << room->isSansAtout << ")";
+            } else {
+                // Le bot annonce une couleur normale (COEUR, TREFLE, CARREAU, PIQUE)
+                // Désactiver les modes TA/SA et mettre à jour lastBidSuit
+                room->isToutAtout = false;
+                room->isSansAtout = false;
+                room->lastBidSuit = static_cast<int>(bestCouleur);
+                qDebug() << "GameServer - Bot annonce couleur normale, désactivation TA/SA";
+            }
 
             // Broadcast l'enchère à tous
             QJsonObject msg;
@@ -3106,6 +3124,13 @@ private:
     void advanceToNextBidder(int roomId) {
         GameRoom* room = m_gameRooms.value(roomId);
         if (!room) return;
+
+        // IMPORTANT: Ne pas avancer si une coinche est en cours
+        // Le timer de surcoinche gère la fin des enchères
+        if (room->coinched) {
+            qDebug() << "advanceToNextBidder - Ignoré (coinche en cours, timer actif)";
+            return;
+        }
 
         room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
         room->biddingPlayer = room->currentPlayerIndex;
@@ -4151,11 +4176,31 @@ private:
 
             qDebug() << "GameServer - Timer de surcoinche démarré pour la room" << roomId;
 
-            // Envoyer l'offre de surcoinche aux joueurs de l'équipe qui a fait l'annonce
-            QJsonObject offerMsg;
-            offerMsg["type"] = "surcoincheOffer";
-            offerMsg["timeLeft"] = room->surcoincheTimeLeft;
-            broadcastToRoom(roomId, offerMsg);
+            // Envoyer des messages différents selon l'équipe
+            int biddingTeam = room->lastBidderIndex % 2; // Équipe qui a fait l'annonce
+
+            for (int i = 0; i < 4; i++) {
+                QString connId = room->connectionIds[i];
+                if (connId.isEmpty() || !m_connections.contains(connId)) continue;
+
+                PlayerConnection* conn = m_connections[connId];
+                if (!conn || !conn->socket) continue;
+
+                int playerTeam = i % 2;
+                QJsonObject msg;
+
+                if (playerTeam == biddingTeam) {
+                    // Équipe qui a fait l'annonce coichée : peut surcoincher
+                    msg["type"] = "surcoincheOffer";
+                    msg["timeLeft"] = room->surcoincheTimeLeft;
+                } else {
+                    // Équipe adverse (a coinché) : message d'attente
+                    msg["type"] = "surcoincheWaiting";
+                    msg["timeLeft"] = room->surcoincheTimeLeft;
+                }
+
+                sendMessage(conn->socket, msg);
+            }
         });
     }
 
@@ -4208,11 +4253,28 @@ private:
             }
             startPlayingPhase(roomId);
         } else {
-            // Envoyer la mise à jour du temps restant
-            QJsonObject timeUpdateMsg;
-            timeUpdateMsg["type"] = "surcoincheTimeUpdate";
-            timeUpdateMsg["timeLeft"] = room->surcoincheTimeLeft;
-            broadcastToRoom(roomId, timeUpdateMsg);
+            // Envoyer la mise à jour du temps restant (différente selon l'équipe)
+            int biddingTeam = room->lastBidderIndex % 2;
+
+            for (int i = 0; i < 4; i++) {
+                QString connId = room->connectionIds[i];
+                if (connId.isEmpty() || !m_connections.contains(connId)) continue;
+
+                PlayerConnection* conn = m_connections[connId];
+                if (!conn || !conn->socket) continue;
+
+                int playerTeam = i % 2;
+                QJsonObject msg;
+                msg["timeLeft"] = room->surcoincheTimeLeft;
+
+                if (playerTeam == biddingTeam) {
+                    msg["type"] = "surcoincheTimeUpdate";
+                } else {
+                    msg["type"] = "surcoincheWaitingUpdate";
+                }
+
+                sendMessage(conn->socket, msg);
+            }
         }
     }
 
