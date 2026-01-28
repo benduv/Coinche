@@ -1150,6 +1150,10 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
 
         qDebug() << "GameModel::receivePlayerAction - Attente surcoinche adverse, temps:" << timeLeft;
 
+        // Masquer l'animation Coinche
+        m_showCoincheAnimation = false;
+        emit showCoincheAnimationChanged();
+
         // L'équipe adverse attend, pas de bouton mais on affiche le temps
         m_surcoincheAvailable = false;
         m_surcoincheTimeLeft = timeLeft;

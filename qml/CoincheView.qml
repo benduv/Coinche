@@ -2149,6 +2149,7 @@ Rectangle {
         // MESSAGE D'ATTENTE SURCOINCHE (équipe adverse)
         // =====================
         Item {
+            id: surcoincheWaitingMess
             anchors.centerIn: playArea
             width: playArea.width * 0.4
             height: playArea.height * 0.25

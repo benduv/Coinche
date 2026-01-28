@@ -3255,46 +3255,79 @@ private:
     }
 
     // Trouve l'index de la carte avec la plus petite valeur en SANS ATOUT
-    // Évite de défausser les As (cartes maîtres) si possible
+    // Évite de défausser les As et les 10 (cartes maîtres) si possible
     int findLowestValueCardSansAtout(Player* player, const std::vector<int>& playableIndices) {
         const auto& main = player->getMain();
 
-        // D'abord, chercher les cartes qui ne sont PAS des As
-        std::vector<int> nonAceIndices;
+        // D'abord, chercher les cartes qui ne sont NI des As NI des 10
+        std::vector<int> nonMasterIndices;
         for (int idx : playableIndices) {
-            if (main[idx]->getChiffre() != Carte::AS) {
-                nonAceIndices.push_back(idx);
+            if (main[idx]->getChiffre() != Carte::AS && main[idx]->getChiffre() != Carte::DIX) {
+                nonMasterIndices.push_back(idx);
             }
         }
 
-        // Si on a des cartes qui ne sont pas des As, trouver la plus faible parmi elles
-        if (!nonAceIndices.empty()) {
-            return findLowestValueCard(player, nonAceIndices);
+        // Si on a des cartes qui ne sont ni As ni 10, trouver la plus faible parmi elles
+        if (!nonMasterIndices.empty()) {
+            return findLowestValueCard(player, nonMasterIndices);
         }
 
-        // Sinon, on doit défausser un As (on n'a que des As)
+        // Sinon, on doit défausser un As ou un 10 (on n'a que ça)
         return findLowestValueCard(player, playableIndices);
     }
 
     // Trouve l'index de la carte avec la plus petite valeur en TOUT ATOUT
-    // Évite de défausser les Valets (cartes maîtres) si possible
+    // Évite de défausser les Valets et les 9 (cartes maîtres) si possible
     int findLowestValueCardToutAtout(Player* player, const std::vector<int>& playableIndices) {
         const auto& main = player->getMain();
 
-        // D'abord, chercher les cartes qui ne sont PAS des Valets
-        std::vector<int> nonJackIndices;
+        // D'abord, chercher les cartes qui ne sont NI des Valets NI des 9
+        std::vector<int> nonMasterIndices;
         for (int idx : playableIndices) {
-            if (main[idx]->getChiffre() != Carte::VALET) {
-                nonJackIndices.push_back(idx);
+            if (main[idx]->getChiffre() != Carte::VALET && main[idx]->getChiffre() != Carte::NEUF) {
+                nonMasterIndices.push_back(idx);
             }
         }
 
-        // Si on a des cartes qui ne sont pas des Valets, trouver la plus faible parmi elles
-        if (!nonJackIndices.empty()) {
-            return findLowestValueCard(player, nonJackIndices);
+        // Si on a des cartes qui ne sont ni Valets ni 9, trouver la plus faible parmi elles
+        if (!nonMasterIndices.empty()) {
+            return findLowestValueCard(player, nonMasterIndices);
         }
 
-        // Sinon, on doit défausser un Valet (on n'a que des Valets)
+        // Sinon, on doit défausser un Valet ou un 9 (on n'a que ça)
+        return findLowestValueCard(player, playableIndices);
+    }
+
+    // Trouve l'index de la carte avec la plus petite valeur en évitant les cartes maîtres et les atouts
+    // Utilisé quand le bot ne peut pas gagner le pli et veut conserver ses cartes fortes
+    int findLowestValueCardAvoidMasters(GameRoom* room, Player* player, const std::vector<int>& playableIndices) {
+        const auto& main = player->getMain();
+
+        // Chercher les cartes qui sont:
+        // - Hors atout (on garde tous les atouts)
+        // - ET non maîtres (on garde les As, 10, Roi, etc. qui peuvent gagner plus tard)
+        std::vector<int> safeDiscardIndices;
+        for (int idx : playableIndices) {
+            Carte* carte = main[idx];
+
+            // Ne jamais défausser un atout
+            if (carte->getCouleur() == room->couleurAtout) {
+                continue;
+            }
+
+            // Ne défausser que les cartes hors atout non maîtres
+            if (!isMasterCard(room, carte)) {
+                safeDiscardIndices.push_back(idx);
+            }
+        }
+
+        // Si on a des cartes non maîtres hors atout, trouver la plus faible
+        if (!safeDiscardIndices.empty()) {
+            return findLowestValueCard(player, safeDiscardIndices);
+        }
+
+        // Sinon, on doit défausser une carte maître ou un atout (on n'a que ça)
+        // Dans ce cas, on privilégie la carte la plus faible globalement
         return findLowestValueCard(player, playableIndices);
     }
 
@@ -3521,7 +3554,7 @@ private:
 
         // Cas 2: Le partenaire gagne le pli
         if (isPartnerWinning(playerIndex, idxPlayerWinning)) {
-            qDebug() << "Bot" << playerIndex << "- [SA] Partenaire gagne, défausse (évite As)";
+            qDebug() << "Bot" << playerIndex << "- [SA] Partenaire gagne, défausse (évite As et 10)";
             return findLowestValueCardSansAtout(player, playableIndices);
         }
 
@@ -3548,8 +3581,8 @@ private:
             return bestCardIdx;
         }
 
-        // Sinon, défausser la plus petite carte (évite les As)
-        qDebug() << "Bot" << playerIndex << "- [SA] Ne peut pas gagner, défausse (évite As)";
+        // Sinon, défausser la plus petite carte (évite les As et les 10)
+        qDebug() << "Bot" << playerIndex << "- [SA] Ne peut pas gagner, défausse (évite As et 10)";
         return findLowestValueCardSansAtout(player, playableIndices);
     }
 
@@ -3622,8 +3655,8 @@ private:
                 return lowestWinningIdx;
             }
 
-            // Si on ne peut pas monter, défausser la plus petite (évite les Valets)
-            qDebug() << "Bot" << playerIndex << "- [TA] Ne peut pas monter, défausse (évite Valets)";
+            // Si on ne peut pas monter, défausser la plus petite (évite les Valets et les 9)
+            qDebug() << "Bot" << playerIndex << "- [TA] Ne peut pas monter, défausse (évite Valets et 9)";
             return findLowestValueCardToutAtout(player, playableIndices);
         }
 
@@ -3647,8 +3680,8 @@ private:
             return lowestWinningIdx;
         }
 
-        // Si on ne peut pas monter, défausser la plus petite (évite les Valets)
-        qDebug() << "Bot" << playerIndex << "- [TA] Ne peut pas monter, défausse (évite Valets)";
+        // Si on ne peut pas monter, défausser la plus petite (évite les Valets et les 9)
+        qDebug() << "Bot" << playerIndex << "- [TA] Ne peut pas monter, défausse (évite Valets et 9)";
         return findLowestValueCardToutAtout(player, playableIndices);
     }
 
@@ -3837,7 +3870,8 @@ private:
             }
 
             // Sinon, jouer la carte la plus faible pour économiser les fortes
-            return findLowestValueCard(player, playableIndices);
+            // Éviter de défausser les cartes maîtres et les atouts
+            return findLowestValueCardAvoidMasters(room, player, playableIndices);
         }
 
         // Cas 2: Le partenaire est en train de gagner le pli
@@ -3946,8 +3980,8 @@ private:
                 return findLowestValueCardAvoidTrump(player, playableIndices, room->couleurAtout);
             }
 
-            // Jouer la carte la plus faible
-            return findLowestValueCard(player, playableIndices);
+            // Jouer la carte la plus faible, mais éviter de défausser les cartes maîtres
+            return findLowestValueCardAvoidMasters(room, player, playableIndices);
         }
 
         // Cas 3: Un adversaire gagne le pli - essayer de prendre
@@ -3994,7 +4028,8 @@ private:
         }
 
         // Si on ne peut pas gagner ou le pli ne vaut pas le coup, jouer petit
-        return findLowestValueCard(player, playableIndices);
+        // MAIS éviter de défausser les cartes maîtres (As, 10, etc.) et les atouts
+        return findLowestValueCardAvoidMasters(room, player, playableIndices);
     }
 
     void playBotCard(int roomId, int playerIndex) {
