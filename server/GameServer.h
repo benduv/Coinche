@@ -539,8 +539,22 @@ private:
 
         qInfo() << "Joueur enregistré:" << playerName << "ID:" << connectionId;
 
-        // Vérifier si le joueur peut se reconnecter à une partie en cours
-        qDebug() << "Verification reconnexion pour" << playerName << "- m_playerNameToRoomId.contains:" << m_playerNameToRoomId.contains(playerName);
+        // Vérifier si le joueur était en partie avant de se déconnecter
+        bool wasInGame = data["wasInGame"].toBool(false);
+        qDebug() << "Verification reconnexion pour" << playerName << "- wasInGame:" << wasInGame
+                 << "m_playerNameToRoomId.contains:" << m_playerNameToRoomId.contains(playerName);
+
+        // Si le joueur était en partie mais n'est plus dans le mapping, la partie s'est terminée
+        if (wasInGame && !m_playerNameToRoomId.contains(playerName)) {
+            qInfo() << "Partie terminée pendant la déconnexion de" << playerName << "- notification au client";
+
+            QJsonObject notification;
+            notification["type"] = "gameNoLongerExists";
+            notification["message"] = "La partie s'est terminée pendant votre absence";
+            sendMessage(socket, notification);
+            return;
+        }
+
         if (m_playerNameToRoomId.contains(playerName)) {
             int roomId = m_playerNameToRoomId[playerName];
             GameRoom* room = m_gameRooms.value(roomId);

@@ -152,6 +152,8 @@ public:
         msg["type"] = "register";
         msg["playerName"] = playerName;
         msg["avatar"] = avatar;
+        // Indiquer si on avait un GameModel actif (pour détecter les parties terminées)
+        msg["wasInGame"] = (m_gameModel != nullptr);
         sendMessage(msg);
     }
 
@@ -401,6 +403,9 @@ signals:
     // Signaux pour les messages de contact
     void contactMessageSuccess();
     void contactMessageFailed(QString error);
+
+    // Signal pour retourner au menu après reconnexion (partie terminée)
+    void returnToMainMenu();
 
 private slots:
     void onConnected() {
@@ -874,8 +879,8 @@ private slots:
             // Nettoyer le GameModel
             clearGameModel();
 
-            // Émettre un signal pour que QML retourne au menu
-            emit errorOccurred("La partie est terminée");
+            // Émettre un signal dédié pour que QML retourne au menu principal
+            emit returnToMainMenu();
         }
     }
 

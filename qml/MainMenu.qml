@@ -185,6 +185,16 @@ ApplicationWindow {
             }
         }
 
+        function onReturnToMainMenu() {
+            console.log("MainMenu - returnToMainMenu reçu (partie terminée pendant déconnexion)")
+
+            // Retourner au menu principal (nettoie la pile)
+            if (stackView.depth > 1) {
+                console.log("MainMenu - Pop vers menu principal (depth:", stackView.depth, ")")
+                stackView.pop(null)  // Pop toutes les vues jusqu'à la première (menu principal)
+            }
+        }
+
         function onLobbyCreated(lobbyCode) {
             console.log("MainMenu - lobbyCreated reçu, code:", lobbyCode)
             stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": true })

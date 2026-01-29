@@ -1335,6 +1335,10 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_currentPli.clear();
         emit currentPliChanged();
 
+        // Nettoyer la miniature du dernier pli de la manche précédente
+        m_lastPliCards.clear();
+        emit lastPliCardsChanged();
+
         // Marquer la distribution comme en cours AVANT de changer biddingPhase
         // pour eviter que l'AnnoncesPanel s'affiche brievement
         m_distributionPhase = 1;
