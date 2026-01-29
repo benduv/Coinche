@@ -42,17 +42,11 @@ public:
         , m_myPosition(-1)
         , m_gameModel(nullptr)
         , m_playerAvatar("avataaars1.svg")
-        , m_reconnectTimer(new QTimer(this))
         , m_heartbeatTimer(new QTimer(this))
         , m_wasInGame(false)
-        , m_reconnectAttempts(0)
         , m_lastPongReceived(0)
     {
         setupSocketConnections();
-
-        // Timer pour les tentatives de reconnexion
-        // connect(m_reconnectTimer, &QTimer::timeout, this, &NetworkManager::attemptReconnect);
-        // m_reconnectTimer->setInterval(3000); // Tenter de se reconnecter toutes les 3 secondes
 
         // Timer pour le heartbeat (détection de connexion morte)
         connect(m_heartbeatTimer, &QTimer::timeout, this, &NetworkManager::sendHeartbeat);
@@ -150,7 +144,7 @@ public:
             qDebug() << "Connexion WSS détectée - Certificat valide attendu";
         }
 
-        openSocketWithFreshSsl(url);
+        openSocket(url);
     }
 
     Q_INVOKABLE void registerPlayer(const QString &playerName, const QString &avatar = "avataaars1.svg") {
@@ -412,8 +406,6 @@ private slots:
     void onConnected() {
         qDebug() << "Connecte au serveur";
         m_connected = true;
-        // m_reconnectTimer->stop();  // Arrêter les tentatives de reconnexion
-        // m_reconnectAttempts = 0;  // Réinitialiser le compteur
 
         // Démarrer le heartbeat pour détecter les connexions mortes
         m_lastPongReceived = QDateTime::currentMSecsSinceEpoch();
@@ -430,11 +422,6 @@ private slots:
     }
 
     void onDisconnected() {
-        qDebug() << "====================== onDisconnected() appelé ===============================";
-        qDebug() << "====================== onDisconnected() appelé ===============================";
-        qDebug() << "====================== onDisconnected() appelé ===============================";
-        qDebug() << "====================== onDisconnected() appelé ===============================";
-        qDebug() << "====================== onDisconnected() appelé ===============================";
         qDebug() << "====================== onDisconnected() appelé ===============================";
         qDebug() << "  m_connected:" << m_connected;
         qDebug() << "  m_playerPseudo:" << m_playerPseudo;
@@ -454,57 +441,19 @@ private slots:
         m_heartbeatTimer->stop();
         qDebug() << "Heartbeat arrêté";
 
-        // Arrêter les timers du GameModel pour éviter les conflits
-        // if (m_gameModel) {
-        //     qDebug() << "Pause des timers GameModel lors de la déconnexion";
-        //     m_gameModel->pauseTimers();
-        // }
-
         // Si on était en partie ou connecté, activer la reconnexion automatique
         if (wasConnected && (!m_playerPseudo.isEmpty() || m_gameModel != nullptr)) {
             qDebug() << "Perte de connexion detectee - Demarrage tentatives de reconnexion";
-            // qDebug() << "  Timer interval:" << m_reconnectTimer->interval() << "ms";
-            // qDebug() << "  Timer active avant start:" << m_reconnectTimer->isActive();
             m_wasInGame = (m_gameModel != nullptr);  // Sauvegarder si on était en partie
-            // m_reconnectAttempts = 0;
-            // m_reconnectTimer->start();  // Démarrer les tentatives de reconnexion
-            // qDebug() << "  Timer active après start:" << m_reconnectTimer->isActive();
+
             qDebug() << "Reconnexion à" << m_serverUrl;
-            openSocketWithFreshSsl(m_serverUrl);
+            openSocket(m_serverUrl);
         } else {
             qDebug() << "Pas de reconnexion automatique - conditions non remplies";
             qDebug() << "  wasConnected:" << wasConnected;
         }
 
         emit connectedChanged();
-    }
-
-    void attemptReconnect() {
-        // Limiter le nombre de tentatives (par exemple, 60 tentatives = 3 minute)
-        const int MAX_ATTEMPTS = 60;
-
-        if (m_reconnectAttempts >= MAX_ATTEMPTS) {
-            qDebug() << "Nombre maximum de tentatives de reconnexion atteint (" << MAX_ATTEMPTS << ")";
-            m_reconnectTimer->stop();
-            m_wasInGame = false;
-            return;
-        }
-
-        m_reconnectAttempts++;
-        qDebug() << "Tentative de reconnexion" << m_reconnectAttempts << "/" << MAX_ATTEMPTS;
-
-        // Si le socket n'est pas en train de se connecter, tenter la connexion
-        if (m_socket->state() != QAbstractSocket::ConnectingState &&
-            m_socket->state() != QAbstractSocket::ConnectedState) {
-
-            // IMPORTANT: Créer un NOUVEAU socket pour éviter la corruption de l'état SSL
-            // Sur Windows, réutiliser un QWebSocket après close() corrompt le contexte SChannel
-            // ce qui cause des latences persistantes (même après redémarrage de l'app)
-            recreateSocket();
-
-            qDebug() << "Reconnexion à" << m_serverUrl;
-            openSocketWithFreshSsl(m_serverUrl);
-        }
     }
 
     void onMessageReceived(const QString &message) {
@@ -918,6 +867,16 @@ private slots:
             qDebug() << "NetworkManager - Rehumanisation reussie";
             emit rehumanizeSuccess();
         }
+        else if (type == "gameNoLongerExists") {
+            QString message = obj["message"].toString();
+            qInfo() << "NetworkManager - La partie n'existe plus:" << message;
+
+            // Nettoyer le GameModel
+            clearGameModel();
+
+            // Émettre un signal pour que QML retourne au menu
+            emit errorOccurred("La partie est terminée");
+        }
     }
 
 private:
@@ -990,49 +949,14 @@ private:
         m_socket->ping();
     }
 
-    void recreateSocket() {
-        qDebug() << "Recréation du QWebSocket pour un contexte SSL neuf";
-
-        if (m_socket) {
-            // IMPORTANT: Déconnecter TOUS les signaux de l'ancien socket (pas seulement ceux vers this)
-            // Cela inclut les lambdas qui causaient l'erreur "wildcard call disconnects from destroyed signal"
-            m_socket->disconnect();  // Déconnecte TOUS les signaux, pas seulement ceux vers this
-
-            // Fermer proprement avant de détruire
-            if (m_socket->state() != QAbstractSocket::UnconnectedState) {
-                m_socket->abort();
-            }
-
-            // Supprimer immédiatement au lieu de deleteLater pour éviter les signaux fantômes
-            // qui se déclenchent sur un objet en cours de destruction
-            delete m_socket;
-            m_socket = nullptr;
-        }
-
-        // Créer un nouveau socket avec un état SSL propre
-        m_socket = new QWebSocket();
-        setupSocketConnections();
-        qDebug() << "Nouveau QWebSocket créé avec succès";
-    }
-
     // Ouvre le socket avec une configuration SSL fraîche qui évite le cache de session
-    void openSocketWithFreshSsl(const QString &url) {
+    void openSocket(const QString &url) {
         QUrl qurl(url);
 
         if (url.startsWith("wss://")) {
-            // Créer une configuration SSL qui désactive la reprise de session
-            /*QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
-
-            // Désactiver le cache de session SSL pour éviter les problèmes de SChannel Windows
-            sslConfig.setSslOption(QSsl::SslOptionDisableSessionTickets, true);
-            sslConfig.setSslOption(QSsl::SslOptionDisableSessionSharing, true);
-            sslConfig.setSslOption(QSsl::SslOptionDisableSessionPersistence, true);*/
-
-            // Créer une requête réseau avec cette configuration
             QNetworkRequest request(qurl);
-            //request.setSslConfiguration(sslConfig);
 
-            //qDebug() << "Ouverture socket avec SSL frais (cache de session désactivé)";
+            qDebug() << "Ouverture socket";
             m_socket->open(request);
         } else {
             // Connexion non sécurisée (ws://)
@@ -1070,10 +994,8 @@ private:
     QVariantList m_lobbyPlayers;
 
     // Reconnexion automatique
-    QTimer* m_reconnectTimer;
     QString m_serverUrl;
     bool m_wasInGame;
-    int m_reconnectAttempts;
 
     // Heartbeat pour détecter les connexions mortes
     QTimer* m_heartbeatTimer;

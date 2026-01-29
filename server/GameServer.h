@@ -546,6 +546,20 @@ private:
             GameRoom* room = m_gameRooms.value(roomId);
             qDebug() << "RoomId:" << roomId << "Room valide:" << (room != nullptr) << "GameState:" << (room ? room->gameState : "N/A");
 
+            // Si la room n'existe plus ou est terminée, informer le client
+            if (!room || room->gameState == "finished") {
+                qInfo() << "Partie terminée/inexistante pour" << playerName << "- notification au client";
+
+                QJsonObject notification;
+                notification["type"] = "gameNoLongerExists";
+                notification["message"] = "La partie est terminée ou n'existe plus";
+                sendMessage(socket, notification);
+
+                // Nettoyer le mapping
+                m_playerNameToRoomId.remove(playerName);
+                return;
+            }
+
             if (room && room->gameState != "finished") {
                 // Trouver l'index du joueur dans la partie
                 int playerIndex = -1;
