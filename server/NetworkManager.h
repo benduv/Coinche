@@ -51,8 +51,8 @@ public:
         setupSocketConnections();
 
         // Timer pour les tentatives de reconnexion
-        connect(m_reconnectTimer, &QTimer::timeout, this, &NetworkManager::attemptReconnect);
-        m_reconnectTimer->setInterval(3000); // Tenter de se reconnecter toutes les 3 secondes
+        // connect(m_reconnectTimer, &QTimer::timeout, this, &NetworkManager::attemptReconnect);
+        // m_reconnectTimer->setInterval(3000); // Tenter de se reconnecter toutes les 3 secondes
 
         // Timer pour le heartbeat (détection de connexion morte)
         connect(m_heartbeatTimer, &QTimer::timeout, this, &NetworkManager::sendHeartbeat);
@@ -412,8 +412,8 @@ private slots:
     void onConnected() {
         qDebug() << "Connecte au serveur";
         m_connected = true;
-        m_reconnectTimer->stop();  // Arrêter les tentatives de reconnexion
-        m_reconnectAttempts = 0;  // Réinitialiser le compteur
+        // m_reconnectTimer->stop();  // Arrêter les tentatives de reconnexion
+        // m_reconnectAttempts = 0;  // Réinitialiser le compteur
 
         // Démarrer le heartbeat pour détecter les connexions mortes
         m_lastPongReceived = QDateTime::currentMSecsSinceEpoch();
@@ -430,33 +430,47 @@ private slots:
     }
 
     void onDisconnected() {
-        qDebug() << "=== onDisconnected() appelé ===";
+        qDebug() << "====================== onDisconnected() appelé ===============================";
+        qDebug() << "====================== onDisconnected() appelé ===============================";
+        qDebug() << "====================== onDisconnected() appelé ===============================";
+        qDebug() << "====================== onDisconnected() appelé ===============================";
+        qDebug() << "====================== onDisconnected() appelé ===============================";
+        qDebug() << "====================== onDisconnected() appelé ===============================";
         qDebug() << "  m_connected:" << m_connected;
         qDebug() << "  m_playerPseudo:" << m_playerPseudo;
         qDebug() << "  m_gameModel:" << (m_gameModel != nullptr);
 
+        // Capturer la raison de la déconnexion pour le diagnostic
+        if (m_socket) {
+            qDebug() << "  closeCode:" << m_socket->closeCode();
+            qDebug() << "  closeReason:" << m_socket->closeReason();
+            qDebug() << "  errorString:" << m_socket->errorString();
+        }
+
         bool wasConnected = m_connected;
-        m_connected = false;
+        //m_connected = false;
 
         // Arrêter le heartbeat
         m_heartbeatTimer->stop();
         qDebug() << "Heartbeat arrêté";
 
         // Arrêter les timers du GameModel pour éviter les conflits
-        if (m_gameModel) {
-            qDebug() << "Pause des timers GameModel lors de la déconnexion";
-            m_gameModel->pauseTimers();
-        }
+        // if (m_gameModel) {
+        //     qDebug() << "Pause des timers GameModel lors de la déconnexion";
+        //     m_gameModel->pauseTimers();
+        // }
 
         // Si on était en partie ou connecté, activer la reconnexion automatique
         if (wasConnected && (!m_playerPseudo.isEmpty() || m_gameModel != nullptr)) {
             qDebug() << "Perte de connexion detectee - Demarrage tentatives de reconnexion";
-            qDebug() << "  Timer interval:" << m_reconnectTimer->interval() << "ms";
-            qDebug() << "  Timer active avant start:" << m_reconnectTimer->isActive();
+            // qDebug() << "  Timer interval:" << m_reconnectTimer->interval() << "ms";
+            // qDebug() << "  Timer active avant start:" << m_reconnectTimer->isActive();
             m_wasInGame = (m_gameModel != nullptr);  // Sauvegarder si on était en partie
-            m_reconnectAttempts = 0;
-            m_reconnectTimer->start();  // Démarrer les tentatives de reconnexion
-            qDebug() << "  Timer active après start:" << m_reconnectTimer->isActive();
+            // m_reconnectAttempts = 0;
+            // m_reconnectTimer->start();  // Démarrer les tentatives de reconnexion
+            // qDebug() << "  Timer active après start:" << m_reconnectTimer->isActive();
+            qDebug() << "Reconnexion à" << m_serverUrl;
+            openSocketWithFreshSsl(m_serverUrl);
         } else {
             qDebug() << "Pas de reconnexion automatique - conditions non remplies";
             qDebug() << "  wasConnected:" << wasConnected;
@@ -927,6 +941,26 @@ private:
                 qDebug() << "  - Type:" << error.error() << "Message:" << error.errorString();
             }
         });
+
+        // Handler d'erreur pour diagnostiquer les déconnexions inattendues
+        connect(m_socket, &QWebSocket::errorOccurred, this, [this](QAbstractSocket::SocketError error) {
+            qDebug() << "=== ERREUR SOCKET ===" << error << ":" << m_socket->errorString();
+            qDebug() << "  État du socket:" << m_socket->state();
+        });
+
+        // Log de l'état de la connexion pour le debug
+        connect(m_socket, &QWebSocket::stateChanged, this, [](QAbstractSocket::SocketState state) {
+            QString stateStr;
+            switch (state) {
+                case QAbstractSocket::UnconnectedState: stateStr = "Unconnected"; break;
+                case QAbstractSocket::HostLookupState: stateStr = "HostLookup"; break;
+                case QAbstractSocket::ConnectingState: stateStr = "Connecting"; break;
+                case QAbstractSocket::ConnectedState: stateStr = "Connected"; break;
+                case QAbstractSocket::ClosingState: stateStr = "Closing"; break;
+                default: stateStr = "Unknown"; break;
+            }
+            qDebug() << "Socket state changed:" << stateStr;
+        });
     }
 
     // Envoie un ping et vérifie si la connexion est toujours active
@@ -958,15 +992,27 @@ private:
 
     void recreateSocket() {
         qDebug() << "Recréation du QWebSocket pour un contexte SSL neuf";
-        // Déconnecter tous les signaux de l'ancien socket
+
         if (m_socket) {
-            m_socket->disconnect(this);
-            m_socket->abort();
-            m_socket->deleteLater();
+            // IMPORTANT: Déconnecter TOUS les signaux de l'ancien socket (pas seulement ceux vers this)
+            // Cela inclut les lambdas qui causaient l'erreur "wildcard call disconnects from destroyed signal"
+            m_socket->disconnect();  // Déconnecte TOUS les signaux, pas seulement ceux vers this
+
+            // Fermer proprement avant de détruire
+            if (m_socket->state() != QAbstractSocket::UnconnectedState) {
+                m_socket->abort();
+            }
+
+            // Supprimer immédiatement au lieu de deleteLater pour éviter les signaux fantômes
+            // qui se déclenchent sur un objet en cours de destruction
+            delete m_socket;
+            m_socket = nullptr;
         }
+
         // Créer un nouveau socket avec un état SSL propre
         m_socket = new QWebSocket();
         setupSocketConnections();
+        qDebug() << "Nouveau QWebSocket créé avec succès";
     }
 
     // Ouvre le socket avec une configuration SSL fraîche qui évite le cache de session
@@ -975,18 +1021,18 @@ private:
 
         if (url.startsWith("wss://")) {
             // Créer une configuration SSL qui désactive la reprise de session
-            QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
+            /*QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
 
             // Désactiver le cache de session SSL pour éviter les problèmes de SChannel Windows
             sslConfig.setSslOption(QSsl::SslOptionDisableSessionTickets, true);
             sslConfig.setSslOption(QSsl::SslOptionDisableSessionSharing, true);
-            sslConfig.setSslOption(QSsl::SslOptionDisableSessionPersistence, true);
+            sslConfig.setSslOption(QSsl::SslOptionDisableSessionPersistence, true);*/
 
             // Créer une requête réseau avec cette configuration
             QNetworkRequest request(qurl);
-            request.setSslConfiguration(sslConfig);
+            //request.setSslConfiguration(sslConfig);
 
-            qDebug() << "Ouverture socket avec SSL frais (cache de session désactivé)";
+            //qDebug() << "Ouverture socket avec SSL frais (cache de session désactivé)";
             m_socket->open(request);
         } else {
             // Connexion non sécurisée (ws://)

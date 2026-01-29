@@ -295,7 +295,7 @@ private slots:
         connect(socket, &QWebSocket::textMessageReceived,
                 this, &GameServer::onTextMessageReceived);
         connect(socket, &QWebSocket::disconnected,
-                this, &GameServer::onDisconnected);
+               this, &GameServer::onDisconnected);
         
         // Envoi un message de bienvenue
         QJsonObject welcome;
@@ -366,12 +366,15 @@ private slots:
         QWebSocket *socket = qobject_cast<QWebSocket*>(this->sender());
         if (!socket) return;
 
-        qInfo() << "Client déconnecté";
+        qInfo() << "Client déconnecté - socket:" << socket;
 
-        // Trouve la connexion
+        // Trouve la connexion correspondant à CE socket
         QString connectionId;
         QString playerName;
+        int roomId = -1;
+        int playerIndex = -1;
         bool wasInQueue = false;
+
         for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
             // Vérifier que la connexion existe avant d'accéder à ses membres
             if (!it.value()) {
@@ -382,14 +385,35 @@ private slots:
             if (it.value()->socket == socket) {
                 connectionId = it.key();
                 playerName = it.value()->playerName;
+                roomId = it.value()->gameRoomId;
+                playerIndex = it.value()->playerIndex;
 
                 // Retire de la file d'attente et note si le joueur était en attente
                 wasInQueue = m_matchmakingQueue.contains(connectionId);
                 m_matchmakingQueue.removeAll(connectionId);
 
-                // Notifie la room si le joueur était en partie
-                if (it.value()->gameRoomId != -1) {
-                    handlePlayerDisconnect(connectionId);
+                // IMPORTANT: Vérifier que c'est bien la connexion ACTIVE dans la room
+                // Si le joueur s'est reconnecté, il a une nouvelle connexion et on ne doit
+                // PAS traiter le disconnect de l'ancienne connexion
+                if (roomId != -1) {
+                    GameRoom* room = m_gameRooms.value(roomId);
+                    if (room && playerIndex >= 0 && playerIndex < room->connectionIds.size()) {
+                        QString currentConnId = room->connectionIds[playerIndex];
+
+                        if (currentConnId == connectionId) {
+                            // C'est bien la connexion active, traiter la déconnexion
+                            qInfo() << "Déconnexion ACTIVE - Joueur" << playerName << "(index" << playerIndex << ")";
+                            handlePlayerDisconnect(connectionId);
+                        } else if (!currentConnId.isEmpty()) {
+                            // Le joueur s'est reconnecté avec une nouvelle connexion
+                            qInfo() << "Déconnexion PÉRIMÉE ignorée - Joueur" << playerName << "déjà reconnecté (old:" << connectionId << "current:" << currentConnId << ")";
+                        } else {
+                            // Le connectionId est vide (déjà traité)
+                            qInfo() << "Déconnexion déjà traitée - connectionId vide pour joueur" << playerIndex;
+                        }
+                    } else {
+                        qInfo() << "Room introuvable ou index invalide pour connexion" << connectionId;
+                    }
                 }
 
                 // Terminer le tracking de session (lightweight)
@@ -5183,13 +5207,39 @@ private:
         if (!m_gameRooms.contains(roomId)) return;
 
         GameRoom* room = m_gameRooms[roomId];
-        for (const QString &connId : room->connectionIds) {
+        QString msgType = message["type"].toString();
+
+        // Log détaillé pour les messages de jeu importants
+        bool isImportantMsg = (msgType == "gameState" || msgType == "cardPlayed" || msgType == "pliFinished");
+        if (isImportantMsg) {
+            qDebug() << "broadcastToRoom -" << msgType << "à room" << roomId;
+        }
+
+        for (int i = 0; i < room->connectionIds.size(); i++) {
+            const QString &connId = room->connectionIds[i];
+
             // Ignorer les connectionIds vides (joueurs déconnectés)
-            if (connId.isEmpty() || connId == excludeConnectionId) continue;
+            if (connId.isEmpty()) {
+                if (isImportantMsg) {
+                    qDebug() << "  Joueur" << i << ": connectionId VIDE - message non envoyé (isBot:" << room->isBot[i] << ")";
+                }
+                continue;
+            }
+
+            if (connId == excludeConnectionId) {
+                continue;
+            }
 
             PlayerConnection *conn = m_connections.value(connId);
             if (conn && conn->socket) {
                 sendMessage(conn->socket, message);
+                if (isImportantMsg) {
+                    qDebug() << "  Joueur" << i << ": message envoyé OK";
+                }
+            } else {
+                if (isImportantMsg) {
+                    qDebug() << "  Joueur" << i << ": connexion invalide - message non envoyé (conn:" << (conn != nullptr) << ")";
+                }
             }
         }
     }
