@@ -21,9 +21,9 @@ Start-Sleep -Seconds 2
 
 # Identifiants des joueurs (email, password, avatar)
 $players = @(
-    #@{Email = "aaa@aaa.fr"; Password = "aaaaaa"; Avatar = "avataaars1.svg"},
-    #@{Email = "bbb@bbb.fr"; Password = "bbbbbb"; Avatar = "avataaars2.svg"},
-    #@{Email = "ccc@ccc.fr"; Password = "cccccc"; Avatar = "avataaars3.svg"},
+    @{Email = "aaa@aaa.fr"; Password = "aaaaaa"; Avatar = "avataaars1.svg"},
+    @{Email = "bbb@bbb.fr"; Password = "bbbbbb"; Avatar = "avataaars2.svg"},
+    @{Email = "ccc@ccc.fr"; Password = "cccccc"; Avatar = "avataaars3.svg"},
     @{Email = "ddd@ddd.fr"; Password = "dddddd"; Avatar = "avataaars4.svg"}
 )
 

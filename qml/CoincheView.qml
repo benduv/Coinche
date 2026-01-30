@@ -1678,9 +1678,257 @@ Rectangle {
         }
 
         // =====================
+        // ANIMATION FUSÉE "COINCHE !" EN SPIRALE
+        // =====================
+        Item {
+            id: rocketAnimation
+            anchors.fill: playArea
+            z: 99
+
+            // Variables pour l'animation en spirale
+            property real animationProgress: 0.0
+            property real startAngle: 0
+            property real centerX: playArea.width * 0.5
+            property real centerY: playArea.height * 0.5
+            property real initialRadius: 0
+            property int smokeFrameCounter: 0
+            property real previousRocketX: 0
+            property real previousRocketY: 0
+
+            // Conteneur pour la traînée de fumée (derrière la fusée)
+            Item {
+                id: smokeTrailContainer
+                anchors.fill: parent
+                z: -1
+            }
+
+            // Composant pour une particule de fumée
+            Component {
+                id: smokeParticleComponent
+
+                Rectangle {
+                    id: smokeParticle
+                    property real initialSize: width
+                    width: playArea.width * (0.02 + Math.random() * 0.025)
+                    height: width
+                    radius: width / 2
+                    color: Qt.rgba(0.6 + Math.random() * 0.2, 0.6 + Math.random() * 0.2, 0.6 + Math.random() * 0.2, 1)
+                    opacity: 0.7
+
+                    // Animation de fade out et d'expansion
+                    ParallelAnimation {
+                        running: true
+                        NumberAnimation {
+                            target: smokeParticle
+                            property: "opacity"
+                            from: 0.7
+                            to: 0
+                            duration: 1000 + Math.random() * 500
+                            easing.type: Easing.OutQuad
+                        }
+                        NumberAnimation {
+                            target: smokeParticle
+                            property: "width"
+                            from: smokeParticle.initialSize
+                            to: smokeParticle.initialSize * 1.8
+                            duration: 1000 + Math.random() * 500
+                            easing.type: Easing.OutQuad
+                        }
+                        NumberAnimation {
+                            target: smokeParticle
+                            property: "height"
+                            from: smokeParticle.initialSize
+                            to: smokeParticle.initialSize * 1.8
+                            duration: 1000 + Math.random() * 500
+                            easing.type: Easing.OutQuad
+                        }
+
+                        onFinished: {
+                            // Détruire la particule quand l'animation est terminée
+                            smokeParticle.destroy()
+                        }
+                    }
+                }
+            }
+
+            // Image de la fusée animée
+            AnimatedImage {
+                id: rocketImage
+                source: "qrc:/resources/animations/Rocket.gif"
+                width: playArea.width * 0.25
+                height: playArea.height * 0.25
+                visible: false
+                playing: visible
+                transformOrigin: Item.Center
+            }
+
+            // Timer pour animer la fusée frame par frame
+            Timer {
+                id: rocketAnimationTimer
+                interval: 16  // ~60 FPS
+                repeat: true
+                running: false
+
+                onTriggered: {
+                    // Incrémenter le progrès (0 à 1 sur 5 secondes pour une animation plus fluide)
+                    rocketAnimation.animationProgress += 0.0032  // 16ms / 5000ms
+
+                    if (rocketAnimation.animationProgress >= 1.0) {
+                        // Animation terminée
+                        stop()
+                        rocketImage.visible = false
+                        explosionCoinche.running = true
+                        console.log("Animation fusée en spirale terminée")
+                        return
+                    }
+
+                    // Calculer la position en spirale
+                    var progress = rocketAnimation.animationProgress
+
+                    // Nombre de tours complets de la spirale (2.5 tours)
+                    var spiralTurns = 2.5
+                    var currentAngle = rocketAnimation.startAngle + spiralTurns * 2 * Math.PI * progress
+
+                    // Rayon diminue progressivement de initialRadius à 0
+                    // Utiliser une fonction d'ease pour une arrivée plus rapide
+                    var radiusProgress = progress * progress  // Ease-in quadratique
+                    var currentRadius = rocketAnimation.initialRadius * (1 - radiusProgress)
+
+                    // Position sur la spirale
+                    var spiralX = rocketAnimation.centerX + currentRadius * Math.cos(currentAngle)
+                    var spiralY = rocketAnimation.centerY + currentRadius * Math.sin(currentAngle)
+
+                    // Calculer la prochaine position pour déterminer l'angle de rotation
+                    var deltaProgress = 0.01
+                    var nextProgress = Math.min(progress + deltaProgress, 1.0)
+                    var nextAngle = rocketAnimation.startAngle + spiralTurns * 2 * Math.PI * nextProgress
+                    var nextRadiusProgress = nextProgress * nextProgress
+                    var nextRadius = rocketAnimation.initialRadius * (1 - nextRadiusProgress)
+                    var nextX = rocketAnimation.centerX + nextRadius * Math.cos(nextAngle)
+                    var nextY = rocketAnimation.centerY + nextRadius * Math.sin(nextAngle)
+
+                    // Calculer l'angle de rotation pour pointer vers la prochaine position
+                    var dx = nextX - spiralX
+                    var dy = nextY - spiralY
+                    var angleToTarget = Math.atan2(dy, dx) * 180 / Math.PI
+
+                    // Créer une particule de fumée tous les 2 frames pour une traînée dense
+                    rocketAnimation.smokeFrameCounter++
+                    if (rocketAnimation.smokeFrameCounter % 2 === 0 && rocketAnimation.smokeFrameCounter > 2) {
+                        // Utiliser la position précédente de la fusée pour placer la fumée exactement sur la trajectoire
+                        // Cela garantit que la fumée suit exactement le chemin parcouru par la fusée
+                        var smokeParticle = smokeParticleComponent.createObject(smokeTrailContainer, {
+                            "x": rocketAnimation.previousRocketX + rocketImage.width / 2 - playArea.width * 0.0225,
+                            "y": rocketAnimation.previousRocketY + rocketImage.height / 2 - playArea.height * 0.0225
+                        })
+                    }
+
+                    // Stocker la position actuelle avant de la mettre à jour (pour la fumée au prochain frame)
+                    rocketAnimation.previousRocketX = spiralX - rocketImage.width / 2
+                    rocketAnimation.previousRocketY = spiralY - rocketImage.height / 2
+
+                    // Mettre à jour la position et la rotation
+                    rocketImage.x = spiralX - rocketImage.width / 2
+                    rocketImage.y = spiralY - rocketImage.height / 2
+                    // +90 pour orienter la pointe de la fusée vers l'avant
+                    rocketImage.rotation = angleToTarget + 90
+                }
+            }
+
+            // Fonction pour lancer l'animation avec une trajectoire en spirale
+            function startRocketAnimation(playerIndex) {
+                console.log("startRocketAnimation - Joueur:", playerIndex, "myIndex:", gameModel.playerIndex)
+
+                // Convertir l'index absolu en position relative (0=Sud, 1=Ouest, 2=Nord, 3=Est)
+                var relativePos = (playerIndex - gameModel.playerIndex + 4) % 4
+                console.log("Position relative:", relativePos)
+
+                // Centre de l'écran
+                centerX = playArea.width * 0.5
+                centerY = playArea.height * 0.5
+
+                // Calculer l'angle de départ et la position initiale selon la position du joueur
+                var startX, startY
+
+                switch(relativePos) {
+                    case 0: // Sud (bas)
+                        startAngle = Math.PI / 2  // 90 degrés (bas)
+                        startX = centerX
+                        startY = playArea.height * 0.95
+                        break
+                    case 1: // Ouest (gauche)
+                        startAngle = Math.PI  // 180 degrés (gauche)
+                        startX = playArea.width * 0.05
+                        startY = centerY
+                        break
+                    case 2: // Nord (haut)
+                        startAngle = -Math.PI / 2  // -90 degrés (haut)
+                        startX = centerX
+                        startY = playArea.height * 0.05
+                        break
+                    case 3: // Est (droite)
+                        startAngle = 0  // 0 degré (droite)
+                        startX = playArea.width * 0.95
+                        startY = centerY
+                        break
+                }
+
+                // Calculer le rayon initial (distance du départ au centre)
+                var dx = startX - centerX
+                var dy = startY - centerY
+                initialRadius = Math.sqrt(dx * dx + dy * dy)
+
+                console.log("Départ spirale - Angle:", startAngle, "Rayon:", initialRadius)
+
+                // Réinitialiser le progrès et le compteur de fumée
+                animationProgress = 0.0
+                smokeFrameCounter = 0
+
+                // Nettoyer les anciennes particules de fumée s'il y en a
+                for (var i = smokeTrailContainer.children.length - 1; i >= 0; i--) {
+                    smokeTrailContainer.children[i].destroy()
+                }
+
+                // Positionner la fusée au point de départ
+                rocketImage.x = startX - rocketImage.width / 2
+                rocketImage.y = startY - rocketImage.height / 2
+
+                // Initialiser la position précédente (pour la première particule de fumée)
+                previousRocketX = rocketImage.x
+                previousRocketY = rocketImage.y
+
+                // Calculer la rotation initiale (tangente à la spirale)
+                var initialTangentAngle = startAngle + Math.PI / 2  // Perpendiculaire au rayon
+                rocketImage.rotation = initialTangentAngle * 180 / Math.PI + 90
+
+                // Afficher la fusée
+                rocketImage.visible = true
+
+                // Démarrer le timer d'animation
+                rocketAnimationTimer.start()
+            }
+
+            // Connexion pour démarrer l'animation quand showCoincheAnimation change
+            Connections {
+                target: gameModel
+                function onShowCoincheAnimationChanged() {
+                    if (gameModel.showCoincheAnimation) {
+                        console.log("onShowCoincheAnimationChanged - Animation spirale fusée!")
+                        console.log("coinchedByPlayerIndex:", gameModel.coinchedByPlayerIndex)
+                        // Empêcher l'explosion de démarrer immédiatement
+                        explosionCoinche.running = false
+                        // Lancer l'animation de la fusée
+                        rocketAnimation.startRocketAnimation(gameModel.coinchedByPlayerIndex)
+                    }
+                }
+            }
+        }
+
+        // =====================
         // ANIMATION "COINCHE !" avec explosion
         // =====================
         ExplosionAnimation {
+            id: explosionCoinche
             anchors.centerIn: playArea
             width: playArea.width * 0.7
             height: playArea.height * 0.5
@@ -1691,7 +1939,7 @@ Rectangle {
             particleColor1: "#FF4400"
             particleColor2: "#FF8800"
             particleColor3: "#FFCC00"
-            running: gameModel.showCoincheAnimation
+            running: false  // Ne démarre plus automatiquement
             minRatio: rootArea.minRatio
 
             onRunningChanged: {
@@ -1700,6 +1948,21 @@ Rectangle {
                         coincheSound.stop()
                         coincheSound.play()
                     }
+                    // Arrêter l'animation après 2 secondes
+                    explosionCoincheTimer.start()
+                } else {
+                    explosionCoincheTimer.stop()
+                }
+            }
+
+            // Timer pour arrêter l'animation après 2 secondes
+            Timer {
+                id: explosionCoincheTimer
+                interval: 2000
+                repeat: false
+                onTriggered: {
+                    console.log("Arrêt de l'animation Coinche")
+                    explosionCoinche.running = false
                 }
             }
         }
@@ -1708,6 +1971,7 @@ Rectangle {
         // ANIMATION "SURCOINCHE !" avec explosion
         // =====================
         ExplosionAnimation {
+            id: explosionSurcoinche
             anchors.centerIn: playArea
             width: playArea.width * 0.7
             height: playArea.height * 0.5
@@ -1727,6 +1991,21 @@ Rectangle {
                         surcoincheSound.stop()
                         surcoincheSound.play()
                     }
+                    // Arrêter l'animation après 2 secondes
+                    explosionSurcoincheTimer.start()
+                } else {
+                    explosionSurcoincheTimer.stop()
+                }
+            }
+
+            // Timer pour arrêter l'animation après 2 secondes
+            Timer {
+                id: explosionSurcoincheTimer
+                interval: 2000
+                repeat: false
+                onTriggered: {
+                    console.log("Arrêt de l'animation Surcoinche")
+                    explosionSurcoinche.running = false
                 }
             }
         }

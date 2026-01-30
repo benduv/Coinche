@@ -33,7 +33,8 @@ public:
         int screenHeight = screenGeometry.height();
 
         // Calculer les dimensions de la fenêtre (moitié de l'écran)
-        int windowWidth = screenWidth / 1.65;
+        //int windowWidth = screenWidth / 1.65;
+        int windowWidth = screenWidth / 2;
         int windowHeight = screenHeight / 2;
 
         // Lire le compteur de fenêtres depuis les settings

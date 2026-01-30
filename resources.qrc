@@ -27,6 +27,7 @@
         <file>qml/ExplosionAnimation.qml</file>
         <file>qml/UfoNewMancheAnimation.qml</file>
         <file>resources/animations/UFO_404.gif</file>
+        <file>resources/animations/Rocket.gif</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>
