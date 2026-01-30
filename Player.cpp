@@ -177,7 +177,7 @@ bool Player::isCartePlayable(int carteIdx, const Carte::Couleur &couleurDemandee
     }
 
     const Carte* carte = m_main[carteIdx];
-    carte->printCarte();
+    //carte->printCarte();
 
     //std::cout << "Couleur demandee: " << couleurDemandee << ", Couleur atout: " << couleurAtout << std::endl;
     
@@ -381,8 +381,8 @@ bool Player::hasHigher(Carte *carte) const
 {
     bool haveHigher = false;
     for(auto &elt : m_main) {
-        elt->printCarte();
-        carte->printCarte();
+        //elt->printCarte();
+        //carte->printCarte();
         if(*carte < *elt) {
             haveHigher = true;
             break;

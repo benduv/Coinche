@@ -14,7 +14,7 @@ Item {
     property bool selected: false
     property bool enabled: true
     property bool isPlayable: true
-    property bool isAtout: false  // Est-ce une carte d'atout ?
+    property bool isAtout: false
 
     // Fonction pour construire le chemin de l'image
     function getCardImagePath() {
@@ -40,7 +40,7 @@ Item {
             default: valueName = "7"
         }
 
-        // Format: resources/cards/7_hearts.png
+        // Format: resources/cards/coeur_7.png
         return "qrc:/resources/cards/" + suitName + "_" + valueName + ".png"
     }
 
@@ -62,10 +62,10 @@ Item {
     Rectangle {
         id: cardBorder
         anchors.fill: parent
-        color: "white" //root.isPlayable ? "white" : "grey"
+        color: "white"
         border.color: selected ? "#FFD700" : "#000000"
         border.width: selected ? 3 : 1
-        radius: 3
+        radius: 5
         Behavior on border.color { ColorAnimation { duration: 100 } }
         Behavior on border.width { NumberAnimation { duration: 100 } }
 
@@ -88,7 +88,7 @@ Item {
         // Overlay rose pour les atouts
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 2
+            anchors.margins: 1
             radius: cardBorder.radius
             color: "red"  // Rose pâle
             opacity: root.isAtout && root.faceUp ? 0.2 : 0
@@ -98,7 +98,7 @@ Item {
         // Overlay gris pour les cartes non jouables
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 2
+            anchors.margins: 1
             radius: cardBorder.radius
             color: "black"
             opacity: !root.isPlayable && root.faceUp ? 0.4 : 0
@@ -113,9 +113,6 @@ Item {
             anchors.margins: 1
             source: "qrc:/resources/cards/back.png"
             visible: !root.faceUp
-            /*fillMode: Image.PreserveAspectCrop
-            smooth: true
-            antialiasing: true*/
             fillMode: Image.PreserveAspectFit
             smooth: true
             antialiasing: true
@@ -162,19 +159,4 @@ Item {
 
         onClicked: root.selected = !root.selected
     }
-
-    // Ombre portée pour effet de sélection
-    //DropShadow {
-     //   anchors.fill: cardBorder
-     //   source: cardBorder
-      //  horizontalOffset: 0
-        //verticalOffset: selected ? 5 : 2
-        //radius: selected ? 12 : 6
-        //samples: 17
-        //color: "#80000000"
-        //visible: true
-
-        //Behavior on verticalOffset { NumberAnimation { duration: 100 } }
-      //  Behavior on radius { NumberAnimation { duration: 100 } }
-    //}
 }

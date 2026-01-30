@@ -250,7 +250,7 @@ public:
         // Initialiser le timer de matchmaking avec bots (45 secondes)
         // Le timer principal attend 35 secondes, puis le countdown démarre pour 10 secondes
         m_matchmakingTimer = new QTimer(this);
-        m_matchmakingTimer->setInterval(35000);  // 35 secondes avant le début du compte à rebours
+        m_matchmakingTimer->setInterval(2000);  // 35 secondes avant le début du compte à rebours
         m_lastQueueSize = 0;
         connect(m_matchmakingTimer, &QTimer::timeout, this, &GameServer::onMatchmakingStartCountdown);
 
@@ -3327,12 +3327,18 @@ private:
         const auto& main = player->getMain();
         int lowestIdx = playableIndices[0];
         int lowestValue = main[lowestIdx]->getValeurDeLaCarte() * 100 + main[lowestIdx]->getOrdreCarteForte();
+        qInfo() << "Carte initiale: " << main[lowestIdx]->getChiffre() << " " << main[lowestIdx]->getCouleur();
+        qInfo() << "lowestValue initiale: " << lowestValue;
 
         for (int idx : playableIndices) {
             int value = main[idx]->getValeurDeLaCarte() * 100 + main[idx]->getOrdreCarteForte();
+            qInfo() << "Carte: " << main[idx]->getChiffre() << " " << main[idx]->getCouleur();
+            qInfo() << "Value: " << value;
             if (value < lowestValue) {
+                qInfo() << "Cette carte est moins forte que la carte la moins forte";
                 lowestValue = value;
                 lowestIdx = idx;
+                qInfo() << "Carte la moins forte actuelle: " << main[lowestIdx]->getChiffre() << " " << main[lowestIdx]->getCouleur();
             }
         }
         return lowestIdx;
@@ -3686,14 +3692,14 @@ private:
 
         // Cas 1: Le bot commence le pli
         if (room->currentPli.empty()) {
-            qDebug() << "Bot" << playerIndex << "commence le pli en TOUT ATOUT";
+            qInfo() << "Bot" << playerIndex << "commence le pli en TOUT ATOUT";
 
             // Stratégie: Jouer les cartes maîtres (Valet, 9, As)
             // Jouer le Valet si on l'a
             for (int idx : playableIndices) {
                 Carte* carte = main[idx];
                 if (carte->getChiffre() == Carte::VALET) {
-                    qDebug() << "Bot" << playerIndex << "- [TA] Joue un Valet";
+                    qInfo() << "Bot" << playerIndex << "- [TA] Joue un Valet";
                     return idx;
                 }
             }
@@ -3704,10 +3710,10 @@ private:
                 if (carte->getChiffre() == Carte::NEUF) {
                     // Vérifier si le Valet de cette couleur est tombé
                     if (room->isCardPlayed(carte->getCouleur(), Carte::VALET)) {
-                        qDebug() << "Bot" << playerIndex << "- [TA] Joue un 9 (Valet de cette couleur déjà tombé)";
+                        qInfo() << "Bot" << playerIndex << "- [TA] Joue un 9 (Valet de cette couleur déjà tombé)";
                         return idx;
                     } else {
-                        qDebug() << "Bot" << playerIndex << "- [TA] Ne joue PAS le 9 (Valet de cette couleur encore en jeu)";
+                        qInfo() << "Bot" << playerIndex << "- [TA] Ne joue PAS le 9 (Valet de cette couleur encore en jeu)";
                     }
                 }
             }
@@ -3736,53 +3742,115 @@ private:
             qDebug() << "Bot" << playerIndex << "- [TA] Partenaire gagne";
 
             // En TA, on doit MONTER si on peut, même si le partenaire gagne
-            // Chercher si on peut monter
+            // IMPORTANT: On monte uniquement sur la carte de la COULEUR DEMANDÉE
+
+            // Trouver la carte la plus forte de la couleur demandée dans le pli
+            Carte* carteGagnanteCouleurDemandee = nullptr;
+            for (const auto& pair : room->currentPli) {
+                if (pair.second->getCouleur() == room->couleurDemandee) {
+                    if (!carteGagnanteCouleurDemandee ||
+                        pair.second->getOrdreCarteForte() > carteGagnanteCouleurDemandee->getOrdreCarteForte()) {
+                        carteGagnanteCouleurDemandee = pair.second;
+                    }
+                }
+            }
+
+            // Séparer les cartes jouables : celles de la couleur demandée et les autres
+            std::vector<int> cartesCouleurDemandee;
+            std::vector<int> autresCouleurs;
+
+            for (int idx : playableIndices) {
+                if (main[idx]->getCouleur() == room->couleurDemandee) {
+                    cartesCouleurDemandee.push_back(idx);
+                } else {
+                    autresCouleurs.push_back(idx);
+                }
+            }
+
+            // Si on a la couleur demandée, chercher si on peut monter sur cette couleur
+            if (!cartesCouleurDemandee.empty() && carteGagnanteCouleurDemandee) {
+                int lowestWinningIdx = -1;
+                int lowestWinningOrder = 999;
+
+                for (int idx : cartesCouleurDemandee) {
+                    Carte* carte = main[idx];
+                    int order = carte->getOrdreCarteForte();
+                    if (order > carteGagnanteCouleurDemandee->getOrdreCarteForte() && order < lowestWinningOrder) {
+                        lowestWinningOrder = order;
+                        lowestWinningIdx = idx;
+                    }
+                }
+
+                // Si on peut monter dans la couleur demandée, jouer la plus petite carte qui monte
+                if (lowestWinningIdx != -1) {
+                    qDebug() << "Bot" << playerIndex << "- [TA] Monte sur le partenaire (couleur demandée)";
+                    return lowestWinningIdx;
+                }
+
+                // Si on ne peut pas monter, jouer la plus petite carte de la couleur demandée
+                qDebug() << "Bot" << playerIndex << "- [TA] Ne peut pas monter, joue plus petite de la couleur demandée";
+                return findLowestValueCardToutAtout(player, cartesCouleurDemandee);
+            }
+
+            // Si on n'a pas la couleur demandée, défausser la plus petite carte
+            qDebug() << "Bot" << playerIndex << "- [TA] Pas la couleur demandée, défausse la plus petite";
+            return findLowestValueCardToutAtout(player, autresCouleurs);
+        }
+
+        // Cas 3: L'adversaire gagne le pli
+        // On DOIT monter si on peut, mais uniquement sur la carte de la COULEUR DEMANDÉE
+
+        // Trouver la carte la plus forte de la couleur demandée dans le pli
+        Carte* carteGagnanteCouleurDemandee = nullptr;
+        for (const auto& pair : room->currentPli) {
+            if (pair.second->getCouleur() == room->couleurDemandee) {
+                if (!carteGagnanteCouleurDemandee ||
+                    pair.second->getOrdreCarteForte() > carteGagnanteCouleurDemandee->getOrdreCarteForte()) {
+                    carteGagnanteCouleurDemandee = pair.second;
+                }
+            }
+        }
+
+        // Séparer les cartes jouables : celles de la couleur demandée et les autres
+        std::vector<int> cartesCouleurDemandee;
+        std::vector<int> autresCouleurs;
+
+        for (int idx : playableIndices) {
+            if (main[idx]->getCouleur() == room->couleurDemandee) {
+                cartesCouleurDemandee.push_back(idx);
+            } else {
+                autresCouleurs.push_back(idx);
+            }
+        }
+
+        // Si on a la couleur demandée, chercher si on peut monter sur cette couleur
+        if (!cartesCouleurDemandee.empty() && carteGagnanteCouleurDemandee) {
             int lowestWinningIdx = -1;
             int lowestWinningOrder = 999;
 
-            for (int idx : playableIndices) {
+            for (int idx : cartesCouleurDemandee) {
                 Carte* carte = main[idx];
                 int order = carte->getOrdreCarteForte();
-                if (order > carteGagnante->getOrdreCarteForte() && order < lowestWinningOrder) {
+                if (order > carteGagnanteCouleurDemandee->getOrdreCarteForte() && order < lowestWinningOrder) {
                     lowestWinningOrder = order;
                     lowestWinningIdx = idx;
                 }
             }
 
-            // Si on peut monter, jouer la plus petite carte qui monte
+            // Si on peut monter dans la couleur demandée, jouer la plus petite carte qui monte
             if (lowestWinningIdx != -1) {
-                qDebug() << "Bot" << playerIndex << "- [TA] Monte sur le partenaire (obligatoire)";
+                qDebug() << "Bot" << playerIndex << "- [TA] Monte sur l'adversaire (couleur demandée)";
                 return lowestWinningIdx;
             }
 
-            // Si on ne peut pas monter, défausser la plus petite (évite les Valets et les 9)
-            qDebug() << "Bot" << playerIndex << "- [TA] Ne peut pas monter, défausse (évite Valets et 9)";
-            return findLowestValueCardToutAtout(player, playableIndices);
+            // Si on ne peut pas monter, jouer la plus petite carte de la couleur demandée
+            qDebug() << "Bot" << playerIndex << "- [TA] Ne peut pas monter, joue plus petite de la couleur demandée";
+            return findLowestValueCardToutAtout(player, cartesCouleurDemandee);
         }
 
-        // Cas 3: L'adversaire gagne le pli
-        // On DOIT monter si on peut
-        int lowestWinningIdx = -1;
-        int lowestWinningOrder = 999;
-
-        for (int idx : playableIndices) {
-            Carte* carte = main[idx];
-            int order = carte->getOrdreCarteForte();
-            if (order > carteGagnante->getOrdreCarteForte() && order < lowestWinningOrder) {
-                lowestWinningOrder = order;
-                lowestWinningIdx = idx;
-            }
-        }
-
-        // Si on peut monter, jouer la plus petite carte qui monte
-        if (lowestWinningIdx != -1) {
-            qDebug() << "Bot" << playerIndex << "- [TA] Monte sur l'adversaire";
-            return lowestWinningIdx;
-        }
-
-        // Si on ne peut pas monter, défausser la plus petite (évite les Valets et les 9)
-        qDebug() << "Bot" << playerIndex << "- [TA] Ne peut pas monter, défausse (évite Valets et 9)";
-        return findLowestValueCardToutAtout(player, playableIndices);
+        // Si on n'a pas la couleur demandée, défausser la plus petite carte
+        qDebug() << "Bot" << playerIndex << "- [TA] Pas la couleur demandée, défausse la plus petite";
+        return findLowestValueCardToutAtout(player, autresCouleurs);
     }
 
     int chooseBestCard(GameRoom* room, Player* player, int playerIndex,

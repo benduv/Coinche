@@ -138,7 +138,6 @@ Rectangle {
 
             Rectangle {
                 anchors.centerIn: parent
-                //color: "#1a1a1a"
                 color: "#0a0a2e"
 
                 // Étoiles scintillantes en arrière-plan
