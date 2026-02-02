@@ -370,6 +370,9 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
     m_onlinePlayers.clear();
     m_playerAvatars.clear();
 
+    int *ptr = nullptr;
+    *ptr = 42;
+
     // Créer les cartes du joueur local (sans les ajouter encore)
     std::vector<Carte*> myNewCartes;
     for (const QJsonValue& val : myCards) {

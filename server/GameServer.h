@@ -2681,8 +2681,6 @@ private:
 
             // Démarrer le timer de 10 secondes pour permettre la surcoinche
             startSurcoincheTimer(roomId);
-            int *ptr = nullptr;
-            *ptr = 42;
             return;
         }
 
