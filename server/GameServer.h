@@ -1139,6 +1139,7 @@ private:
         QString errorMsg = data["error"].toString();
         QString stackTrace = data["stackTrace"].toString();
         QString playerName = data["playerName"].toString();
+        bool isCritical = data["critical"].toBool(false);  // Flag optionnel pour crash critique
 
         qWarning() << "CRASH REPORT reçu de:" << playerName << "- Erreur:" << errorMsg;
 
@@ -1150,14 +1151,73 @@ private:
             qWarning() << "Stack trace:" << stackTrace;
         }
 
+        // Détecter si c'est un crash critique (qui termine l'application)
+        QString errorLower = errorMsg.toLower();
+        bool isCriticalCrash = isCritical ||
+                               errorLower.contains("fatal") ||
+                               errorLower.contains("terminate") ||
+                               errorLower.contains("kill") ||
+                               errorLower.contains("segfault") ||
+                               errorLower.contains("abort") ||
+                               errorLower.contains("sigterm") ||
+                               errorLower.contains("sigsegv");
+
+        // Envoyer un email d'alerte pour les crashes critiques
+        if (isCriticalCrash && !m_smtpPassword.isEmpty()) {
+            qCritical() << "🚨 CRASH CRITIQUE détecté - Envoi d'email d'alerte";
+
+            SmtpClient *smtp = new SmtpClient(this);
+            smtp->setHost("ssl0.ovh.net", 587);
+            smtp->setCredentials("contact@nebuludik.fr", m_smtpPassword);
+            smtp->setFrom("contact@nebuludik.fr", "Coinche Server - CRASH ALERT");
+
+            // Construire l'email avec toutes les infos
+            QString emailBody = QString(
+                "🚨 ALERTE CRASH CRITIQUE - Application Coinche\n\n"
+                "Un crash critique a été détecté qui a probablement terminé l'application.\n\n"
+                "═══════════════════════════════════════════════\n"
+                "📊 INFORMATIONS\n"
+                "═══════════════════════════════════════════════\n"
+                "Joueur: %1\n"
+                "Date/Heure: %2\n"
+                "Type: Crash Critique\n\n"
+                "═══════════════════════════════════════════════\n"
+                "❌ MESSAGE D'ERREUR\n"
+                "═══════════════════════════════════════════════\n"
+                "%3\n\n"
+                "═══════════════════════════════════════════════\n"
+                "📋 STACK TRACE\n"
+                "═══════════════════════════════════════════════\n"
+                "%4\n\n"
+                "═══════════════════════════════════════════════\n\n"
+                "Ce rapport a été généré automatiquement par le serveur Coinche.\n"
+                "Action recommandée: Analyser la stack trace et corriger le bug.\n"
+            ).arg(playerName.isEmpty() ? "Inconnu" : playerName)
+             .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss"))
+             .arg(errorMsg.isEmpty() ? "Aucun message d'erreur fourni" : errorMsg)
+             .arg(stackTrace.isEmpty() ? "Aucune stack trace disponible" : stackTrace);
+
+            // Connecter le signal de résultat
+            connect(smtp, &SmtpClient::emailSent, this, [smtp](bool success, const QString &error) {
+                if (success) {
+                    qInfo() << "✅ Email d'alerte de crash critique envoyé avec succès";
+                } else {
+                    qWarning() << "❌ Échec de l'envoi de l'email d'alerte de crash:" << error;
+                }
+                smtp->deleteLater();
+            });
+
+            // Envoyer l'email
+            QString subject = QString("🚨 CRASH CRITIQUE - Coinche App - %1")
+                .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm"));
+            smtp->sendEmail("contact@nebuludik.fr", subject, emailBody);
+        }
+
         // Répondre au client
         QJsonObject response;
         response["type"] = "crashReported";
         response["success"] = true;
         sendMessage(socket, response);
-
-        // Note: On pourrait aussi envoyer un email d'alerte pour les crashes critiques
-        // ou stocker plus de détails dans une table dédiée
     }
 
     void handleGetStats(QWebSocket *socket, const QJsonObject &data) {
@@ -4359,7 +4419,7 @@ private:
         qDebug() << "GameServer - Attente de 7 secondes avant d'afficher le bouton Surcoinche (animation fusée + Coinche)";
 
         // Attendre 7 secondes pour permettre l'animation fusée en spirale (5s) + explosion "Coinche !" (2s)
-        QTimer::singleShot(7000, this, [this, roomId]() {
+        QTimer::singleShot(7500, this, [this, roomId]() {
             GameRoom* room = m_gameRooms.value(roomId);
             if (!room) return;
 

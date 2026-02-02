@@ -74,9 +74,12 @@ void StatsReporter::sendDailyReport()
 
     qInfo() << "Génération du rapport quotidien...";
 
-    // Récupérer les stats d'aujourd'hui et d'hier
-    DatabaseManager::DailyStats today = m_dbManager->getDailyStats();
-    DatabaseManager::DailyStats yesterday = m_dbManager->getYesterdayStats();
+    // Récupérer les stats de la journée qui vient de se terminer (hier) et de l'avant-veille
+    // Le rapport est envoyé à minuit, donc "aujourd'hui" est vide
+    DatabaseManager::DailyStats today = m_dbManager->getYesterdayStats();  // Journée terminée
+    DatabaseManager::DailyStats yesterday = m_dbManager->getDailyStats(
+        QDate::currentDate().addDays(-2).toString("yyyy-MM-dd")  // Avant-veille
+    );
 
     // Récupérer les taux de rétention
     DatabaseManager::RetentionStats retention = m_dbManager->getRetentionStats();

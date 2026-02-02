@@ -125,11 +125,10 @@ Rectangle {
             Rectangle {
                 width: parent.width
                 height: audioColumn.height + 40 * settingsRoot.minRatio
-                color: "#2a2a2a"
+                color: "#992a2a2a"  // 0.6 opacity via alpha channel (99 hex = 153/255 ≈ 0.6)
                 radius: 10 * settingsRoot.minRatio
                 border.color: "#FFD700"
                 border.width: 2 * settingsRoot.minRatio
-                opacity: 0.6
 
                 Column {
                     id: audioColumn
@@ -232,12 +231,11 @@ Rectangle {
             Rectangle {
                 width: parent.width
                 height: accountColumn.height + 40 * settingsRoot.minRatio
-                color: "#2a2a2a"
+                color: "#992a2a2a"  // 0.6 opacity via alpha channel
                 radius: 10 * settingsRoot.minRatio
                 border.color: "#FFD700"
                 border.width: 2 * settingsRoot.minRatio
                 visible: settingsRoot.accountType !== "guest"
-                opacity: 0.6
 
                 Column {
                     id: accountColumn
@@ -291,11 +289,10 @@ Rectangle {
             Rectangle {
                 width: parent.width
                 height: displayColumn.height + 40 * settingsRoot.minRatio
-                color: "#2a2a2a"
+                color: "#992a2a2a"  // 0.6 opacity via alpha channel
                 radius: 10 * settingsRoot.minRatio
                 border.color: "#FFD700"
                 border.width: 2 * settingsRoot.minRatio
-                opacity: 0.6
 
                 Column {
                     id: displayColumn
