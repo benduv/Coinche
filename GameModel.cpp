@@ -577,8 +577,6 @@ void GameModel::makeBid(int bidValue, int suitValue)
 void GameModel::passBid()
 {
     qDebug() << "GameModel - Passe locale";
-        int *ptr = nullptr;
-    *ptr = 42;
     emit bidMadeLocally(static_cast<int>(Player::PASSE), 0);
 }
 
