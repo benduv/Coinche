@@ -157,19 +157,6 @@ public:
         sendMessage(msg);
     }
 
-    // Reporter un crash au serveur (méthode publique pour le crash handler)
-    Q_INVOKABLE void reportCrash(const QString &error, const QString &stackTrace) {
-        QJsonObject msg;
-        msg["type"] = "reportCrash";
-        msg["error"] = error;
-        msg["stackTrace"] = stackTrace;
-        msg["playerName"] = m_playerPseudo.isEmpty() ? "Unknown" : m_playerPseudo;
-        sendMessage(msg);
-    }
-
-    // Getter pour le nom du joueur (pour le crash reporter)
-    QString currentPlayerName() const { return m_playerPseudo.isEmpty() ? "Unknown" : m_playerPseudo; }
-
     Q_INVOKABLE void joinMatchmaking() {
         QJsonObject msg;
         msg["type"] = "joinMatchmaking";

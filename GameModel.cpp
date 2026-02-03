@@ -370,9 +370,6 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
     m_onlinePlayers.clear();
     m_playerAvatars.clear();
 
-    int *ptr = nullptr;
-    *ptr = 42;
-
     // Créer les cartes du joueur local (sans les ajouter encore)
     std::vector<Carte*> myNewCartes;
     for (const QJsonValue& val : myCards) {
@@ -580,6 +577,8 @@ void GameModel::makeBid(int bidValue, int suitValue)
 void GameModel::passBid()
 {
     qDebug() << "GameModel - Passe locale";
+        int *ptr = nullptr;
+    *ptr = 42;
     emit bidMadeLocally(static_cast<int>(Player::PASSE), 0);
 }
 

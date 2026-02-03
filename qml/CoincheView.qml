@@ -36,10 +36,16 @@ Rectangle {
         audioOutput: AudioOutput {}
     }
 
+    MediaPlayer {
+        id: rocketSound
+        source: "qrc:/resources/sons/55847__sergenious__rocket.wav"
+        audioOutput: AudioOutput {}
+    }
+
     // Son coinche
     MediaPlayer {
         id: coincheSound
-        source: "qrc:/resources/sons/167242__nfrae__fireworkblast.wav"
+        source: "qrc:/resources/sons/405571__parasonya__explosion-1.flac"
         audioOutput: AudioOutput {}
     }
 
@@ -1919,6 +1925,11 @@ Rectangle {
                         explosionCoinche.running = false
                         // Lancer l'animation de la fusée
                         rocketAnimation.startRocketAnimation(gameModel.coinchedByPlayerIndex)
+
+                        if(AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
+                            rocketSound.stop()
+                            rocketSound.play()
+                        }
                     }
                 }
             }
