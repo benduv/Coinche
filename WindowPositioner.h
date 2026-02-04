@@ -33,8 +33,7 @@ public:
         int screenHeight = screenGeometry.height();
 
         // Calculer les dimensions de la fenêtre (moitié de l'écran)
-        //int windowWidth = screenWidth / 1.65;
-        int windowWidth = screenWidth / 2;
+        int windowWidth = screenWidth / 1.65;
         int windowHeight = screenHeight / 2;
 
         // Lire le compteur de fenêtres depuis les settings
@@ -69,11 +68,11 @@ public:
         // Incrémenter le compteur
         settings.setValue("windowCount", windowCount + 1);
 
-        // Positionner et redimensionner la fenêtre
+        // Positionner et fixer la taille de la fenêtre (non-redimensionnable)
         window->setX(x);
         window->setY(y);
-        window->setWidth(windowWidth);
-        window->setHeight(windowHeight);
+        window->setMinimumSize(QSize(windowWidth, windowHeight));
+        window->setMaximumSize(QSize(windowWidth, windowHeight));
     }
 
     // Méthode pour réinitialiser le compteur (utile pour les tests)

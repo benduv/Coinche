@@ -1,14 +1,17 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 import QtMultimedia
 
 ApplicationWindow {
     id: mainWindow
-    visible: true
+    visible: !isAndroid  // Sur Android, on attend showFullScreen() dans onCompleted
     width: 1024
     height: 768
     title: "Jeu de Coinche"
+    flags: isAndroid ? (Qt.Window | Qt.FramelessWindowHint) : Qt.Window
+    background: Rectangle { color: "#000000" }
 
     // Son de démarrage
     MediaPlayer {
@@ -95,8 +98,12 @@ ApplicationWindow {
 
     Component.onCompleted: {
         console.log("MainMenu.onCompleted - Démarrage")
-        // Positionner automatiquement la fenêtre au démarrage
-        windowPositioner.positionWindow(mainWindow)
+        // Positionner la fenêtre : fullscreen sur Android, position fixe sur desktop
+        if (isAndroid) {
+            mainWindow.showFullScreen()
+        } else {
+            windowPositioner.positionWindow(mainWindow)
+        }
 
         console.log("MainMenu - AudioSettings.musicEnabled:", AudioSettings.musicEnabled)
         console.log("MainMenu - Application state:", Qt.application.state)

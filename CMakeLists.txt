@@ -18,7 +18,7 @@ set(CMAKE_AUTOUIC ON)
 # Configuration Android
 if(ANDROID)
     set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android" CACHE INTERNAL "")
-    set(ANDROID_MIN_SDK_VERSION 23)
+    set(ANDROID_MIN_SDK_VERSION 28)
     set(ANDROID_TARGET_SDK_VERSION 34)
     set(ANDROID_VERSION_CODE 1)
     set(ANDROID_VERSION_NAME "1.0.0")
@@ -122,6 +122,7 @@ if(ANDROID)
     # Méthode 1: Via QT_ANDROID_EXTRA_LIBS (pour Qt 6.5+)
     set_target_properties(coinche PROPERTIES
         QT_ANDROID_EXTRA_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libssl_3.so;${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libcrypto_3.so"
+        QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"
     )
 
     # Méthode 2: Copier automatiquement les libs dans le dossier de build

@@ -89,9 +89,18 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("autoLoginAvatar", autoLoginAvatar);
     engine.rootContext()->setContextProperty("disableAutoLogin", disableAutoLogin);
 
-    // WindowPositioner pour positionner automatiquement les fenêtres
+    // WindowPositioner : uniquement sur desktop (pas Android)
+#ifndef Q_OS_ANDROID
     WindowPositioner windowPositioner;
     engine.rootContext()->setContextProperty("windowPositioner", &windowPositioner);
+#endif
+    engine.rootContext()->setContextProperty("isAndroid",
+#ifdef Q_OS_ANDROID
+        true
+#else
+        false
+#endif
+    );
 
     engine.rootContext()->setContextProperty("gameModel", QVariant::fromValue<QObject*>(nullptr));
     

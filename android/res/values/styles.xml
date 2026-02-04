@@ -2,8 +2,5 @@
 <resources>
     <style name="AppTheme" parent="@android:style/Theme.DeviceDefault.Light.NoActionBar">
         <item name="android:windowBackground">@android:color/black</item>
-        <item name="android:windowNoTitle">true</item>
-        <item name="android:windowFullscreen">false</item>
-        <item name="android:windowActionBar">false</item>
     </style>
 </resources>

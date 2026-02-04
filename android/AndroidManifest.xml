@@ -11,7 +11,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <!-- SDK minimum et target -->
-    <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34"/>
+    <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="34"/>
 
     <!-- Support différentes tailles d'écran -->
     <supports-screens
@@ -34,10 +34,10 @@
 
         <!-- Activity principale Qt -->
         <activity
-            android:name="org.qtproject.qt.android.bindings.QtActivity"
+            android:name=".MainActivity"
             android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
             android:label="Coinche"
-            android:screenOrientation="unspecified"
+            android:screenOrientation="sensorLandscape"
             android:launchMode="singleTop"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
@@ -54,8 +54,6 @@
             <!-- Arguments de démarrage Qt -->
             <meta-data android:name="android.app.arguments" android:value=""/>
 
-            <!-- Splash screen -->
-            <meta-data android:name="android.app.splash_screen_drawable" android:resource="@drawable/splash"/>
         </activity>
     </application>
 </manifest>

@@ -18,6 +18,7 @@ apply plugin: 'com.android.application'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    implementation 'androidx.core:core:1.12.0'
 }
 
 android {
@@ -33,9 +34,9 @@ android {
     sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = [qt6AndroidDir + '/src', 'src', 'java']
-            aidl.srcDirs = [qt6AndroidDir + '/src', 'src', 'aidl']
-            res.srcDirs = [qt6AndroidDir + '/res', 'res']
+            java.srcDirs = [qtAndroidDir + '/src', 'src', 'java']
+            aidl.srcDirs = [qtAndroidDir + '/src', 'src', 'aidl']
+            res.srcDirs = ['res']
             resources.srcDirs = ['resources']
             renderscript.srcDirs = ['src']
             assets.srcDirs = ['assets']
@@ -53,13 +54,13 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion = 23
+        minSdkVersion = 28
         targetSdkVersion = 34
         versionCode 1
         versionName "1.0.0"
 
         ndk {
-            abiFilters 'arm64-v8a', 'armeabi-v7a'
+            abiFilters qtTargetAbiList.split(",")
         }
     }
 
@@ -93,20 +94,14 @@ android {
         }
     }
 
+    aaptOptions {
+        noCompress 'rcc'
+    }
+
     packagingOptions {
         jniLibs {
             useLegacyPackaging true
         }
     }
 
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
-            def versionName = variant.versionName
-            def versionCode = variant.versionCode
-            def buildType = variant.buildType.name
-            def abi = output.getFilter(com.android.build.OutputFile.ABI)
-
-            outputFileName = "coinche-${versionName}-${versionCode}-${buildType}-${abi}.apk"
-        }
-    }
 }

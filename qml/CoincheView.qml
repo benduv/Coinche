@@ -708,7 +708,8 @@ Rectangle {
                                 // Visible si le joueur a fait une annonce OU s'il a coinché
                                 if (rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "" &&
                                     !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex)) return 0
-                                if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "Passe") return 0
+                                if (!gameModel.biddingPhase && playerSouthRow.actualPlayerIndex !== gameModel.lastBidderIndex &&
+                                    !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex)) return 0
                                 return 0.85
                             }
                             visible: true  // Toujours visible pour reserver l'espace
@@ -1014,7 +1015,8 @@ Rectangle {
                             // Visible si le joueur a fait une annonce OU s'il a coinché
                             if (rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "" &&
                                 !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex)) return 0
-                            if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "Passe") return 0
+                            if (!gameModel.biddingPhase && playerNorthColumn.actualPlayerIndex !== gameModel.lastBidderIndex &&
+                                !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex)) return 0
                             return 0.85
                         }
 
@@ -1122,7 +1124,8 @@ Rectangle {
                         // Visible si le joueur a fait une annonce OU s'il a coinché
                         if (rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "" &&
                             !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex)) return 0
-                        if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "Passe") return 0
+                        if (!gameModel.biddingPhase && playerWestRow.actualPlayerIndex !== gameModel.lastBidderIndex &&
+                            !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex)) return 0
                         return 0.85
                     }
                     visible: true  // Toujours visible pour reserver l'espace
@@ -1345,7 +1348,8 @@ Rectangle {
                         // Visible si le joueur a fait une annonce OU s'il a coinché
                         if (rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "" &&
                             !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex)) return 0
-                        if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "Passe") return 0
+                        if (!gameModel.biddingPhase && playerEastRow.actualPlayerIndex !== gameModel.lastBidderIndex &&
+                            !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex)) return 0
                         return 0.85
                     }
                     visible: true  // Toujours visible pour reserver l'espace
@@ -1761,7 +1765,7 @@ Rectangle {
             AnimatedImage {
                 id: rocketImage
                 source: "qrc:/resources/animations/Rocket.gif"
-                width: playArea.width * 0.25
+                width: playArea.width * 0.2
                 height: playArea.height * 0.25
                 visible: false
                 playing: visible
@@ -2209,7 +2213,6 @@ Rectangle {
                 height: rootArea.width * 0.15
                 visible: gameModel.lastPliCards.length > 0 &&
                          !gameModel.biddingPhase
-                         //gameModel.distributionPhase !== 0
 
                 // Fonction pour obtenir le symbole de la couleur
                 function getSuitSymbol(suitValue) {
@@ -2296,7 +2299,7 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: lastPliDisplay.getValueText(modelData.value) + lastPliDisplay.getSuitSymbol(modelData.suit)
-                            font.pixelSize: parent.height * 0.5
+                            font.pixelSize: parent.height * 0.45
                             font.bold: true
                             color: lastPliDisplay.getTextColor(modelData.suit)
                             horizontalAlignment: Text.AlignHCenter
