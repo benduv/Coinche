@@ -41,3 +41,11 @@ libs/x86_64/
 android-build/
 *-deployment-settings.json
 libcoinche*.so
+
+# res
+android/res/drawable-hdpi/
+android/res/drawable-ldpi/
+android/res/drawable-mdpi/
+android/res/drawable-xhdpi/
+android/res/drawable-xxhdpi/
+android/res/drawable-xxxhdpi/
