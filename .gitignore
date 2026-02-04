@@ -26,3 +26,11 @@ Release/
 # Fichiers système
 .DS_Store
 Thumbs.db
+
+# Icônes générées par androiddeployqt (régénérées à chaque build)
+android/res/drawable-hdpi/
+android/res/drawable-ldpi/
+android/res/drawable-mdpi/
+android/res/drawable-xhdpi/
+android/res/drawable-xxhdpi/
+android/res/drawable-xxxhdpi/

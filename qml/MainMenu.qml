@@ -96,7 +96,13 @@ ApplicationWindow {
     Component.onCompleted: {
         console.log("MainMenu.onCompleted - Démarrage")
         // Positionner automatiquement la fenêtre au démarrage
-        windowPositioner.positionWindow(mainWindow)
+        //
+
+        if (Qt.platform.os === "android") {
+            //mainWindow.showFullScreen()
+        } else {
+            windowPositioner.positionWindow(mainWindow)
+        }
 
         console.log("MainMenu - AudioSettings.musicEnabled:", AudioSettings.musicEnabled)
         console.log("MainMenu - Application state:", Qt.application.state)
