@@ -709,7 +709,7 @@ Rectangle {
                                 if (rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "" &&
                                     !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex)) return 0
                                 if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "Passe") return 0
-                                return 0.85
+                                return 1
                             }
                             visible: true  // Toujours visible pour reserver l'espace
 
@@ -735,7 +735,7 @@ Rectangle {
                                 Text {
                                     text: rootArea.getPlayerBidSymbol(playerSouthRow.actualPlayerIndex)
                                     color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerSouthRow.actualPlayerIndex) : "D4AF37"
-                                    font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
+                                    font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.04 : rootArea.height * 0.04
                                     font.bold: true
                                     visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex)
                                 }
@@ -1015,7 +1015,7 @@ Rectangle {
                             if (rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "" &&
                                 !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex)) return 0
                             if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "Passe") return 0
-                            return 0.85
+                            return 1
                         }
 
                         Behavior on opacity {
@@ -1040,7 +1040,7 @@ Rectangle {
                             Text {
                                 text: rootArea.getPlayerBidSymbol(playerNorthColumn.actualPlayerIndex)
                                 color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerNorthColumn.actualPlayerIndex) : "D4AF37"
-                                font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
+                                font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.04 : rootArea.height * 0.04
                                 font.bold: true
                                 visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex)
                             }
@@ -1123,7 +1123,7 @@ Rectangle {
                         if (rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "" &&
                             !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex)) return 0
                         if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "Passe") return 0
-                        return 0.85
+                        return 1
                     }
                     visible: true  // Toujours visible pour reserver l'espace
 
@@ -1161,7 +1161,7 @@ Rectangle {
                         Text {
                             text: rootArea.getPlayerBidSymbol(playerWestRow.actualPlayerIndex)
                             color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerWestRow.actualPlayerIndex) : "D4AF37"
-                            font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
+                            font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.04 : rootArea.height * 0.04
                             font.bold: true
                             visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex)
                         }
@@ -1346,7 +1346,7 @@ Rectangle {
                         if (rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "" &&
                             !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex)) return 0
                         if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "Passe") return 0
-                        return 0.85
+                        return 1
                     }
                     visible: true  // Toujours visible pour reserver l'espace
 
@@ -1372,7 +1372,7 @@ Rectangle {
                         Text {
                             text: rootArea.getPlayerBidSymbol(playerEastRow.actualPlayerIndex)
                             color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerEastRow.actualPlayerIndex) : "#D4AF37"
-                            font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.045 : rootArea.height * 0.04
+                            font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.04 : rootArea.height * 0.04
                             font.bold: true
                             visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex)
                         }
@@ -2296,7 +2296,7 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: lastPliDisplay.getValueText(modelData.value) + lastPliDisplay.getSuitSymbol(modelData.suit)
-                            font.pixelSize: parent.height * 0.5
+                            font.pixelSize: parent.height * 0.45
                             font.bold: true
                             color: lastPliDisplay.getTextColor(modelData.suit)
                             horizontalAlignment: Text.AlignHCenter

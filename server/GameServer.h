@@ -3354,7 +3354,7 @@ private:
                     if (conn && conn->socket) {
                         QJsonObject botMsg;
                         botMsg["type"] = "botReplacement";
-                        botMsg["message"] = "Vous avez été remplacé par un bot car vous n'avez pas annoncé à temps.";
+                        botMsg["message"] = "Un bot a pris le relai car vous n'avez pas annoncé à temps.";
                         sendMessage(conn->socket, botMsg);
                     }
                 }
@@ -4719,7 +4719,7 @@ private:
                     if (conn && conn->socket && conn->socket->state() == QAbstractSocket::ConnectedState) {
                         QJsonObject notification;
                         notification["type"] = "botReplacement";
-                        notification["message"] = "Vous avez été remplacé par un bot car vous n'avez pas joué à temps.";
+                        notification["message"] = "Un bot a pris le relai car vous n'avez pas joué à temps.";
                         conn->socket->sendTextMessage(QJsonDocument(notification).toJson(QJsonDocument::Compact));
                         qDebug() << "TIMEOUT - Notification botReplacement envoyée au joueur" << currentPlayer;
                     }
