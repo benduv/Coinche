@@ -47,7 +47,7 @@ Rectangle {
             } else {
                 console.log("BEEEEEEEN end of time")
                 // Temps ecoule, fermer la popup si ouverte et laisser le bot annoncer automatiquement
-                if (suitSelector.opened) {
+                if (suitSelector.visible) {
                     console.log("BEEEEEEEN should close suitSelector")
                     suitSelector.close()
                 }
@@ -66,6 +66,10 @@ Rectangle {
         } else {
             bidTimer.stop()
             alertSound.stop()
+            // Fermer le suitSelector si ouvert (au cas où le serveur timeout avant le client)
+            if (suitSelector.visible) {
+                suitSelector.close()
+            }
         }
     }
 

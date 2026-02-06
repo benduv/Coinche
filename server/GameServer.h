@@ -3364,7 +3364,7 @@ private:
             playBotBid(roomId, currentBidder);
         });
 
-        room->bidTimeout->start(22000);  // Un peu avant 22 secondes (20 sec dans le front end mais avec 2 secondes de delais réseau et de traitement pour laisser une petite marge)
+        room->bidTimeout->start(20250);  // Un peu apres 20 secondes (20 sec dans le front end mais avec 250ms de delais réseau et de traitement pour laisser une petite marge)
     }
 
     // Vérifie si le partenaire est le joueur qui gagne actuellement le pli
