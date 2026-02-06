@@ -4418,8 +4418,8 @@ private:
 
         qDebug() << "GameServer - Attente de 7 secondes avant d'afficher le bouton Surcoinche (animation fusée + Coinche)";
 
-        // Attendre 7 secondes pour permettre l'animation fusée en spirale (5s) + explosion "Coinche !" (2s)
-        QTimer::singleShot(7500, this, [this, roomId]() {
+        // Attendre 7 secondes et demie pour permettre l'animation fusée en spirale (5s) + explosion "Coinche !" (2s)
+        QTimer::singleShot(7650, this, [this, roomId]() {
             GameRoom* room = m_gameRooms.value(roomId);
             if (!room) return;
 
@@ -4644,9 +4644,9 @@ private:
         if (room->isBot[currentPlayer]) {
             qDebug() << "notifyPlayersWithPlayableCards - Joueur" << currentPlayer << "est un bot, planification playBotCard";
 
-            // Si c'est le début d'un nouveau pli (pli vide), attendre plus longtemps
+            // Si c'est le début d'un nouveau pli (pli vide), attendre plus longtemps (1100 ms)
             // pour laisser le temps au pli précédent d'être nettoyé côté client
-            int delay = room->currentPli.empty() ? 2000 : 800;
+            int delay = room->currentPli.empty() ? 2000 : 1100;
 
             QTimer::singleShot(delay, this, [this, roomId, currentPlayer]() {
                 GameRoom* room = m_gameRooms.value(roomId);
@@ -4743,7 +4743,7 @@ private:
 
             // Si c'est le début du dernier pli (pli vide), attendre 2000ms pour laisser le temps au pli précédent d'être nettoyé
             // Sinon, attendre seulement 400ms
-            int delay = room->currentPli.empty() ? 2000 : 400;
+            int delay = room->currentPli.empty() ? 2000 : 800;
 
             // Jouer automatiquement après le délai approprié
             QTimer::singleShot(delay, this, [this, roomId, currentPlayer]() {

@@ -1655,7 +1655,7 @@ Rectangle {
                        ? (parent.down ? "#cc6600" :
                           (parent.hovered ? "#ff9933" : "#ff8800"))
                        : "#333333"
-                radius: 8
+                radius: 6
                 border.color: parent.enabled ? "#FFD700" : "#555555"
                 border.width: 3
 
