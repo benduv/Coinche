@@ -147,11 +147,11 @@ Rectangle {
         // Compte à rebours avant remplacement par des bots
         Rectangle {
             id: countdownRect
-            Layout.preferredWidth: 800 * root.widthRatio
+            Layout.preferredWidth: 860 * root.widthRatio
             Layout.preferredHeight: 80 * root.heightRatio
             Layout.alignment: Qt.AlignHCenter
             color: "#442200"
-            radius: 10 * root.minRatio
+            radius: 8 * root.minRatio
             border.color: "#ff9900"
             border.width: 3 * root.minRatio
             opacity: networkManager.matchmakingCountdown > 0 ? 1 : 0
@@ -175,7 +175,7 @@ Rectangle {
 
         // Nombre de joueurs
         Rectangle {
-            Layout.preferredWidth: 800 * root.widthRatio
+            Layout.preferredWidth: 860 * root.widthRatio
             Layout.preferredHeight: 175 * root.heightRatio
             Layout.alignment: Qt.AlignHCenter
             color: "#2a2a2a"

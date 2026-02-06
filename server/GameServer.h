@@ -3364,7 +3364,7 @@ private:
             playBotBid(roomId, currentBidder);
         });
 
-        room->bidTimeout->start(19800);  // Un peu avant 20 secondes (20 sec dans le front end)
+        room->bidTimeout->start(20000);  // Un peu avant 20 secondes (20 sec dans le front end)
     }
 
     // Vérifie si le partenaire est le joueur qui gagne actuellement le pli
@@ -3592,6 +3592,25 @@ private:
 
     // Vérifie si une carte hors atout est maître (toutes les cartes plus fortes sont tombées)
     // Ordre hors atout: As > 10 > Roi > Dame > Valet > 9 > 8 > 7
+    // Vérifie si une carte a été jouée dans les plis PRÉCÉDENTS (pas dans le pli actuel)
+    // Utile pour déterminer si une carte est vraiment "maître" ou si une carte supérieure est dans le pli actuel
+    bool isCardPlayedInPreviousTricks(GameRoom* room, Carte::Couleur couleur, Carte::Chiffre chiffre) {
+        // Vérifier si la carte a été jouée globalement
+        if (!room->isCardPlayed(couleur, chiffre)) {
+            return false; // Pas jouée du tout
+        }
+
+        // Vérifier si la carte est dans le pli actuel
+        for (const auto& pair : room->currentPli) {
+            Carte* carte = pair.second;
+            if (carte->getCouleur() == couleur && carte->getChiffre() == chiffre) {
+                return false; // La carte est dans le pli actuel, donc pas "morte"
+            }
+        }
+
+        return true; // La carte a été jouée dans un pli précédent
+    }
+
     bool isMasterCard(GameRoom* room, Carte* carte) {
         Carte::Couleur couleur = carte->getCouleur();
         Carte::Chiffre chiffre = carte->getChiffre();
@@ -3601,30 +3620,30 @@ private:
             return true;
         }
 
-        // Le 10 est maître si l'As est tombé
+        // Le 10 est maître si l'As est tombé DANS UN PLI PRÉCÉDENT (pas dans le pli actuel)
         if (chiffre == Carte::DIX) {
-            return room->isCardPlayed(couleur, Carte::AS);
+            return isCardPlayedInPreviousTricks(room, couleur, Carte::AS);
         }
 
-        // Le Roi est maître si l'As et le 10 sont tombés
+        // Le Roi est maître si l'As et le 10 sont tombés DANS DES PLIS PRÉCÉDENTS
         if (chiffre == Carte::ROI) {
-            return room->isCardPlayed(couleur, Carte::AS) &&
-                   room->isCardPlayed(couleur, Carte::DIX);
+            return isCardPlayedInPreviousTricks(room, couleur, Carte::AS) &&
+                   isCardPlayedInPreviousTricks(room, couleur, Carte::DIX);
         }
 
-        // La Dame est maître si As, 10 et Roi sont tombés
+        // La Dame est maître si As, 10 et Roi sont tombés DANS DES PLIS PRÉCÉDENTS
         if (chiffre == Carte::DAME) {
-            return room->isCardPlayed(couleur, Carte::AS) &&
-                   room->isCardPlayed(couleur, Carte::DIX) &&
-                   room->isCardPlayed(couleur, Carte::ROI);
+            return isCardPlayedInPreviousTricks(room, couleur, Carte::AS) &&
+                   isCardPlayedInPreviousTricks(room, couleur, Carte::DIX) &&
+                   isCardPlayedInPreviousTricks(room, couleur, Carte::ROI);
         }
 
-        // Le Valet est maître si As, 10, Roi et Dame sont tombés
+        // Le Valet est maître si As, 10, Roi et Dame sont tombés DANS DES PLIS PRÉCÉDENTS
         if (chiffre == Carte::VALET) {
-            return room->isCardPlayed(couleur, Carte::AS) &&
-                   room->isCardPlayed(couleur, Carte::DIX) &&
-                   room->isCardPlayed(couleur, Carte::ROI) &&
-                   room->isCardPlayed(couleur, Carte::DAME);
+            return isCardPlayedInPreviousTricks(room, couleur, Carte::AS) &&
+                   isCardPlayedInPreviousTricks(room, couleur, Carte::DIX) &&
+                   isCardPlayedInPreviousTricks(room, couleur, Carte::ROI) &&
+                   isCardPlayedInPreviousTricks(room, couleur, Carte::DAME);
         }
 
         // Les autres cartes (9, 8, 7) ne sont généralement pas considérées comme maîtres

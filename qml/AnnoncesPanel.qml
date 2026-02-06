@@ -45,11 +45,13 @@ Rectangle {
                     }
                 }
             } else {
-                // Temps ecoule, fermer la popup si ouverte et passer automatiquement
+                console.log("BEEEEEEEN end of time")
+                // Temps ecoule, fermer la popup si ouverte et laisser le bot annoncer automatiquement
                 if (suitSelector.opened) {
+                    console.log("BEEEEEEEN should close suitSelector")
                     suitSelector.close()
                 }
-                gameModel.passBid()
+                //gameModel.passBid()
                 stop()
             }
         }
@@ -287,7 +289,7 @@ Rectangle {
 
             Row {
                 anchors.centerIn: parent
-                spacing: parent.width * 0.035
+                spacing: parent.width * 0.025
 
                 SuitButton {
                     text: "♥"
