@@ -1776,8 +1776,8 @@ Rectangle {
                 running: false
 
                 onTriggered: {
-                    // Incrémenter le progrès (0 à 1 sur 5 secondes pour une animation plus fluide)
-                    rocketAnimation.animationProgress += 0.0032  // 16ms / 5000ms
+                    // Incrémenter le progrès (0 à 1 sur 4 secondes pour une animation plus fluide)
+                    rocketAnimation.animationProgress += 0.004  // 16ms / 4000ms
 
                     if (rocketAnimation.animationProgress >= 1.0) {
                         // Animation terminée
@@ -1791,8 +1791,8 @@ Rectangle {
                     // Calculer la position en spirale
                     var progress = rocketAnimation.animationProgress
 
-                    // Nombre de tours complets de la spirale (2.5 tours)
-                    var spiralTurns = 2.5
+                    // Nombre de tours complets de la spirale (2 tours)
+                    var spiralTurns = 2.0
                     var currentAngle = rocketAnimation.startAngle + spiralTurns * 2 * Math.PI * progress
 
                     // Rayon diminue progressivement de initialRadius à 0
@@ -2209,7 +2209,6 @@ Rectangle {
                 height: rootArea.width * 0.15
                 visible: gameModel.lastPliCards.length > 0 &&
                          !gameModel.biddingPhase
-                         //gameModel.distributionPhase !== 0
 
                 // Fonction pour obtenir le symbole de la couleur
                 function getSuitSymbol(suitValue) {
@@ -2258,8 +2257,8 @@ Rectangle {
 
                     Rectangle {
                         id: miniCard
-                        width: rootArea.width * 0.045
-                        height: rootArea.width * 0.045
+                        width: rootArea.width * 0.05
+                        height: rootArea.width * 0.05
                         color: "white"
                         radius: 3
                         border.color: modelData.isWinner ? "#FFD700" : "#aaaaaa"
@@ -2296,7 +2295,7 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: lastPliDisplay.getValueText(modelData.value) + lastPliDisplay.getSuitSymbol(modelData.suit)
-                            font.pixelSize: parent.height * 0.45
+                            font.pixelSize: parent.height * 0.4
                             font.bold: true
                             color: lastPliDisplay.getTextColor(modelData.suit)
                             horizontalAlignment: Text.AlignHCenter

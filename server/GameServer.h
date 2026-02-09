@@ -248,13 +248,13 @@ public:
         }
 
         // Initialiser le timer de matchmaking avec bots (45 secondes)
-        // Le timer principal attend 35 secondes, puis le countdown démarre pour 10 secondes
+        // Le timer principal attend 35 secondes, puis le countdown démarre pour 9 secondes
         m_matchmakingTimer = new QTimer(this);
         m_matchmakingTimer->setInterval(2000);  // 35 secondes avant le début du compte à rebours
         m_lastQueueSize = 0;
         connect(m_matchmakingTimer, &QTimer::timeout, this, &GameServer::onMatchmakingStartCountdown);
 
-        // Timer de compte à rebours (10 dernières secondes)
+        // Timer de compte à rebours (9 dernières secondes)
         m_countdownTimer = new QTimer(this);
         m_countdownTimer->setInterval(1000);  // 1 seconde
         m_countdownSeconds = 0;
@@ -1452,9 +1452,9 @@ private:
         }
     }
 
-    // Slot appelé après 20 secondes d'inactivité - démarre le compte à rebours de 10 secondes
+    // Slot appelé après 20 secondes d'inactivité - démarre le compte à rebours de 9 secondes
     void onMatchmakingStartCountdown() {
-        qDebug() << "MATCHMAKING - Début du compte à rebours de 10 secondes";
+        qDebug() << "MATCHMAKING - Début du compte à rebours de 9 secondes";
         qDebug() << "Joueurs dans la queue:" << m_matchmakingQueue.size();
 
         // Arrêter le timer principal
@@ -1463,7 +1463,7 @@ private:
         // S'il y a des joueurs mais pas assez pour une partie complète
         if (m_matchmakingQueue.size() > 0 && m_matchmakingQueue.size() < 4) {
             // Démarrer le compte à rebours
-            m_countdownSeconds = 10;
+            m_countdownSeconds = 9;
             sendCountdownToQueue(m_countdownSeconds);
             m_countdownTimer->start();
         }
@@ -1531,6 +1531,9 @@ private:
         GameRoom* room = new GameRoom();
         room->roomId = roomId;
         room->gameState = "waiting";
+
+        // Enregistrer la création de GameRoom dans les statistiques quotidiennes
+        m_dbManager->recordGameRoomCreated();
 
         // Ajouter les joueurs humains
         for (int i = 0; i < humanPlayers; i++) {

@@ -304,18 +304,33 @@ QString StatsReporter::generateReportHtml(
             </div>
         </div>
 
-        <!-- Graphiques de tendance -->
+        <!-- Graphiques de tendance - Connexions -->
         <div style="margin-top: 30px;">
-            <h2 style="color: #FFD700; margin: 0 0 15px 0; font-size: 20px;">📈 Tendances sur 7 jours</h2>
+            <h2 style="color: #FFD700; margin: 0 0 15px 0; font-size: 20px;">📈 Connexions - 7 jours</h2>
             <div style="background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 20px;">
                 )" + generateTrendChart(trends7d, "logins") + R"(
             </div>
         </div>
 
         <div style="margin-top: 20px;">
-            <h2 style="color: #FFD700; margin: 0 0 15px 0; font-size: 20px;">📈 Tendances sur 30 jours</h2>
+            <h2 style="color: #FFD700; margin: 0 0 15px 0; font-size: 20px;">📈 Connexions - 30 jours</h2>
             <div style="background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 20px;">
                 )" + generateTrendChart(trends30d, "logins") + R"(
+            </div>
+        </div>
+
+        <!-- Graphiques de tendance - Parties créées -->
+        <div style="margin-top: 30px;">
+            <h2 style="color: #FFD700; margin: 0 0 15px 0; font-size: 20px;">🎮 Parties créées - 7 jours</h2>
+            <div style="background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 20px;">
+                )" + generateTrendChart(trends7d, "games") + R"(
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h2 style="color: #FFD700; margin: 0 0 15px 0; font-size: 20px;">🎮 Parties créées - 30 jours</h2>
+            <div style="background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 20px;">
+                )" + generateTrendChart(trends30d, "games") + R"(
             </div>
         </div>
 
