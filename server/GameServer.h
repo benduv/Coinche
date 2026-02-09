@@ -2550,7 +2550,14 @@ private:
             });
         } else {
             // Joueur humain : démarrer le timer de timeout pour les enchères
-            startBidTimeout(roomId, room->currentPlayerIndex);
+            // IMPORTANT: Retarder de 3 secondes au début d'une nouvelle manche pour laisser
+            // le temps au client de voir l'animation, recevoir les cartes et afficher le panneau
+            QTimer::singleShot(3000, this, [this, roomId]() {
+                GameRoom* room = m_gameRooms.value(roomId);
+                if (room && room->gameState == "bidding") {
+                    startBidTimeout(roomId, room->currentPlayerIndex);
+                }
+            });
         }
     }
 

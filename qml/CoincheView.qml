@@ -283,7 +283,7 @@ Rectangle {
             anchors.margins: -parent.height * 0.01
             radius: playArea.radius
             color: "transparent"
-            border.color: "#8b6914"
+            border.color: "#E08A2D"
             border.width: parent.height * 0.06
         }
 
@@ -885,7 +885,9 @@ Rectangle {
             Row {
                 id: northAvatar
                 anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
+                //anchors.horizontalCenter: parent.horizontalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: parent.width * 0.2
                 spacing: rootArea.width * 0.01
 
                 // Item wrapper pour avatar + nom (layout indépendant pour le nom)
