@@ -1443,7 +1443,14 @@ private:
                 });
             } else {
                 // Joueur humain : démarrer le timer de timeout pour les enchères
-                startBidTimeout(roomId, room->currentPlayerIndex);
+                // IMPORTANT: Retarder de 3 secondes pour laisser le temps au client de
+                // recevoir les cartes et d'afficher le panneau d'annonces
+                QTimer::singleShot(3000, this, [this, roomId]() {
+                    GameRoom* room = m_gameRooms.value(roomId);
+                    if (room && room->gameState == "bidding") {
+                        startBidTimeout(roomId, room->currentPlayerIndex);
+                    }
+                });
             }
 
             // Arrêter les timers de matchmaking car la partie a commencé
@@ -1623,7 +1630,14 @@ private:
             });
         } else {
             // Joueur humain : démarrer le timer de timeout pour les enchères
-            startBidTimeout(roomId, room->currentPlayerIndex);
+            // IMPORTANT: Retarder de 3 secondes pour laisser le temps au client de
+            // recevoir les cartes et d'afficher le panneau d'annonces
+            QTimer::singleShot(3000, this, [this, roomId]() {
+                GameRoom* room = m_gameRooms.value(roomId);
+                if (room && room->gameState == "bidding") {
+                    startBidTimeout(roomId, room->currentPlayerIndex);
+                }
+            });
         }
     }
 
@@ -2552,7 +2566,7 @@ private:
             // Joueur humain : démarrer le timer de timeout pour les enchères
             // IMPORTANT: Retarder de 3 secondes au début d'une nouvelle manche pour laisser
             // le temps au client de voir l'animation, recevoir les cartes et afficher le panneau
-            QTimer::singleShot(3000, this, [this, roomId]() {
+            QTimer::singleShot(13000, this, [this, roomId]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (room && room->gameState == "bidding") {
                     startBidTimeout(roomId, room->currentPlayerIndex);
@@ -3310,7 +3324,7 @@ private:
         }
     }
 
-    // Démarre le timer de timeout pour la phase d'enchères (15 secondes)
+    // Démarre le timer de timeout pour la phase d'enchères (20 secondes)
     void startBidTimeout(int roomId, int currentBidder) {
         GameRoom* room = m_gameRooms.value(roomId);
         if (!room || room->gameState != "bidding") return;
@@ -3329,7 +3343,7 @@ private:
         room->bidTimeoutGeneration++;
         int currentGeneration = room->bidTimeoutGeneration;
 
-        qDebug() << "startBidTimeout - Timer de 15s démarré pour joueur" << currentBidder << "(génération:" << currentGeneration << ")";
+        qDebug() << "startBidTimeout - Timer de 20s démarré pour joueur" << currentBidder << "(génération:" << currentGeneration << ")";
 
         // Démarrer le nouveau timer
         connect(room->bidTimeout, &QTimer::timeout, this, [this, roomId, currentBidder, currentGeneration]() {
