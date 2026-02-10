@@ -179,6 +179,9 @@ class GameServer : public QObject {
     Q_OBJECT
 
 public:
+    // Constante de délai pour l'affichage du panneau d'annonces
+    static constexpr int BID_PANEL_DISPLAY_DELAY_MS = 3000;  // Délai pour laisser le temps au client de recevoir les cartes et d'afficher le panneau
+
     // Constructeur avec support SSL optionnel
     // Si certPath et keyPath sont fournis, le serveur démarre en mode sécurisé (WSS)
     // Sinon, il démarre en mode non sécurisé (WS)
@@ -1443,9 +1446,9 @@ private:
                 });
             } else {
                 // Joueur humain : démarrer le timer de timeout pour les enchères
-                // IMPORTANT: Retarder de 3 secondes pour laisser le temps au client de
+                // IMPORTANT: Retarder pour laisser le temps au client de
                 // recevoir les cartes et d'afficher le panneau d'annonces
-                QTimer::singleShot(3000, this, [this, roomId]() {
+                QTimer::singleShot(BID_PANEL_DISPLAY_DELAY_MS, this, [this, roomId]() {
                     GameRoom* room = m_gameRooms.value(roomId);
                     if (room && room->gameState == "bidding") {
                         startBidTimeout(roomId, room->currentPlayerIndex);
@@ -1630,9 +1633,9 @@ private:
             });
         } else {
             // Joueur humain : démarrer le timer de timeout pour les enchères
-            // IMPORTANT: Retarder de 3 secondes pour laisser le temps au client de
+            // IMPORTANT: Retarder pour laisser le temps au client de
             // recevoir les cartes et d'afficher le panneau d'annonces
-            QTimer::singleShot(3000, this, [this, roomId]() {
+            QTimer::singleShot(BID_PANEL_DISPLAY_DELAY_MS, this, [this, roomId]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (room && room->gameState == "bidding") {
                     startBidTimeout(roomId, room->currentPlayerIndex);
@@ -2564,9 +2567,9 @@ private:
             });
         } else {
             // Joueur humain : démarrer le timer de timeout pour les enchères
-            // IMPORTANT: Retarder de 3 secondes au début d'une nouvelle manche pour laisser
+            // IMPORTANT: Retarder au début d'une nouvelle manche pour laisser
             // le temps au client de voir l'animation, recevoir les cartes et afficher le panneau
-            QTimer::singleShot(13000, this, [this, roomId]() {
+            QTimer::singleShot(BID_PANEL_DISPLAY_DELAY_MS, this, [this, roomId]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (room && room->gameState == "bidding") {
                     startBidTimeout(roomId, room->currentPlayerIndex);

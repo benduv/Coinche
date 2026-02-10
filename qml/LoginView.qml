@@ -5,7 +5,6 @@ import QtQuick.Layouts
 Rectangle {
     id: loginRoot
     anchors.fill: parent
-    //color: "#1a1a1a"
     color: "#0a0a2e"
 
     // Signal émis quand l'utilisateur est connecté
@@ -141,25 +140,8 @@ Rectangle {
                 color: "#0a0a2e"
 
                 // Étoiles scintillantes en arrière-plan
-                Repeater {
-                    model: 80
-                    Rectangle {
-                        x: Math.random() * loginRoot.width
-                        y: Math.random() * loginRoot.height
-                        width: (Math.random() * 2 + 1) * loginRoot.minRatio
-                        height: width
-                        radius: width / 2
-                        color: "white"
-                        opacity: 0.3
-
-                        SequentialAnimation on opacity {
-                            running: true
-                            loops: Animation.Infinite
-                            PauseAnimation { duration: Math.random() * 2000 }
-                            NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
-                            NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
-                        }
-                    }
+                StarryBackground {
+                    minRatio: loginRoot.minRatio
                 }
 
                 ColumnLayout {
@@ -312,29 +294,11 @@ Rectangle {
 
             Rectangle {
                 id: registerScreenRec
-                //color: "#1a1a1a"
                 color: "#0a0a2e"
 
                 // Étoiles scintillantes en arrière-plan
-                Repeater {
-                    model: 80
-                    Rectangle {
-                        x: Math.random() * loginRoot.width
-                        y: Math.random() * loginRoot.height
-                        width: (Math.random() * 2 + 1) * loginRoot.minRatio
-                        height: width
-                        radius: width / 2
-                        color: "white"
-                        opacity: 0.3
-
-                        SequentialAnimation on opacity {
-                            running: true
-                            loops: Animation.Infinite
-                            PauseAnimation { duration: Math.random() * 2000 }
-                            NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
-                            NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
-                        }
-                    }
+                StarryBackground {
+                    minRatio: loginRoot.minRatio
                 }
 
                 // Variable pour stocker l'avatar sélectionné
@@ -675,25 +639,8 @@ Rectangle {
                 color: "#0a0a2e"
 
                 // Étoiles scintillantes en arrière-plan
-                Repeater {
-                    model: 80
-                    Rectangle {
-                        x: Math.random() * loginRoot.width
-                        y: Math.random() * loginRoot.height
-                        width: (Math.random() * 2 + 1) * loginRoot.minRatio
-                        height: width
-                        radius: width / 2
-                        color: "white"
-                        opacity: 0.3
-
-                        SequentialAnimation on opacity {
-                            running: true
-                            loops: Animation.Infinite
-                            PauseAnimation { duration: Math.random() * 2000 }
-                            NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
-                            NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
-                        }
-                    }
+                StarryBackground {
+                    minRatio: loginRoot.minRatio
                 }
 
                 // Bouton retour en haut à gauche
@@ -914,25 +861,8 @@ Rectangle {
                 color: "#0a0a2e"
 
                 // Étoiles scintillantes en arrière-plan
-                Repeater {
-                    model: 80
-                    Rectangle {
-                        x: Math.random() * loginRoot.width
-                        y: Math.random() * loginRoot.height
-                        width: (Math.random() * 2 + 1) * loginRoot.minRatio
-                        height: width
-                        radius: width / 2
-                        color: "white"
-                        opacity: 0.3
-
-                        SequentialAnimation on opacity {
-                            running: true
-                            loops: Animation.Infinite
-                            PauseAnimation { duration: Math.random() * 2000 }
-                            NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
-                            NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
-                        }
-                    }
+                StarryBackground {
+                    minRatio: loginRoot.minRatio
                 }
 
                 // Variable pour stocker l'avatar sélectionné

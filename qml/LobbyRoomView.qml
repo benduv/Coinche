@@ -7,6 +7,22 @@ Rectangle {
     anchors.fill: parent
     color: "#1a472a"
 
+    Rectangle { // Solution du pauvre pour mettre en noire la bar du haut de l'ecran (selfie)
+        anchors.left: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width / 5
+        height: parent.height
+        color: "black"
+    }
+
+    Rectangle {
+        anchors.right: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width / 5
+        height: parent.height
+        color: "black"
+    }
+
     property string lobbyCode: ""
     property bool isHost: false
 

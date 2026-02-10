@@ -34,25 +34,8 @@ Rectangle {
     property real minRatio: Math.min(widthRatio, heightRatio)
 
     // Étoiles scintillantes en arrière-plan
-    Repeater {
-        model: 80
-        Rectangle {
-            x: Math.random() * splashRoot.width
-            y: Math.random() * splashRoot.height
-            width: (Math.random() * 2 + 1) * splashRoot.minRatio
-            height: width
-            radius: width / 2
-            color: "white"
-            opacity: 0.3
-
-            SequentialAnimation on opacity {
-                running: true
-                loops: Animation.Infinite
-                PauseAnimation { duration: Math.random() * 2000 }
-                NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
-                NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
-            }
-        }
+    StarryBackground {
+        minRatio: splashRoot.minRatio
     }
 
     // Effet de nébuleuse (cercles colorés avec flou)

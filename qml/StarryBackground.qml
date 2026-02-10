@@ -16,6 +16,24 @@ Item {
         z: -1
     }
 
+    Rectangle { // Solution du pauvre pour mettre en noire la bar du haut de l'ecran (selfie)
+        anchors.left: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width / 5
+        height: parent.height
+        color: "black"
+        z: 100
+    }
+
+    Rectangle {
+        anchors.right: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width / 5
+        height: parent.height
+        color: "black"
+        z: 100
+    }
+
     // Étoiles scintillantes
     Repeater {
         model: starryBackground.starCount

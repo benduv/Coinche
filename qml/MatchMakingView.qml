@@ -19,26 +19,10 @@ Rectangle {
     property real minRatio: Math.min(widthRatio, heightRatio)
 
     // Étoiles fixes scintillantes en arrière-plan
-    Repeater {
-        model: 50
-        Rectangle {
-            x: Math.random() * root.width
-            y: Math.random() * root.height
-            width: (Math.random() * 3 + 2) * root.minRatio
-            height: width
-            radius: width / 2
-            color: "white"
-            opacity: 0.5
-            z: 0
-
-            SequentialAnimation on opacity {
-                running: true
-                loops: Animation.Infinite
-                PauseAnimation { duration: Math.random() * 2000 }
-                NumberAnimation { to: 0.9; duration: 1000 + Math.random() * 1000 }
-                NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
-            }
-        }
+    StarryBackground {
+        starCount: 50
+        minRatio: root.minRatio
+        backgroundColor: "#0a0a1a"
     }
 
     // Étoiles filantes en arrière-plan

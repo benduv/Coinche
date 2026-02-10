@@ -4,6 +4,7 @@
 #include <QQuickStyle>
 #include <QCommandLineParser>
 #include <QRandomGenerator>
+#include <QQuickWindow>
 #include "server/NetworkManager.h"
 #include "GameModel.h"
 #include "WindowPositioner.h"
@@ -103,6 +104,22 @@ int main(int argc, char *argv[])
 
     const QUrl url(QStringLiteral("qrc:/qml/MainMenu.qml"));
     engine.load(url);
-    
+
+    // Mettre en plein écran sur Android (sauf ARMv7 pour éviter les crashes)
+    if (!engine.rootObjects().isEmpty()) {
+        QObject *rootObject = engine.rootObjects().first();
+        if (rootObject) {
+            QQuickWindow *window = qobject_cast<QQuickWindow*>(rootObject);
+            if (window) {
+#if defined(Q_OS_ANDROID) && !(defined(__arm__) && !defined(__aarch64__))
+                // Tous les Android sauf ARMv7 (32-bit ARM) qui crashe avec showFullScreen
+                // Inclut: ARM64, x86, x86_64 (émulateurs)
+                window->showFullScreen();
+                qDebug() << "Mode plein écran activé";
+#endif
+            }
+        }
+    }
+
     return app.exec();
 }

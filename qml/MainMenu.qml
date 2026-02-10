@@ -96,19 +96,12 @@ ApplicationWindow {
     Component.onCompleted: {
         console.log("MainMenu.onCompleted - Démarrage")
         // Positionner automatiquement la fenêtre au démarrage
-        //
 
         if (Qt.platform.os === "android") {
             //mainWindow.showFullScreen()
         } else {
             windowPositioner.positionWindow(mainWindow)
         }
-
-        console.log("MainMenu - AudioSettings.musicEnabled:", AudioSettings.musicEnabled)
-        console.log("MainMenu - Application state:", Qt.application.state)
-
-        // Note: La musique est maintenant lancée quand on arrive sur mainMenuComponent
-        // pour éviter qu'elle joue pendant le SplashScreen
     }
 
     // Variable pour stocker le nom du joueur connecté
@@ -336,7 +329,6 @@ ApplicationWindow {
             id: mainMenuComponent
             Rectangle {
                 anchors.fill: parent
-                //color: "#1a1a1a"
                 color: "#0a0a2e"
 
                 // Lancer la musique quand on arrive sur le menu principal
@@ -346,25 +338,8 @@ ApplicationWindow {
                 }
 
                 // Étoiles scintillantes en arrière-plan
-                Repeater {
-                    model: 80
-                    Rectangle {
-                        x: Math.random() * mainWindow.width
-                        y: Math.random() * mainWindow.height
-                        width: (Math.random() * 2 + 1) * mainWindow.minRatio
-                        height: width
-                        radius: width / 2
-                        color: "white"
-                        opacity: 0.3
-
-                        SequentialAnimation on opacity {
-                            running: true
-                            loops: Animation.Infinite
-                            PauseAnimation { duration: Math.random() * 2000 }
-                            NumberAnimation { to: 0.8; duration: 1000 + Math.random() * 1000 }
-                            NumberAnimation { to: 0.3; duration: 1000 + Math.random() * 1000 }
-                        }
-                    }
+                StarryBackground {
+                    minRatio: mainWindow.minRatio
                 }
 
                 // Animations de fond - Colonnes de symboles de cartes
@@ -568,8 +543,6 @@ ApplicationWindow {
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
-
-                    //Item { height: 10 * mainWindow.minRatio }
 
                     // Bouton Jouer
                     Button {
@@ -915,29 +888,8 @@ ApplicationWindow {
                 color: "#0a0a1a"  // Fond spatial sombre
 
                 // Étoiles scintillantes en arrière-plan
-                Repeater {
-                    model: 80
-                    Rectangle {
-                        property real starX: Math.random()
-                        property real starY: Math.random()
-                        property real starSize: 1 + Math.random() * 3
-                        property real starDelay: Math.random() * 2000
-
-                        x: starX * loaderBackground.width
-                        y: starY * loaderBackground.height
-                        width: starSize * mainWindow.minRatio
-                        height: width
-                        radius: width / 2
-                        color: Qt.rgba(1, 1, 1, 0.6 + Math.random() * 0.4)
-
-                        SequentialAnimation on opacity {
-                            running: true
-                            loops: Animation.Infinite
-                            PauseAnimation { duration: starDelay }
-                            NumberAnimation { to: 0.2; duration: 800 + Math.random() * 400 }
-                            NumberAnimation { to: 1.0; duration: 800 + Math.random() * 400 }
-                        }
-                    }
+                StarryBackground {
+                    minRatio: mainWindow.minRatio
                 }
 
                 // Planète 1 - Grande planète rouge/orange (style Mars)
@@ -983,29 +935,70 @@ ApplicationWindow {
                     width: 90 * mainWindow.minRatio
                     height: width
 
-                    // Anneaux (derrière la planète)
-                    Rectangle {
+                    // Anneaux arrière (derrière la planète) - avec gradients pour plus de réalisme
+                    Item {
                         anchors.centerIn: parent
-                        width: parent.width * 1.8
-                        height: parent.height * 0.3
-                        radius: height / 2
-                        color: "transparent"
-                        border.color: "#8899bb"
-                        border.width: 4 * mainWindow.minRatio
-                        opacity: 0.6
+                        width: parent.width * 2.2
+                        height: parent.height * 0.5
                         rotation: -20
-                    }
+                        clip: true
 
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: parent.width * 1.5
-                        height: parent.height * 0.2
-                        radius: height / 2
-                        color: "transparent"
-                        border.color: "#aabbdd"
-                        border.width: 3 * mainWindow.minRatio
-                        opacity: 0.5
-                        rotation: -20
+                        // Anneau externe principal avec gradient
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: parent.width
+                            height: parent.height
+                            radius: width / 2
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 0.2; color: "#40667799" }
+                                GradientStop { position: 0.5; color: "#608899bb" }
+                                GradientStop { position: 0.8; color: "#40667799" }
+                                GradientStop { position: 1.0; color: "transparent" }
+                            }
+                        }
+
+                        // Anneau intermédiaire (bande sombre)
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: parent.width * 0.85
+                            height: parent.height * 0.7
+                            radius: width / 2
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 0.3; color: "#30445566" }
+                                GradientStop { position: 0.5; color: "#50556677" }
+                                GradientStop { position: 0.7; color: "#30445566" }
+                                GradientStop { position: 1.0; color: "transparent" }
+                            }
+                        }
+
+                        // Anneau interne clair
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: parent.width * 0.7
+                            height: parent.height * 0.5
+                            radius: width / 2
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 0.3; color: "#509aabcc" }
+                                GradientStop { position: 0.5; color: "#70aabbdd" }
+                                GradientStop { position: 0.7; color: "#509aabcc" }
+                                GradientStop { position: 1.0; color: "transparent" }
+                            }
+                        }
+
+                        // Cache pour masquer la partie centrale (sera cachée par la planète)
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: parent.parent.width * 1.05
+                            height: width
+                            radius: width / 2
+                            color: loaderBackground.color
+                        }
                     }
 
                     // Planète

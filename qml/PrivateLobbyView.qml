@@ -15,6 +15,22 @@ Item {
         color: "#1a1a1a"
     }
 
+    Rectangle { // Solution du pauvre pour mettre en noire la bar du haut de l'ecran (selfie)
+        anchors.left: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width / 5
+        height: parent.height
+        color: "black"
+    }
+
+    Rectangle {
+        anchors.right: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width / 5
+        height: parent.height
+        color: "black"
+    }
+
     ColumnLayout {
         anchors.centerIn: parent
         spacing: 60 * root.minRatio

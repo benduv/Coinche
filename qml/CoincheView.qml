@@ -7,6 +7,24 @@ Rectangle {
     id: rootArea
     anchors.fill: parent
 
+    Rectangle { // Solution du pauvre pour mettre en noire la bar du haut de l'ecran (selfie)
+        anchors.left: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width / 5
+        height: parent.height
+        color: "black"
+        z: 100
+    }
+
+    Rectangle {
+        anchors.right: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width / 5
+        height: parent.height
+        color: "black"
+        z: 100
+    }
+
     // Musique de fond pour la partie
     MediaPlayer {
         id: gameMusic
@@ -389,8 +407,8 @@ Rectangle {
             anchors.fill: parent
             anchors.leftMargin: parent.width * 0.09
             anchors.rightMargin: parent.width * 0.09
-            anchors.topMargin: parent.height * 0.2
-            anchors.bottomMargin: parent.height * 0.2
+            anchors.topMargin: parent.height * 0.21
+            anchors.bottomMargin: parent.height * 0.19
             visible: gameModel.biddingPhase &&
                      gameModel.distributionPhase === 0 &&    // Attendre fin de distribution
                      gameModel.biddingPlayer === gameModel.myPosition &&
@@ -1763,7 +1781,7 @@ Rectangle {
             AnimatedImage {
                 id: rocketImage
                 source: "qrc:/resources/animations/Rocket.gif"
-                width: playArea.width * 0.25
+                width: playArea.width * 0.20
                 height: playArea.height * 0.25
                 visible: false
                 playing: visible
