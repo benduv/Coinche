@@ -2255,9 +2255,9 @@ Rectangle {
                         case 8: return "8"
                         case 9: return "9"
                         case 10: return "10"
-                        case 11: return "V"   // Valet
-                        case 12: return "D"   // Dame
-                        case 13: return "R"   // Roi
+                        case 11: return "J"   // Valet
+                        case 12: return "Q"   // Dame
+                        case 13: return "K"   // Roi
                         case 14: return "A"   // As
                         default: return "?"
                     }

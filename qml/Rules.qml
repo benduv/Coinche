@@ -67,8 +67,6 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
     }
 
-
-
     // ScrollView pour les règles
     ScrollView {
         id: rulesScrollView
@@ -83,9 +81,12 @@ Rectangle {
         clip: true
 
         ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+        contentWidth: availableWidth
 
         Column {
-            width: rulesScrollView.width - 30 * rulesRoot.minRatio
+            width: rulesScrollView.availableWidth
             spacing: 25 * rulesRoot.minRatio
 
             // But du jeu
