@@ -22,7 +22,7 @@ Item {
         width: parent.width / 5
         height: parent.height
         color: "black"
-        z: 100
+        z: 102
     }
 
     Rectangle {
@@ -31,7 +31,16 @@ Item {
         width: parent.width / 5
         height: parent.height
         color: "black"
-        z: 100
+        z: 102
+    }
+
+    Rectangle {
+        anchors.bottom: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        height: parent.height / 5
+        width: parent.width
+        color: "black"
+        z: 102
     }
 
     // Étoiles scintillantes

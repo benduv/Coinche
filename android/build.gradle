@@ -75,11 +75,10 @@ android {
      *******************************************************/
     signingConfigs {
         release {
-            // À configurer avec votre propre keystore
-            // storeFile file("path/to/your.keystore")
-            // storePassword "your_store_password"
-            // keyAlias "your_key_alias"
-            // keyPassword "your_key_password"
+            storeFile file(RELEASE_STORE_FILE)
+            storePassword RELEASE_STORE_PASSWORD
+            keyAlias RELEASE_KEY_ALIAS
+            keyPassword RELEASE_KEY_PASSWORD
         }
     }
 
@@ -87,7 +86,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // signingConfig signingConfigs.release
+            signingConfig signingConfigs.release
         }
         debug {
             debuggable true
@@ -117,5 +116,20 @@ tasks.register('fixManifestPackageAttribute') {
 tasks.whenTaskAdded { task ->
     if (task.name.startsWith('process') && task.name.endsWith('MainManifest')) {
         task.dependsOn 'fixManifestPackageAttribute'
+    }
+}
+
+// Copie l'APK signé avec le nom attendu par Qt Creator
+afterEvaluate {
+    tasks.named('assembleRelease').configure {
+        doLast {
+            def signedApk = file('build/outputs/apk/release/android-build-coinche-release.apk')
+            def unsignedApk = file('build/outputs/apk/release/android-build-coinche-release-unsigned.apk')
+            if (signedApk.exists()) {
+                unsignedApk.delete()
+                java.nio.file.Files.copy(signedApk.toPath(), unsignedApk.toPath())
+                println("APK copié pour Qt Creator: ${unsignedApk.absolutePath}")
+            }
+        }
     }
 }

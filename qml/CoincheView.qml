@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 import QtMultimedia
 
 Rectangle {
@@ -2793,6 +2794,11 @@ Rectangle {
     }
 
     Component.onCompleted: {
+        // Forcer le mode paysage sur Android pendant le jeu via JNI natif
+        if (Qt.platform.os === "android") {
+            orientationHelper.setLandscape()
+        }
+
         console.log("=== CoincheView CRÉÉ - Instance ID:", rootArea, "===")
         console.log("gameModel:", gameModel)
         console.log("myPosition:", gameModel.myPosition)

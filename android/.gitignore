@@ -17,6 +17,7 @@ local.properties
 *.keystore
 *.jks
 keystore.properties
+gradle.properties
 
 # Generated files
 bin/

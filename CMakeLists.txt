@@ -87,6 +87,7 @@ qt_add_executable(coinche
     main.cpp
     server/NetworkManager.h  # Header-only, mis directement dans le client
     WindowPositioner.h       # Header-only pour positionner les fenêtres
+    OrientationHelper.h      # Header-only pour contrôler l'orientation Android via JNI
     resources.qrc
 )
 

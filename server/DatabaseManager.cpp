@@ -409,12 +409,12 @@ bool DatabaseManager::createAccount(const QString &pseudo, const QString &email,
     }
 
     if (pseudo.length() < 3) {
-        errorMsg = "Le pseudonyme doit contenir au moins 3 caracteres";
+        errorMsg = "Le pseudonyme doit contenir au moins 3 caractères";
         return false;
     }
 
     if (password.length() < 6) {
-        errorMsg = "Le mot de passe doit contenir au moins 6 caracteres";
+        errorMsg = "Le mot de passe doit contenir au moins 6 caractères";
         return false;
     }
 
@@ -425,13 +425,13 @@ bool DatabaseManager::createAccount(const QString &pseudo, const QString &email,
 
     // Vérifier si l'email existe déjà
     if (emailExists(email)) {
-        errorMsg = "Cette adresse email est dejà utilisee";
+        errorMsg = "Cette adresse email est dejà utilisée";
         return false;
     }
 
     // Vérifier si le pseudo existe déjà
     if (pseudoExists(pseudo)) {
-        errorMsg = "Ce pseudonyme est déjà utilise";
+        errorMsg = "Ce pseudonyme est déjà utilisé";
         return false;
     }
 

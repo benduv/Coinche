@@ -64,7 +64,13 @@ Rectangle {
                         "avataaars21.svg",
                         "avataaars22.svg",
                         "avataaars23.svg",
-                        "avataaars24.svg"
+                        "avataaars24.svg",
+                        "avataaars25.svg",
+                        "avataaars26.svg",
+                        "avataaars27.svg",
+                        "avataaars28.svg",
+                        "avataaars29.svg",
+                        "avataaars30.svg"
                     ]
 
                     delegate: Rectangle {
@@ -79,7 +85,9 @@ Rectangle {
                             anchors.fill: parent
                             anchors.margins: 10 * root.minRatio
                             source: "qrc:/resources/avatar/" + modelData
+                            sourceSize: Qt.size(avatarGrid.avatarSize, avatarGrid.avatarSize)
                             fillMode: Image.PreserveAspectFit
+                            asynchronous: true
                             smooth: true
                         }
 

@@ -33,10 +33,20 @@ public:
         int screenHeight = screenGeometry.height();
 
         // Calculer les dimensions de la fenêtre (moitié de l'écran)
-        //int windowWidth = screenWidth / 1.65;
-        int windowWidth = screenWidth / 2;
+        int windowWidth = screenWidth / 1.75;
+        //int windowWidth = screenWidth / 2;
         int windowHeight = screenHeight / 2;
 
+        // ========== Mode production : Fenêtre centrée ==========
+        // Centrer la fenêtre sur l'écran
+        int x = screenGeometry.x() + (screenWidth - windowWidth) / 2;
+        int y = screenGeometry.y() + (screenHeight - windowHeight) / 2;
+
+        qDebug() << "WindowPositioner - Fenêtre centrée à (" << x << "," << y << ")"
+                 << "taille:" << windowWidth << "x" << windowHeight;
+
+        // ========== Mode test : Positionnement en grille (commenté) ==========
+        /*
         // Lire le compteur de fenêtres depuis les settings
         QSettings settings("Coinche", "WindowCounter");
         int windowCount = settings.value("windowCount", 0).toInt();
@@ -68,6 +78,7 @@ public:
 
         // Incrémenter le compteur
         settings.setValue("windowCount", windowCount + 1);
+        */
 
         // Positionner et redimensionner la fenêtre
         window->setX(x);

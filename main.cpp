@@ -8,6 +8,7 @@
 #include "server/NetworkManager.h"
 #include "GameModel.h"
 #include "WindowPositioner.h"
+#include "OrientationHelper.h"
 
 int main(int argc, char *argv[])
 {
@@ -93,6 +94,10 @@ int main(int argc, char *argv[])
     // WindowPositioner pour positionner automatiquement les fenêtres
     WindowPositioner windowPositioner;
     engine.rootContext()->setContextProperty("windowPositioner", &windowPositioner);
+
+    // OrientationHelper pour contrôler l'orientation sur Android via JNI
+    OrientationHelper orientationHelper;
+    engine.rootContext()->setContextProperty("orientationHelper", &orientationHelper);
 
     engine.rootContext()->setContextProperty("gameModel", QVariant::fromValue<QObject*>(nullptr));
     

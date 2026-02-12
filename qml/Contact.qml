@@ -7,10 +7,31 @@ Rectangle {
     anchors.fill: parent
     color: "transparent"
 
-    // Ratio responsive
-    property real widthRatio: width / 1024
-    property real heightRatio: height / 768
+    // Détection d'orientation
+    property bool isPortrait: height > width
+    property bool isLandscape: width > height
+
+    // Ratio responsive adapté à l'orientation
+    property real widthRatio: isPortrait ? width / 600 : width / 1024
+    property real heightRatio: isPortrait ? height / 1024 : height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
+
+    // Largeur du formulaire adaptée à l'orientation
+    property real formWidthRatio: isPortrait ? 0.9 : 0.7
+
+    Component.onCompleted: {
+        // Forcer le mode portrait pour la saisie clavier
+        if (Qt.platform.os === "android") {
+            orientationHelper.setPortrait()
+        }
+    }
+
+    Component.onDestruction: {
+        // Restaurer le mode paysage via JNI natif
+        if (Qt.platform.os === "android") {
+            orientationHelper.setLandscape()
+        }
+    }
 
     // Fond étoilé
     StarryBackground {
@@ -95,25 +116,27 @@ Rectangle {
     }
 
     // Contenu principal scrollable
-    Flickable {
+    /*Flickable {
         id: mainFlickable
         anchors.fill: parent
-        anchors.topMargin: 120 * contactRoot.minRatio
-        anchors.leftMargin: 40 * contactRoot.minRatio
-        anchors.rightMargin: 40 * contactRoot.minRatio
+        anchors.topMargin: contactRoot.isPortrait ? 100 * contactRoot.minRatio : 120 * contactRoot.minRatio
+        anchors.leftMargin: contactRoot.isPortrait ? 20 * contactRoot.minRatio : 40 * contactRoot.minRatio
+        anchors.rightMargin: contactRoot.isPortrait ? 20 * contactRoot.minRatio : 40 * contactRoot.minRatio
         anchors.bottomMargin: 40 * contactRoot.minRatio
         contentHeight: contentColumn.height
-        clip: true
+        clip: true*/
 
         Column {
             id: contentColumn
+            anchors.top: parent.top
+            anchors.topMargin: contactRoot.isPortrait ? 100 * contactRoot.minRatio : 120 * contactRoot.minRatio
             width: parent.width
             spacing: 30 * contactRoot.minRatio
 
             // Titre
             Text {
                 text: "NOUS CONTACTER"
-                font.pixelSize: 48 * contactRoot.minRatio
+                font.pixelSize: 38 * contactRoot.minRatio
                 font.bold: true
                 color: "#FFD700"
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -122,19 +145,17 @@ Rectangle {
             // Description
             Text {
                 width: parent.width
-                text: "Vous avez une suggestion, un bug à signaler ou simplement envie de nous faire part de vos impressions ? N'hésitez pas à nous écrire via ce formulaire ou bien directement via contact@nebuludik.fr"
-                font.pixelSize: 28 * contactRoot.minRatio
+                text: "Une suggestion, un bug à signaler ou autre ? N'hésitez pas à remplir ce formulaire ou via email à contact@nebuludik.fr"
+                font.pixelSize: 26 * contactRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            Item { height: 20 * contactRoot.minRatio; width: 1 }
-
             // Formulaire
             Rectangle {
-                width: Math.min(parent.width, 750 * contactRoot.minRatio)
-                height: formColumn.height + 40 * contactRoot.minRatio
+                width: Math.min(parent.width * contactRoot.formWidthRatio, 750 * contactRoot.widthRatio)
+                height: formColumn.height + 40 * contactRoot.heightRatio
                 color: "#2a2a2a"
                 radius: 15 * contactRoot.minRatio
                 border.color: "#FFD700"
@@ -161,7 +182,7 @@ Rectangle {
 
                         Rectangle {
                             width: parent.width
-                            height: 50 * contactRoot.minRatio
+                            height: 45 * contactRoot.heightRatio
                             color: "#3a3a3a"
                             radius: 8 * contactRoot.minRatio
                             border.color: subjectField.activeFocus ? "#FFD700" : "#555555"
@@ -205,7 +226,7 @@ Rectangle {
                         Rectangle {
                             id: messageFieldRect
                             width: parent.width
-                            height: 150 * contactRoot.minRatio
+                            height: contactRoot.isPortrait ? 150 * contactRoot.heightRatio : 150 * contactRoot.heightRatio
                             color: "#3a3a3a"
                             radius: 8 * contactRoot.minRatio
                             border.color: messageArea.activeFocus ? "#FFD700" : "#555555"
@@ -250,7 +271,7 @@ Rectangle {
                                     }
 
                                     // Scroll automatique du formulaire vers le champ message quand il obtient le focus
-                                    onActiveFocusChanged: {
+                                    /*onActiveFocusChanged: {
                                         if (activeFocus) {
                                             // Calculer la position Y du champ message dans le contentColumn
                                             var targetY = messageFieldRect.mapToItem(contentColumn, 0, 0).y
@@ -261,7 +282,7 @@ Rectangle {
                                                 mainFlickable.contentY = Math.min(scrollTarget, mainFlickable.contentHeight - mainFlickable.height)
                                             }
                                         }
-                                    }
+                                    }*/
                                 }
                             }
 
@@ -300,7 +321,7 @@ Rectangle {
                     Button {
                         id: sendButton
                         width: parent.width
-                        height: 75 * contactRoot.minRatio
+                        height: contactRoot.isPortrait ? 80 * contactRoot.heightRatio : 75 * contactRoot.heightRatio
                         enabled: subjectField.text.trim() !== "" && messageArea.text.trim() !== "" && !contactRoot.isSending && networkManager.connected
 
                         background: Rectangle {
@@ -362,14 +383,14 @@ Rectangle {
 
             Item { height: 40 * contactRoot.minRatio; width: 1 }
         }
-    }
+    //}
 
     // Popup de succes
     Popup {
         id: successPopup
         anchors.centerIn: parent
-        width: Math.min(parent.width * 0.8, 400 * contactRoot.minRatio)
-        height: successColumn.height + 60 * contactRoot.minRatio
+        width: Math.min(parent.width * 0.8, 400 * contactRoot.widthRatio)
+        height: successColumn.height + 60 * contactRoot.heightRatio
         modal: true
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -406,7 +427,7 @@ Rectangle {
 
             Button {
                 width: parent.width * 0.6
-                height: 75 * contactRoot.minRatio
+                height: 75 * contactRoot.heightRatio
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 background: Rectangle {
@@ -439,8 +460,8 @@ Rectangle {
     Popup {
         id: errorPopup
         anchors.centerIn: parent
-        width: Math.min(parent.width * 0.8, 400 * contactRoot.minRatio)
-        height: errorColumn.height + 60 * contactRoot.minRatio
+        width: Math.min(parent.width * 0.8, 400 * contactRoot.widthRatio)
+        height: errorColumn.height + 60 * contactRoot.heightRatio
         modal: true
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -487,7 +508,7 @@ Rectangle {
 
             Button {
                 width: parent.width * 0.6
-                height: 75 * contactRoot.minRatio
+                height: 75 * contactRoot.heightRatio
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 background: Rectangle {

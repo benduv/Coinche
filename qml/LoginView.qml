@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 
 Rectangle {
     id: loginRoot
@@ -11,7 +12,7 @@ Rectangle {
     signal loginSuccess(string playerName, string accountType)
 
     // Animation de fond - Symboles de cartes tombant comme des flocons
-    Item {
+    /*Item {
         anchors.fill: parent
         z: 100
         clip: false
@@ -115,15 +116,19 @@ Rectangle {
                 }
             }
         }
-    }
+    }*/
 
-    // Ratio responsive pour adapter la taille des composants
-    property real widthRatio: width / 1024
-    property real heightRatio: height / 768
+    // Détection d'orientation
+    property bool isPortrait: height > width
+    property bool isLandscape: width > height
+
+    // Ratio responsive adapté à l'orientation
+    property real widthRatio: isPortrait ? width / 600 : width / 1024
+    property real heightRatio: isPortrait ? height / 1024 : height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
 
-    // Note: L'auto-login est maintenant géré par SplashScreen.qml
-    // LoginView ne gère que les connexions manuelles
+    // Largeur des formulaires adaptée à l'orientation
+    property real formWidthRatio: isPortrait ? 0.85 : 0.4
 
     StackView {
         id: loginStack
@@ -147,7 +152,7 @@ Rectangle {
                 ColumnLayout {
                     anchors.centerIn: parent
                     spacing: 15 * loginRoot.minRatio
-                    width: Math.min(parent.width * 0.4, 500 * loginRoot.widthRatio)
+                    width: Math.min(parent.width * loginRoot.formWidthRatio, 500 * loginRoot.widthRatio)
 
                     Text {
                         text: "COINCHE"
@@ -243,7 +248,7 @@ Rectangle {
 
                         contentItem: Text {
                             text: "Jouer en tant qu'invité"
-                            font.pixelSize: 48 * loginRoot.minRatio
+                            font.pixelSize: 46 * loginRoot.minRatio
                             font.bold: true
                             color: "white"
                             horizontalAlignment: Text.AlignHCenter
@@ -351,7 +356,7 @@ Rectangle {
                 ColumnLayout {
                     anchors.centerIn: parent
                     spacing: 10 * loginRoot.minRatio
-                    width: Math.min(parent.width * 0.4, 500 * loginRoot.widthRatio)
+                    width: Math.min(parent.width * loginRoot.formWidthRatio, 500 * loginRoot.widthRatio)
 
                     Text {
                         text: "Créer un compte"
@@ -377,9 +382,10 @@ Rectangle {
                         TextField {
                             id: registerPseudo
                             width: parent.width
-                            height: 80 * loginRoot.heightRatio
+                            height: 70 * loginRoot.heightRatio
                             placeholderText: ""
-                            font.pixelSize: 36 * loginRoot.minRatio
+                            font.pixelSize: 30 * loginRoot.minRatio
+                            maximumLength: 12
 
                             background: Rectangle {
                                 color: "#2a2a2a"
@@ -392,7 +398,7 @@ Rectangle {
 
                             Text {
                                 text: registerPseudo.text.length === 0 ? "   Votre pseudonyme" : ""
-                                font.pixelSize: 36 * loginRoot.minRatio
+                                font.pixelSize: 30 * loginRoot.minRatio
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -416,9 +422,10 @@ Rectangle {
                         TextField {
                             id: registerEmail
                             width: parent.width
-                            height: 80 * loginRoot.heightRatio
+                            height: 70 * loginRoot.heightRatio
                             placeholderText: ""
-                            font.pixelSize: 36 * loginRoot.minRatio
+                            font.pixelSize: 30 * loginRoot.minRatio
+                            inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
 
                             background: Rectangle {
                                 color: "#2a2a2a"
@@ -431,7 +438,7 @@ Rectangle {
 
                             Text {
                                 text: registerEmail.text.length === 0 ? "   votre@email.com" : ""
-                                font.pixelSize: 36 * loginRoot.minRatio
+                                font.pixelSize: 30 * loginRoot.minRatio
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -455,10 +462,10 @@ Rectangle {
                         TextField {
                             id: registerPassword
                             width: parent.width
-                            height: 80 * loginRoot.heightRatio
+                            height: 70 * loginRoot.heightRatio
                             placeholderText: ""
                             echoMode: TextInput.Password
-                            font.pixelSize: 36 * loginRoot.minRatio
+                            font.pixelSize: 30 * loginRoot.minRatio
 
                             background: Rectangle {
                                 color: "#2a2a2a"
@@ -472,7 +479,7 @@ Rectangle {
                             Text {
                                 id: regPwdTxtLogin
                                 text: registerPassword.text.length === 0 ? "   Votre mot de passe" : ""
-                                font.pixelSize: 36 * loginRoot.minRatio
+                                font.pixelSize: 30 * loginRoot.minRatio
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -500,9 +507,9 @@ Rectangle {
 
                             // Aperçu de l'avatar sélectionné
                             Rectangle {
-                                width: 50 * loginRoot.minRatio
-                                height: 50 * loginRoot.minRatio
-                                radius: 25 * loginRoot.minRatio
+                                width: 70 * loginRoot.minRatio
+                                height: width
+                                radius: width / 2
                                 color: "#2a2a2a"
                                 border.color: "#FFD700"
                                 border.width: 2 * loginRoot.minRatio
@@ -510,7 +517,7 @@ Rectangle {
 
                                 Image {
                                     anchors.fill: parent
-                                    anchors.margins: 3 * loginRoot.minRatio
+                                    anchors.margins: parent.radius / 4
                                     source: "qrc:/resources/avatar/" + registerScreenRec.selectedAvatar
                                     fillMode: Image.PreserveAspectFit
                                     smooth: true
@@ -563,9 +570,12 @@ Rectangle {
                     Text {
                         id: registerError
                         text: ""
-                        font.pixelSize: 28 * loginRoot.minRatio
+                        font.pixelSize: 24 * loginRoot.minRatio
                         color: "#ff6666"
+                        Layout.fillWidth: true
                         Layout.alignment: Qt.AlignHCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
                         visible: true
                         opacity: text === "" ? 0 : 1
                     }
@@ -635,7 +645,6 @@ Rectangle {
 
             Rectangle {
                 id: loginScreenRect
-                //color: "#1a1a1a"
                 color: "#0a0a2e"
 
                 // Étoiles scintillantes en arrière-plan
@@ -688,9 +697,12 @@ Rectangle {
                 }
 
                 ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 20 * loginRoot.minRatio
-                    width: Math.min(parent.width * 0.4, 500 * loginRoot.widthRatio)
+                    id: loginForm
+                    width: Math.min(parent.width * loginRoot.formWidthRatio, 500 * loginRoot.widthRatio)
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: loginRoot.isPortrait ? 200 * loginRoot.minRatio : 120 * loginRoot.minRatio
+                    spacing: loginRoot.isPortrait ? 15 * loginRoot.minRatio : 20 * loginRoot.minRatio
 
                     Text {
                         text: "Se connecter"
@@ -709,16 +721,17 @@ Rectangle {
 
                         Text {
                             text: "Adresse email"
-                            font.pixelSize: 32 * loginRoot.minRatio
+                            font.pixelSize: 30 * loginRoot.minRatio
                             color: "#aaaaaa"
                         }
 
                         TextField {
                             id: loginEmail
                             width: parent.width
-                            height: 80 * loginRoot.heightRatio
+                            height: 70 * loginRoot.heightRatio
                             placeholderText: ""
                             font.pixelSize: 36 * loginRoot.minRatio
+                            inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
 
                             background: Rectangle {
                                 color: "#2a2a2a"
@@ -731,7 +744,7 @@ Rectangle {
 
                             Text {
                                 text: loginEmail.text.length === 0 ? "   votre@email.com" : ""
-                                font.pixelSize: 36 * loginRoot.minRatio
+                                font.pixelSize: 30 * loginRoot.minRatio
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -748,17 +761,18 @@ Rectangle {
 
                         Text {
                             text: "Mot de passe"
-                            font.pixelSize: 32 * loginRoot.minRatio
+                            font.pixelSize: 30 * loginRoot.minRatio
                             color: "#aaaaaa"
                         }
 
                         TextField {
                             id: loginPassword
                             width: parent.width
-                            height: 80 * loginRoot.heightRatio
+                            height: 70 * loginRoot.heightRatio
                             placeholderText: ""
                             echoMode: TextInput.Password
-                            font.pixelSize: 36 * loginRoot.minRatio
+                            font.pixelSize: 30 * loginRoot.minRatio
+                            inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
 
                             background: Rectangle {
                                 color: "#2a2a2a"
@@ -771,7 +785,7 @@ Rectangle {
 
                             Text {
                                 text: loginPassword.text.length === 0 ? "   Votre mot de passe" : ""
-                                font.pixelSize: 36 * loginRoot.minRatio
+                                font.pixelSize: 30 * loginRoot.minRatio
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -785,14 +799,15 @@ Rectangle {
                     Text {
                         id: loginError
                         text: ""
-                        font.pixelSize: 28 * loginRoot.minRatio
+                        font.pixelSize: 24 * loginRoot.minRatio
                         color: "#ff6666"
+                        Layout.fillWidth: true
                         Layout.alignment: Qt.AlignHCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
                         visible: true
                         opacity: text === "" ? 0 : 1
                     }
-
-                    //Item { height: 10 * loginRoot.minRatio }
 
                     // Bouton connexion
                     Button {
@@ -814,6 +829,8 @@ Rectangle {
                         }
 
                         onClicked: {
+                            Qt.inputMethod.hide()
+
                             if (loginEmail.text === "" || loginPassword.text === "") {
                                 loginError.text = "Tous les champs sont obligatoires"
                                 return
@@ -825,6 +842,8 @@ Rectangle {
                             networkManager.loginAccount(loginEmail.text, loginPassword.text)
                         }
                     }
+
+                    Item { height: 40 * loginRoot.minRatio }
                 }
 
                 // Propriétés pour stocker les credentials en attente de confirmation
@@ -857,7 +876,6 @@ Rectangle {
 
             Rectangle {
                 id: guestScreenRect
-                //color: "#1a1a1a"
                 color: "#0a0a2e"
 
                 // Étoiles scintillantes en arrière-plan
@@ -914,8 +932,8 @@ Rectangle {
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: 25 * loginRoot.minRatio
-                    width: Math.min(parent.width * 0.4, 500 * loginRoot.widthRatio)
+                    spacing: loginRoot.isPortrait ? 20 * loginRoot.minRatio : 25 * loginRoot.minRatio
+                    width: Math.min(parent.width * loginRoot.formWidthRatio, 500 * loginRoot.widthRatio)
 
                     Text {
                         text: "Jouer en tant qu'invité"
@@ -941,10 +959,11 @@ Rectangle {
                         TextField {
                             id: guestPseudo
                             width: parent.width
-                            height: 80 * loginRoot.heightRatio
+                            height: 70 * loginRoot.heightRatio
                             placeholderText: ""
                             text: defaultPlayerName
-                            font.pixelSize: 36 * loginRoot.minRatio
+                            font.pixelSize: 30 * loginRoot.minRatio
+                            maximumLength: 12
 
                             background: Rectangle {
                                 color: "#2a2a2a"
@@ -957,7 +976,7 @@ Rectangle {
 
                             Text {
                                 text: guestPseudo.text.length === 0 ? "   Invité123" : ""
-                                font.pixelSize: 36 * loginRoot.minRatio
+                                font.pixelSize: 30 * loginRoot.minRatio
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -985,9 +1004,9 @@ Rectangle {
 
                             // Aperçu de l'avatar sélectionné
                             Rectangle {
-                                width: 50 * loginRoot.minRatio
-                                height: 50 * loginRoot.minRatio
-                                radius: 25 * loginRoot.minRatio
+                                width: 70 * loginRoot.minRatio
+                                height: width
+                                radius: width / 2
                                 color: "#2a2a2a"
                                 border.color: "#FFD700"
                                 border.width: 2 * loginRoot.minRatio
@@ -995,7 +1014,7 @@ Rectangle {
 
                                 Image {
                                     anchors.fill: parent
-                                    anchors.margins: 3 * loginRoot.minRatio
+                                    anchors.margins: parent.radius / 4
                                     source: "qrc:/resources/avatar/" + guestScreenRect.selectedAvatar
                                     fillMode: Image.PreserveAspectFit
                                     smooth: true
@@ -1047,7 +1066,7 @@ Rectangle {
                     Text {
                         text: "En tant qu'invité, votre progression ne sera pas sauvegardée"
                         font.pixelSize: 24 * loginRoot.minRatio
-                        color: "#888888"
+                        color: "orange"
                         Layout.alignment: Qt.AlignHCenter
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
@@ -1062,7 +1081,7 @@ Rectangle {
                         Layout.preferredHeight: 100 * loginRoot.heightRatio
 
                         background: Rectangle {
-                            color: parent.down ? "#666666" : (parent.hovered ? "#888888" : "#777777")
+                            color: parent.down ? "#00aa00" : (parent.hovered ? "#00dd00" : "#00cc00")
                             radius: 8 * loginRoot.minRatio
                         }
 

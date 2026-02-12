@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 import QtMultimedia
 
 ApplicationWindow {
@@ -95,12 +96,18 @@ ApplicationWindow {
 
     Component.onCompleted: {
         console.log("MainMenu.onCompleted - Démarrage")
-        // Positionner automatiquement la fenêtre au démarrage
 
-        if (Qt.platform.os === "android") {
-            //mainWindow.showFullScreen()
-        } else {
+        // Ne pas forcer l'orientation ici - le splashScreen gère allOrientations,
+        // puis chaque composant (LoginView, mainMenuComponent) gère sa propre orientation
+        if (Qt.platform.os !== "android") {
+            // Positionner automatiquement la fenêtre au démarrage (desktop uniquement)
             windowPositioner.positionWindow(mainWindow)
+
+            // Empêcher le redimensionnement de la fenêtre après positionnement
+            mainWindow.minimumWidth = mainWindow.width
+            mainWindow.maximumWidth = mainWindow.width
+            mainWindow.minimumHeight = mainWindow.height
+            mainWindow.maximumHeight = mainWindow.height
         }
     }
 
@@ -228,6 +235,11 @@ ApplicationWindow {
             Loader {
                 anchors.fill: parent
                 source: "qrc:/qml/SplashScreen.qml"
+                Component.onCompleted: {
+                    if (Qt.platform.os === "android") {
+                        orientationHelper.setAllOrientations()
+                    }
+                }
                 onLoaded: {
                     // Auto-login réussi pendant le splash -> aller directement au menu principal
                     item.autoLoginSuccess.connect(function(playerName) {
@@ -267,7 +279,7 @@ ApplicationWindow {
                 onLoginSuccess: function(playerName, accType) {
                     mainWindow.loggedInPlayerName = playerName
                     mainWindow.accountType = accType
-                    stackView.push(mainMenuComponent)
+                    stackView.replace(mainMenuComponent)
                 }
 
                 Config {
@@ -313,6 +325,10 @@ ApplicationWindow {
                 // Le timer de reconnexion reste actif pour gérer les déconnexions
                 Component.onCompleted: {
                     console.log("LoginView chargé - connexion déjà établie par SplashScreen")
+                    // Autoriser toutes les orientations pour la saisie clavier
+                    if (Qt.platform.os === "android") {
+                        orientationHelper.setPortrait()
+                    }
                     // Démarrer le timer de reconnexion seulement si déconnecté
                     if (!networkManager.connected) {
                         console.log("Pas connecté, démarrage du timer de reconnexion")
@@ -321,6 +337,13 @@ ApplicationWindow {
                     // Lancer la musique quand on arrive sur le LoginView
                     console.log("LoginView - Lancement de la musique")
                     musicStartTimer.start()
+                }
+
+                Component.onDestruction: {
+                    // Restaurer le mode paysage via JNI natif
+                    if (Qt.platform.os === "android") {
+                        orientationHelper.setLandscape()
+                    }
                 }
             }
         }
@@ -334,6 +357,10 @@ ApplicationWindow {
                 // Lancer la musique quand on arrive sur le menu principal
                 Component.onCompleted: {
                     console.log("mainMenuComponent.onCompleted - Lancement de la musique")
+                    // Forcer le mode paysage sur Android
+                    if (Qt.platform.os === "android") {
+                        orientationHelper.setLandscape()
+                    }
                     musicStartTimer.start()
                 }
 
@@ -344,7 +371,7 @@ ApplicationWindow {
 
                 // Animations de fond - Colonnes de symboles de cartes
                 // Colonne 1 (gauche) - Coeurs montant
-                Column {
+                /*Column {
                     id: heartsColumn
                     x: parent.width * 0.08
                     y: -parent.height
@@ -457,6 +484,113 @@ ApplicationWindow {
                             duration: 17000
                         }
                     }
+                }*/
+
+                // Animation de fond - Symboles de cartes tombant comme des flocons
+                Item {
+                    anchors.fill: parent
+                    z: 100
+                    clip: false
+
+                    Repeater {
+                        model: 20
+
+                        delegate: Text {
+                            property int symbolIndex: index
+                            property real randomOffset: (symbolIndex * 37) % 30
+                            property real oscillationOffset: 0  // Déplacement pour l'oscillation
+
+                            text: {
+                                var symbols = ["♥", "♣", "♦", "♠"]
+                                return symbols[symbolIndex % 4]
+                            }
+                            color: {
+                                var colors = ["#AD1111", "#422E2E", "#AD1111", "#422E2E"]
+                                return colors[symbolIndex % 4]
+                            }
+                            font.pixelSize: (40 + (symbolIndex % 5) * 12) * mainWindow.minRatio
+                            opacity: 0.2 + (symbolIndex % 3) * 0.05
+
+                            // Position horizontale avec binding + oscillation
+                            x: {
+                                var quarterWidth = mainWindow.width * 0.23
+                                var baseX = 0
+                                if (symbolIndex < 10) {
+                                    // Quart gauche (0-23%)
+                                    baseX = (quarterWidth / 10) * symbolIndex + randomOffset
+                                } else {
+                                    // Quart droit (66-89%) (89% car on a le notch caché)
+                                    var rightIndex = symbolIndex - 10
+                                    baseX = mainWindow.width * 0.66 + (quarterWidth / 10) * rightIndex + randomOffset
+                                }
+                                return baseX + oscillationOffset
+                            }
+
+                            // Position verticale initiale
+                            y: -150 - (symbolIndex % 5) * 50
+
+                            // Animation de chute continue
+                            SequentialAnimation on y {
+                                running: true
+                                loops: Animation.Infinite
+
+                                PauseAnimation {
+                                    duration: (symbolIndex * 300) % 2000
+                                }
+
+                                NumberAnimation {
+                                    to: mainWindow.height + 150
+                                    duration: 10000 + (symbolIndex % 8) * 2000
+                                    easing.type: Easing.Linear
+                                }
+
+                                PropertyAction {
+                                    value: -150 - (symbolIndex % 5) * 50
+                                }
+                            }
+
+                            // Rotation pendant la chute
+                            SequentialAnimation on rotation {
+                                running: true
+                                loops: Animation.Infinite
+
+                                PauseAnimation {
+                                    duration: (symbolIndex * 300) % 2000
+                                }
+
+                                NumberAnimation {
+                                    from: (symbolIndex * 37) % 360
+                                    to: (symbolIndex * 37) % 360 + 360
+                                    duration: 20000 + (symbolIndex % 5) * 3000
+                                    easing.type: Easing.InOutQuad
+                                }
+                            }
+
+                            // Oscillation horizontale (balancement)
+                            SequentialAnimation on oscillationOffset {
+                                running: true
+                                loops: Animation.Infinite
+
+                                PauseAnimation {
+                                    duration: (symbolIndex * 300) % 2000
+                                }
+
+                                NumberAnimation {
+                                    from: 0
+                                    to: 40 * mainWindow.minRatio
+                                    duration: 2500 + (symbolIndex % 4) * 500
+                                    easing.type: Easing.InOutSine
+                                }
+
+                                NumberAnimation {
+                                    from: 40 * mainWindow.minRatio
+                                    to: 0
+                                    duration: 2500 + (symbolIndex % 4) * 500
+                                    easing.type: Easing.InOutSine
+                                }
+                            }
+                        }
+                    }
                 }
 
                 ColumnLayout {
@@ -487,8 +621,8 @@ ApplicationWindow {
                         // Avatar du joueur (cliquable pour changer)
                         Rectangle {
                             width: 120 * mainWindow.minRatio
-                            height: 120 * mainWindow.minRatio
-                            radius: 60 * mainWindow.minRatio
+                            height: width
+                            radius: width / 2
                             color: avatarMouseArea.containsMouse ? "#555555" : "#444444"
                             border.color: "#FFD700"
                             border.width: avatarMouseArea.containsMouse ? 3 * mainWindow.minRatio : 2 * mainWindow.minRatio
@@ -499,7 +633,7 @@ ApplicationWindow {
 
                             Image {
                                 anchors.fill: parent
-                                anchors.margins: 15 * mainWindow.minRatio
+                                anchors.margins: parent.radius / 4
                                 source: "qrc:/resources/avatar/" + networkManager.playerAvatar
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
@@ -667,7 +801,7 @@ ApplicationWindow {
                     anchors.topMargin: 50 * mainWindow.minRatio
                     width: 120 * mainWindow.minRatio
                     height: 120 * mainWindow.minRatio
-                    z: 2
+                    z: 101
 
                     background: Rectangle {
                         color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
@@ -689,36 +823,96 @@ ApplicationWindow {
                     }
                 }
 
-                // Bouton Statistiques en bas à gauche (uniquement pour les comptes enregistrés)
-                Button {
+                // Bouton Statistiques en bas à gauche
+                Item {
                     anchors.left: parent.left
                     anchors.bottom: parent.bottom
                     anchors.leftMargin: 50 * mainWindow.minRatio
                     anchors.bottomMargin: 50 * mainWindow.minRatio
                     width: 120 * mainWindow.minRatio
                     height: 120 * mainWindow.minRatio
-                    visible: mainWindow.accountType !== "guest"
-                    enabled: networkManager.connected
-                    opacity: enabled ? 1.0 : 0.4
-                    z: 2
+                    z: 101
 
-                    background: Rectangle {
-                        color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
-                        radius: 10 * mainWindow.minRatio
-                        border.color: "#FFD700"
-                        border.width: 3 * mainWindow.minRatio
-                    }
-
-                    contentItem: Image {
-                        source: "qrc:/resources/stats-svgrepo-com.svg"
-                        fillMode: Image.PreserveAspectFit
+                    Button {
+                        id: statsButton
                         anchors.fill: parent
-                        anchors.margins: 20 * mainWindow.minRatio
-                        smooth: true
+                        enabled: mainWindow.accountType !== "guest" && networkManager.connected
+                        opacity: (mainWindow.accountType !== "guest" && networkManager.connected) ? 1.0 : 0.4
+
+                        background: Rectangle {
+                            color: parent.enabled ?
+                                   (parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")) :
+                                   "#555555"
+                            radius: 10 * mainWindow.minRatio
+                            border.color: (mainWindow.accountType !== "guest" && networkManager.connected) ? "#FFD700" : "#888888"
+                            border.width: 3 * mainWindow.minRatio
+                        }
+
+                        contentItem: Image {
+                            source: "qrc:/resources/stats-svgrepo-com.svg"
+                            fillMode: Image.PreserveAspectFit
+                            anchors.fill: parent
+                            anchors.margins: 20 * mainWindow.minRatio
+                            smooth: true
+                        }
+
+                        onClicked: {
+                            stackView.push(statsViewComponent)
+                        }
                     }
 
-                    onClicked: {
-                        stackView.push(statsViewComponent)
+                    // MouseArea pour capturer les clics quand le bouton est désactivé
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: mainWindow.accountType === "guest"
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            guestMessageRect.visible = true
+                            guestMessageTimer.start()
+                        }
+                    }
+                }
+
+                // Message pour les invités
+                Rectangle {
+                    id: guestMessageRect
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 300 * mainWindow.minRatio
+                    width: mainWindow.width * 0.8
+                    height: 100 * mainWindow.minRatio
+                    radius: 10 * mainWindow.minRatio
+                    color: "#2a2a2a"
+                    border.color: "#FFD700"
+                    border.width: 2 * mainWindow.minRatio
+                    visible: false
+                    z: 200
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Vous devez avoir un compte pour voir vos statistiques"
+                        font.pixelSize: 36 * mainWindow.minRatio
+                        color: "#FFD700"
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Text.AlignHCenter
+                        width: parent.width - 20 * mainWindow.minRatio
+                    }
+
+                    // Animation d'apparition
+                    NumberAnimation on opacity {
+                        running: guestMessageRect.visible
+                        from: 0
+                        to: 1
+                        duration: 300
+                    }
+
+                    Timer {
+                        id: guestMessageTimer
+                        interval: 5000
+                        repeat: false
+                        onTriggered: {
+                            guestMessageRect.visible = false
+                        }
                     }
                 }
 
@@ -730,7 +924,7 @@ ApplicationWindow {
                     anchors.topMargin: 50 * mainWindow.minRatio
                     width: 120 * mainWindow.minRatio
                     height: 120 * mainWindow.minRatio
-                    z: 2
+                    z: 101
 
                     background: Rectangle {
                         color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
@@ -760,7 +954,7 @@ ApplicationWindow {
                     anchors.bottomMargin: 50 * mainWindow.minRatio
                     width: 120 * mainWindow.minRatio
                     height: 120 * mainWindow.minRatio
-                    z: 2
+                    z: 101
 
                     background: Rectangle {
                         color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
