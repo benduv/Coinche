@@ -11,6 +11,11 @@ Rectangle {
     // Signal émis quand l'utilisateur est connecté
     signal loginSuccess(string playerName, string accountType)
 
+    // Properties for password change flow
+    property string pendingChangeEmail: ""
+    property string pendingChangePlayerName: ""
+    property string pendingChangePassword: ""
+
     // Animation de fond - Symboles de cartes tombant comme des flocons
     /*Item {
         anchors.fill: parent
@@ -843,7 +848,33 @@ Rectangle {
                         }
                     }
 
-                    Item { height: 40 * loginRoot.minRatio }
+                    Item { height: 5 * loginRoot.minRatio }
+
+                    // Bouton "Mot de passe oublié"
+                    Button {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 60 * loginRoot.heightRatio
+
+                        background: Rectangle {
+                            color: "transparent"
+                        }
+
+                        contentItem: Text {
+                            text: "Mot de passe oublié ?"
+                            font.pixelSize: 24 * loginRoot.minRatio
+                            color: parent.hovered ? "#FFD700" : "#aaaaaa"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.underline: parent.hovered
+                        }
+
+                        onClicked: {
+                            Qt.inputMethod.hide()
+                            loginStack.push(forgotPasswordScreen)
+                        }
+                    }
+
+                    Item { height: 20 * loginRoot.minRatio }
                 }
 
                 // Propriétés pour stocker les credentials en attente de confirmation
@@ -852,14 +883,24 @@ Rectangle {
 
                 Connections {
                     target: networkManager
-                    function onLoginSuccess(playerName, avatar) {
-                        // Sauvegarder les credentials pour l'auto-login
-                        if (loginScreenRect.pendingEmail !== "" && loginScreenRect.pendingPassword !== "") {
-                            networkManager.saveCredentials(loginScreenRect.pendingEmail, loginScreenRect.pendingPassword)
-                            loginScreenRect.pendingEmail = ""
-                            loginScreenRect.pendingPassword = ""
+                    function onLoginSuccess(playerName, avatar, usingTempPassword) {
+                        if (usingTempPassword) {
+                            // Force password change - don't save credentials yet
+                            qDebug("Login with temp password - forcing password change")
+                            // Store email and info for changePasswordScreen
+                            loginRoot.pendingChangeEmail = loginScreenRect.pendingEmail
+                            loginRoot.pendingChangePlayerName = playerName
+                            loginRoot.pendingChangePassword = ""
+                            loginStack.push(changePasswordScreenComponent)
+                        } else {
+                            // Normal login - save credentials and proceed
+                            if (loginScreenRect.pendingEmail !== "" && loginScreenRect.pendingPassword !== "") {
+                                networkManager.saveCredentials(loginScreenRect.pendingEmail, loginScreenRect.pendingPassword)
+                                loginScreenRect.pendingEmail = ""
+                                loginScreenRect.pendingPassword = ""
+                            }
+                            loginRoot.loginSuccess(playerName, "account")
                         }
-                        loginRoot.loginSuccess(playerName, "account")
                     }
                     function onLoginFailed(error) {
                         loginError.text = error
@@ -1104,6 +1145,333 @@ Rectangle {
                             networkManager.registerPlayer(guestPseudo.text, guestScreenRect.selectedAvatar)
                             loginRoot.loginSuccess(guestPseudo.text, "guest")
                         }
+                    }
+                }
+            }
+        }
+
+        // Écran "Mot de passe oublié"
+        Component {
+            id: forgotPasswordScreen
+
+            Rectangle {
+                id: forgotPasswordScreenRect
+                anchors.fill: parent
+                color: "transparent"
+
+                // Bouton retour en haut à gauche
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.margins: 40 * loginRoot.minRatio
+                    width: 100 * loginRoot.minRatio
+                    height: 100 * loginRoot.minRatio
+                    color: "transparent"
+                    z: 100
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width * 0.6
+                        height: parent.height * 0.6
+                        color: "lightgrey"
+                    }
+
+                    Image {
+                        anchors.fill: parent
+                        source: "qrc:/resources/back-square-svgrepo-com.svg"
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            loginStack.pop()
+                        }
+                        onEntered: {
+                            parent.scale = 1.1
+                        }
+                        onExited: {
+                            parent.scale = 1.0
+                        }
+                    }
+
+                    Behavior on scale {
+                        NumberAnimation { duration: 150 }
+                    }
+                }
+
+                // Titre
+                Text {
+                    id: forgotPasswordTitle
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: 200 * mainWindow.minRatio
+                    text: "Mot de passe oublié"
+                    font.pixelSize: 60 * mainWindow.minRatio
+                    font.bold: true
+                    color: "#FFD700"
+                }
+
+                // Formulaire
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 30 * mainWindow.minRatio
+                    width: 600 * mainWindow.minRatio
+
+                    // Champ email
+                    Rectangle {
+                        width: parent.width
+                        height: 100 * mainWindow.minRatio
+                        color: "#2a2a2a"
+                        radius: 10 * mainWindow.minRatio
+                        border.color: forgotEmail.activeFocus ? "#FFD700" : "#555555"
+                        border.width: 2 * mainWindow.minRatio
+
+                        TextField {
+                            id: forgotEmail
+                            anchors.fill: parent
+                            anchors.margins: 10 * mainWindow.minRatio
+                            font.pixelSize: 32 * mainWindow.minRatio
+                            color: "#FFFFFF"
+                            placeholderText: "Adresse email"
+                            placeholderTextColor: "#888888"
+                            background: Rectangle { color: "transparent" }
+                            selectByMouse: true
+                        }
+                    }
+
+                    // Message d'erreur/succès
+                    Text {
+                        id: forgotPasswordMessage
+                        width: parent.width
+                        text: ""
+                        font.pixelSize: 24 * mainWindow.minRatio
+                        color: forgotPasswordMessage.text.includes("succès") ? "#00FF00" : "#FF6B6B"
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Text.AlignHCenter
+                        visible: text !== ""
+                    }
+
+                    // Bouton envoyer
+                    Button {
+                        width: parent.width
+                        height: 100 * mainWindow.minRatio
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        background: Rectangle {
+                            color: parent.down ? "#005599" : (parent.hovered ? "#0066AA" : "#0077BB")
+                            radius: 10 * mainWindow.minRatio
+                            border.color: "#FFD700"
+                            border.width: 3 * mainWindow.minRatio
+                        }
+
+                        contentItem: Text {
+                            text: "Envoyer un nouveau mot de passe"
+                            font.pixelSize: 32 * mainWindow.minRatio
+                            font.bold: true
+                            color: "#FFFFFF"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: {
+                            if (forgotEmail.text === "") {
+                                forgotPasswordMessage.text = "Veuillez entrer votre adresse email"
+                                return
+                            }
+                            forgotPasswordMessage.text = ""
+                            networkManager.forgotPassword(forgotEmail.text)
+                        }
+                    }
+                }
+
+                Connections {
+                    target: networkManager
+                    function onForgotPasswordSuccess() {
+                        forgotPasswordMessage.text = "Un mot de passe temporaire a été envoyé à votre adresse email"
+                        forgotEmail.text = ""
+                        // Auto-retour après 3 secondes
+                        forgotPasswordSuccessTimer.start()
+                    }
+                    function onForgotPasswordFailed(error) {
+                        forgotPasswordMessage.text = error
+                    }
+                }
+
+                Timer {
+                    id: forgotPasswordSuccessTimer
+                    interval: 3000
+                    repeat: false
+                    onTriggered: {
+                        loginStack.pop()
+                    }
+                }
+            }
+        }
+
+        // Écran "Changement de mot de passe obligatoire"
+        Component {
+            id: changePasswordScreenComponent
+
+            Rectangle {
+                id: changePasswordScreenRect
+                anchors.fill: parent
+                color: "transparent"
+
+                // Pas de bouton retour - changement obligatoire
+
+                // Titre
+                Text {
+                    id: changePasswordTitle
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: 80 * mainWindow.minRatio
+                    text: "Changement de mot de passe obligatoire"
+                    font.pixelSize: 50 * mainWindow.minRatio
+                    font.bold: true
+                    color: "#FFD700"
+                    wrapMode: Text.WordWrap
+                    width: parent.width * 0.9
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                // Texte d'explication
+                Text {
+                    id: changePasswordExplanation
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: changePasswordTitle.bottom
+                    anchors.topMargin: 30 * mainWindow.minRatio
+                    text: "Vous vous êtes connecté avec un mot de passe temporaire.\nVeuillez choisir un nouveau mot de passe permanent."
+                    font.pixelSize: 28 * mainWindow.minRatio
+                    color: "#FFFFFF"
+                    wrapMode: Text.WordWrap
+                    width: parent.width * 0.8
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                // Formulaire
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 30 * mainWindow.minRatio
+                    width: 600 * mainWindow.minRatio
+
+                    // Nouveau mot de passe
+                    Rectangle {
+                        width: parent.width
+                        height: 70 * mainWindow.minRatio
+                        color: "#2a2a2a"
+                        radius: 10 * mainWindow.minRatio
+                        border.color: newPassword.activeFocus ? "#FFD700" : "#555555"
+                        border.width: 2 * mainWindow.minRatio
+
+                        TextField {
+                            id: newPassword
+                            anchors.fill: parent
+                            anchors.margins: 10 * mainWindow.minRatio
+                            font.pixelSize: 32 * mainWindow.minRatio
+                            color: "#FFFFFF"
+                            placeholderText: "Nouveau mot de passe"
+                            placeholderTextColor: "#888888"
+                            echoMode: TextInput.Password
+                            background: Rectangle { color: "transparent" }
+                            selectByMouse: true
+                        }
+                    }
+
+                    // Confirmer mot de passe
+                    Rectangle {
+                        width: parent.width
+                        height: 70 * mainWindow.minRatio
+                        color: "#2a2a2a"
+                        radius: 10 * mainWindow.minRatio
+                        border.color: confirmPassword.activeFocus ? "#FFD700" : "#555555"
+                        border.width: 2 * mainWindow.minRatio
+
+                        TextField {
+                            id: confirmPassword
+                            anchors.fill: parent
+                            anchors.margins: 10 * mainWindow.minRatio
+                            font.pixelSize: 32 * mainWindow.minRatio
+                            color: "#FFFFFF"
+                            placeholderText: "Confirmer le mot de passe"
+                            placeholderTextColor: "#888888"
+                            echoMode: TextInput.Password
+                            background: Rectangle { color: "transparent" }
+                            selectByMouse: true
+                        }
+                    }
+
+                    // Message d'erreur
+                    Text {
+                        id: changePasswordError
+                        width: parent.width
+                        text: ""
+                        font.pixelSize: 24 * mainWindow.minRatio
+                        color: "#FF6B6B"
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Text.AlignHCenter
+                        visible: text !== ""
+                    }
+
+                    // Bouton changer
+                    Button {
+                        width: parent.width
+                        height: 70 * mainWindow.minRatio
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        background: Rectangle {
+                            color: parent.down ? "#005599" : (parent.hovered ? "#0066AA" : "#0077BB")
+                            radius: 10 * mainWindow.minRatio
+                            border.color: "#FFD700"
+                            border.width: 3 * mainWindow.minRatio
+                        }
+
+                        contentItem: Text {
+                            text: "Changer le mot de passe"
+                            font.pixelSize: 32 * mainWindow.minRatio
+                            font.bold: true
+                            color: "#FFFFFF"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: {
+                            // Validation
+                            if (newPassword.text === "" || confirmPassword.text === "") {
+                                changePasswordError.text = "Veuillez remplir tous les champs"
+                                return
+                            }
+                            if (newPassword.text !== confirmPassword.text) {
+                                changePasswordError.text = "Les mots de passe ne correspondent pas"
+                                return
+                            }
+                            if (newPassword.text.length < 6) {
+                                changePasswordError.text = "Le mot de passe doit contenir au moins 6 caractères"
+                                return
+                            }
+
+                            // Envoyer la demande de changement
+                            changePasswordError.text = ""
+                            loginRoot.pendingChangePassword = newPassword.text
+                            networkManager.changePassword(loginRoot.pendingChangeEmail, newPassword.text)
+                        }
+                    }
+                }
+
+                Connections {
+                    target: networkManager
+                    function onChangePasswordSuccess() {
+                        qDebug("Password changed successfully - saving credentials and logging in")
+                        // Sauvegarder les nouveaux identifiants
+                        networkManager.saveCredentials(loginRoot.pendingChangeEmail, loginRoot.pendingChangePassword)
+                        // Émettre le signal de succès de connexion
+                        loginRoot.loginSuccess(loginRoot.pendingChangePlayerName, "account")
+                    }
+                    function onChangePasswordFailed(error) {
+                        changePasswordError.text = error
                     }
                 }
             }

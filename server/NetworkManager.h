@@ -210,6 +210,23 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void forgotPassword(const QString &email) {
+        qDebug() << "Demande mot de passe oublie pour:" << email;
+        QJsonObject msg;
+        msg["type"] = "forgotPassword";
+        msg["email"] = email;
+        sendMessage(msg);
+    }
+
+    Q_INVOKABLE void changePassword(const QString &email, const QString &newPassword) {
+        qDebug() << "Demande changement mot de passe pour:" << email;
+        QJsonObject msg;
+        msg["type"] = "changePassword";
+        msg["email"] = email;
+        msg["newPassword"] = newPassword;
+        sendMessage(msg);
+    }
+
     Q_INVOKABLE void requestStats(const QString &pseudo) {
         QJsonObject msg;
         msg["type"] = "getStats";
@@ -361,10 +378,14 @@ signals:
     void errorOccurred(QString error);
     void registerSuccess(QString playerName, QString avatar);
     void registerFailed(QString error);
-    void loginSuccess(QString playerName, QString avatar);
+    void loginSuccess(QString playerName, QString avatar, bool usingTempPassword);
     void loginFailed(QString error);
     void deleteAccountSuccess();
     void deleteAccountFailed(QString error);
+    void forgotPasswordSuccess();
+    void forgotPasswordFailed(QString error);
+    void changePasswordSuccess();
+    void changePasswordFailed(QString error);
     void messageReceived(QString message);  // Pour que QML puisse écouter tous les messages
     void playerAvatarChanged();
     void playerPseudoChanged();
@@ -744,6 +765,7 @@ private slots:
             QString playerName = obj["playerName"].toString();
             QString avatar = obj["avatar"].toString();
             QString connectionId = obj["connectionId"].toString();
+            bool usingTempPassword = obj["usingTempPassword"].toBool(false);
             if (avatar.isEmpty()) avatar = "avataaars1.svg";
             m_playerPseudo = playerName;
             m_playerAvatar = avatar;
@@ -751,10 +773,10 @@ private slots:
                 m_playerId = connectionId;
                 qDebug() << "NetworkManager - ConnectionId enregistre:" << connectionId;
             }
-            qDebug() << "NetworkManager - Connexion reussie:" << playerName << "Avatar:" << avatar;
+            qDebug() << "NetworkManager - Connexion reussie:" << playerName << "Avatar:" << avatar << "Temp password:" << usingTempPassword;
             emit playerAvatarChanged();
             emit playerPseudoChanged();
-            emit loginSuccess(playerName, avatar);
+            emit loginSuccess(playerName, avatar, usingTempPassword);
         }
         else if (type == "loginAccountFailed") {
             QString error = obj["error"].toString();
@@ -778,6 +800,24 @@ private slots:
             QString error = obj["error"].toString();
             qDebug() << "NetworkManager - Echec envoi message de contact:" << error;
             emit contactMessageFailed(error);
+        }
+        else if (type == "forgotPasswordSuccess") {
+            qDebug() << "NetworkManager - Mot de passe temporaire envoye";
+            emit forgotPasswordSuccess();
+        }
+        else if (type == "forgotPasswordFailed") {
+            QString error = obj["error"].toString();
+            qDebug() << "NetworkManager - Echec mot de passe oublie:" << error;
+            emit forgotPasswordFailed(error);
+        }
+        else if (type == "changePasswordSuccess") {
+            qDebug() << "NetworkManager - Mot de passe change avec succes";
+            emit changePasswordSuccess();
+        }
+        else if (type == "changePasswordFailed") {
+            QString error = obj["error"].toString();
+            qDebug() << "NetworkManager - Echec changement mot de passe:" << error;
+            emit changePasswordFailed(error);
         }
         else if (type == "error") {
             QString errorMsg = obj["message"].toString();

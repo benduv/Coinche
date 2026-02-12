@@ -99,27 +99,30 @@ TEST_F(DatabaseManagerTest, CreateAccount_DuplicateEmail) {
 TEST_F(DatabaseManagerTest, AuthenticateUser_Success) {
     QString errorMsg;
     QString pseudo, avatar;
+    bool usingTempPassword = false;
 
     // Créer un compte
     dbManager->createAccount("authUser", "auth@test.com", "myPassword", "avatar1.svg", errorMsg);
 
     // Authentifier
-    bool result = dbManager->authenticateUser("auth@test.com", "myPassword", pseudo, avatar, errorMsg);
+    bool result = dbManager->authenticateUser("auth@test.com", "myPassword", pseudo, avatar, errorMsg, usingTempPassword);
 
     EXPECT_TRUE(result) << "Authentification devrait réussir. Erreur: " << errorMsg.toStdString();
     EXPECT_EQ(pseudo, "authUser");
     EXPECT_EQ(avatar, "avatar1.svg");
+    EXPECT_FALSE(usingTempPassword) << "Should not be using temp password for normal login";
 }
 
 TEST_F(DatabaseManagerTest, AuthenticateUser_WrongPassword) {
     QString errorMsg;
     QString pseudo, avatar;
+    bool usingTempPassword = false;
 
     // Créer un compte
     dbManager->createAccount("authUser2", "auth2@test.com", "correctPassword", "avatar1.svg", errorMsg);
 
     // Essayer de s'authentifier avec un mauvais mot de passe
-    bool result = dbManager->authenticateUser("auth2@test.com", "wrongPassword", pseudo, avatar, errorMsg);
+    bool result = dbManager->authenticateUser("auth2@test.com", "wrongPassword", pseudo, avatar, errorMsg, usingTempPassword);
 
     EXPECT_FALSE(result) << "Authentification avec mauvais mot de passe devrait échouer";
 }
@@ -127,8 +130,9 @@ TEST_F(DatabaseManagerTest, AuthenticateUser_WrongPassword) {
 TEST_F(DatabaseManagerTest, AuthenticateUser_NonExistentEmail) {
     QString errorMsg;
     QString pseudo, avatar;
+    bool usingTempPassword = false;
 
-    bool result = dbManager->authenticateUser("nonexistent@test.com", "password", pseudo, avatar, errorMsg);
+    bool result = dbManager->authenticateUser("nonexistent@test.com", "password", pseudo, avatar, errorMsg, usingTempPassword);
 
     EXPECT_FALSE(result) << "Authentification avec email inexistant devrait échouer";
 }

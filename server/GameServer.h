@@ -362,6 +362,10 @@ private slots:
             handleSendContactMessage(sender, obj);
         } else if (type == "reportCrash") {
             handleReportCrash(sender, obj);
+        } else if (type == "forgotPassword") {
+            handleForgotPassword(sender, obj);
+        } else if (type == "changePassword") {
+            handleChangePassword(sender, obj);
         }
     }
 
@@ -458,9 +462,9 @@ private:
         switch (chiffre) {
             case Carte::SEPT:   return 0;
             case Carte::HUIT:   return 0;
-            case Carte::DAME:   return 1;  // Dame vaut 1 point en TA
+            case Carte::DAME:   return 2;  // Dame vaut 2 point en TA
             case Carte::ROI:    return 3;
-            case Carte::DIX:    return 5;
+            case Carte::DIX:    return 4;
             case Carte::AS:     return 6;  // As vaut 6 points en TA
             case Carte::NEUF:   return 9;
             case Carte::VALET:  return 14;
@@ -966,7 +970,8 @@ private:
         QString pseudo;
         QString avatar;
         QString errorMsg;
-        if (m_dbManager->authenticateUser(email, password, pseudo, avatar, errorMsg)) {
+        bool usingTempPassword = false;
+        if (m_dbManager->authenticateUser(email, password, pseudo, avatar, errorMsg, usingTempPassword)) {
             // Succès - Créer une connexion et enregistrer le joueur
             QString connectionId = QUuid::createUuid().toString();
 
@@ -985,6 +990,7 @@ private:
             response["playerName"] = pseudo;
             response["avatar"] = avatar;
             response["connectionId"] = connectionId;
+            response["usingTempPassword"] = usingTempPassword;
             sendMessage(socket, response);
             qDebug() << "Connexion reussie:" << pseudo << "avatar:" << avatar << "ID:" << connectionId;
 
@@ -1082,6 +1088,86 @@ private:
             response["error"] = errorMsg;
             sendMessage(socket, response);
             qDebug() << "Echec suppression compte:" << errorMsg;
+        }
+    }
+
+    void handleForgotPassword(QWebSocket *socket, const QJsonObject &data) {
+        QString email = data["email"].toString();
+
+        qDebug() << "GameServer - Demande mot de passe oublie pour:" << email;
+
+        QString tempPassword;
+        QString errorMsg;
+
+        if (m_dbManager->setTempPassword(email, tempPassword, errorMsg)) {
+            // Success - Send email with temp password
+            qDebug() << "Mot de passe temporaire genere:" << tempPassword;
+            qDebug() << "SMTP password configure:" << (m_smtpPassword.isEmpty() ? "NON" : "OUI");
+
+            SmtpClient *smtp = new SmtpClient(this);
+            smtp->setHost("ssl0.ovh.net", 587);
+            smtp->setCredentials("contact@nebuludik.fr", m_smtpPassword);
+            smtp->setFrom("contact@nebuludik.fr", "Coinche de l'Espace");
+
+            QString subject = "Réinitialisation de votre mot de passe";
+            QString emailBody = QString(
+                "Bonjour,\n\n"
+                "Vous avez demandé la réinitialisation de votre mot de passe.\n\n"
+                "Voici votre mot de passe temporaire : %1\n\n"
+                "Ce mot de passe est valide pour une seule connexion. "
+                "Vous devrez choisir un nouveau mot de passe permanent lors de votre prochaine connexion.\n\n"
+                "Si vous n'avez pas demandé cette réinitialisation, ignorez ce message.\n\n"
+                "Cordialement,\n"
+                "L'équipe Coinche de l'Espace"
+            ).arg(tempPassword);
+
+            QObject::connect(smtp, &SmtpClient::emailSent, [socket, smtp, this](bool success, const QString &error) {
+                if (success) {
+                    QJsonObject response;
+                    response["type"] = "forgotPasswordSuccess";
+                    sendMessage(socket, response);
+                    qDebug() << "Email de reinitialisation envoye avec succes";
+                } else {
+                    QJsonObject response;
+                    response["type"] = "forgotPasswordFailed";
+                    response["error"] = "Erreur lors de l'envoi de l'email";
+                    sendMessage(socket, response);
+                    qWarning() << "Echec envoi email:" << error;
+                }
+                smtp->deleteLater();
+            });
+
+            smtp->sendEmail(email, subject, emailBody);
+        } else {
+            // Email not found
+            QJsonObject response;
+            response["type"] = "forgotPasswordFailed";
+            response["error"] = errorMsg.isEmpty() ? "Cette adresse mail ne correspond a aucun compte" : errorMsg;
+            sendMessage(socket, response);
+            qDebug() << "Echec mot de passe oublie:" << errorMsg;
+        }
+    }
+
+    void handleChangePassword(QWebSocket *socket, const QJsonObject &data) {
+        QString email = data["email"].toString();
+        QString newPassword = data["newPassword"].toString();
+
+        qDebug() << "GameServer - Demande changement mot de passe pour:" << email;
+
+        QString errorMsg;
+        if (m_dbManager->updatePassword(email, newPassword, errorMsg)) {
+            // Success
+            QJsonObject response;
+            response["type"] = "changePasswordSuccess";
+            sendMessage(socket, response);
+            qDebug() << "Mot de passe change avec succes pour:" << email;
+        } else {
+            // Failure
+            QJsonObject response;
+            response["type"] = "changePasswordFailed";
+            response["error"] = errorMsg;
+            sendMessage(socket, response);
+            qDebug() << "Echec changement mot de passe:" << errorMsg;
         }
     }
 

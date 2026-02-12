@@ -24,7 +24,7 @@ public:
     bool createAccount(const QString &pseudo, const QString &email, const QString &password, const QString &avatar, QString &errorMsg);
 
     // Vérifier les identifiants de connexion
-    bool authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &avatar, QString &errorMsg);
+    bool authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &avatar, QString &errorMsg, bool &usingTempPassword);
 
     // Vérifier si un email existe déjà
     bool emailExists(const QString &email);
@@ -126,6 +126,12 @@ public:
 
     // Obtenir les tendances sur N jours
     QList<DailyStats> getTrendStats(int days);
+
+    // Password recovery methods
+    QString generateTempPassword();
+    bool setTempPassword(const QString &email, QString &tempPassword, QString &errorMsg);
+    bool isUsingTempPassword(const QString &email);
+    bool updatePassword(const QString &email, const QString &newPassword, QString &errorMsg);
 
 private:
     QSqlDatabase m_db;

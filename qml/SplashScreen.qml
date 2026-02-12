@@ -294,10 +294,11 @@ Rectangle {
             }
         }
 
-        function onLoginSuccess(playerName, avatar) {
+        function onLoginSuccess(playerName, avatar, usingTempPassword) {
             console.log("SplashScreen - Auto-login réussi pour:", playerName)
             splashRoot.autoLoginSucceeded = true
             splashRoot.loggedInPlayerName = playerName
+            // Note: Auto-login should never use temp password (credentials are only saved with permanent password)
         }
 
         function onLoginFailed(error) {

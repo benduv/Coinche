@@ -124,15 +124,33 @@ bool DatabaseManager::createTables()
     checkUsersQuery.exec("PRAGMA table_info(users)");
 
     bool hasAvatar = false;
+    bool hasTempPasswordHash = false;
+    bool hasTempPasswordCreated = false;
     while (checkUsersQuery.next()) {
         QString columnName = checkUsersQuery.value(1).toString();
         if (columnName == "avatar") hasAvatar = true;
+        if (columnName == "temp_password_hash") hasTempPasswordHash = true;
+        if (columnName == "temp_password_created") hasTempPasswordCreated = true;
     }
 
     if (!hasAvatar) {
         qDebug() << "Ajout de la colonne avatar dans la table users";
         if (!query.exec("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT 'avataaars1.svg'")) {
             qWarning() << "Erreur ajout colonne avatar:" << query.lastError().text();
+        }
+    }
+
+    if (!hasTempPasswordHash) {
+        qDebug() << "Ajout de la colonne temp_password_hash dans la table users";
+        if (!query.exec("ALTER TABLE users ADD COLUMN temp_password_hash TEXT")) {
+            qWarning() << "Erreur ajout colonne temp_password_hash:" << query.lastError().text();
+        }
+    }
+
+    if (!hasTempPasswordCreated) {
+        qDebug() << "Ajout de la colonne temp_password_created dans la table users";
+        if (!query.exec("ALTER TABLE users ADD COLUMN temp_password_created TIMESTAMP")) {
+            qWarning() << "Erreur ajout colonne temp_password_created:" << query.lastError().text();
         }
     }
 
@@ -471,16 +489,19 @@ bool DatabaseManager::createAccount(const QString &pseudo, const QString &email,
     return true;
 }
 
-bool DatabaseManager::authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &avatar, QString &errorMsg)
+bool DatabaseManager::authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &avatar, QString &errorMsg, bool &usingTempPassword)
 {
+    // Initialiser le flag
+    usingTempPassword = false;
+
     if (email.isEmpty() || password.isEmpty()) {
         errorMsg = "Email et mot de passe requis";
         return false;
     }
 
-    // Récupérer le salt, le hash et l'avatar pour cet email
+    // Récupérer le salt, les hash (permanent et temporaire) et l'avatar pour cet email
     QSqlQuery query(m_db);
-    query.prepare("SELECT pseudo, password_hash, salt, avatar FROM users WHERE email = :email");
+    query.prepare("SELECT pseudo, password_hash, salt, avatar, temp_password_hash FROM users WHERE email = :email");
     query.bindValue(":email", email);
 
     if (!query.exec()) {
@@ -498,12 +519,24 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
     QString storedHash = query.value(1).toString();
     QString salt = query.value(2).toString();
     QString storedAvatar = query.value(3).toString();
+    QString tempPasswordHash = query.value(4).toString();
 
     // Hasher le mot de passe fourni avec le salt
     QString providedHash = hashPassword(password, salt);
 
-    // Comparer les hash
-    if (providedHash != storedHash) {
+    // Vérifier d'abord le mot de passe permanent
+    if (providedHash == storedHash) {
+        // Mot de passe permanent correct
+        usingTempPassword = false;
+    }
+    // Si le mot de passe permanent ne correspond pas, vérifier le mot de passe temporaire
+    else if (!tempPasswordHash.isEmpty() && providedHash == tempPasswordHash) {
+        // Mot de passe temporaire correct
+        usingTempPassword = true;
+        qDebug() << "Authentification avec mot de passe temporaire pour:" << email;
+    }
+    else {
+        // Aucun des deux mots de passe ne correspond
         errorMsg = "Email ou mot de passe incorrect";
         return false;
     }
@@ -872,6 +905,126 @@ bool DatabaseManager::deleteAccount(const QString &pseudo, QString &errorMsg)
     }
 
     qDebug() << "Compte supprime avec succes pour:" << pseudo;
+    return true;
+}
+
+// ==================== PASSWORD RECOVERY METHODS ====================
+
+QString DatabaseManager::generateTempPassword()
+{
+    // Générer un mot de passe temporaire de 8 caractères (majuscules, minuscules, chiffres)
+    QString tempPassword;
+    const QString chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for (int i = 0; i < 8; i++) {
+        tempPassword += chars[QRandomGenerator::global()->bounded(chars.length())];
+    }
+
+    return tempPassword;
+}
+
+bool DatabaseManager::setTempPassword(const QString &email, QString &tempPassword, QString &errorMsg)
+{
+    if (email.isEmpty()) {
+        errorMsg = "Email requis";
+        return false;
+    }
+
+    // Récupérer le salt existant pour cet email
+    QSqlQuery getSaltQuery(m_db);
+    getSaltQuery.prepare("SELECT salt FROM users WHERE email = :email");
+    getSaltQuery.bindValue(":email", email);
+
+    if (!getSaltQuery.exec()) {
+        errorMsg = "Erreur lors de la vérification de l'email: " + getSaltQuery.lastError().text();
+        qCritical() << "Erreur getSalt:" << getSaltQuery.lastError().text();
+        return false;
+    }
+
+    if (!getSaltQuery.next()) {
+        errorMsg = "Cette adresse mail ne correspond a aucun compte";
+        return false;
+    }
+
+    QString salt = getSaltQuery.value(0).toString();
+
+    // Générer le mot de passe temporaire
+    tempPassword = generateTempPassword();
+
+    // Hasher le mot de passe temporaire avec le salt existant
+    QString tempPasswordHash = hashPassword(tempPassword, salt);
+
+    // Mettre à jour la base de données
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE users SET temp_password_hash = :temp_hash, temp_password_created = CURRENT_TIMESTAMP WHERE email = :email");
+    query.bindValue(":temp_hash", tempPasswordHash);
+    query.bindValue(":email", email);
+
+    if (!query.exec()) {
+        errorMsg = "Erreur lors de la génération du mot de passe temporaire: " + query.lastError().text();
+        qCritical() << "Erreur setTempPassword:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Mot de passe temporaire généré pour:" << email;
+    return true;
+}
+
+bool DatabaseManager::isUsingTempPassword(const QString &email)
+{
+    QSqlQuery query(m_db);
+    query.prepare("SELECT temp_password_hash FROM users WHERE email = :email");
+    query.bindValue(":email", email);
+
+    if (!query.exec()) {
+        qWarning() << "Erreur isUsingTempPassword:" << query.lastError().text();
+        return false;
+    }
+
+    if (query.next()) {
+        return !query.value(0).isNull();
+    }
+
+    return false;
+}
+
+bool DatabaseManager::updatePassword(const QString &email, const QString &newPassword, QString &errorMsg)
+{
+    if (email.isEmpty() || newPassword.isEmpty()) {
+        errorMsg = "Email et nouveau mot de passe requis";
+        return false;
+    }
+
+    // Valider le nouveau mot de passe
+    if (newPassword.length() < 6) {
+        errorMsg = "Le mot de passe doit contenir au moins 6 caractères";
+        return false;
+    }
+
+    // Vérifier si l'email existe
+    if (!emailExists(email)) {
+        errorMsg = "Compte non trouvé";
+        return false;
+    }
+
+    // Générer un nouveau salt et hasher le nouveau mot de passe
+    QString salt = generateSalt();
+    QString passwordHash = hashPassword(newPassword, salt);
+
+    // Mettre à jour le mot de passe permanent et effacer le mot de passe temporaire
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE users SET password_hash = :password_hash, salt = :salt, temp_password_hash = NULL, temp_password_created = NULL WHERE email = :email");
+    query.bindValue(":password_hash", passwordHash);
+    query.bindValue(":salt", salt);
+    query.bindValue(":email", email);
+
+    if (!query.exec()) {
+        errorMsg = "Erreur lors de la mise à jour du mot de passe: " + query.lastError().text();
+        qCritical() << "Erreur updatePassword:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Mot de passe mis à jour avec succès pour:" << email;
     return true;
 }
 
