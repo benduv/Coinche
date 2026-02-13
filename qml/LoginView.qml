@@ -16,113 +16,6 @@ Rectangle {
     property string pendingChangePlayerName: ""
     property string pendingChangePassword: ""
 
-    // Animation de fond - Symboles de cartes tombant comme des flocons
-    /*Item {
-        anchors.fill: parent
-        z: 100
-        clip: false
-
-        Repeater {
-            model: 20
-
-            delegate: Text {
-                property int symbolIndex: index
-                property real randomOffset: (symbolIndex * 37) % 30
-                property real oscillationOffset: 0  // Déplacement pour l'oscillation
-
-                text: {
-                    var symbols = ["♥", "♣", "♦", "♠"]
-                    return symbols[symbolIndex % 4]
-                }
-                color: {
-                    var colors = ["#AD1111", "#422E2E", "#AD1111", "#422E2E"]
-                    return colors[symbolIndex % 4]
-                }
-                font.pixelSize: (40 + (symbolIndex % 5) * 12) * loginRoot.minRatio
-                opacity: 0.2 + (symbolIndex % 3) * 0.05
-
-                // Position horizontale avec binding + oscillation
-                x: {
-                    var quarterWidth = loginRoot.width * 0.23
-                    var baseX = 0
-                    if (symbolIndex < 10) {
-                        // Quart gauche (0-23%)
-                        baseX = (quarterWidth / 10) * symbolIndex + randomOffset
-                    } else {
-                        // Quart droit (71-100%)
-                        var rightIndex = symbolIndex - 10
-                        baseX = loginRoot.width * 0.71 + (quarterWidth / 10) * rightIndex + randomOffset
-                    }
-                    return baseX + oscillationOffset
-                }
-
-                // Position verticale initiale
-                y: -150 - (symbolIndex % 5) * 50
-
-                // Animation de chute continue
-                SequentialAnimation on y {
-                    running: true
-                    loops: Animation.Infinite
-
-                    PauseAnimation {
-                        duration: (symbolIndex * 300) % 2000
-                    }
-
-                    NumberAnimation {
-                        to: loginRoot.height + 150
-                        duration: 10000 + (symbolIndex % 8) * 2000
-                        easing.type: Easing.Linear
-                    }
-
-                    PropertyAction {
-                        value: -150 - (symbolIndex % 5) * 50
-                    }
-                }
-
-                // Rotation pendant la chute
-                SequentialAnimation on rotation {
-                    running: true
-                    loops: Animation.Infinite
-
-                    PauseAnimation {
-                        duration: (symbolIndex * 300) % 2000
-                    }
-
-                    NumberAnimation {
-                        from: (symbolIndex * 37) % 360
-                        to: (symbolIndex * 37) % 360 + 360
-                        duration: 20000 + (symbolIndex % 5) * 3000
-                        easing.type: Easing.InOutQuad
-                    }
-                }
-
-                // Oscillation horizontale (balancement)
-                SequentialAnimation on oscillationOffset {
-                    running: true
-                    loops: Animation.Infinite
-
-                    PauseAnimation {
-                        duration: (symbolIndex * 300) % 2000
-                    }
-
-                    NumberAnimation {
-                        from: 0
-                        to: 40 * loginRoot.minRatio
-                        duration: 2500 + (symbolIndex % 4) * 500
-                        easing.type: Easing.InOutSine
-                    }
-
-                    NumberAnimation {
-                        from: 40 * loginRoot.minRatio
-                        to: 0
-                        duration: 2500 + (symbolIndex % 4) * 500
-                        easing.type: Easing.InOutSine
-                    }
-                }
-            }
-        }
-    }*/
-
     // Détection d'orientation
     property bool isPortrait: height > width
     property bool isLandscape: width > height
@@ -223,7 +116,7 @@ Rectangle {
 
                         contentItem: Text {
                             text: "Se connecter"
-                            font.pixelSize: 48 * loginRoot.minRatio
+                            font.pixelSize: 52 * loginRoot.minRatio
                             font.bold: true
                             color: "white"
                             horizontalAlignment: Text.AlignHCenter
@@ -706,7 +599,7 @@ Rectangle {
                     width: Math.min(parent.width * loginRoot.formWidthRatio, 500 * loginRoot.widthRatio)
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
-                    anchors.topMargin: loginRoot.isPortrait ? 200 * loginRoot.minRatio : 120 * loginRoot.minRatio
+                    anchors.topMargin: loginRoot.isPortrait ? 200 * loginRoot.minRatio : 100 * loginRoot.minRatio
                     spacing: loginRoot.isPortrait ? 15 * loginRoot.minRatio : 20 * loginRoot.minRatio
 
                     Text {
@@ -848,8 +741,6 @@ Rectangle {
                         }
                     }
 
-                    Item { height: 5 * loginRoot.minRatio }
-
                     // Bouton "Mot de passe oublié"
                     Button {
                         Layout.fillWidth: true
@@ -861,7 +752,7 @@ Rectangle {
 
                         contentItem: Text {
                             text: "Mot de passe oublié ?"
-                            font.pixelSize: 24 * loginRoot.minRatio
+                            font.pixelSize: 26 * loginRoot.minRatio
                             color: parent.hovered ? "#FFD700" : "#aaaaaa"
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -886,7 +777,7 @@ Rectangle {
                     function onLoginSuccess(playerName, avatar, usingTempPassword) {
                         if (usingTempPassword) {
                             // Force password change - don't save credentials yet
-                            qDebug("Login with temp password - forcing password change")
+                            console.log("Login with temp password - forcing password change")
                             // Store email and info for changePasswordScreen
                             loginRoot.pendingChangeEmail = loginScreenRect.pendingEmail
                             loginRoot.pendingChangePlayerName = playerName
@@ -917,7 +808,6 @@ Rectangle {
 
             Rectangle {
                 id: guestScreenRect
-                color: "#0a0a2e"
 
                 // Étoiles scintillantes en arrière-plan
                 StarryBackground {
@@ -1156,8 +1046,12 @@ Rectangle {
 
             Rectangle {
                 id: forgotPasswordScreenRect
-                anchors.fill: parent
-                color: "transparent"
+                color: "#0a0a2e"
+
+                // Étoiles scintillantes en arrière-plan
+                StarryBackground {
+                    minRatio: loginRoot.minRatio
+                }
 
                 // Bouton retour en haut à gauche
                 Rectangle {
@@ -1203,81 +1097,100 @@ Rectangle {
                     }
                 }
 
-                // Titre
-                Text {
-                    id: forgotPasswordTitle
+                ColumnLayout {
+                    id: forgotPasswordForm
+                    width: Math.min(parent.width * loginRoot.formWidthRatio, 500 * loginRoot.widthRatio)
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
-                    anchors.topMargin: 200 * mainWindow.minRatio
-                    text: "Mot de passe oublié"
-                    font.pixelSize: 60 * mainWindow.minRatio
-                    font.bold: true
-                    color: "#FFD700"
-                }
+                    anchors.topMargin: loginRoot.isPortrait ? 220 * loginRoot.minRatio : 120 * loginRoot.minRatio
+                    spacing: loginRoot.isPortrait ? 15 * loginRoot.minRatio : 20 * loginRoot.minRatio
 
-                // Formulaire
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 30 * mainWindow.minRatio
-                    width: 600 * mainWindow.minRatio
+                    Text {
+                        text: "Mot de passe oublié"
+                        font.pixelSize: 52 * loginRoot.minRatio
+                        font.bold: true
+                        color: "#FFD700"
+                        Layout.alignment: Qt.AlignHCenter
+                    }
 
-                    // Champ email
-                    Rectangle {
-                        width: parent.width
-                        height: 100 * mainWindow.minRatio
-                        color: "#2a2a2a"
-                        radius: 10 * mainWindow.minRatio
-                        border.color: forgotEmail.activeFocus ? "#FFD700" : "#555555"
-                        border.width: 2 * mainWindow.minRatio
+                    Item { height: 10 * loginRoot.minRatio }
+
+                    // Email
+                    Column {
+                        Layout.fillWidth: true
+                        spacing: 8 * loginRoot.minRatio
+
+                        Text {
+                            text: "Adresse email"
+                            font.pixelSize: 30 * loginRoot.minRatio
+                            color: "#aaaaaa"
+                        }
 
                         TextField {
                             id: forgotEmail
-                            anchors.fill: parent
-                            anchors.margins: 10 * mainWindow.minRatio
-                            font.pixelSize: 32 * mainWindow.minRatio
-                            color: "#FFFFFF"
-                            placeholderText: "Adresse email"
-                            placeholderTextColor: "#888888"
-                            background: Rectangle { color: "transparent" }
-                            selectByMouse: true
+                            width: parent.width
+                            height: 70 * loginRoot.heightRatio
+                            placeholderText: ""
+                            font.pixelSize: 36 * loginRoot.minRatio
+                            inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+
+                            background: Rectangle {
+                                color: "#2a2a2a"
+                                border.color: forgotEmail.activeFocus ? "#FFD700" : "#555555"
+                                border.width: 2 * loginRoot.minRatio
+                                radius: 5 * loginRoot.minRatio
+                            }
+
+                            color: "white"
+
+                            Text {
+                                text: forgotEmail.text.length === 0 ? "   votre@email.com" : ""
+                                font.pixelSize: 30 * loginRoot.minRatio
+                                color: "#888888"
+                                anchors.fill: parent
+                                anchors.leftMargin: 10 * loginRoot.minRatio
+                                verticalAlignment: Text.AlignVCenter
+                                visible: forgotEmail.text.length === 0
+                            }
                         }
                     }
 
                     // Message d'erreur/succès
                     Text {
                         id: forgotPasswordMessage
-                        width: parent.width
                         text: ""
-                        font.pixelSize: 24 * mainWindow.minRatio
-                        color: forgotPasswordMessage.text.includes("succès") ? "#00FF00" : "#FF6B6B"
-                        wrapMode: Text.WordWrap
+                        font.pixelSize: 26 * loginRoot.minRatio
+                        color: forgotPasswordMessage.text.includes("succès") ? "#00ff00" : "#ff6666"
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignHCenter
                         horizontalAlignment: Text.AlignHCenter
-                        visible: text !== ""
+                        wrapMode: Text.WordWrap
+                        visible: true
+                        opacity: text === "" ? 0 : 1
                     }
 
                     // Bouton envoyer
                     Button {
-                        width: parent.width
-                        height: 100 * mainWindow.minRatio
-                        anchors.horizontalCenter: parent.horizontalCenter
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 100 * loginRoot.heightRatio
 
                         background: Rectangle {
-                            color: parent.down ? "#005599" : (parent.hovered ? "#0066AA" : "#0077BB")
-                            radius: 10 * mainWindow.minRatio
-                            border.color: "#FFD700"
-                            border.width: 3 * mainWindow.minRatio
+                            color: parent.down ? "#00aa00" : (parent.hovered ? "#00dd00" : "#00cc00")
+                            radius: 8 * loginRoot.minRatio
                         }
 
                         contentItem: Text {
                             text: "Envoyer un nouveau mot de passe"
-                            font.pixelSize: 32 * mainWindow.minRatio
+                            font.pixelSize: 30 * loginRoot.minRatio
                             font.bold: true
-                            color: "#FFFFFF"
+                            color: "white"
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
 
                         onClicked: {
+                            Qt.inputMethod.hide()
+
                             if (forgotEmail.text === "") {
                                 forgotPasswordMessage.text = "Veuillez entrer votre adresse email"
                                 return
@@ -1286,6 +1199,8 @@ Rectangle {
                             networkManager.forgotPassword(forgotEmail.text)
                         }
                     }
+
+                    Item { height: 20 * loginRoot.minRatio }
                 }
 
                 Connections {
@@ -1319,7 +1234,11 @@ Rectangle {
             Rectangle {
                 id: changePasswordScreenRect
                 anchors.fill: parent
-                color: "transparent"
+
+                // Étoiles scintillantes en arrière-plan
+                StarryBackground {
+                    minRatio: loginRoot.minRatio
+                }
 
                 // Pas de bouton retour - changement obligatoire
 
@@ -1328,9 +1247,9 @@ Rectangle {
                     id: changePasswordTitle
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
-                    anchors.topMargin: 80 * mainWindow.minRatio
-                    text: "Changement de mot de passe obligatoire"
-                    font.pixelSize: 50 * mainWindow.minRatio
+                    anchors.topMargin: loginRoot.isPortrait ? 300 * loginRoot.minRatio : 80 * loginRoot.minRatio
+                    text: "Changer le mot de passe"
+                    font.pixelSize: 60 * mainWindow.minRatio
                     font.bold: true
                     color: "#FFD700"
                     wrapMode: Text.WordWrap
@@ -1343,25 +1262,27 @@ Rectangle {
                     id: changePasswordExplanation
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: changePasswordTitle.bottom
-                    anchors.topMargin: 30 * mainWindow.minRatio
+                    anchors.topMargin: 50 * mainWindow.minRatio
                     text: "Vous vous êtes connecté avec un mot de passe temporaire.\nVeuillez choisir un nouveau mot de passe permanent."
-                    font.pixelSize: 28 * mainWindow.minRatio
+                    font.pixelSize: 32 * mainWindow.minRatio
                     color: "#FFFFFF"
                     wrapMode: Text.WordWrap
-                    width: parent.width * 0.8
+                    width: parent.width * 0.95
                     horizontalAlignment: Text.AlignHCenter
                 }
 
                 // Formulaire
                 Column {
-                    anchors.centerIn: parent
-                    spacing: 30 * mainWindow.minRatio
-                    width: 600 * mainWindow.minRatio
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: changePasswordExplanation.bottom
+                    anchors.topMargin: loginRoot.isPortrait ? 120 * loginRoot.minRatio : 40 * loginRoot.minRatio
+                    spacing: loginRoot.isPortrait ? 40 * mainWindow.minRatio : 30 * loginRoot.minRatio
+                    width: 800 * mainWindow.minRatio
 
                     // Nouveau mot de passe
                     Rectangle {
                         width: parent.width
-                        height: 70 * mainWindow.minRatio
+                        height: loginRoot.isPortrait ? 130 * mainWindow.minRatio : 90 * mainWindow.minRatio
                         color: "#2a2a2a"
                         radius: 10 * mainWindow.minRatio
                         border.color: newPassword.activeFocus ? "#FFD700" : "#555555"
@@ -1371,7 +1292,7 @@ Rectangle {
                             id: newPassword
                             anchors.fill: parent
                             anchors.margins: 10 * mainWindow.minRatio
-                            font.pixelSize: 32 * mainWindow.minRatio
+                            font.pixelSize: 36 * mainWindow.minRatio
                             color: "#FFFFFF"
                             placeholderText: "Nouveau mot de passe"
                             placeholderTextColor: "#888888"
@@ -1384,7 +1305,7 @@ Rectangle {
                     // Confirmer mot de passe
                     Rectangle {
                         width: parent.width
-                        height: 70 * mainWindow.minRatio
+                        height: loginRoot.isPortrait ? 130 * mainWindow.minRatio : 90 * mainWindow.minRatio
                         color: "#2a2a2a"
                         radius: 10 * mainWindow.minRatio
                         border.color: confirmPassword.activeFocus ? "#FFD700" : "#555555"
@@ -1394,7 +1315,7 @@ Rectangle {
                             id: confirmPassword
                             anchors.fill: parent
                             anchors.margins: 10 * mainWindow.minRatio
-                            font.pixelSize: 32 * mainWindow.minRatio
+                            font.pixelSize: 36 * mainWindow.minRatio
                             color: "#FFFFFF"
                             placeholderText: "Confirmer le mot de passe"
                             placeholderTextColor: "#888888"
@@ -1409,17 +1330,17 @@ Rectangle {
                         id: changePasswordError
                         width: parent.width
                         text: ""
-                        font.pixelSize: 24 * mainWindow.minRatio
+                        font.pixelSize: 26 * mainWindow.minRatio
                         color: "#FF6B6B"
                         wrapMode: Text.WordWrap
                         horizontalAlignment: Text.AlignHCenter
-                        visible: text !== ""
+                        opacity: text !== "" ? 1 : 0
                     }
 
                     // Bouton changer
                     Button {
                         width: parent.width
-                        height: 70 * mainWindow.minRatio
+                        height: loginRoot.isPortrait ? 140 * mainWindow.minRatio : 100 * mainWindow.minRatio
                         anchors.horizontalCenter: parent.horizontalCenter
 
                         background: Rectangle {
@@ -1431,7 +1352,7 @@ Rectangle {
 
                         contentItem: Text {
                             text: "Changer le mot de passe"
-                            font.pixelSize: 32 * mainWindow.minRatio
+                            font.pixelSize: 40 * mainWindow.minRatio
                             font.bold: true
                             color: "#FFFFFF"
                             horizontalAlignment: Text.AlignHCenter
@@ -1464,7 +1385,7 @@ Rectangle {
                 Connections {
                     target: networkManager
                     function onChangePasswordSuccess() {
-                        qDebug("Password changed successfully - saving credentials and logging in")
+                        console.log("Password changed successfully - saving credentials and logging in")
                         // Sauvegarder les nouveaux identifiants
                         networkManager.saveCredentials(loginRoot.pendingChangeEmail, loginRoot.pendingChangePassword)
                         // Émettre le signal de succès de connexion

@@ -361,7 +361,8 @@ Rectangle {
                             contactRoot.isSending = true
                             // Envoyer via le serveur
                             networkManager.sendContactMessage(
-                                "", // senderName vide (anonyme)
+                                networkManager.playerPseudo,
+                                networkManager.playerEmail,
                                 subjectField.text.trim(),
                                 messageArea.text.trim()
                             )

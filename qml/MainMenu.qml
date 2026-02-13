@@ -540,7 +540,7 @@ ApplicationWindow {
 
                                 NumberAnimation {
                                     to: mainWindow.height + 150
-                                    duration: 10000 + (symbolIndex % 8) * 2000
+                                    duration: 13000 + (symbolIndex % 8) * 3000
                                     easing.type: Easing.Linear
                                 }
 

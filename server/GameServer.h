@@ -1173,10 +1173,11 @@ private:
 
     void handleSendContactMessage(QWebSocket *socket, const QJsonObject &data) {
         QString senderName = data["senderName"].toString();
+        QString senderEmail = data["senderEmail"].toString();
         QString subject = data["subject"].toString();
         QString message = data["message"].toString();
 
-        qDebug() << "GameServer - Message de contact de:" << senderName << "Sujet:" << subject;
+        qDebug() << "GameServer - Message de contact de:" << senderName << "(" << senderEmail << ") Sujet:" << subject;
 
         // Valider les donnees
         if (subject.isEmpty() || message.isEmpty()) {
@@ -1198,10 +1199,12 @@ private:
         // Construire le corps du message
         QString body = QString("Nouveau message depuis l'application Coinche\n\n"
                                "De: %1\n"
-                               "Sujet: %2\n\n"
-                               "Message:\n%3\n\n"
+                               "Email: %2\n"
+                               "Sujet: %3\n\n"
+                               "Message:\n%4\n\n"
                                "---\nEnvoye depuis l'application Coinche")
                                .arg(senderName.isEmpty() ? "Anonyme" : senderName)
+                               .arg(senderEmail.isEmpty() ? "Non renseigne" : senderEmail)
                                .arg(subject)
                                .arg(message);
 

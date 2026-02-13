@@ -27,6 +27,7 @@ class NetworkManager : public QObject {
     Q_PROPERTY(QJsonArray opponents READ opponents NOTIFY gameDataChanged)
     Q_PROPERTY(QString playerAvatar READ playerAvatar NOTIFY playerAvatarChanged)
     Q_PROPERTY(QString playerPseudo READ playerPseudo NOTIFY playerPseudoChanged)
+    Q_PROPERTY(QString playerEmail READ playerEmail NOTIFY playerEmailChanged)
     Q_PROPERTY(QVariantList lobbyPlayers READ lobbyPlayers NOTIFY lobbyPlayersChanged)
     Q_PROPERTY(QString pendingBotReplacement READ pendingBotReplacement NOTIFY pendingBotReplacementChanged)
     Q_PROPERTY(bool hasStoredCredentials READ hasStoredCredentials NOTIFY storedCredentialsChanged)
@@ -74,6 +75,7 @@ public:
     GameModel* gameModel() const { return m_gameModel; }
     QString playerAvatar() const { return m_playerAvatar; }
     QString playerPseudo() const { return m_playerPseudo; }
+    QString playerEmail() const { return m_playerEmail; }
     QVariantList lobbyPlayers() const { return m_lobbyPlayers; }
     QString pendingBotReplacement() const { return m_pendingBotReplacement; }
 
@@ -185,6 +187,8 @@ public:
     }
 
     Q_INVOKABLE void registerAccount(const QString &pseudo, const QString &email, const QString &password, const QString &avatar = "avataaars1.svg") {
+        m_playerEmail = email;
+        emit playerEmailChanged();
         QJsonObject msg;
         msg["type"] = "registerAccount";
         msg["pseudo"] = pseudo;
@@ -195,6 +199,8 @@ public:
     }
 
     Q_INVOKABLE void loginAccount(const QString &email, const QString &password) {
+        m_playerEmail = email;
+        emit playerEmailChanged();
         QJsonObject msg;
         msg["type"] = "loginAccount";
         msg["email"] = email;
@@ -234,11 +240,12 @@ public:
         sendMessage(msg);
     }
 
-    Q_INVOKABLE void sendContactMessage(const QString &senderName, const QString &subject, const QString &message) {
-        qDebug() << "Envoi message de contact - Sujet:" << subject;
+    Q_INVOKABLE void sendContactMessage(const QString &senderName, const QString &senderEmail, const QString &subject, const QString &message) {
+        qDebug() << "Envoi message de contact - De:" << senderName << "Email:" << senderEmail << "Sujet:" << subject;
         QJsonObject msg;
         msg["type"] = "sendContactMessage";
         msg["senderName"] = senderName;
+        msg["senderEmail"] = senderEmail;
         msg["subject"] = subject;
         msg["message"] = message;
         sendMessage(msg);
@@ -389,6 +396,7 @@ signals:
     void messageReceived(QString message);  // Pour que QML puisse écouter tous les messages
     void playerAvatarChanged();
     void playerPseudoChanged();
+    void playerEmailChanged();
 
     // Signaux pour les lobbies privés
     void lobbyCreated(QString code);
@@ -1019,6 +1027,7 @@ private:
 
     GameModel* m_gameModel;  // Le GameModel géré par NetworkManager
     QString m_playerPseudo;
+    QString m_playerEmail;
     QString m_playerAvatar;
     QString m_pendingBotReplacement;  // Message de remplacement par bot en attente
 

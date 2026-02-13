@@ -1797,8 +1797,8 @@ Rectangle {
                 running: false
 
                 onTriggered: {
-                    // Incrémenter le progrès (0 à 1 sur 4 secondes pour une animation plus fluide)
-                    rocketAnimation.animationProgress += 0.004  // 16ms / 4000ms
+                    // Incrémenter le progrès (0 à 1 sur 3 secondes pour une animation plus fluide)
+                    rocketAnimation.animationProgress += 0.00533  // 16ms / 3000ms
 
                     if (rocketAnimation.animationProgress >= 1.0) {
                         // Animation terminée
@@ -1812,8 +1812,8 @@ Rectangle {
                     // Calculer la position en spirale
                     var progress = rocketAnimation.animationProgress
 
-                    // Nombre de tours complets de la spirale (2 tours)
-                    var spiralTurns = 2.0
+                    // Nombre de tours complets de la spirale (1.5 tours)
+                    var spiralTurns = 1.5
                     var currentAngle = rocketAnimation.startAngle + spiralTurns * 2 * Math.PI * progress
 
                     // Rayon diminue progressivement de initialRadius à 0
