@@ -150,6 +150,7 @@ if(NOT ANDROID)
     add_executable(server
         server/server_main.cpp
         server/GameServer.h  # Header-only, mis directement dans le serveur
+        server/GameServer.cpp
         server/DatabaseManager.h
         server/DatabaseManager.cpp
         server/SmtpClient.h
