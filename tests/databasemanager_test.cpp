@@ -321,3 +321,292 @@ TEST_F(DatabaseManagerTest, GetUserIdByPseudo_NotExists) {
 
     EXPECT_EQ(userId, -1) << "User ID devrait être -1 pour un utilisateur inexistant";
 }
+
+// ========================================
+// Tests pour les statistiques de joueur manquantes
+// ========================================
+
+TEST_F(DatabaseManagerTest, CancelDefeat_Success) {
+    QString errorMsg;
+    dbManager->createAccount("defeatUser", "defeat@test.com", "password", "avatar.svg", errorMsg);
+
+    // Simuler des défaites
+    dbManager->updateGameStats("defeatUser", false);
+    dbManager->updateGameStats("defeatUser", false);
+    dbManager->updateGameStats("defeatUser", true);
+
+    DatabaseManager::PlayerStats statsBefore = dbManager->getPlayerStats("defeatUser");
+    EXPECT_EQ(statsBefore.gamesPlayed, 3);
+    EXPECT_EQ(statsBefore.gamesWon, 1);
+
+    // Annuler une défaite
+    dbManager->cancelDefeat("defeatUser");
+
+    DatabaseManager::PlayerStats statsAfter = dbManager->getPlayerStats("defeatUser");
+    EXPECT_EQ(statsAfter.gamesPlayed, 2) << "Une partie devrait être annulée";
+    EXPECT_EQ(statsAfter.gamesWon, 1) << "Les victoires ne devraient pas changer";
+}
+
+TEST_F(DatabaseManagerTest, UpdateCapotAnnonceTente_Success) {
+    QString errorMsg;
+    dbManager->createAccount("capotTenteUser", "capottente@test.com", "password", "avatar.svg", errorMsg);
+
+    // Tenter plusieurs capots annoncés
+    dbManager->updateCapotAnnonceTente("capotTenteUser");
+    dbManager->updateCapotAnnonceTente("capotTenteUser");
+    dbManager->updateCapotAnnonceTente("capotTenteUser");
+
+    DatabaseManager::PlayerStats stats = dbManager->getPlayerStats("capotTenteUser");
+    EXPECT_EQ(stats.capotAnnoncesTentes, 3) << "3 tentatives de capot annoncé";
+}
+
+TEST_F(DatabaseManagerTest, UpdateAnnonceCoinchee_Won) {
+    QString errorMsg;
+    dbManager->createAccount("coincheeUser", "coinchee@test.com", "password", "avatar.svg", errorMsg);
+
+    // Annonces coinchées gagnées et perdues
+    dbManager->updateAnnonceCoinchee("coincheeUser", true);
+    dbManager->updateAnnonceCoinchee("coincheeUser", true);
+    dbManager->updateAnnonceCoinchee("coincheeUser", false);
+
+    DatabaseManager::PlayerStats stats = dbManager->getPlayerStats("coincheeUser");
+    EXPECT_EQ(stats.annoncesCoinchees, 3) << "3 annonces coinchées au total";
+    EXPECT_EQ(stats.annoncesCoincheesgagnees, 2) << "2 annonces coinchées gagnées";
+}
+
+TEST_F(DatabaseManagerTest, UpdateSurcoincheStats_Success) {
+    QString errorMsg;
+    dbManager->createAccount("surcoincheUser", "surcoinche@test.com", "password", "avatar.svg", errorMsg);
+
+    // Surcoincherries réussies et échouées
+    dbManager->updateSurcoincheStats("surcoincheUser", true, true);   // Tentative réussie
+    dbManager->updateSurcoincheStats("surcoincheUser", true, false);  // Tentative échouée
+    dbManager->updateSurcoincheStats("surcoincheUser", true, true);   // Tentative réussie
+
+    DatabaseManager::PlayerStats stats = dbManager->getPlayerStats("surcoincheUser");
+    EXPECT_EQ(stats.surcoincheAttempts, 3) << "3 tentatives de surcoinche";
+    EXPECT_EQ(stats.surcoincheSuccess, 2) << "2 surcoincherries réussies";
+}
+
+TEST_F(DatabaseManagerTest, UpdateAnnonceSurcoinchee_Won) {
+    QString errorMsg;
+    dbManager->createAccount("surcoincheAnnonceUser", "surcoincheannonce@test.com", "password", "avatar.svg", errorMsg);
+
+    // Annonces surcoinchées gagnées et perdues
+    dbManager->updateAnnonceSurcoinchee("surcoincheAnnonceUser", true);
+    dbManager->updateAnnonceSurcoinchee("surcoincheAnnonceUser", false);
+    dbManager->updateAnnonceSurcoinchee("surcoincheAnnonceUser", true);
+    dbManager->updateAnnonceSurcoinchee("surcoincheAnnonceUser", true);
+
+    DatabaseManager::PlayerStats stats = dbManager->getPlayerStats("surcoincheAnnonceUser");
+    EXPECT_EQ(stats.annoncesSurcoinchees, 4) << "4 annonces surcoinchées au total";
+    EXPECT_EQ(stats.annoncesSurcoincheesGagnees, 3) << "3 annonces surcoinchées gagnées";
+}
+
+// ========================================
+// Tests pour les statistiques quotidiennes
+// ========================================
+
+TEST_F(DatabaseManagerTest, RecordLogin_Success) {
+    // Enregistrer plusieurs logins
+    dbManager->recordLogin("user1");
+    dbManager->recordLogin("user2");
+    dbManager->recordLogin("user1"); // Même utilisateur se reconnecte
+
+    // Vérifier via getDailyStats
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+    DatabaseManager::DailyStats stats = dbManager->getDailyStats(today);
+
+    EXPECT_GE(stats.logins, 2) << "Au moins 2 logins uniques devraient être enregistrés";
+}
+
+TEST_F(DatabaseManagerTest, RecordGameRoomCreated_Success) {
+    // Créer plusieurs parties
+    dbManager->recordGameRoomCreated();
+    dbManager->recordGameRoomCreated();
+    dbManager->recordGameRoomCreated();
+
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+    DatabaseManager::DailyStats stats = dbManager->getDailyStats(today);
+
+    EXPECT_GE(stats.gameRoomsCreated, 3) << "3 parties devraient être enregistrées";
+}
+
+TEST_F(DatabaseManagerTest, RecordNewAccount_Success) {
+    // Enregistrer de nouveaux comptes
+    dbManager->recordNewAccount();
+    dbManager->recordNewAccount();
+
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+    DatabaseManager::DailyStats stats = dbManager->getDailyStats(today);
+
+    EXPECT_GE(stats.newAccounts, 2) << "2 nouveaux comptes devraient être enregistrés";
+}
+
+TEST_F(DatabaseManagerTest, RecordPlayerQuit_Success) {
+    // Enregistrer des abandons
+    dbManager->recordPlayerQuit();
+    dbManager->recordPlayerQuit();
+    dbManager->recordPlayerQuit();
+
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+    DatabaseManager::DailyStats stats = dbManager->getDailyStats(today);
+
+    EXPECT_GE(stats.playerQuits, 3) << "3 abandons devraient être enregistrés";
+}
+
+TEST_F(DatabaseManagerTest, GetDailyStats_Today) {
+    // Enregistrer diverses statistiques pour aujourd'hui
+    dbManager->recordLogin("testUser");
+    dbManager->recordGameRoomCreated();
+    dbManager->recordNewAccount();
+    dbManager->recordPlayerQuit();
+
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+    DatabaseManager::DailyStats stats = dbManager->getDailyStats(today);
+
+    EXPECT_EQ(stats.date, today);
+    EXPECT_GE(stats.logins, 1);
+    EXPECT_GE(stats.gameRoomsCreated, 1);
+    EXPECT_GE(stats.newAccounts, 1);
+    EXPECT_GE(stats.playerQuits, 1);
+}
+
+TEST_F(DatabaseManagerTest, GetDailyStats_Default) {
+    // Sans paramètre, devrait retourner les stats d'aujourd'hui
+    dbManager->recordLogin("defaultUser");
+
+    DatabaseManager::DailyStats stats = dbManager->getDailyStats();
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+
+    EXPECT_EQ(stats.date, today);
+}
+
+TEST_F(DatabaseManagerTest, GetYesterdayStats_Success) {
+    // Note: Ce test vérifie juste que la méthode ne crash pas
+    // Les stats d'hier peuvent être vides en test
+    DatabaseManager::DailyStats yesterdayStats = dbManager->getYesterdayStats();
+
+    QString yesterday = QDate::currentDate().addDays(-1).toString("yyyy-MM-dd");
+    EXPECT_EQ(yesterdayStats.date, yesterday);
+}
+
+TEST_F(DatabaseManagerTest, RecordSessionStartEnd_Success) {
+    QString errorMsg;
+    dbManager->createAccount("sessionUser", "session@test.com", "password", "avatar.svg", errorMsg);
+
+    // Démarrer une session
+    dbManager->recordSessionStart("sessionUser");
+
+    // Simuler un délai (en réalité instantané en test)
+    dbManager->recordSessionEnd("sessionUser");
+
+    // Vérifier qu'aucune erreur ne se produit
+    // Les temps de session sont calculés dans getRetentionStats
+    SUCCEED() << "Session start/end enregistrée sans erreur";
+}
+
+TEST_F(DatabaseManagerTest, RecordCrash_Success) {
+    // Enregistrer plusieurs crashes
+    dbManager->recordCrash();
+    dbManager->recordCrash();
+
+    QString today = QDate::currentDate().toString("yyyy-MM-dd");
+    DatabaseManager::DailyStats stats = dbManager->getDailyStats(today);
+
+    EXPECT_GE(stats.crashes, 2) << "2 crashes devraient être enregistrés";
+}
+
+// ========================================
+// Tests pour les analytics
+// ========================================
+
+TEST_F(DatabaseManagerTest, GetRetentionStats_Success) {
+    QString errorMsg;
+
+    // Créer quelques comptes
+    dbManager->createAccount("retentionUser1", "ret1@test.com", "password", "avatar.svg", errorMsg);
+    dbManager->createAccount("retentionUser2", "ret2@test.com", "password", "avatar.svg", errorMsg);
+
+    // Simuler des logins
+    dbManager->recordLogin("retentionUser1");
+    dbManager->recordLogin("retentionUser2");
+
+    DatabaseManager::RetentionStats stats = dbManager->getRetentionStats();
+
+    // Vérifier que les stats sont retournées (valeurs exactes dépendent de l'état de la DB)
+    EXPECT_GE(stats.d1Retention, 0.0);
+    EXPECT_GE(stats.d7Retention, 0.0);
+    EXPECT_GE(stats.d30Retention, 0.0);
+}
+
+TEST_F(DatabaseManagerTest, GetTrendStats_7Days) {
+    // Enregistrer des statistiques pour créer une tendance
+    dbManager->recordLogin("trendUser");
+    dbManager->recordGameRoomCreated();
+
+    QList<DatabaseManager::DailyStats> trends = dbManager->getTrendStats(7);
+
+    EXPECT_LE(trends.size(), 7) << "Ne devrait pas retourner plus de 7 jours";
+    EXPECT_GE(trends.size(), 1) << "Devrait retourner au moins 1 jour (aujourd'hui)";
+
+    // Vérifier que les dates sont dans l'ordre si on a plusieurs résultats
+    if (trends.size() > 1) {
+        for (int i = 0; i < trends.size() - 1; i++) {
+            QDate date1 = QDate::fromString(trends[i].date, "yyyy-MM-dd");
+            QDate date2 = QDate::fromString(trends[i + 1].date, "yyyy-MM-dd");
+            EXPECT_TRUE(date1 < date2) << "Les dates devraient être en ordre croissant";
+        }
+    }
+}
+
+TEST_F(DatabaseManagerTest, GetTrendStats_30Days) {
+    // Enregistrer quelques stats
+    dbManager->recordLogin("trendUser30");
+    dbManager->recordGameRoomCreated();
+
+    QList<DatabaseManager::DailyStats> trends = dbManager->getTrendStats(30);
+
+    EXPECT_LE(trends.size(), 30) << "Ne devrait pas retourner plus de 30 jours";
+    EXPECT_GE(trends.size(), 0) << "Devrait retourner au moins 0 jour (base vide possible)";
+}
+
+// ========================================
+// Tests pour le mot de passe temporaire
+// ========================================
+
+TEST_F(DatabaseManagerTest, IsUsingTempPassword_True) {
+    QString errorMsg;
+    QString tempPassword;
+
+    dbManager->createAccount("tempPwdUser", "temppwd@test.com", "password", "avatar.svg", errorMsg);
+    dbManager->setTempPassword("temppwd@test.com", tempPassword, errorMsg);
+
+    bool isUsingTemp = dbManager->isUsingTempPassword("temppwd@test.com");
+    EXPECT_TRUE(isUsingTemp) << "L'utilisateur devrait avoir un mot de passe temporaire";
+}
+
+TEST_F(DatabaseManagerTest, IsUsingTempPassword_False) {
+    QString errorMsg;
+
+    dbManager->createAccount("normalPwdUser", "normalpwd@test.com", "password", "avatar.svg", errorMsg);
+
+    bool isUsingTemp = dbManager->isUsingTempPassword("normalpwd@test.com");
+    EXPECT_FALSE(isUsingTemp) << "L'utilisateur ne devrait pas avoir de mot de passe temporaire";
+}
+
+TEST_F(DatabaseManagerTest, IsUsingTempPassword_AfterUpdate) {
+    QString errorMsg;
+    QString tempPassword;
+
+    dbManager->createAccount("updatePwdUser", "updatepwd@test.com", "password", "avatar.svg", errorMsg);
+    dbManager->setTempPassword("updatepwd@test.com", tempPassword, errorMsg);
+
+    EXPECT_TRUE(dbManager->isUsingTempPassword("updatepwd@test.com"));
+
+    // Mettre à jour avec un mot de passe permanent
+    dbManager->updatePassword("updatepwd@test.com", "newPassword", errorMsg);
+
+    EXPECT_FALSE(dbManager->isUsingTempPassword("updatepwd@test.com"))
+        << "Le mot de passe temporaire devrait être effacé après mise à jour";
+}

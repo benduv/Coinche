@@ -178,6 +178,9 @@ struct PrivateLobby {
 class GameServer : public QObject {
     Q_OBJECT
 
+    // Allow test classes to access private methods
+    friend class GameServerUtilsTest;
+
 public:
     // Constante de délai pour l'affichage du panneau d'annonces
     static constexpr int BID_PANEL_DISPLAY_DELAY_MS = 3000;  // Délai pour laisser le temps au client de recevoir les cartes et d'afficher le panneau

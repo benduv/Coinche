@@ -31,7 +31,7 @@ cd "$BUILD_DIR"
 # Compiler
 echo -e "${BLUE}Compilation...${NC}"
 if [ "$TEST_TYPE" == "all" ]; then
-    cmake --build . --target coinche_tests test_gameserver test_capot_generale test_coinche test_databasemanager
+    cmake --build . --target coinche_tests test_gameserver test_capot_generale test_coinche test_databasemanager test_networkmanager test_networkmanager_integration test_gameserver_integration
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erreur de compilation${NC}"
         echo ""
@@ -95,6 +95,18 @@ case $TEST_TYPE in
         echo -e "${BLUE}Exécution des tests DatabaseManager...${NC}"
         ./test_databasemanager
         ;;
+    networkmanager)
+        echo -e "${BLUE}Exécution des tests NetworkManager...${NC}"
+        ./test_networkmanager
+        ;;
+    networkmanager_integration)
+        echo -e "${BLUE}Exécution des tests d'intégration NetworkManager...${NC}"
+        ./test_networkmanager_integration
+        ;;
+    gameserver_integration)
+        echo -e "${BLUE}Exécution des tests d'intégration GameServer...${NC}"
+        ./test_gameserver_integration
+        ;;
     coinche_tests)
         echo -e "${BLUE}Exécution des tests Carte/Deck/Player...${NC}"
         ./coinche_tests
@@ -108,10 +120,13 @@ case $TEST_TYPE in
         run_test "test_capot_generale" "Tests CAPOT/GENERALE"
         run_test "test_coinche" "Tests COINCHE/SURCOINCHE"
         run_test "test_databasemanager" "Tests DatabaseManager"
+        run_test "test_networkmanager" "Tests NetworkManager"
+        run_test "test_networkmanager_integration" "Tests Intégration NetworkManager"
+        run_test "test_gameserver_integration" "Tests Intégration GameServer"
         ;;
     *)
         echo -e "${RED}Type de test invalide: $TEST_TYPE${NC}"
-        echo "Usage: ./run_tests.sh [gameserver|capot|coinche|databasemanager|coinche_tests|all]"
+        echo "Usage: ./run_tests.sh [gameserver|capot|coinche|databasemanager|networkmanager|networkmanager_integration|gameserver_integration|coinche_tests|all]"
         echo ""
         echo "Appuyez sur Entrée pour fermer..."
         read

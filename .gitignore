@@ -11,6 +11,7 @@
 
 # Dossiers de build
 build/
+build-*/
 bin/
 obj/
 Debug/

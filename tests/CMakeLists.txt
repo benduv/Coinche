@@ -129,3 +129,81 @@ target_link_libraries(test_databasemanager PRIVATE
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
 gtest_discover_tests(test_databasemanager)
+
+# ========================================
+# Tests unitaires NetworkManager
+# ========================================
+add_executable(test_networkmanager
+    networkmanager_test.cpp
+)
+
+target_include_directories(test_networkmanager PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_networkmanager PRIVATE
+    gtest_main
+    Qt6::Core
+)
+
+# Découvrir automatiquement les tests Google Test
+include(GoogleTest)
+gtest_discover_tests(test_networkmanager)
+
+# ========================================
+# Tests d'intégration NetworkManager
+# ========================================
+add_executable(test_networkmanager_integration
+    networkmanager_integration_test.cpp
+    ../server/NetworkManager.cpp
+)
+
+target_include_directories(test_networkmanager_integration PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_networkmanager_integration PRIVATE
+    gtest_main
+    coinche_client
+    Qt6::Core
+    Qt6::Network
+    Qt6::WebSockets
+    Qt6::Qml
+    Qt6::Test
+)
+
+# Découvrir automatiquement les tests Google Test
+include(GoogleTest)
+gtest_discover_tests(test_networkmanager_integration)
+
+# ========================================
+# Tests d'intégration GameServer
+# ========================================
+add_executable(test_gameserver_integration
+    gameserver_integration_test.cpp
+    ../server/GameServer.cpp
+    ../server/DatabaseManager.cpp
+    ../server/SmtpClient.cpp
+    ../server/StatsReporter.cpp
+)
+
+target_include_directories(test_gameserver_integration PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_gameserver_integration PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Network
+    Qt6::WebSockets
+    Qt6::Sql
+    Qt6::Test
+)
+
+# Découvrir automatiquement les tests Google Test
+include(GoogleTest)
+gtest_discover_tests(test_gameserver_integration)

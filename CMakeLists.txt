@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(Coinche VERSION 1.0.0)
 
 # Find Qt packages
-find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Qml WebSockets Network Sql Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Qml WebSockets Network Sql Multimedia Test)
 
 # Compiler flags
 if(NOT CMAKE_BUILD_TYPE)

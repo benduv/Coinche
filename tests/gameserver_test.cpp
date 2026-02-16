@@ -724,3 +724,98 @@ TEST_F(GameServerTest, Surcoinche_WindowOpen) {
     EXPECT_TRUE(canPlayer0Surcoinche);
     EXPECT_TRUE(canPlayer2Surcoinche);
 }
+
+// ========================================
+// Tests additionnels pour GameRoom
+// ========================================
+
+TEST_F(GameServerTest, GameRoom_IsToutAtoutMode) {
+    room.isToutAtout = true;
+    room.isSansAtout = false;
+
+    EXPECT_TRUE(room.isToutAtout);
+    EXPECT_FALSE(room.isSansAtout);
+}
+
+TEST_F(GameServerTest, GameRoom_IsSansAtoutMode) {
+    room.isToutAtout = false;
+    room.isSansAtout = true;
+
+    EXPECT_FALSE(room.isToutAtout);
+    EXPECT_TRUE(room.isSansAtout);
+}
+
+TEST_F(GameServerTest, GameRoom_CoincheMechanics) {
+    room.coinched = true;
+    room.surcoinched = false;
+    room.coinchePlayerIndex = 1;
+
+    EXPECT_TRUE(room.coinched);
+    EXPECT_FALSE(room.surcoinched);
+    EXPECT_GE(room.coinchePlayerIndex, 0);
+    EXPECT_LE(room.coinchePlayerIndex, 3);
+}
+
+TEST_F(GameServerTest, GameRoom_SurcoincheMechanics) {
+    room.coinched = true;
+    room.surcoinched = true;
+    room.coinchePlayerIndex = 1;
+    room.surcoinchePlayerIndex = 0;
+
+    EXPECT_TRUE(room.surcoinched);
+    EXPECT_NE(room.coinchePlayerIndex, room.surcoinchePlayerIndex)
+        << "Coinche et surcoinche doivent être par des joueurs différents";
+}
+
+TEST_F(GameServerTest, GameRoom_PassedBidsCount) {
+    room.passedBidsCount = 0;
+
+    room.passedBidsCount++;
+    EXPECT_EQ(room.passedBidsCount, 1);
+
+    room.passedBidsCount += 2;
+    EXPECT_EQ(room.passedBidsCount, 3);
+
+    // All pass scenario
+    room.passedBidsCount = 4;
+    EXPECT_EQ(room.passedBidsCount, 4);
+}
+
+TEST_F(GameServerTest, GameRoom_PlayerNamesAndAvatars) {
+    room.playerNames.clear();
+    room.playerAvatars.clear();
+
+    room.playerNames.append("Player1");
+    room.playerNames.append("Player2");
+    room.playerNames.append("Player3");
+    room.playerNames.append("Player4");
+
+    room.playerAvatars.append("avatar1.svg");
+    room.playerAvatars.append("avatar2.svg");
+    room.playerAvatars.append("avatar3.svg");
+    room.playerAvatars.append("avatar4.svg");
+
+    EXPECT_EQ(room.playerNames.size(), 4);
+    EXPECT_EQ(room.playerAvatars.size(), 4);
+    EXPECT_EQ(room.playerNames[0], "Player1");
+    EXPECT_EQ(room.playerAvatars[2], "avatar3.svg");
+}
+
+TEST_F(GameServerTest, GameRoom_CurrentPliTracking) {
+    room.currentPli.clear();
+
+    Carte* carte1 = new Carte(Carte::COEUR, Carte::AS);
+    Carte* carte2 = new Carte(Carte::PIQUE, Carte::ROI);
+
+    room.currentPli.push_back(std::make_pair(0, carte1));
+    room.currentPli.push_back(std::make_pair(1, carte2));
+
+    EXPECT_EQ(room.currentPli.size(), 2);
+    EXPECT_EQ(room.currentPli[0].first, 0) << "Premier joueur";
+    EXPECT_EQ(room.currentPli[1].first, 1) << "Deuxième joueur";
+
+    // Cleanup
+    for (auto& pair : room.currentPli) {
+        delete pair.second;
+    }
+}
