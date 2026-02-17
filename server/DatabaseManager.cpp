@@ -397,6 +397,38 @@ bool DatabaseManager::createTables()
 
     qDebug() << "Table 'gdpr_audit_log' creee/verifiee";
 
+    // Trigger RGPD : log automatique lors d'une restriction de compte
+    QString createRestrictionTrigger = R"(
+        CREATE TRIGGER IF NOT EXISTS trg_gdpr_restriction
+        AFTER UPDATE OF processing_restricted ON users
+        WHEN NEW.processing_restricted = 1 AND OLD.processing_restricted = 0
+        BEGIN
+            INSERT INTO gdpr_audit_log (user_id, user_pseudo, user_email, action, reason, performed_by)
+            VALUES (NEW.id, NEW.pseudo, NEW.email, 'restriction', NEW.restriction_reason, 'admin');
+        END
+    )";
+
+    if (!query.exec(createRestrictionTrigger)) {
+        qWarning() << "Erreur creation trigger restriction:" << query.lastError().text();
+    }
+
+    // Trigger RGPD : log automatique lors d'une levée de restriction
+    QString createUnrestrictionTrigger = R"(
+        CREATE TRIGGER IF NOT EXISTS trg_gdpr_unrestriction
+        AFTER UPDATE OF processing_restricted ON users
+        WHEN NEW.processing_restricted = 0 AND OLD.processing_restricted = 1
+        BEGIN
+            INSERT INTO gdpr_audit_log (user_id, user_pseudo, user_email, action, reason, performed_by)
+            VALUES (NEW.id, NEW.pseudo, NEW.email, 'unrestriction', 'Levée de restriction', 'admin');
+        END
+    )";
+
+    if (!query.exec(createUnrestrictionTrigger)) {
+        qWarning() << "Erreur creation trigger unrestriction:" << query.lastError().text();
+    }
+
+    qDebug() << "Triggers RGPD crees/verifies";
+
     return true;
 }
 
