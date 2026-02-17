@@ -357,6 +357,10 @@ private:
 
     void handleChangePassword(QWebSocket *socket, const QJsonObject &data);
 
+    void handleChangePseudo(QWebSocket *socket, const QJsonObject &data);
+
+    void handleChangeEmail(QWebSocket *socket, const QJsonObject &data);
+
     void handleReportCrash(QWebSocket *socket, const QJsonObject &data);
 
     void handleGetStats(QWebSocket *socket, const QJsonObject &data);

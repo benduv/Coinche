@@ -21,6 +21,7 @@ Rectangle {
 
     // Propriétés passées par le parent
     property string playerName: ""
+    property string playerEmail: ""
     property string accountType: ""
 
     signal backToMenu()
@@ -46,6 +47,28 @@ Rectangle {
         function onDeleteAccountFailed(error) {
             deleteErrorText.text = error
             deleteErrorText.visible = true
+        }
+        function onChangePseudoSuccess(newPseudo) {
+            pseudoErrorText.visible = false
+            pseudoSuccessText.visible = true
+            pseudoInput.text = newPseudo
+            settingsRoot.playerName = newPseudo
+        }
+        function onChangePseudoFailed(error) {
+            pseudoSuccessText.visible = false
+            pseudoErrorText.text = error
+            pseudoErrorText.visible = true
+        }
+        function onChangeEmailSuccess(newEmail) {
+            emailErrorText.visible = false
+            emailSuccessText.visible = true
+            emailInput.text = newEmail
+            settingsRoot.playerEmail = newEmail
+        }
+        function onChangeEmailFailed(error) {
+            emailSuccessText.visible = false
+            emailErrorText.text = error
+            emailErrorText.visible = true
         }
     }
 
@@ -254,6 +277,191 @@ Rectangle {
                         text: "Connecté en tant que : " + settingsRoot.playerName
                         font.pixelSize: 28 * settingsRoot.minRatio
                         color: "white"
+                    }
+
+                    // Modifier le pseudo
+                    Text {
+                        text: "Pseudo"
+                        font.pixelSize: 24 * settingsRoot.minRatio
+                        color: "#cccccc"
+                        topPadding: 10 * settingsRoot.minRatio
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: 10 * settingsRoot.minRatio
+
+                        Rectangle {
+                            width: parent.width - pseudoButton.width - 10 * settingsRoot.minRatio
+                            height: 60 * settingsRoot.minRatio
+                            color: "#3a3a3a"
+                            radius: 8 * settingsRoot.minRatio
+                            border.color: pseudoInput.activeFocus ? "#FFD700" : "#666666"
+                            border.width: 2 * settingsRoot.minRatio
+
+                            TextInput {
+                                id: pseudoInput
+                                anchors.fill: parent
+                                anchors.margins: 10 * settingsRoot.minRatio
+                                text: settingsRoot.playerName
+                                font.pixelSize: 26 * settingsRoot.minRatio
+                                color: "white"
+                                verticalAlignment: TextInput.AlignVCenter
+                                clip: true
+                                maximumLength: 20
+                            }
+                        }
+
+                        Button {
+                            id: pseudoButton
+                            width: 140 * settingsRoot.minRatio
+                            height: 60 * settingsRoot.minRatio
+
+                            background: Rectangle {
+                                color: parent.down ? "#ccaa00" : (parent.hovered ? "#e6c200" : "#FFD700")
+                                radius: 8 * settingsRoot.minRatio
+                            }
+
+                            contentItem: Text {
+                                text: "Modifier"
+                                font.pixelSize: 22 * settingsRoot.minRatio
+                                font.bold: true
+                                color: "#2a2a2a"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            onClicked: {
+                                pseudoErrorText.visible = false
+                                pseudoSuccessText.visible = false
+                                if (pseudoInput.text.trim() === "") {
+                                    pseudoErrorText.text = "Le pseudo ne peut pas être vide"
+                                    pseudoErrorText.visible = true
+                                    return
+                                }
+                                if (pseudoInput.text.trim() === settingsRoot.playerName) {
+                                    pseudoErrorText.text = "Le nouveau pseudo est identique à l'actuel"
+                                    pseudoErrorText.visible = true
+                                    return
+                                }
+                                networkManager.changePseudo(settingsRoot.playerName, pseudoInput.text.trim())
+                            }
+                        }
+                    }
+
+                    Text {
+                        id: pseudoErrorText
+                        width: parent.width
+                        text: ""
+                        font.pixelSize: 20 * settingsRoot.minRatio
+                        color: "#ff6666"
+                        wrapMode: Text.WordWrap
+                        visible: false
+                    }
+
+                    Text {
+                        id: pseudoSuccessText
+                        width: parent.width
+                        text: "Pseudo modifié avec succès"
+                        font.pixelSize: 20 * settingsRoot.minRatio
+                        color: "#66ff66"
+                        visible: false
+                    }
+
+                    // Modifier l'email
+                    Text {
+                        text: "Email"
+                        font.pixelSize: 24 * settingsRoot.minRatio
+                        color: "#cccccc"
+                        topPadding: 10 * settingsRoot.minRatio
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: 10 * settingsRoot.minRatio
+
+                        Rectangle {
+                            width: parent.width - emailButton.width - 10 * settingsRoot.minRatio
+                            height: 60 * settingsRoot.minRatio
+                            color: "#3a3a3a"
+                            radius: 8 * settingsRoot.minRatio
+                            border.color: emailInput.activeFocus ? "#FFD700" : "#666666"
+                            border.width: 2 * settingsRoot.minRatio
+
+                            TextInput {
+                                id: emailInput
+                                anchors.fill: parent
+                                anchors.margins: 10 * settingsRoot.minRatio
+                                text: settingsRoot.playerEmail
+                                font.pixelSize: 26 * settingsRoot.minRatio
+                                color: "white"
+                                verticalAlignment: TextInput.AlignVCenter
+                                clip: true
+                                inputMethodHints: Qt.ImhEmailCharactersOnly
+                            }
+                        }
+
+                        Button {
+                            id: emailButton
+                            width: 140 * settingsRoot.minRatio
+                            height: 60 * settingsRoot.minRatio
+
+                            background: Rectangle {
+                                color: parent.down ? "#ccaa00" : (parent.hovered ? "#e6c200" : "#FFD700")
+                                radius: 8 * settingsRoot.minRatio
+                            }
+
+                            contentItem: Text {
+                                text: "Modifier"
+                                font.pixelSize: 22 * settingsRoot.minRatio
+                                font.bold: true
+                                color: "#2a2a2a"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            onClicked: {
+                                emailErrorText.visible = false
+                                emailSuccessText.visible = false
+                                if (emailInput.text.trim() === "") {
+                                    emailErrorText.text = "L'email ne peut pas être vide"
+                                    emailErrorText.visible = true
+                                    return
+                                }
+                                if (emailInput.text.trim() === settingsRoot.playerEmail) {
+                                    emailErrorText.text = "Le nouvel email est identique à l'actuel"
+                                    emailErrorText.visible = true
+                                    return
+                                }
+                                networkManager.changeEmail(settingsRoot.playerName, emailInput.text.trim())
+                            }
+                        }
+                    }
+
+                    Text {
+                        id: emailErrorText
+                        width: parent.width
+                        text: ""
+                        font.pixelSize: 20 * settingsRoot.minRatio
+                        color: "#ff6666"
+                        wrapMode: Text.WordWrap
+                        visible: false
+                    }
+
+                    Text {
+                        id: emailSuccessText
+                        width: parent.width
+                        text: "Email modifié avec succès"
+                        font.pixelSize: 20 * settingsRoot.minRatio
+                        color: "#66ff66"
+                        visible: false
+                    }
+
+                    // Séparateur avant suppression
+                    Rectangle {
+                        width: parent.width
+                        height: 1 * settingsRoot.minRatio
+                        color: "#555555"
                     }
 
                     // Bouton Supprimer mon compte

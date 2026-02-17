@@ -1025,6 +1025,7 @@ ApplicationWindow {
 
             Settings {
                 playerName: mainWindow.getPlayerName()
+                playerEmail: networkManager.playerEmail
                 accountType: mainWindow.accountType
 
                 onBackToMenu: {

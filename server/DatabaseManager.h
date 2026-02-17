@@ -132,6 +132,8 @@ public:
     bool setTempPassword(const QString &email, QString &tempPassword, QString &errorMsg);
     bool isUsingTempPassword(const QString &email);
     bool updatePassword(const QString &email, const QString &newPassword, QString &errorMsg);
+    bool updatePseudo(const QString &currentPseudo, const QString &newPseudo, QString &errorMsg);
+    bool updateEmail(const QString &pseudo, const QString &newEmail, QString &errorMsg);
 
 private:
     QSqlDatabase m_db;

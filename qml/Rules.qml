@@ -191,7 +191,7 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "• Coinche : Double les points du contrat adverse si vous pensez qu'ils ne réussiront pas\n\n• Surcoinche : Redouble les points si vous êtes coinché et sûr de réussir\n\n• Capot : Annoncer que votre équipe va remporter tous les plis (250 points)\n\n• Générale : Annoncer que vous allez remporter tous les plis (500 points)\n\n• Tout Atout (TA) : Toutes les couleurs deviennent atout. Ordre des cartes : Valet (20), 9 (14), As (11), 10 (10), Roi (4), Dame (3), 8 (0), 7 (0)\n\n• Sans Atout (SA) : Aucune couleur n'est atout. Ordre des cartes : As (19), 10 (10), Roi (4), Dame (3), Valet (2), 9 (0), 8 (0), 7 (0)"
+                text: "• Coinche : Double les points du contrat adverse si vous pensez qu'ils ne réussiront pas\n\n• Surcoinche : Redouble les points si vous êtes coinché et sûr de réussir\n\n• Capot : Annoncer que votre équipe va remporter tous les plis (250 points)\n\n• Générale : Annoncer que vous allez remporter tous les plis (500 points)\n\n• Tout Atout (TA) : Toutes les couleurs deviennent atout. Ordre des cartes : Valet (14), 9 (9), As (6), 10 (4), Roi (3), Dame (2), 8 (0), 7 (0)\n\n• Sans Atout (SA) : Aucune couleur n'est atout. Ordre des cartes : As (19), 10 (10), Roi (4), Dame (3), Valet (2), 9 (0), 8 (0), 7 (0)"
                 font.pixelSize: 28 * rulesRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap

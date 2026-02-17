@@ -233,6 +233,24 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void changePseudo(const QString &currentPseudo, const QString &newPseudo) {
+        qDebug() << "Demande changement pseudo:" << currentPseudo << "->" << newPseudo;
+        QJsonObject msg;
+        msg["type"] = "changePseudo";
+        msg["currentPseudo"] = currentPseudo;
+        msg["newPseudo"] = newPseudo;
+        sendMessage(msg);
+    }
+
+    Q_INVOKABLE void changeEmail(const QString &pseudo, const QString &newEmail) {
+        qDebug() << "Demande changement email pour:" << pseudo;
+        QJsonObject msg;
+        msg["type"] = "changeEmail";
+        msg["pseudo"] = pseudo;
+        msg["newEmail"] = newEmail;
+        sendMessage(msg);
+    }
+
     Q_INVOKABLE void requestStats(const QString &pseudo) {
         QJsonObject msg;
         msg["type"] = "getStats";
@@ -393,6 +411,10 @@ signals:
     void forgotPasswordFailed(QString error);
     void changePasswordSuccess();
     void changePasswordFailed(QString error);
+    void changePseudoSuccess(QString newPseudo);
+    void changePseudoFailed(QString error);
+    void changeEmailSuccess(QString newEmail);
+    void changeEmailFailed(QString error);
     void messageReceived(QString message);  // Pour que QML puisse écouter tous les messages
     void playerAvatarChanged();
     void playerPseudoChanged();
@@ -826,6 +848,36 @@ private slots:
             QString error = obj["error"].toString();
             qDebug() << "NetworkManager - Echec changement mot de passe:" << error;
             emit changePasswordFailed(error);
+        }
+        else if (type == "changePseudoSuccess") {
+            QString newPseudo = obj["newPseudo"].toString();
+            qDebug() << "NetworkManager - Pseudo changé avec succès:" << newPseudo;
+            m_playerPseudo = newPseudo;
+            emit playerPseudoChanged();
+            emit changePseudoSuccess(newPseudo);
+        }
+        else if (type == "changePseudoFailed") {
+            QString error = obj["error"].toString();
+            qDebug() << "NetworkManager - Echec changement pseudo:" << error;
+            emit changePseudoFailed(error);
+        }
+        else if (type == "changeEmailSuccess") {
+            QString newEmail = obj["newEmail"].toString();
+            qDebug() << "NetworkManager - Email changé avec succès:" << newEmail;
+            m_playerEmail = newEmail;
+            // Mettre à jour les credentials stockés
+            QSettings settings("Nebuludik", "CoincheDelEspace");
+            QString storedPassword = settings.value("auth/password").toString();
+            if (!storedPassword.isEmpty()) {
+                settings.setValue("auth/email", newEmail);
+            }
+            emit playerEmailChanged();
+            emit changeEmailSuccess(newEmail);
+        }
+        else if (type == "changeEmailFailed") {
+            QString error = obj["error"].toString();
+            qDebug() << "NetworkManager - Echec changement email:" << error;
+            emit changeEmailFailed(error);
         }
         else if (type == "error") {
             QString errorMsg = obj["message"].toString();

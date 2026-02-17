@@ -82,6 +82,10 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleForgotPassword(sender, obj);
     } else if (type == "changePassword") {
         handleChangePassword(sender, obj);
+    } else if (type == "changePseudo") {
+        handleChangePseudo(sender, obj);
+    } else if (type == "changeEmail") {
+        handleChangeEmail(sender, obj);
     }
 }
 
@@ -848,6 +852,93 @@ void GameServer::handleChangePassword(QWebSocket *socket, const QJsonObject &dat
         response["error"] = errorMsg;
         sendMessage(socket, response);
         qDebug() << "Echec changement mot de passe:" << errorMsg;
+    }
+}
+
+void GameServer::handleChangePseudo(QWebSocket *socket, const QJsonObject &data) {
+    QString currentPseudo = data["currentPseudo"].toString();
+    QString newPseudo = data["newPseudo"].toString();
+
+    qDebug() << "GameServer - Demande changement pseudo:" << currentPseudo << "->" << newPseudo;
+
+    // Vérifier que le socket correspond bien au joueur
+    QString connId;
+    for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+        if (it.value()->socket == socket && it.value()->playerName == currentPseudo) {
+            connId = it.key();
+            break;
+        }
+    }
+
+    if (connId.isEmpty()) {
+        QJsonObject response;
+        response["type"] = "changePseudoFailed";
+        response["error"] = "Session invalide";
+        sendMessage(socket, response);
+        return;
+    }
+
+    QString errorMsg;
+    if (m_dbManager->updatePseudo(currentPseudo, newPseudo, errorMsg)) {
+        // Mettre à jour le nom dans la connexion
+        m_connections[connId]->playerName = newPseudo;
+
+        // Mettre à jour m_playerNameToRoomId si le joueur est en partie
+        if (m_playerNameToRoomId.contains(currentPseudo)) {
+            int roomId = m_playerNameToRoomId.take(currentPseudo);
+            m_playerNameToRoomId[newPseudo] = roomId;
+        }
+
+        QJsonObject response;
+        response["type"] = "changePseudoSuccess";
+        response["newPseudo"] = newPseudo;
+        sendMessage(socket, response);
+        qDebug() << "Pseudo changé avec succès:" << currentPseudo << "->" << newPseudo;
+    } else {
+        QJsonObject response;
+        response["type"] = "changePseudoFailed";
+        response["error"] = errorMsg;
+        sendMessage(socket, response);
+        qDebug() << "Echec changement pseudo:" << errorMsg;
+    }
+}
+
+void GameServer::handleChangeEmail(QWebSocket *socket, const QJsonObject &data) {
+    QString pseudo = data["pseudo"].toString();
+    QString newEmail = data["newEmail"].toString();
+
+    qDebug() << "GameServer - Demande changement email pour:" << pseudo;
+
+    // Vérifier que le socket correspond bien au joueur
+    bool authorized = false;
+    for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+        if (it.value()->socket == socket && it.value()->playerName == pseudo) {
+            authorized = true;
+            break;
+        }
+    }
+
+    if (!authorized) {
+        QJsonObject response;
+        response["type"] = "changeEmailFailed";
+        response["error"] = "Session invalide";
+        sendMessage(socket, response);
+        return;
+    }
+
+    QString errorMsg;
+    if (m_dbManager->updateEmail(pseudo, newEmail, errorMsg)) {
+        QJsonObject response;
+        response["type"] = "changeEmailSuccess";
+        response["newEmail"] = newEmail;
+        sendMessage(socket, response);
+        qDebug() << "Email changé avec succès pour:" << pseudo;
+    } else {
+        QJsonObject response;
+        response["type"] = "changeEmailFailed";
+        response["error"] = errorMsg;
+        sendMessage(socket, response);
+        qDebug() << "Echec changement email:" << errorMsg;
     }
 }
 

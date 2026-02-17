@@ -1028,6 +1028,75 @@ bool DatabaseManager::updatePassword(const QString &email, const QString &newPas
     return true;
 }
 
+bool DatabaseManager::updatePseudo(const QString &currentPseudo, const QString &newPseudo, QString &errorMsg)
+{
+    if (currentPseudo.isEmpty() || newPseudo.isEmpty()) {
+        errorMsg = "Pseudo actuel et nouveau pseudo requis";
+        return false;
+    }
+
+    if (currentPseudo == newPseudo) {
+        errorMsg = "Le nouveau pseudo est identique à l'actuel";
+        return false;
+    }
+
+    if (!pseudoExists(currentPseudo)) {
+        errorMsg = "Compte non trouvé";
+        return false;
+    }
+
+    if (pseudoExists(newPseudo)) {
+        errorMsg = "Ce pseudo est déjà utilisé";
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE users SET pseudo = :newPseudo WHERE pseudo = :currentPseudo");
+    query.bindValue(":newPseudo", newPseudo);
+    query.bindValue(":currentPseudo", currentPseudo);
+
+    if (!query.exec()) {
+        errorMsg = "Erreur lors de la mise à jour du pseudo: " + query.lastError().text();
+        qCritical() << "Erreur updatePseudo:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Pseudo mis à jour avec succès:" << currentPseudo << "->" << newPseudo;
+    return true;
+}
+
+bool DatabaseManager::updateEmail(const QString &pseudo, const QString &newEmail, QString &errorMsg)
+{
+    if (pseudo.isEmpty() || newEmail.isEmpty()) {
+        errorMsg = "Pseudo et nouvel email requis";
+        return false;
+    }
+
+    if (!pseudoExists(pseudo)) {
+        errorMsg = "Compte non trouvé";
+        return false;
+    }
+
+    if (emailExists(newEmail)) {
+        errorMsg = "Cet email est déjà utilisé";
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE users SET email = :newEmail WHERE pseudo = :pseudo");
+    query.bindValue(":newEmail", newEmail);
+    query.bindValue(":pseudo", pseudo);
+
+    if (!query.exec()) {
+        errorMsg = "Erreur lors de la mise à jour de l'email: " + query.lastError().text();
+        qCritical() << "Erreur updateEmail:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Email mis à jour avec succès pour:" << pseudo;
+    return true;
+}
+
 // ==================== STATISTIQUES QUOTIDIENNES ====================
 
 bool DatabaseManager::recordLogin(const QString &pseudo)
