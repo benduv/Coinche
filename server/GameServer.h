@@ -33,6 +33,7 @@ struct PlayerConnection {
     int gameRoomId;
     int playerIndex;           // Position dans la partie (0-3)
     QString lobbyPartnerId;    // ID du partenaire de lobby (vide si pas de partenaire)
+    bool isAnonymous = false;  // RGPD - droit à l'opposition
 };
 
 // Une partie de jeu avec la vraie logique
@@ -360,6 +361,8 @@ private:
     void handleChangePseudo(QWebSocket *socket, const QJsonObject &data);
 
     void handleChangeEmail(QWebSocket *socket, const QJsonObject &data);
+
+    void handleSetAnonymous(QWebSocket *socket, const QJsonObject &data);
 
     void handleReportCrash(QWebSocket *socket, const QJsonObject &data);
 

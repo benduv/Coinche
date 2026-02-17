@@ -86,6 +86,8 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleChangePseudo(sender, obj);
     } else if (type == "changeEmail") {
         handleChangeEmail(sender, obj);
+    } else if (type == "setAnonymous") {
+        handleSetAnonymous(sender, obj);
     }
 }
 
@@ -352,7 +354,14 @@ void GameServer::handleReconnection(const QString& connectionId, int roomId, int
         if (playerIndex != j) {
             QJsonObject opp;
             opp["position"] = j;
-            opp["name"] = room->playerNames[j];
+
+            // Vérifier si le joueur est anonyme
+            bool oppIsAnonymous = false;
+            if (!room->isBot[j]) {
+                PlayerConnection* oppConn = m_connections.value(room->connectionIds[j]);
+                if (oppConn) oppIsAnonymous = oppConn->isAnonymous;
+            }
+            opp["name"] = oppIsAnonymous ? "Anonyme" : room->playerNames[j];
             opp["avatar"] = room->playerAvatars[j];
             opp["cardCount"] = int(room->players[j]->getMain().size());
             opponents.append(opp);
@@ -655,7 +664,8 @@ void GameServer::handleLoginAccount(QWebSocket *socket, const QJsonObject &data)
     QString avatar;
     QString errorMsg;
     bool usingTempPassword = false;
-    if (m_dbManager->authenticateUser(email, password, pseudo, avatar, errorMsg, usingTempPassword)) {
+    bool isAnonymous = false;
+    if (m_dbManager->authenticateUser(email, password, pseudo, avatar, errorMsg, usingTempPassword, isAnonymous)) {
         // Succès - Créer une connexion et enregistrer le joueur
         QString connectionId = QUuid::createUuid().toString();
 
@@ -665,7 +675,9 @@ void GameServer::handleLoginAccount(QWebSocket *socket, const QJsonObject &data)
             pseudo,
             avatar,
             -1,    // Pas encore en partie
-            -1     // Pas encore de position
+            -1,    // Pas encore de position
+            QString(), // lobbyPartnerId
+            isAnonymous
         };
         m_connections[connectionId] = conn;
 
@@ -675,6 +687,7 @@ void GameServer::handleLoginAccount(QWebSocket *socket, const QJsonObject &data)
         response["avatar"] = avatar;
         response["connectionId"] = connectionId;
         response["usingTempPassword"] = usingTempPassword;
+        response["isAnonymous"] = isAnonymous;
         sendMessage(socket, response);
         qDebug() << "Connexion reussie:" << pseudo << "avatar:" << avatar << "ID:" << connectionId;
 
@@ -939,6 +952,47 @@ void GameServer::handleChangeEmail(QWebSocket *socket, const QJsonObject &data) 
         response["error"] = errorMsg;
         sendMessage(socket, response);
         qDebug() << "Echec changement email:" << errorMsg;
+    }
+}
+
+void GameServer::handleSetAnonymous(QWebSocket *socket, const QJsonObject &data) {
+    QString pseudo = data["pseudo"].toString();
+    bool anonymous = data["anonymous"].toBool();
+
+    qDebug() << "GameServer - Demande anonymisation pour:" << pseudo << "->" << anonymous;
+
+    // Vérifier que le socket correspond bien au joueur
+    QString connId;
+    for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+        if (it.value()->socket == socket && it.value()->playerName == pseudo) {
+            connId = it.key();
+            break;
+        }
+    }
+
+    if (connId.isEmpty()) {
+        QJsonObject response;
+        response["type"] = "setAnonymousFailed";
+        response["error"] = "Session invalide";
+        sendMessage(socket, response);
+        return;
+    }
+
+    QString errorMsg;
+    if (m_dbManager->setAnonymous(pseudo, anonymous, errorMsg)) {
+        m_connections[connId]->isAnonymous = anonymous;
+
+        QJsonObject response;
+        response["type"] = "setAnonymousSuccess";
+        response["anonymous"] = anonymous;
+        sendMessage(socket, response);
+        qDebug() << "Anonymisation mise à jour pour:" << pseudo << "->" << anonymous;
+    } else {
+        QJsonObject response;
+        response["type"] = "setAnonymousFailed";
+        response["error"] = errorMsg;
+        sendMessage(socket, response);
+        qDebug() << "Echec anonymisation:" << errorMsg;
     }
 }
 
@@ -2282,7 +2336,14 @@ void GameServer::notifyGameStart(int roomId, const QList<QString> &connectionIds
             if (playerPosition != j) {
                 QJsonObject opp;
                 opp["position"] = j;
-                opp["name"] = room->playerNames[j];
+
+                // Vérifier si le joueur est anonyme
+                bool oppIsAnonymous = false;
+                if (!room->isBot[j] && j < room->connectionIds.size()) {
+                    PlayerConnection* oppConn = m_connections.value(room->connectionIds[j]);
+                    if (oppConn) oppIsAnonymous = oppConn->isAnonymous;
+                }
+                opp["name"] = oppIsAnonymous ? "Anonyme" : room->playerNames[j];
                 opp["avatar"] = room->playerAvatars[j];
                 opp["cardCount"] = int(room->players[j]->getMain().size());
                 opp["isBot"] = static_cast<bool>(room->isBot[j]);

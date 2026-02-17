@@ -24,7 +24,7 @@ public:
     bool createAccount(const QString &pseudo, const QString &email, const QString &password, const QString &avatar, QString &errorMsg);
 
     // Vérifier les identifiants de connexion
-    bool authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &avatar, QString &errorMsg, bool &usingTempPassword);
+    bool authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &avatar, QString &errorMsg, bool &usingTempPassword, bool &isAnonymous);
 
     // Vérifier si un email existe déjà
     bool emailExists(const QString &email);
@@ -134,6 +134,7 @@ public:
     bool updatePassword(const QString &email, const QString &newPassword, QString &errorMsg);
     bool updatePseudo(const QString &currentPseudo, const QString &newPseudo, QString &errorMsg);
     bool updateEmail(const QString &pseudo, const QString &newEmail, QString &errorMsg);
+    bool setAnonymous(const QString &pseudo, bool anonymous, QString &errorMsg);
 
 private:
     QSqlDatabase m_db;

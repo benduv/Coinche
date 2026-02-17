@@ -28,6 +28,7 @@ class NetworkManager : public QObject {
     Q_PROPERTY(QString playerAvatar READ playerAvatar NOTIFY playerAvatarChanged)
     Q_PROPERTY(QString playerPseudo READ playerPseudo NOTIFY playerPseudoChanged)
     Q_PROPERTY(QString playerEmail READ playerEmail NOTIFY playerEmailChanged)
+    Q_PROPERTY(bool isAnonymous READ isAnonymous NOTIFY isAnonymousChanged)
     Q_PROPERTY(QVariantList lobbyPlayers READ lobbyPlayers NOTIFY lobbyPlayersChanged)
     Q_PROPERTY(QString pendingBotReplacement READ pendingBotReplacement NOTIFY pendingBotReplacementChanged)
     Q_PROPERTY(bool hasStoredCredentials READ hasStoredCredentials NOTIFY storedCredentialsChanged)
@@ -76,6 +77,7 @@ public:
     QString playerAvatar() const { return m_playerAvatar; }
     QString playerPseudo() const { return m_playerPseudo; }
     QString playerEmail() const { return m_playerEmail; }
+    bool isAnonymous() const { return m_isAnonymous; }
     QVariantList lobbyPlayers() const { return m_lobbyPlayers; }
     QString pendingBotReplacement() const { return m_pendingBotReplacement; }
 
@@ -251,6 +253,15 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void setAnonymous(bool anonymous) {
+        qDebug() << "Demande anonymisation:" << anonymous;
+        QJsonObject msg;
+        msg["type"] = "setAnonymous";
+        msg["pseudo"] = m_playerPseudo;
+        msg["anonymous"] = anonymous;
+        sendMessage(msg);
+    }
+
     Q_INVOKABLE void requestStats(const QString &pseudo) {
         QJsonObject msg;
         msg["type"] = "getStats";
@@ -415,6 +426,9 @@ signals:
     void changePseudoFailed(QString error);
     void changeEmailSuccess(QString newEmail);
     void changeEmailFailed(QString error);
+    void setAnonymousSuccess(bool anonymous);
+    void setAnonymousFailed(QString error);
+    void isAnonymousChanged();
     void messageReceived(QString message);  // Pour que QML puisse écouter tous les messages
     void playerAvatarChanged();
     void playerPseudoChanged();
@@ -803,9 +817,11 @@ private slots:
                 m_playerId = connectionId;
                 qDebug() << "NetworkManager - ConnectionId enregistre:" << connectionId;
             }
-            qDebug() << "NetworkManager - Connexion reussie:" << playerName << "Avatar:" << avatar << "Temp password:" << usingTempPassword;
+            m_isAnonymous = obj["isAnonymous"].toBool(false);
+            qDebug() << "NetworkManager - Connexion reussie:" << playerName << "Avatar:" << avatar << "Temp password:" << usingTempPassword << "Anonymous:" << m_isAnonymous;
             emit playerAvatarChanged();
             emit playerPseudoChanged();
+            emit isAnonymousChanged();
             emit loginSuccess(playerName, avatar, usingTempPassword);
         }
         else if (type == "loginAccountFailed") {
@@ -878,6 +894,18 @@ private slots:
             QString error = obj["error"].toString();
             qDebug() << "NetworkManager - Echec changement email:" << error;
             emit changeEmailFailed(error);
+        }
+        else if (type == "setAnonymousSuccess") {
+            bool anonymous = obj["anonymous"].toBool();
+            qDebug() << "NetworkManager - Anonymisation mise à jour:" << anonymous;
+            m_isAnonymous = anonymous;
+            emit isAnonymousChanged();
+            emit setAnonymousSuccess(anonymous);
+        }
+        else if (type == "setAnonymousFailed") {
+            QString error = obj["error"].toString();
+            qDebug() << "NetworkManager - Echec anonymisation:" << error;
+            emit setAnonymousFailed(error);
         }
         else if (type == "error") {
             QString errorMsg = obj["message"].toString();
@@ -1080,6 +1108,7 @@ private:
     GameModel* m_gameModel;  // Le GameModel géré par NetworkManager
     QString m_playerPseudo;
     QString m_playerEmail;
+    bool m_isAnonymous = false;
     QString m_playerAvatar;
     QString m_pendingBotReplacement;  // Message de remplacement par bot en attente
 

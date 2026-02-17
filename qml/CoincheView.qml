@@ -820,7 +820,7 @@ Rectangle {
                                 anchors.fill: parent
                                 property bool isGuest: {
                                     var name = rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
-                                    return !name || name.startsWith("Invité") || name.startsWith("Joueur")
+                                    return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme"
                                 }
                                 cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                                 onClicked: {
@@ -971,7 +971,7 @@ Rectangle {
                             anchors.fill: parent
                             property bool isGuest: {
                                 var name = rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex)
-                                return !name || name.startsWith("Invité") || name.startsWith("Joueur")
+                                return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme"
                             }
                             cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: {
@@ -1251,7 +1251,7 @@ Rectangle {
                             anchors.fill: parent
                             property bool isGuest: {
                                 var name = rootArea.getPlayerName(playerWestRow.actualPlayerIndex)
-                                return !name || name.startsWith("Invité") || name.startsWith("Joueur")
+                                return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme"
                             }
                             cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: {
@@ -1462,7 +1462,7 @@ Rectangle {
                             anchors.fill: parent
                             property bool isGuest: {
                                 var name = rootArea.getPlayerName(playerEastRow.actualPlayerIndex)
-                                return !name || name.startsWith("Invité") || name.startsWith("Joueur")
+                                return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme"
                             }
                             cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: {

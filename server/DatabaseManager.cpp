@@ -128,6 +128,7 @@ bool DatabaseManager::createTables()
     bool hasTempPasswordCreated = false;
     bool hasProcessingRestricted = false;
     bool hasRestrictionReason = false;
+    bool hasIsAnonymous = false;
     while (checkUsersQuery.next()) {
         QString columnName = checkUsersQuery.value(1).toString();
         if (columnName == "avatar") hasAvatar = true;
@@ -135,6 +136,7 @@ bool DatabaseManager::createTables()
         if (columnName == "temp_password_created") hasTempPasswordCreated = true;
         if (columnName == "processing_restricted") hasProcessingRestricted = true;
         if (columnName == "restriction_reason") hasRestrictionReason = true;
+        if (columnName == "is_anonymous") hasIsAnonymous = true;
     }
 
     if (!hasAvatar) {
@@ -169,6 +171,13 @@ bool DatabaseManager::createTables()
         qDebug() << "Ajout de la colonne restriction_reason dans la table users";
         if (!query.exec("ALTER TABLE users ADD COLUMN restriction_reason TEXT DEFAULT ''")) {
             qWarning() << "Erreur ajout colonne restriction_reason:" << query.lastError().text();
+        }
+    }
+
+    if (!hasIsAnonymous) {
+        qDebug() << "Ajout de la colonne is_anonymous dans la table users";
+        if (!query.exec("ALTER TABLE users ADD COLUMN is_anonymous BOOLEAN DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne is_anonymous:" << query.lastError().text();
         }
     }
 
@@ -560,10 +569,11 @@ bool DatabaseManager::createAccount(const QString &pseudo, const QString &email,
     return true;
 }
 
-bool DatabaseManager::authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &avatar, QString &errorMsg, bool &usingTempPassword)
+bool DatabaseManager::authenticateUser(const QString &email, const QString &password, QString &pseudo, QString &avatar, QString &errorMsg, bool &usingTempPassword, bool &isAnonymous)
 {
-    // Initialiser le flag
+    // Initialiser les flags
     usingTempPassword = false;
+    isAnonymous = false;
 
     if (email.isEmpty() || password.isEmpty()) {
         errorMsg = "Email et mot de passe requis";
@@ -572,7 +582,7 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
 
     // Récupérer le salt, les hash (permanent et temporaire) et l'avatar pour cet email
     QSqlQuery query(m_db);
-    query.prepare("SELECT pseudo, password_hash, salt, avatar, temp_password_hash, processing_restricted, restriction_reason FROM users WHERE email = :email");
+    query.prepare("SELECT pseudo, password_hash, salt, avatar, temp_password_hash, processing_restricted, restriction_reason, is_anonymous FROM users WHERE email = :email");
     query.bindValue(":email", email);
 
     if (!query.exec()) {
@@ -629,6 +639,7 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
 
     pseudo = storedPseudo;
     avatar = storedAvatar;
+    isAnonymous = query.value(7).toBool();
     qDebug() << "Authentification reussie pour:" << pseudo << "avec avatar:" << avatar;
     return true;
 }
@@ -1208,6 +1219,47 @@ bool DatabaseManager::updateEmail(const QString &pseudo, const QString &newEmail
     }
 
     qDebug() << "Email mis à jour avec succès pour:" << pseudo;
+    return true;
+}
+
+bool DatabaseManager::setAnonymous(const QString &pseudo, bool anonymous, QString &errorMsg)
+{
+    if (pseudo.isEmpty()) {
+        errorMsg = "Pseudo requis";
+        return false;
+    }
+
+    if (!pseudoExists(pseudo)) {
+        errorMsg = "Compte non trouvé";
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE users SET is_anonymous = :anonymous WHERE pseudo = :pseudo");
+    query.bindValue(":anonymous", anonymous ? 1 : 0);
+    query.bindValue(":pseudo", pseudo);
+
+    if (!query.exec()) {
+        errorMsg = "Erreur lors de la mise à jour: " + query.lastError().text();
+        qCritical() << "Erreur setAnonymous:" << query.lastError().text();
+        return false;
+    }
+
+    // Audit RGPD
+    QString action = anonymous ? "anonymization" : "de-anonymization";
+    QString reason = anonymous ? "Activation de l'anonymisation par le joueur" : "Désactivation de l'anonymisation par le joueur";
+    QSqlQuery auditQuery(m_db);
+    auditQuery.prepare("INSERT INTO gdpr_audit_log (user_id, user_pseudo, user_email, action, reason, performed_by) "
+                        "SELECT id, pseudo, email, :action, :reason, 'system' "
+                        "FROM users WHERE pseudo = :pseudo");
+    auditQuery.bindValue(":action", action);
+    auditQuery.bindValue(":reason", reason);
+    auditQuery.bindValue(":pseudo", pseudo);
+    if (!auditQuery.exec()) {
+        qWarning() << "Erreur audit RGPD (anonymization):" << auditQuery.lastError().text();
+    }
+
+    qDebug() << "Anonymisation mise à jour pour:" << pseudo << "-> " << anonymous;
     return true;
 }
 

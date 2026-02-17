@@ -70,6 +70,10 @@ Rectangle {
             emailErrorText.text = error
             emailErrorText.visible = true
         }
+        function onSetAnonymousFailed(error) {
+            anonymousErrorText.text = error
+            anonymousErrorText.visible = true
+        }
     }
 
     // Propriétés pour l'état des sons
@@ -454,6 +458,68 @@ Rectangle {
                         text: "Email modifié avec succès"
                         font.pixelSize: 20 * settingsRoot.minRatio
                         color: "#66ff66"
+                        visible: false
+                    }
+
+                    // Anonymiser mon profil
+                    Row {
+                        width: parent.width
+                        spacing: 20 * settingsRoot.minRatio
+                        topPadding: 10 * settingsRoot.minRatio
+
+                        Text {
+                            text: "Anonymiser mon profil :"
+                            font.pixelSize: 26 * settingsRoot.minRatio
+                            color: "white"
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width * 0.5
+                        }
+
+                        Button {
+                            id: anonymousToggleButton
+                            width: 150 * settingsRoot.minRatio
+                            height: 60 * settingsRoot.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            property bool isAnonymous: networkManager.isAnonymous
+
+                            background: Rectangle {
+                                color: anonymousToggleButton.isAnonymous ? "#00aa00" : "#aa0000"
+                                radius: 10 * settingsRoot.minRatio
+                                border.color: "#FFD700"
+                                border.width: 2 * settingsRoot.minRatio
+                            }
+
+                            contentItem: Text {
+                                text: anonymousToggleButton.isAnonymous ? "ON" : "OFF"
+                                font.pixelSize: 26 * settingsRoot.minRatio
+                                font.bold: true
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            onClicked: {
+                                anonymousErrorText.visible = false
+                                networkManager.setAnonymous(!anonymousToggleButton.isAnonymous)
+                            }
+                        }
+                    }
+
+                    Text {
+                        text: "Les autres joueurs verront \"Anonyme\" comme pseudo"
+                        font.pixelSize: 18 * settingsRoot.minRatio
+                        color: "#888888"
+                        font.italic: true
+                    }
+
+                    Text {
+                        id: anonymousErrorText
+                        width: parent.width
+                        text: ""
+                        font.pixelSize: 20 * settingsRoot.minRatio
+                        color: "#ff6666"
+                        wrapMode: Text.WordWrap
                         visible: false
                     }
 
