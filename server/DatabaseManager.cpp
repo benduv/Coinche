@@ -376,6 +376,27 @@ bool DatabaseManager::createTables()
 
     qDebug() << "Table 'user_sessions' creee/verifiee";
 
+    // Table d'audit RGPD (traçabilité des actions sur les données personnelles)
+    QString createGdprAuditLog = R"(
+        CREATE TABLE IF NOT EXISTS gdpr_audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            user_pseudo TEXT NOT NULL,
+            user_email TEXT NOT NULL,
+            action TEXT NOT NULL,
+            reason TEXT,
+            performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            performed_by TEXT DEFAULT 'system'
+        )
+    )";
+
+    if (!query.exec(createGdprAuditLog)) {
+        qCritical() << "Erreur creation table gdpr_audit_log:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Table 'gdpr_audit_log' creee/verifiee";
+
     return true;
 }
 
@@ -907,6 +928,16 @@ bool DatabaseManager::deleteAccount(const QString &pseudo, QString &errorMsg)
         return false;
     }
 
+    // Audit RGPD : enregistrer la suppression AVANT de supprimer les données
+    QSqlQuery auditQuery(m_db);
+    auditQuery.prepare("INSERT INTO gdpr_audit_log (user_id, user_pseudo, user_email, action, reason, performed_by) "
+                        "SELECT id, pseudo, email, 'deletion', 'Suppression demandée par le joueur', 'system' "
+                        "FROM users WHERE id = :user_id");
+    auditQuery.bindValue(":user_id", userId);
+    if (!auditQuery.exec()) {
+        qWarning() << "Erreur audit RGPD (suppression):" << auditQuery.lastError().text();
+    }
+
     // Supprimer d'abord les statistiques (table stats)
     QSqlQuery deleteStatsQuery(m_db);
     deleteStatsQuery.prepare("DELETE FROM stats WHERE user_id = :user_id");
@@ -1088,6 +1119,18 @@ bool DatabaseManager::updatePseudo(const QString &currentPseudo, const QString &
         return false;
     }
 
+    // Audit RGPD : enregistrer le changement de pseudo
+    QSqlQuery auditQuery(m_db);
+    auditQuery.prepare("INSERT INTO gdpr_audit_log (user_id, user_pseudo, user_email, action, reason, performed_by) "
+                        "SELECT id, :newPseudo, email, 'pseudo_change', :reason, 'system' "
+                        "FROM users WHERE pseudo = :pseudo");
+    auditQuery.bindValue(":newPseudo", newPseudo);
+    auditQuery.bindValue(":reason", "Changement de pseudo: " + currentPseudo + " -> " + newPseudo);
+    auditQuery.bindValue(":pseudo", newPseudo);
+    if (!auditQuery.exec()) {
+        qWarning() << "Erreur audit RGPD (pseudo_change):" << auditQuery.lastError().text();
+    }
+
     qDebug() << "Pseudo mis à jour avec succès:" << currentPseudo << "->" << newPseudo;
     return true;
 }
@@ -1118,6 +1161,18 @@ bool DatabaseManager::updateEmail(const QString &pseudo, const QString &newEmail
         errorMsg = "Erreur lors de la mise à jour de l'email: " + query.lastError().text();
         qCritical() << "Erreur updateEmail:" << query.lastError().text();
         return false;
+    }
+
+    // Audit RGPD : enregistrer le changement d'email
+    QSqlQuery auditQuery(m_db);
+    auditQuery.prepare("INSERT INTO gdpr_audit_log (user_id, user_pseudo, user_email, action, reason, performed_by) "
+                        "SELECT id, pseudo, :newEmail, 'email_change', :reason, 'system' "
+                        "FROM users WHERE pseudo = :pseudo");
+    auditQuery.bindValue(":newEmail", newEmail);
+    auditQuery.bindValue(":reason", "Changement d'email pour " + pseudo);
+    auditQuery.bindValue(":pseudo", pseudo);
+    if (!auditQuery.exec()) {
+        qWarning() << "Erreur audit RGPD (email_change):" << auditQuery.lastError().text();
     }
 
     qDebug() << "Email mis à jour avec succès pour:" << pseudo;
