@@ -126,11 +126,15 @@ bool DatabaseManager::createTables()
     bool hasAvatar = false;
     bool hasTempPasswordHash = false;
     bool hasTempPasswordCreated = false;
+    bool hasProcessingRestricted = false;
+    bool hasRestrictionReason = false;
     while (checkUsersQuery.next()) {
         QString columnName = checkUsersQuery.value(1).toString();
         if (columnName == "avatar") hasAvatar = true;
         if (columnName == "temp_password_hash") hasTempPasswordHash = true;
         if (columnName == "temp_password_created") hasTempPasswordCreated = true;
+        if (columnName == "processing_restricted") hasProcessingRestricted = true;
+        if (columnName == "restriction_reason") hasRestrictionReason = true;
     }
 
     if (!hasAvatar) {
@@ -151,6 +155,20 @@ bool DatabaseManager::createTables()
         qDebug() << "Ajout de la colonne temp_password_created dans la table users";
         if (!query.exec("ALTER TABLE users ADD COLUMN temp_password_created TIMESTAMP")) {
             qWarning() << "Erreur ajout colonne temp_password_created:" << query.lastError().text();
+        }
+    }
+
+    if (!hasProcessingRestricted) {
+        qDebug() << "Ajout de la colonne processing_restricted dans la table users";
+        if (!query.exec("ALTER TABLE users ADD COLUMN processing_restricted BOOLEAN DEFAULT 0")) {
+            qWarning() << "Erreur ajout colonne processing_restricted:" << query.lastError().text();
+        }
+    }
+
+    if (!hasRestrictionReason) {
+        qDebug() << "Ajout de la colonne restriction_reason dans la table users";
+        if (!query.exec("ALTER TABLE users ADD COLUMN restriction_reason TEXT DEFAULT ''")) {
+            qWarning() << "Erreur ajout colonne restriction_reason:" << query.lastError().text();
         }
     }
 
@@ -501,7 +519,7 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
 
     // Récupérer le salt, les hash (permanent et temporaire) et l'avatar pour cet email
     QSqlQuery query(m_db);
-    query.prepare("SELECT pseudo, password_hash, salt, avatar, temp_password_hash FROM users WHERE email = :email");
+    query.prepare("SELECT pseudo, password_hash, salt, avatar, temp_password_hash, processing_restricted, restriction_reason FROM users WHERE email = :email");
     query.bindValue(":email", email);
 
     if (!query.exec()) {
@@ -538,6 +556,15 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
     else {
         // Aucun des deux mots de passe ne correspond
         errorMsg = "Email ou mot de passe incorrect";
+        return false;
+    }
+
+    // Vérifier si le compte est restreint (RGPD - droit à la limitation du traitement)
+    bool isRestricted = query.value(5).toBool();
+    if (isRestricted) {
+        QString reason = query.value(6).toString();
+        errorMsg = "Votre compte est temporairement restreint. Raison : " + reason + ". Contactez-nous pour plus d'informations.";
+        qDebug() << "Connexion bloquée - compte restreint:" << email << "Raison:" << reason;
         return false;
     }
 
