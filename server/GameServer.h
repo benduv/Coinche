@@ -972,18 +972,18 @@ private:
         const auto& main = player->getMain();
         int lowestIdx = playableIndices[0];
         int lowestValue = main[lowestIdx]->getValeurDeLaCarte() * 100 + main[lowestIdx]->getOrdreCarteForte();
-        qInfo() << "Carte initiale: " << main[lowestIdx]->getChiffre() << " " << main[lowestIdx]->getCouleur();
-        qInfo() << "lowestValue initiale: " << lowestValue;
+        qDebug() << "Carte initiale: " << main[lowestIdx]->getChiffre() << " " << main[lowestIdx]->getCouleur();
+        qDebug() << "lowestValue initiale: " << lowestValue;
 
         for (int idx : playableIndices) {
             int value = main[idx]->getValeurDeLaCarte() * 100 + main[idx]->getOrdreCarteForte();
-            qInfo() << "Carte: " << main[idx]->getChiffre() << " " << main[idx]->getCouleur();
-            qInfo() << "Value: " << value;
+            qDebug() << "Carte: " << main[idx]->getChiffre() << " " << main[idx]->getCouleur();
+            qDebug() << "Value: " << value;
             if (value < lowestValue) {
-                qInfo() << "Cette carte est moins forte que la carte la moins forte";
+                qDebug() << "Cette carte est moins forte que la carte la moins forte";
                 lowestValue = value;
                 lowestIdx = idx;
-                qInfo() << "Carte la moins forte actuelle: " << main[lowestIdx]->getChiffre() << " " << main[lowestIdx]->getCouleur();
+                qDebug() << "Carte la moins forte actuelle: " << main[lowestIdx]->getChiffre() << " " << main[lowestIdx]->getCouleur();
             }
         }
         return lowestIdx;
