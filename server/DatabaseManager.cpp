@@ -574,6 +574,17 @@ bool DatabaseManager::createAccount(const QString &pseudo, const QString &email,
         qWarning() << "Erreur creation stats pour utilisateur:" << statsQuery.lastError().text();
     }
 
+    // Audit RGPD : enregistrer la création du compte avec consentement
+    QSqlQuery auditQuery(m_db);
+    auditQuery.prepare("INSERT INTO gdpr_audit_log (user_id, user_pseudo, user_email, action, reason, performed_by) "
+                       "VALUES (:user_id, :pseudo, :email, 'account_creation', 'Création de compte avec consentement RGPD', 'system')");
+    auditQuery.bindValue(":user_id", userId);
+    auditQuery.bindValue(":pseudo", pseudo);
+    auditQuery.bindValue(":email", email);
+    if (!auditQuery.exec()) {
+        qWarning() << "Erreur audit RGPD (account_creation):" << auditQuery.lastError().text();
+    }
+
     qDebug() << "Compte cree avec succès pour:" << pseudo;
     return true;
 }

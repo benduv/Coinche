@@ -656,16 +656,35 @@ void GameServer::handleRegisterAccount(QWebSocket *socket, const QJsonObject &da
 
     QString errorMsg;
     if (m_dbManager->createAccount(pseudo, email, password, avatar, errorMsg)) {
-        // Succes
+        // Succès - Créer une connexion et enregistrer le joueur (comme pour loginAccount)
+        QString connectionId = QUuid::createUuid().toString();
+
+        PlayerConnection *conn = new PlayerConnection{
+            socket,
+            connectionId,
+            pseudo,
+            avatar,
+            -1,    // Pas encore en partie
+            -1,    // Pas encore de position
+            QString(), // lobbyPartnerId
+            false  // isAnonymous = false par défaut pour un nouveau compte
+        };
+        m_connections[connectionId] = conn;
+
         QJsonObject response;
         response["type"] = "registerAccountSuccess";
         response["playerName"] = pseudo;
         response["avatar"] = avatar;
+        response["connectionId"] = connectionId;
         sendMessage(socket, response);
-        qDebug() << "Compte cree avec succes:" << pseudo;
+        qDebug() << "Compte cree avec succes:" << pseudo << "ID:" << connectionId;
 
         // Enregistrer la création de compte dans les statistiques quotidiennes
         m_dbManager->recordNewAccount();
+
+        // Enregistrer la connexion et démarrer le tracking de session
+        m_dbManager->recordLogin(pseudo);
+        m_dbManager->recordSessionStart(pseudo);
     } else {
         // Echec
         QJsonObject response;

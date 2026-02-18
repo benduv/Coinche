@@ -7,7 +7,6 @@
         <file>qml/MatchMakingView.qml</file>
         <file>qml/MainMenu.qml</file>
         <file>qml/LoginView.qml</file>
-        <file>qml/PrivacyPolicy.qml</file>
         <file>qml/StatsView.qml</file>
         <file>qml/GameOverPopup.qml</file>
         <file>qml/AvatarSelector.qml</file>
