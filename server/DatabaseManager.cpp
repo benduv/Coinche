@@ -587,12 +587,13 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
 
     if (!query.exec()) {
         errorMsg = "Erreur lors de la verification: " + query.lastError().text();
-        qCritical() << "Erreur authentification:" << query.lastError().text();
+        qCritical() << "[AUTH] Erreur requête SQL email:" << email << "-" << query.lastError().text();
         return false;
     }
 
     if (!query.next()) {
         errorMsg = "Email ou mot de passe incorrect";
+        qWarning() << "[AUTH] Échec - Email non trouvé:" << email;
         return false;
     }
 
@@ -619,6 +620,9 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
     else {
         // Aucun des deux mots de passe ne correspond
         errorMsg = "Email ou mot de passe incorrect";
+        // IMPORTANT: L'email est loggé pour détecter les tentatives de brute force
+        // Rotation des logs recommandée : 30 jours max (voir script backup_db.sh)
+        qWarning() << "[AUTH] Échec - Mot de passe incorrect pour email:" << email;
         return false;
     }
 
@@ -627,7 +631,7 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
     if (isRestricted) {
         QString reason = query.value(6).toString();
         errorMsg = "Votre compte est temporairement restreint. Raison : " + reason + ". Contactez-nous pour plus d'informations.";
-        qDebug() << "Connexion bloquée - compte restreint:" << email << "Raison:" << reason;
+        qWarning() << "[AUTH] Connexion bloquée - Compte restreint - email:" << email << "raison:" << reason;
         return false;
     }
 
@@ -635,12 +639,14 @@ bool DatabaseManager::authenticateUser(const QString &email, const QString &pass
     QSqlQuery updateQuery(m_db);
     updateQuery.prepare("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE email = :email");
     updateQuery.bindValue(":email", email);
-    updateQuery.exec();
+    if (!updateQuery.exec()) {
+        qWarning() << "[AUTH] Erreur update last_login:" << updateQuery.lastError().text();
+    }
 
     pseudo = storedPseudo;
     avatar = storedAvatar;
     isAnonymous = query.value(7).toBool();
-    qDebug() << "Authentification reussie pour:" << pseudo << "avec avatar:" << avatar;
+    qInfo() << "[AUTH] SUCCÈS - Authentification réussie - pseudo:" << pseudo << "anonymous:" << isAnonymous;
     return true;
 }
 
@@ -962,14 +968,18 @@ bool DatabaseManager::deleteAccount(const QString &pseudo, QString &errorMsg)
 {
     if (pseudo.isEmpty()) {
         errorMsg = "Pseudo invalide";
+        qWarning() << "[DELETE_ACCOUNT] Tentative avec pseudo vide";
         return false;
     }
 
     int userId = getUserIdByPseudo(pseudo);
     if (userId == -1) {
         errorMsg = "Compte non trouve";
+        qWarning() << "[DELETE_ACCOUNT] Compte non trouvé pour pseudo:" << pseudo;
         return false;
     }
+
+    qInfo() << "[DELETE_ACCOUNT] DÉBUT suppression compte - userId:" << userId << "pseudo:" << pseudo;
 
     // Audit RGPD : enregistrer la suppression AVANT de supprimer les données
     QSqlQuery auditQuery(m_db);
@@ -978,8 +988,11 @@ bool DatabaseManager::deleteAccount(const QString &pseudo, QString &errorMsg)
                         "FROM users WHERE id = :user_id");
     auditQuery.bindValue(":user_id", userId);
     if (!auditQuery.exec()) {
-        qWarning() << "Erreur audit RGPD (suppression):" << auditQuery.lastError().text();
+        qCritical() << "[DELETE_ACCOUNT] CRITIQUE - Échec audit RGPD:" << auditQuery.lastError().text();
+        errorMsg = "Erreur audit RGPD: " + auditQuery.lastError().text();
+        return false;
     }
+    qInfo() << "[DELETE_ACCOUNT] Audit RGPD enregistré pour userId:" << userId;
 
     // Supprimer d'abord les statistiques (table stats)
     QSqlQuery deleteStatsQuery(m_db);
@@ -988,11 +1001,12 @@ bool DatabaseManager::deleteAccount(const QString &pseudo, QString &errorMsg)
 
     if (!deleteStatsQuery.exec()) {
         errorMsg = "Erreur lors de la suppression des statistiques: " + deleteStatsQuery.lastError().text();
-        qCritical() << "Erreur suppression stats:" << deleteStatsQuery.lastError().text();
+        qCritical() << "[DELETE_ACCOUNT] Erreur suppression stats pour userId:" << userId << "-" << deleteStatsQuery.lastError().text();
         return false;
     }
 
-    qDebug() << "Statistiques supprimees pour user_id:" << userId;
+    int statsDeleted = deleteStatsQuery.numRowsAffected();
+    qInfo() << "[DELETE_ACCOUNT] Statistiques supprimées - rows:" << statsDeleted << "userId:" << userId;
 
     // Supprimer ensuite le compte utilisateur (table users)
     QSqlQuery deleteUserQuery(m_db);
@@ -1001,11 +1015,11 @@ bool DatabaseManager::deleteAccount(const QString &pseudo, QString &errorMsg)
 
     if (!deleteUserQuery.exec()) {
         errorMsg = "Erreur lors de la suppression du compte: " + deleteUserQuery.lastError().text();
-        qCritical() << "Erreur suppression utilisateur:" << deleteUserQuery.lastError().text();
+        qCritical() << "[DELETE_ACCOUNT] Erreur suppression utilisateur userId:" << userId << "-" << deleteUserQuery.lastError().text();
         return false;
     }
 
-    qDebug() << "Compte supprime avec succes pour:" << pseudo;
+    qInfo() << "[DELETE_ACCOUNT] SUCCÈS - Compte supprimé - userId:" << userId << "pseudo:" << pseudo;
     return true;
 }
 

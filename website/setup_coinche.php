@@ -37,6 +37,7 @@ if ( $_SERVER['REQUEST_METHOD'] !== 'POST' || ! isset( $_POST['coinche_run'] ) )
     <ul>
         <li>Page <strong>Présentation</strong> (page d'accueil)</li>
         <li>Page <strong>Règles du Jeu</strong></li>
+        <li>Page <strong>Politique de Confidentialité</strong></li>
         <li>Page <strong>Contact</strong></li>
         <li>Menu de navigation</li>
     </ul>
@@ -211,7 +212,7 @@ $content_b = <<<'__END_B__'
     <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;"><strong style="color:#FFD700;">Surcoinche</strong> — Redouble les points si vous êtes coinché et sûr de réussir.</li>
     <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;"><strong style="color:#FFD700;">Capot</strong> — Annoncer que votre équipe va remporter tous les plis (250 points).</li>
     <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;"><strong style="color:#FFD700;">Générale</strong> — Annoncer que vous allez remporter tous les plis (500 points).</li>
-    <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;"><strong style="color:#FFD700;">Tout Atout (TA)</strong> — Toutes les couleurs deviennent atout. Ordre : Valet (20), 9 (14), As (11), 10 (10), Roi (4), Dame (3), 8 (0), 7 (0).</li>
+    <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;"><strong style="color:#FFD700;">Tout Atout (TA)</strong> — Toutes les couleurs deviennent atout. Ordre : Valet (14), 9 (9), As (6), 10 (4), Roi (3), Dame (2), 8 (0), 7 (0).</li>
     <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;"><strong style="color:#FFD700;">Sans Atout (SA)</strong> — Aucune couleur n'est atout. Ordre : As (19), 10 (10), Roi (4), Dame (3), Valet (2), 9 (0), 8 (0), 7 (0).</li>
   </ul>
 
@@ -329,6 +330,135 @@ if ( is_wp_error( $id_c ) ) coinche_err( 'Contact : ' . $id_c->get_error_message
 
 
 // ============================================================
+// D — PAGE POLITIQUE DE CONFIDENTIALITÉ
+// ============================================================
+$content_d = <<<'__END_D__'
+<!-- wp:html -->
+<div style="max-width:860px;margin:0 auto;padding:50px 24px;font-family:'Segoe UI',Tahoma,sans-serif;color:#cccccc;line-height:1.7;">
+
+  <h1 style="color:#FFD700;text-align:center;font-size:2.5em;margin:0 0 10px 0;">Politique de Confidentialité</h1>
+  <p style="text-align:center;color:#aaa;font-size:1.1em;margin-bottom:50px;">Coinche de l'Espace</p>
+  <p style="text-align:center;color:#888;font-style:italic;margin-bottom:40px;">Dernière mise à jour : 17 février 2026</p>
+
+  <!-- ─── 1. RESPONSABLE DU TRAITEMENT ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">1. Responsable du traitement</h2>
+  <p>Le responsable du traitement des données est :</p>
+  <p style="margin-left:20px;">
+    <strong style="color:#FFD700;">Nebuludik</strong><br>
+    Email : <a href="mailto:contact@nebuludik.fr" style="color:#FFD700;text-decoration:none;">contact@nebuludik.fr</a>
+  </p>
+
+  <!-- ─── 2. INTRODUCTION ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">2. Introduction</h2>
+  <p>La protection de votre vie privée est importante pour nous. Cette politique explique quelles données sont collectées lorsque vous utilisez Coinche de l'Espace, pourquoi elles sont collectées et comment elles sont protégées.</p>
+  <p>En utilisant l'application, vous acceptez les pratiques décrites ci-dessous.</p>
+
+  <!-- ─── 3. DONNÉES COLLECTÉES ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">3. Données collectées</h2>
+  <p>Nous collectons uniquement les données strictement nécessaires au fonctionnement du jeu :</p>
+  <ul style="list-style:none;padding:0;margin:0;">
+    <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;">
+      <strong style="color:#FFD700;">Adresse e-mail</strong> — création et gestion du compte
+    </li>
+    <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;">
+      <strong style="color:#FFD700;">Pseudonyme</strong> — identification en jeu
+    </li>
+    <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;">
+      <strong style="color:#FFD700;">Mot de passe chiffré</strong> — sécurité du compte
+    </li>
+    <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;">
+      <strong style="color:#FFD700;">Statistiques de jeu</strong> — scores, parties, classements
+    </li>
+  </ul>
+  <p style="background:#1a1a2e;padding:14px 18px;border-radius:6px;border-left:4px solid #4caf50;color:#fff;margin:20px 0;">
+    <strong>Nous ne collectons aucune donnée sensible</strong>, ni localisation, ni contacts, ni fichiers personnels.
+  </p>
+
+  <!-- ─── 4. FINALITÉS DU TRAITEMENT ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">4. Finalités du traitement</h2>
+  <p>Les données sont utilisées uniquement pour :</p>
+  <ul>
+    <li>créer et gérer votre compte utilisateur</li>
+    <li>permettre le fonctionnement du jeu en ligne</li>
+    <li>afficher les scores et classements</li>
+    <li>répondre aux demandes d'assistance</li>
+    <li>sécuriser les comptes</li>
+  </ul>
+  <p style="color:#FFD700;"><strong>Aucune donnée n'est utilisée à des fins publicitaires ou commerciales.</strong></p>
+
+  <!-- ─── 5. BASE LÉGALE ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">5. Base légale</h2>
+  <p>Le traitement repose sur :</p>
+  <ul>
+    <li>l'exécution du service (fonctionnement du jeu)</li>
+    <li>votre consentement lors de la création du compte</li>
+  </ul>
+
+  <!-- ─── 6. HÉBERGEMENT ET SÉCURITÉ ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">6. Hébergement et sécurité</h2>
+  <ul>
+    <li>Les données sont hébergées chez <strong style="color:#FFD700;">OVHcloud</strong> sur des serveurs situés en <strong style="color:#FFD700;">France</strong>.</li>
+    <li>Les communications sont chiffrées via protocole <strong style="color:#FFD700;">SSL/TLS</strong>.</li>
+    <li>Les mots de passe sont stockés sous forme hachée et sécurisée.</li>
+    <li>Des mesures techniques sont mises en œuvre pour empêcher tout accès non autorisé.</li>
+  </ul>
+
+  <!-- ─── 7. PARTAGE DES DONNÉES ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">7. Partage des données</h2>
+  <p>Nous ne vendons, louons ni partageons vos données personnelles avec des tiers.</p>
+  <p>Les données sont utilisées <strong style="color:#FFD700;">exclusivement</strong> pour le fonctionnement de l'application.</p>
+
+  <!-- ─── 8. DURÉE DE CONSERVATION ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">8. Durée de conservation</h2>
+  <ul>
+    <li>Les données sont conservées tant que votre compte est actif.</li>
+    <li>En cas de suppression du compte, les données sont supprimées immédiatement.</li>
+    <li>Les demandes de suppression par email sont traitées sous <strong style="color:#FFD700;">30 jours maximum</strong>.</li>
+  </ul>
+
+  <!-- ─── 9. DROITS DES UTILISATEURS (RGPD) ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">9. Droits des utilisateurs (RGPD)</h2>
+  <p>Conformément au Règlement Général sur la Protection des Données, vous disposez des droits suivants :</p>
+  <ul>
+    <li>accès à vos données</li>
+    <li>rectification</li>
+    <li>suppression</li>
+    <li>limitation du traitement</li>
+    <li>opposition</li>
+    <li>portabilité</li>
+  </ul>
+  <p style="background:#1a1a2e;padding:14px 18px;border-radius:6px;border-left:4px solid #FFD700;color:#FFD700;margin:20px 0;">
+    <strong>Pour exercer ces droits :</strong><br>
+    📩 <a href="mailto:contact@nebuludik.fr" style="color:#FFD700;text-decoration:none;">contact@nebuludik.fr</a>
+  </p>
+
+  <!-- ─── 10. SUPPRESSION DE COMPTE ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">10. Suppression de compte</h2>
+  <p>Vous pouvez supprimer votre compte directement depuis l'application dans les paramètres.</p>
+
+  <!-- ─── 11. ENFANTS ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">11. Enfants</h2>
+  <p>L'application ne cible pas spécifiquement les enfants de moins de 13 ans et ne collecte pas sciemment de données les concernant.</p>
+
+  <!-- ─── 12. MODIFICATIONS ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">12. Modifications</h2>
+  <p>Cette politique peut être modifiée à tout moment. La version la plus récente est toujours disponible sur cette page.</p>
+
+  <!-- ─── 13. CONTACT ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">13. Contact</h2>
+  <p>Pour toute question concernant la confidentialité :</p>
+  <p style="font-size:1.2em;margin:10px 0;">
+    📧 <a href="mailto:contact@nebuludik.fr" style="color:#FFD700;text-decoration:none;font-weight:bold;">contact@nebuludik.fr</a>
+  </p>
+</div>
+<!-- /wp:html -->
+__END_D__;
+
+$id_d = coinche_upsert_page( 'Politique de Confidentialité', 'politique-de-confidentialite', $content_d );
+if ( is_wp_error( $id_d ) ) coinche_err( 'Politique de Confidentialité : ' . $id_d->get_error_message() );
+
+
+// ============================================================
 // PAGE D'ACCUEIL = Présentation
 // ============================================================
 if ( ! is_wp_error( $id_a ) ) {
@@ -364,6 +494,13 @@ if ( $menu_obj ) {
             'menu-item-object-id' => $id_b,
         ] );
         wp_add_nav_menu_item( $menu_id, [
+            'menu-item-title'     => 'Politique de Confidentialité',
+            'menu-item-status'    => 'publish',
+            'menu-item-type'      => 'post_type',
+            'menu-item-object'    => 'page',
+            'menu-item-object-id' => $id_d,
+        ] );
+        wp_add_nav_menu_item( $menu_id, [
             'menu-item-title'     => 'Contact',
             'menu-item-status'    => 'publish',
             'menu-item-type'      => 'post_type',
@@ -391,9 +528,10 @@ coinche_log( 'Thème sombre : déployé séparément via SFTP (mu-plugins/).' );
 // ============================================================
 echo '<hr style="border-color:#222244;margin:30px 0;">';
 echo '<h2>Permaliens créés</h2>';
-if ( ! is_wp_error( $id_a ) ) coinche_log( 'Présentation  : <a href="' . get_permalink( $id_a ) . '" target="_blank">' . get_permalink( $id_a ) . '</a>' );
-if ( ! is_wp_error( $id_b ) ) coinche_log( 'Règles du Jeu : <a href="' . get_permalink( $id_b ) . '" target="_blank">' . get_permalink( $id_b ) . '</a>' );
-if ( ! is_wp_error( $id_c ) ) coinche_log( 'Contact       : <a href="' . get_permalink( $id_c ) . '" target="_blank">' . get_permalink( $id_c ) . '</a>' );
+if ( ! is_wp_error( $id_a ) ) coinche_log( 'Présentation                  : <a href="' . get_permalink( $id_a ) . '" target="_blank">' . get_permalink( $id_a ) . '</a>' );
+if ( ! is_wp_error( $id_b ) ) coinche_log( 'Règles du Jeu                 : <a href="' . get_permalink( $id_b ) . '" target="_blank">' . get_permalink( $id_b ) . '</a>' );
+if ( ! is_wp_error( $id_d ) ) coinche_log( 'Politique de Confidentialité  : <a href="' . get_permalink( $id_d ) . '" target="_blank">' . get_permalink( $id_d ) . '</a>' );
+if ( ! is_wp_error( $id_c ) ) coinche_log( 'Contact                       : <a href="' . get_permalink( $id_c ) . '" target="_blank">' . get_permalink( $id_c ) . '</a>' );
 
 echo '</div></body></html>';
 ?>

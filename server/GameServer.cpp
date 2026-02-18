@@ -34,9 +34,29 @@ void GameServer::onTextMessageReceived(const QString &message) {
         return;
     }
 
-    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
+    // Parser le JSON avec validation
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8(), &parseError);
+
+    if (doc.isNull()) {
+        qCritical() << "[JSON_PARSE] Échec parsing JSON - offset:" << parseError.offset
+                    << "erreur:" << parseError.errorString()
+                    << "message:" << message.left(100);
+        return;
+    }
+
+    if (!doc.isObject()) {
+        qCritical() << "[JSON_PARSE] Message JSON n'est pas un objet - message:" << message.left(100);
+        return;
+    }
+
     QJsonObject obj = doc.object();
     QString type = obj["type"].toString();
+
+    if (type.isEmpty()) {
+        qWarning() << "[JSON_PARSE] Champ 'type' manquant ou vide - message:" << message.left(100);
+        return;
+    }
 
     qDebug() << "GameServer - Message recu:" << type;
 
@@ -88,6 +108,8 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleChangeEmail(sender, obj);
     } else if (type == "setAnonymous") {
         handleSetAnonymous(sender, obj);
+    } else {
+        qWarning() << "[MSG_DISPATCH] Type de message non reconnu:" << type;
     }
 }
 
@@ -739,11 +761,12 @@ void GameServer::handleLoginAccount(QWebSocket *socket, const QJsonObject &data)
 void GameServer::handleDeleteAccount(QWebSocket *socket, const QJsonObject &data) {
     QString pseudo = data["pseudo"].toString();
 
-    qDebug() << "GameServer - Demande suppression compte:" << pseudo;
+    qInfo() << "[DELETE_ACCOUNT] Demande suppression compte - pseudo:" << pseudo;
 
     // Vérifier que le joueur est bien connecté avec ce pseudo
     QString connectionId = getConnectionIdBySocket(socket);
     if (connectionId.isEmpty()) {
+        qWarning() << "[DELETE_ACCOUNT] Échec - Non connecté - pseudo demandé:" << pseudo;
         QJsonObject response;
         response["type"] = "deleteAccountFailed";
         response["error"] = "Non connecte";
@@ -753,6 +776,7 @@ void GameServer::handleDeleteAccount(QWebSocket *socket, const QJsonObject &data
 
     PlayerConnection* conn = m_connections[connectionId];
     if (conn->playerName != pseudo) {
+        qWarning() << "[DELETE_ACCOUNT] Échec - Pseudo ne correspond pas - demandé:" << pseudo << "connecté:" << conn->playerName;
         QJsonObject response;
         response["type"] = "deleteAccountFailed";
         response["error"] = "Pseudo ne correspond pas";
@@ -767,7 +791,7 @@ void GameServer::handleDeleteAccount(QWebSocket *socket, const QJsonObject &data
         QJsonObject response;
         response["type"] = "deleteAccountSuccess";
         sendMessage(socket, response);
-        qDebug() << "Compte supprime avec succes:" << pseudo;
+        qInfo() << "[DELETE_ACCOUNT] SUCCÈS - Compte supprimé et déconnecté - pseudo:" << pseudo;
 
         // Déconnecter le joueur de toute partie en cours
         if (conn->gameRoomId != -1) {
@@ -780,11 +804,11 @@ void GameServer::handleDeleteAccount(QWebSocket *socket, const QJsonObject &data
         delete conn;
     } else {
         // Echec
+        qWarning() << "[DELETE_ACCOUNT] Échec - Erreur DB - pseudo:" << pseudo << "erreur:" << errorMsg;
         QJsonObject response;
         response["type"] = "deleteAccountFailed";
         response["error"] = errorMsg;
         sendMessage(socket, response);
-        qDebug() << "Echec suppression compte:" << errorMsg;
     }
 }
 
@@ -849,7 +873,7 @@ void GameServer::handleChangePassword(QWebSocket *socket, const QJsonObject &dat
     QString email = data["email"].toString();
     QString newPassword = data["newPassword"].toString();
 
-    qDebug() << "GameServer - Demande changement mot de passe pour:" << email;
+    qInfo() << "[CHANGE_PASSWORD] Demande changement mot de passe - email:" << email;
 
     QString errorMsg;
     if (m_dbManager->updatePassword(email, newPassword, errorMsg)) {
@@ -857,14 +881,14 @@ void GameServer::handleChangePassword(QWebSocket *socket, const QJsonObject &dat
         QJsonObject response;
         response["type"] = "changePasswordSuccess";
         sendMessage(socket, response);
-        qDebug() << "Mot de passe change avec succes pour:" << email;
+        qInfo() << "[CHANGE_PASSWORD] SUCCÈS - Mot de passe changé - email:" << email;
     } else {
         // Failure
+        qWarning() << "[CHANGE_PASSWORD] Échec - email:" << email << "erreur:" << errorMsg;
         QJsonObject response;
         response["type"] = "changePasswordFailed";
         response["error"] = errorMsg;
         sendMessage(socket, response);
-        qDebug() << "Echec changement mot de passe:" << errorMsg;
     }
 }
 
@@ -872,7 +896,7 @@ void GameServer::handleChangePseudo(QWebSocket *socket, const QJsonObject &data)
     QString currentPseudo = data["currentPseudo"].toString();
     QString newPseudo = data["newPseudo"].toString();
 
-    qDebug() << "GameServer - Demande changement pseudo:" << currentPseudo << "->" << newPseudo;
+    qInfo() << "[CHANGE_PSEUDO] Demande changement pseudo -" << currentPseudo << "->" << newPseudo;
 
     // Vérifier que le socket correspond bien au joueur
     QString connId;
@@ -884,6 +908,7 @@ void GameServer::handleChangePseudo(QWebSocket *socket, const QJsonObject &data)
     }
 
     if (connId.isEmpty()) {
+        qWarning() << "[CHANGE_PSEUDO] Échec - Session invalide - pseudo demandé:" << currentPseudo;
         QJsonObject response;
         response["type"] = "changePseudoFailed";
         response["error"] = "Session invalide";
@@ -906,13 +931,13 @@ void GameServer::handleChangePseudo(QWebSocket *socket, const QJsonObject &data)
         response["type"] = "changePseudoSuccess";
         response["newPseudo"] = newPseudo;
         sendMessage(socket, response);
-        qDebug() << "Pseudo changé avec succès:" << currentPseudo << "->" << newPseudo;
+        qInfo() << "[CHANGE_PSEUDO] SUCCÈS - Pseudo changé -" << currentPseudo << "->" << newPseudo;
     } else {
+        qWarning() << "[CHANGE_PSEUDO] Échec -" << currentPseudo << "->" << newPseudo << "erreur:" << errorMsg;
         QJsonObject response;
         response["type"] = "changePseudoFailed";
         response["error"] = errorMsg;
         sendMessage(socket, response);
-        qDebug() << "Echec changement pseudo:" << errorMsg;
     }
 }
 
@@ -920,7 +945,7 @@ void GameServer::handleChangeEmail(QWebSocket *socket, const QJsonObject &data) 
     QString pseudo = data["pseudo"].toString();
     QString newEmail = data["newEmail"].toString();
 
-    qDebug() << "GameServer - Demande changement email pour:" << pseudo;
+    qInfo() << "[CHANGE_EMAIL] Demande changement email - pseudo:" << pseudo << "nouvel email:" << newEmail;
 
     // Vérifier que le socket correspond bien au joueur
     bool authorized = false;
@@ -932,6 +957,7 @@ void GameServer::handleChangeEmail(QWebSocket *socket, const QJsonObject &data) 
     }
 
     if (!authorized) {
+        qWarning() << "[CHANGE_EMAIL] Échec - Session invalide - pseudo:" << pseudo;
         QJsonObject response;
         response["type"] = "changeEmailFailed";
         response["error"] = "Session invalide";
@@ -945,13 +971,13 @@ void GameServer::handleChangeEmail(QWebSocket *socket, const QJsonObject &data) 
         response["type"] = "changeEmailSuccess";
         response["newEmail"] = newEmail;
         sendMessage(socket, response);
-        qDebug() << "Email changé avec succès pour:" << pseudo;
+        qInfo() << "[CHANGE_EMAIL] SUCCÈS - Email changé - pseudo:" << pseudo << "nouvel email:" << newEmail;
     } else {
+        qWarning() << "[CHANGE_EMAIL] Échec - pseudo:" << pseudo << "erreur:" << errorMsg;
         QJsonObject response;
         response["type"] = "changeEmailFailed";
         response["error"] = errorMsg;
         sendMessage(socket, response);
-        qDebug() << "Echec changement email:" << errorMsg;
     }
 }
 
@@ -1415,25 +1441,25 @@ void GameServer::handlePlayCard(QWebSocket *socket, const QJsonObject &data) {
 
     // Check que le jeu est en phase de jeu (pas d'annonces)
     if (room->gameState != "playing") {
-        qWarning() << "Validation échouée - Tentative de jouer carte pendant enchères (joueur index" << playerIndex << "room" << roomId << ")";
+        qWarning() << "[PLAY_CARD] Validation échouée - Tentative de jouer carte pendant enchères - joueur:" << playerIndex << "room:" << roomId;
         return;
     }
 
     // Check qu'on n'est pas en attente entre deux plis
     if (room->waitingForNextPli) {
-        qDebug() << "GameServer - Erreur: tentative de jouer pendant l'attente entre les plis (joueur" << playerIndex << ")";
+        qWarning() << "[PLAY_CARD] Validation échouée - Tentative de jouer pendant l'attente entre plis - joueur:" << playerIndex << "room:" << roomId;
         return;
     }
 
     // Check que c'est bien le tour du joueur
     if (room->currentPlayerIndex != playerIndex) {
-        qWarning() << "Validation échouée - Pas le tour du joueur" << playerIndex << "(tour actuel:" << room->currentPlayerIndex << "room" << roomId << ")";
+        qWarning() << "[PLAY_CARD] Validation échouée - Pas le tour du joueur - joueur:" << playerIndex << "tour actuel:" << room->currentPlayerIndex << "room:" << roomId;
         return;
     }
 
     Player* player = room->players[playerIndex].get();
     if (!player || cardIndex < 0 || cardIndex >= player->getMain().size()) {
-        qWarning() << "Validation échouée - Index carte invalide" << cardIndex << "(joueur index" << playerIndex << "room" << roomId << ")";
+        qWarning() << "[PLAY_CARD] Validation échouée - Index carte invalide - carte:" << cardIndex << "joueur:" << playerIndex << "room:" << roomId;
         return;
     }
 
@@ -1463,7 +1489,7 @@ void GameServer::handlePlayCard(QWebSocket *socket, const QJsonObject &data) {
     );
 
     if (!isPlayable) {
-        qWarning() << "Validation échouée - Carte non jouable selon règles (joueur index" << playerIndex << "carte" << cardIndex << "room" << roomId << ")";
+        qWarning() << "[PLAY_CARD] Validation échouée - Carte non jouable selon règles - joueur:" << playerIndex << "carte:" << cardIndex << "room:" << roomId;
 
         // Envoi un message d'erreur au joueur
         QJsonObject errorMsg;
@@ -1623,7 +1649,7 @@ void GameServer::handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
     if (annonce == Player::COINCHE) {
         // Vérifier qu'il y a une enchère en cours
         if (room->lastBidAnnonce == Player::ANNONCEINVALIDE) {
-            qDebug() << "GameServer - COINCHE impossible: aucune enchère en cours";
+            qWarning() << "[MAKE_BID] Validation échouée - COINCHE impossible: aucune enchère en cours - joueur:" << playerIndex << "room:" << roomId;
             return;
         }
 
@@ -1631,7 +1657,7 @@ void GameServer::handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
         int lastBidderTeam = room->lastBidderIndex % 2;  // 0 ou 1
         int playerTeam = playerIndex % 2;  // 0 ou 1
         if (lastBidderTeam == playerTeam) {
-            qDebug() << "GameServer - COINCHE impossible: joueur de la même équipe";
+            qWarning() << "[MAKE_BID] Validation échouée - COINCHE impossible: joueur de la même équipe - joueur:" << playerIndex << "room:" << roomId;
             return;
         }
 
@@ -1670,7 +1696,7 @@ void GameServer::handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
     if (annonce == Player::SURCOINCHE) {
         // Vérifie que COINCHE a été annoncé
         if (!room->coinched) {
-            qDebug() << "GameServer - SURCOINCHE impossible: aucune COINCHE en cours";
+            qWarning() << "[MAKE_BID] Validation échouée - SURCOINCHE impossible: aucune COINCHE en cours - joueur:" << playerIndex << "room:" << roomId;
             return;
         }
 
@@ -1678,7 +1704,7 @@ void GameServer::handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
         int lastBidderTeam = room->lastBidderIndex % 2;  // 0 ou 1
         int playerTeam = playerIndex % 2;  // 0 ou 1
         if (lastBidderTeam != playerTeam) {
-            qDebug() << "GameServer - SURCOINCHE impossible: joueur de l'équipe adverse";
+            qWarning() << "[MAKE_BID] Validation échouée - SURCOINCHE impossible: joueur de l'équipe adverse - joueur:" << playerIndex << "room:" << roomId;
             return;
         }
 
@@ -2617,8 +2643,11 @@ void GameServer::finishManche(int roomId) {
                     QString connId = room->connectionIds[room->surcoinchePlayerIndex];
                     PlayerConnection* surcoincheConn = connId.isEmpty() ? nullptr : m_connections.value(connId);
                     if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
-                        m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, false, true);
-                        qDebug() << "Stats surcoinche réussie pour:" << surcoincheConn->playerName;
+                        if (!m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, false, true)) {
+                            qWarning() << "[STATS] Échec mise à jour stats surcoinche réussie - joueur:" << surcoincheConn->playerName;
+                        } else {
+                            qDebug() << "Stats surcoinche réussie pour:" << surcoincheConn->playerName;
+                        }
                     }
                 }
             } else {
@@ -2627,8 +2656,11 @@ void GameServer::finishManche(int roomId) {
                     QString connId = room->connectionIds[room->coinchePlayerIndex];
                     PlayerConnection* coincheConn = connId.isEmpty() ? nullptr : m_connections.value(connId);
                     if (coincheConn && !coincheConn->playerName.isEmpty()) {
-                        m_dbManager->updateCoincheStats(coincheConn->playerName, false, true);
-                        qDebug() << "Stats coinche réussie pour:" << coincheConn->playerName;
+                        if (!m_dbManager->updateCoincheStats(coincheConn->playerName, false, true)) {
+                            qWarning() << "[STATS] Échec mise à jour stats coinche réussie - joueur:" << coincheConn->playerName;
+                        } else {
+                            qDebug() << "Stats coinche réussie pour:" << coincheConn->playerName;
+                        }
                     }
                 }
 
@@ -2647,8 +2679,11 @@ void GameServer::finishManche(int roomId) {
                 int playerTeam = (i % 2 == 0) ? 1 : 2;
                 if (playerTeam == 1) {
                     // Ce joueur fait partie de l'équipe 1 qui a fait l'annonce coinchée
-                    m_dbManager->updateAnnonceCoinchee(conn->playerName, contractReussi);
-                    qDebug() << "Stats annonce coinchée pour:" << conn->playerName << "Réussie:" << contractReussi;
+                    if (!m_dbManager->updateAnnonceCoinchee(conn->playerName, contractReussi)) {
+                        qWarning() << "[STATS] Échec mise à jour stats annonce coinchée - joueur:" << conn->playerName << "réussie:" << contractReussi;
+                    } else {
+                        qDebug() << "Stats annonce coinchée pour:" << conn->playerName << "Réussie:" << contractReussi;
+                    }
                 }
             }
 
@@ -2659,8 +2694,11 @@ void GameServer::finishManche(int roomId) {
                     // Le joueur qui a coinché subit maintenant une surcoinche
                     // Si le contrat réussit → le joueur qui a coinché perd (won = false)
                     // Si le contrat échoue → le joueur qui a coinché gagne quand même (won = true)
-                    m_dbManager->updateAnnonceSurcoinchee(coincheConn->playerName, !contractReussi);
-                    qDebug() << "Stats surcoinche subie pour:" << coincheConn->playerName << "Gagnée:" << !contractReussi;
+                    if (!m_dbManager->updateAnnonceSurcoinchee(coincheConn->playerName, !contractReussi)) {
+                        qWarning() << "[STATS] Échec mise à jour stats annonce surcoinchée - joueur:" << coincheConn->playerName << "gagnée:" << !contractReussi;
+                    } else {
+                        qDebug() << "Stats surcoinche subie pour:" << coincheConn->playerName << "Gagnée:" << !contractReussi;
+                    }
                 }
             }
         } else {
@@ -2673,8 +2711,11 @@ void GameServer::finishManche(int roomId) {
                     QString connId = room->connectionIds[room->surcoinchePlayerIndex];
                     PlayerConnection* surcoincheConn = connId.isEmpty() ? nullptr : m_connections.value(connId);
                     if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
-                        m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, false, true);
-                        qDebug() << "Stats surcoinche réussie pour:" << surcoincheConn->playerName;
+                        if (!m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, false, true)) {
+                            qWarning() << "[STATS] Échec mise à jour stats surcoinche réussie - joueur:" << surcoincheConn->playerName;
+                        } else {
+                            qDebug() << "Stats surcoinche réussie pour:" << surcoincheConn->playerName;
+                        }
                     }
                 }
             } else {
@@ -2683,8 +2724,11 @@ void GameServer::finishManche(int roomId) {
                     QString connId = room->connectionIds[room->coinchePlayerIndex];
                     PlayerConnection* coincheConn = connId.isEmpty() ? nullptr : m_connections.value(connId);
                     if (coincheConn && !coincheConn->playerName.isEmpty()) {
-                        m_dbManager->updateCoincheStats(coincheConn->playerName, false, true);
-                        qDebug() << "Stats coinche réussie pour:" << coincheConn->playerName;
+                        if (!m_dbManager->updateCoincheStats(coincheConn->playerName, false, true)) {
+                            qWarning() << "[STATS] Échec mise à jour stats coinche réussie - joueur:" << coincheConn->playerName;
+                        } else {
+                            qDebug() << "Stats coinche réussie pour:" << coincheConn->playerName;
+                        }
                     }
                 }
 
@@ -2703,8 +2747,11 @@ void GameServer::finishManche(int roomId) {
                 int playerTeam = (i % 2 == 0) ? 1 : 2;
                 if (playerTeam == 2) {
                     // Ce joueur fait partie de l'équipe 2 qui a fait l'annonce coinchée
-                    m_dbManager->updateAnnonceCoinchee(conn->playerName, contractReussi);
-                    qDebug() << "Stats annonce coinchée pour:" << conn->playerName << "Réussie:" << contractReussi;
+                    if (!m_dbManager->updateAnnonceCoinchee(conn->playerName, contractReussi)) {
+                        qWarning() << "[STATS] Échec mise à jour stats annonce coinchée - joueur:" << conn->playerName << "réussie:" << contractReussi;
+                    } else {
+                        qDebug() << "Stats annonce coinchée pour:" << conn->playerName << "Réussie:" << contractReussi;
+                    }
                 }
             }
 
@@ -2715,8 +2762,11 @@ void GameServer::finishManche(int roomId) {
                     // Le joueur qui a coinché subit maintenant une surcoinche
                     // Si le contrat réussit → le joueur qui a coinché perd (won = false)
                     // Si le contrat échoue → le joueur qui a coinché gagne quand même (won = true)
-                    m_dbManager->updateAnnonceSurcoinchee(coincheConn->playerName, !contractReussi);
-                    qDebug() << "Stats surcoinche subie pour:" << coincheConn->playerName << "Gagnée:" << !contractReussi;
+                    if (!m_dbManager->updateAnnonceSurcoinchee(coincheConn->playerName, !contractReussi)) {
+                        qWarning() << "[STATS] Échec mise à jour stats annonce surcoinchée - joueur:" << coincheConn->playerName << "gagnée:" << !contractReussi;
+                    } else {
+                        qDebug() << "Stats surcoinche subie pour:" << coincheConn->playerName << "Gagnée:" << !contractReussi;
+                    }
                 }
             }
         }
@@ -2744,10 +2794,15 @@ void GameServer::finishManche(int roomId) {
 
             if (isPlayerInBiddingTeam) {
                 // Ce joueur fait partie de l'équipe qui a annoncé le capot
-                m_dbManager->updateCapotAnnonceTente(conn->playerName);
+                if (!m_dbManager->updateCapotAnnonceTente(conn->playerName)) {
+                    qWarning() << "[STATS] Échec mise à jour stats capot annoncé tenté - joueur:" << conn->playerName;
+                }
                 if (capotReussi) {
-                    m_dbManager->updateCapotStats(conn->playerName, true);  // Capot annoncé réussi
-                    qDebug() << "Stats capot annoncé réussi pour:" << conn->playerName;
+                    if (!m_dbManager->updateCapotStats(conn->playerName, true)) {  // Capot annoncé réussi
+                        qWarning() << "[STATS] Échec mise à jour stats capot annoncé réussi - joueur:" << conn->playerName;
+                    } else {
+                        qDebug() << "Stats capot annoncé réussi pour:" << conn->playerName;
+                    }
                 }
             }
         }
@@ -2764,8 +2819,11 @@ void GameServer::finishManche(int roomId) {
 
             if (plisTeamRealisateur == 8) {
                 // Ce joueur fait partie de l'équipe qui a réalisé le capot
-                m_dbManager->updateCapotStats(conn->playerName, false);  // Capot non annoncé
-                qDebug() << "Stats capot non annoncé pour:" << conn->playerName;
+                if (!m_dbManager->updateCapotStats(conn->playerName, false)) {  // Capot non annoncé
+                    qWarning() << "[STATS] Échec mise à jour stats capot non annoncé - joueur:" << conn->playerName;
+                } else {
+                    qDebug() << "Stats capot non annoncé pour:" << conn->playerName;
+                }
             }
         }
     }
@@ -2776,8 +2834,11 @@ void GameServer::finishManche(int roomId) {
             QString connId = room->connectionIds[room->lastBidderIndex];
             PlayerConnection* conn = connId.isEmpty() ? nullptr : m_connections.value(connId);
             if (conn && !conn->playerName.isEmpty()) {
-                m_dbManager->updateGeneraleStats(conn->playerName, generaleReussie);
-                qDebug() << "Stats générale pour:" << conn->playerName << "(joueur" << room->lastBidderIndex << ") - Réussite:" << generaleReussie;
+                if (!m_dbManager->updateGeneraleStats(conn->playerName, generaleReussie)) {
+                    qWarning() << "[STATS] Échec mise à jour stats générale - joueur:" << conn->playerName << "réussite:" << generaleReussie;
+                } else {
+                    qDebug() << "Stats générale pour:" << conn->playerName << "(joueur" << room->lastBidderIndex << ") - Réussite:" << generaleReussie;
+                }
             }
         }
     }
@@ -2843,8 +2904,11 @@ void GameServer::finishManche(int roomId) {
             bool won = (playerTeam == winner);
 
             // Mettre à jour les stats de partie
-            m_dbManager->updateGameStats(conn->playerName, won);
-            qDebug() << "Stats de partie mises a jour pour" << conn->playerName << "Won:" << won;
+            if (!m_dbManager->updateGameStats(conn->playerName, won)) {
+                qCritical() << "[STATS] ÉCHEC CRITIQUE - Mise à jour stats de partie - joueur:" << conn->playerName << "won:" << won << "room:" << roomId;
+            } else {
+                qInfo() << "[STATS] Stats de partie mises à jour - joueur:" << conn->playerName << "won:" << won;
+            }
         }
 
 

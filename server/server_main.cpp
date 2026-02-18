@@ -111,7 +111,7 @@ void crashSignalHandler(int signal) {
             "═══════════════════════════════════════════════\n\n"
             "⚠️ ACTION REQUISE IMMÉDIATEMENT:\n"
             "1. Redémarrer le serveur manuellement\n"
-            "2. Analyser les logs dans server_log.txt\n"
+            "2. Analyser les logs: tail -f /var/log/coinche/server.log\n"
             "3. Corriger le bug responsable du crash\n\n"
             "Ce rapport a été généré automatiquement par le crash handler.\n"
         ).arg(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss"))
@@ -233,7 +233,7 @@ void messageHandler(QtMsgType type, const QMessageLogContext &context, const QSt
                 "═══════════════════════════════════════════════\n"
                 "%4\n\n"
                 "═══════════════════════════════════════════════\n\n"
-                "Consultez server_log.txt pour plus de détails.\n"
+                "Consultez les logs pour plus de détails: /var/log/coinche/server.log\n"
             ).arg(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss"))
              .arg(type == QtFatalMsg ? "FATAL" : "CRITICAL")
              .arg(msg)
@@ -334,8 +334,18 @@ int main(int argc, char *argv[]) {
 
     fprintf(stderr, "✅ Crash handlers installés - Les crashs serveur seront détectés et rapportés\n");
 
+    // Déterminer le chemin du fichier de log (production vs développement)
+    QString logFilePath;
+    if (QFile::exists("/var/log/coinche")) {
+        // Production : utiliser /var/log/coinche
+        logFilePath = "/var/log/coinche/server.log";
+    } else {
+        // Développement : utiliser répertoire local
+        logFilePath = "server_log.txt";
+    }
+
     // Ouvrir le fichier de log
-    logFile = new QFile("server_log.txt");
+    logFile = new QFile(logFilePath);
     if (logFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
         logStream = new QTextStream(logFile);
 
@@ -344,6 +354,7 @@ int main(int argc, char *argv[]) {
 
         qInfo() << "========================================";
         qInfo() << "Serveur de jeu démarre...";
+        qInfo() << "PID:" << QCoreApplication::applicationPid();
         qInfo() << "Mode verbeux:" << (verboseLogging ? "ACTIVE" : "DESACTIVE");
         if (!sslCertPath.isEmpty() && !sslKeyPath.isEmpty()) {
             qInfo() << "Mode SSL: ACTIVE (WSS)";
@@ -353,10 +364,10 @@ int main(int argc, char *argv[]) {
             qInfo() << "Mode SSL: DESACTIVE (WS) - Utilisez --ssl-cert et --ssl-key pour activer";
         }
         qInfo() << "SMTP Contact:" << (smtpPassword.isEmpty() ? "DESACTIVE" : "ACTIVE");
-        qInfo() << "Logs écrits dans: server_log.txt";
+        qInfo() << "Fichier de log:" << logFilePath;
         qInfo() << "========================================";
     } else {
-        qWarning() << "Impossible d'ouvrir le fichier de log!";
+        fprintf(stderr, "ERREUR CRITIQUE: Impossible d'ouvrir le fichier de log: %s\n", qPrintable(logFilePath));
     }
 
     // Créer le serveur avec ou sans SSL, et mot de passe SMTP pour les emails de contact

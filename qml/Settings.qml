@@ -7,10 +7,35 @@ Rectangle {
     anchors.fill: parent
     color: "transparent"
 
-    // Ratio responsive
-    property real widthRatio: width / 1024
-    property real heightRatio: height / 768
+    // Détection d'orientation
+    property bool isPortrait: height > width
+    property bool isLandscape: width > height
+
+    // Ratio responsive adapté à l'orientation
+    property real widthRatio: isPortrait ? width / 600 : width / 1024
+    property real heightRatio: isPortrait ? height / 1024 : height / 768
     property real minRatio: Math.min(widthRatio, heightRatio)
+
+    // Largeur du formulaire adaptée à l'orientation
+    property real formWidthRatio: isPortrait ? 0.9 : 0.8
+
+    Component.onCompleted: {
+        // Forcer le mode portrait pour la saisie clavier
+        if (Qt.platform.os === "android") {
+            orientationHelper.setPortrait()
+        }
+        // Synchroniser avec les paramètres globaux
+        musicEnabled = AudioSettings.musicEnabled
+        effectsEnabled = AudioSettings.effectsEnabled
+        initialized = true
+    }
+
+    Component.onDestruction: {
+        // Restaurer le mode paysage via JNI natif
+        if (Qt.platform.os === "android") {
+            orientationHelper.setLandscape()
+        }
+    }
 
     // Fond étoilé
     StarryBackground {
@@ -29,13 +54,6 @@ Rectangle {
 
     // Flag pour éviter de sauvegarder pendant l'initialisation
     property bool initialized: false
-
-    // Synchroniser avec les paramètres globaux
-    Component.onCompleted: {
-        musicEnabled = AudioSettings.musicEnabled
-        effectsEnabled = AudioSettings.effectsEnabled
-        initialized = true
-    }
 
     // Écouter les signaux de suppression de compte
     Connections {
@@ -128,25 +146,36 @@ Rectangle {
 
     // Titre
     Text {
+        id: settingsTitle
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: 50 * minRatio
+        anchors.topMargin: isPortrait ? 100 * minRatio : 50 * minRatio
         text: "RÉGLAGES"
-        font.pixelSize: 60 * minRatio
+        font.pixelSize: isPortrait ? 50 * minRatio : 60 * minRatio
         font.bold: true
         color: "#FFD700"
     }
 
     // Contenu des réglages
     ScrollView {
-        anchors.centerIn: parent
-        width: parent.width * 0.8
-        height: parent.height * 0.6
+        anchors.top: settingsTitle.bottom
+        anchors.topMargin: isPortrait ? 20 * minRatio : 30 * minRatio
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: isPortrait ? 20 * minRatio : parent.width * 0.1
+        anchors.rightMargin: isPortrait ? 20 * minRatio : parent.width * 0.1
+        anchors.bottomMargin: isPortrait ? 20 * minRatio : 40 * minRatio
         clip: true
 
+        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+        contentWidth: availableWidth
+
         Column {
-            width: parent.width
-            spacing: 30 * settingsRoot.minRatio
+            width: parent ? parent.width : 0
+            spacing: isPortrait ? 20 * settingsRoot.minRatio : 30 * settingsRoot.minRatio
 
             // Section Audio
             Rectangle {
@@ -173,20 +202,25 @@ Rectangle {
                     // Musique ON/OFF
                     Row {
                         width: parent.width
-                        spacing: 20 * settingsRoot.minRatio
+                        spacing: isPortrait ? 20 * settingsRoot.minRatio : 40 * settingsRoot.minRatio
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: isPortrait ? parent.width * 0.05 : parent.width * 0.1
+                        }
 
                         Text {
                             text: "Musique:"
-                            font.pixelSize: 30 * settingsRoot.minRatio
+                            font.pixelSize: isPortrait ? 26 * settingsRoot.minRatio : 30 * settingsRoot.minRatio
                             color: "white"
                             anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width * 0.5
+                            width: isPortrait ? parent.width * 0.5 : parent.width * 0.3
                         }
 
                         Button {
                             id: musicToggleButton
-                            width: 150 * settingsRoot.minRatio
-                            height: 100 * settingsRoot.minRatio
+                            width: isPortrait ? 120 * settingsRoot.minRatio : 150 * settingsRoot.minRatio
+                            height: isPortrait ? 80 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
                             anchors.verticalCenter: parent.verticalCenter
 
                             background: Rectangle {
@@ -214,20 +248,25 @@ Rectangle {
                     // Effets sonores ON/OFF
                     Row {
                         width: parent.width
-                        spacing: 20 * settingsRoot.minRatio
+                        spacing: isPortrait ? 20 * settingsRoot.minRatio : 40 * settingsRoot.minRatio
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: isPortrait ? parent.width * 0.05 : parent.width * 0.1
+                        }
 
                         Text {
                             text: "Effets sonores:"
-                            font.pixelSize: 30 * settingsRoot.minRatio
+                            font.pixelSize: isPortrait ? 26 * settingsRoot.minRatio : 30 * settingsRoot.minRatio
                             color: "white"
                             anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width * 0.5
+                            width: isPortrait ? parent.width * 0.5 : parent.width * 0.3
                         }
 
                         Button {
                             id: effectsToggleButton
-                            width: 150 * settingsRoot.minRatio
-                            height: 100 * settingsRoot.minRatio
+                            width: isPortrait ? 120 * settingsRoot.minRatio : 150 * settingsRoot.minRatio
+                            height: isPortrait ? 80 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
                             anchors.verticalCenter: parent.verticalCenter
 
                             background: Rectangle {
@@ -283,21 +322,28 @@ Rectangle {
                         color: "white"
                     }
 
+                    // Séparateur avant suppression
+                    Rectangle {
+                        width: parent.width
+                        height: 1 * settingsRoot.minRatio
+                        color: "#555555"
+                    }
+
                     // Modifier le pseudo
                     Text {
                         text: "Pseudo"
-                        font.pixelSize: 24 * settingsRoot.minRatio
+                        font.pixelSize: isPortrait ? 24 * settingsRoot.minRatio : 28 * settingsRoot.minRatio
                         color: "#cccccc"
                         topPadding: 10 * settingsRoot.minRatio
                     }
 
                     Row {
                         width: parent.width
-                        spacing: 10 * settingsRoot.minRatio
+                        spacing: isPortrait ? 15 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
 
                         Rectangle {
-                            width: parent.width - pseudoButton.width - 10 * settingsRoot.minRatio
-                            height: 60 * settingsRoot.minRatio
+                            width: parent.width - pseudoButton.width - (isPortrait ? 15 : 100) * settingsRoot.minRatio
+                            height: isPortrait ? 60 * settingsRoot.minRatio : 80 * settingsRoot.minRatio
                             color: "#3a3a3a"
                             radius: 8 * settingsRoot.minRatio
                             border.color: pseudoInput.activeFocus ? "#FFD700" : "#666666"
@@ -318,17 +364,17 @@ Rectangle {
 
                         Button {
                             id: pseudoButton
-                            width: 140 * settingsRoot.minRatio
-                            height: 60 * settingsRoot.minRatio
+                            width: isPortrait ? 120 * settingsRoot.minRatio : 160 * settingsRoot.minRatio
+                            height: isPortrait ? 60 * settingsRoot.minRatio : 80 * settingsRoot.minRatio
 
                             background: Rectangle {
                                 color: parent.down ? "#ccaa00" : (parent.hovered ? "#e6c200" : "#FFD700")
-                                radius: 8 * settingsRoot.minRatio
+                                radius: 5 * settingsRoot.minRatio
                             }
 
                             contentItem: Text {
                                 text: "Modifier"
-                                font.pixelSize: 22 * settingsRoot.minRatio
+                                font.pixelSize: 26 * settingsRoot.minRatio
                                 font.bold: true
                                 color: "#2a2a2a"
                                 horizontalAlignment: Text.AlignHCenter
@@ -375,18 +421,18 @@ Rectangle {
                     // Modifier l'email
                     Text {
                         text: "Email"
-                        font.pixelSize: 24 * settingsRoot.minRatio
+                        font.pixelSize: isPortrait ? 24 * settingsRoot.minRatio : 28 * settingsRoot.minRatio
                         color: "#cccccc"
                         topPadding: 10 * settingsRoot.minRatio
                     }
 
                     Row {
                         width: parent.width
-                        spacing: 10 * settingsRoot.minRatio
+                        spacing: isPortrait ? 15 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
 
                         Rectangle {
-                            width: parent.width - emailButton.width - 10 * settingsRoot.minRatio
-                            height: 60 * settingsRoot.minRatio
+                            width: parent.width - emailButton.width - (isPortrait ? 15 : 100) * settingsRoot.minRatio
+                            height: isPortrait ? 60 * settingsRoot.minRatio : 80 * settingsRoot.minRatio
                             color: "#3a3a3a"
                             radius: 8 * settingsRoot.minRatio
                             border.color: emailInput.activeFocus ? "#FFD700" : "#666666"
@@ -397,7 +443,7 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.margins: 10 * settingsRoot.minRatio
                                 text: settingsRoot.playerEmail
-                                font.pixelSize: 26 * settingsRoot.minRatio
+                                font.pixelSize: 28 * settingsRoot.minRatio
                                 color: "white"
                                 verticalAlignment: TextInput.AlignVCenter
                                 clip: true
@@ -407,17 +453,17 @@ Rectangle {
 
                         Button {
                             id: emailButton
-                            width: 140 * settingsRoot.minRatio
-                            height: 60 * settingsRoot.minRatio
+                            width: isPortrait ? 120 * settingsRoot.minRatio : 160 * settingsRoot.minRatio
+                            height: isPortrait ? 60 * settingsRoot.minRatio : 80 * settingsRoot.minRatio
 
                             background: Rectangle {
                                 color: parent.down ? "#ccaa00" : (parent.hovered ? "#e6c200" : "#FFD700")
-                                radius: 8 * settingsRoot.minRatio
+                                radius: 5 * settingsRoot.minRatio
                             }
 
                             contentItem: Text {
                                 text: "Modifier"
-                                font.pixelSize: 22 * settingsRoot.minRatio
+                                font.pixelSize: 26 * settingsRoot.minRatio
                                 font.bold: true
                                 color: "#2a2a2a"
                                 horizontalAlignment: Text.AlignHCenter
@@ -461,6 +507,13 @@ Rectangle {
                         visible: false
                     }
 
+                    // Séparateur avant suppression
+                    Rectangle {
+                        width: parent.width
+                        height: 1 * settingsRoot.minRatio
+                        color: "#555555"
+                    }
+
                     // Anonymiser mon profil
                     Row {
                         width: parent.width
@@ -477,8 +530,8 @@ Rectangle {
 
                         Button {
                             id: anonymousToggleButton
-                            width: 150 * settingsRoot.minRatio
-                            height: 60 * settingsRoot.minRatio
+                            width: isPortrait ? 120 * settingsRoot.minRatio : 150 * settingsRoot.minRatio
+                            height: isPortrait ? 60 * settingsRoot.minRatio : 80 * settingsRoot.minRatio
                             anchors.verticalCenter: parent.verticalCenter
 
                             property bool isAnonymous: networkManager.isAnonymous
@@ -507,10 +560,12 @@ Rectangle {
                     }
 
                     Text {
-                        text: "Les autres joueurs verront \"Anonyme\" comme pseudo"
+                        width: parent.width
+                        text: "Les autres joueurs verront \"Anonyme\" comme pseudo et ne verront plus vos statistiques en cliquant sur votre avatar"
                         font.pixelSize: 18 * settingsRoot.minRatio
                         color: "#888888"
                         font.italic: true
+                        wrapMode: Text.WordWrap
                     }
 
                     Text {
