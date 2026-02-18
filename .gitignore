@@ -28,6 +28,9 @@ Release/
 .DS_Store
 Thumbs.db
 
+# Fichiers de logs
+server_log.txt
+
 # Icônes générées par androiddeployqt (régénérées à chaque build)
 android/res/drawable-hdpi/
 android/res/drawable-ldpi/

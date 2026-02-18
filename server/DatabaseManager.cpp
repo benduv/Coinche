@@ -129,6 +129,7 @@ bool DatabaseManager::createTables()
     bool hasProcessingRestricted = false;
     bool hasRestrictionReason = false;
     bool hasIsAnonymous = false;
+    bool hasGdprConsentDate = false;
     while (checkUsersQuery.next()) {
         QString columnName = checkUsersQuery.value(1).toString();
         if (columnName == "avatar") hasAvatar = true;
@@ -137,6 +138,7 @@ bool DatabaseManager::createTables()
         if (columnName == "processing_restricted") hasProcessingRestricted = true;
         if (columnName == "restriction_reason") hasRestrictionReason = true;
         if (columnName == "is_anonymous") hasIsAnonymous = true;
+        if (columnName == "gdpr_consent_date") hasGdprConsentDate = true;
     }
 
     if (!hasAvatar) {
@@ -178,6 +180,13 @@ bool DatabaseManager::createTables()
         qDebug() << "Ajout de la colonne is_anonymous dans la table users";
         if (!query.exec("ALTER TABLE users ADD COLUMN is_anonymous BOOLEAN DEFAULT 0")) {
             qWarning() << "Erreur ajout colonne is_anonymous:" << query.lastError().text();
+        }
+    }
+
+    if (!hasGdprConsentDate) {
+        qDebug() << "Ajout de la colonne gdpr_consent_date dans la table users";
+        if (!query.exec("ALTER TABLE users ADD COLUMN gdpr_consent_date TIMESTAMP")) {
+            qWarning() << "Erreur ajout colonne gdpr_consent_date:" << query.lastError().text();
         }
     }
 
@@ -540,9 +549,9 @@ bool DatabaseManager::createAccount(const QString &pseudo, const QString &email,
     // Utiliser un avatar par défaut si non fourni
     QString avatarToUse = avatar.isEmpty() ? "avataaars1.svg" : avatar;
 
-    // Insérer le nouvel utilisateur
+    // Insérer le nouvel utilisateur avec la date de consentement RGPD
     QSqlQuery query(m_db);
-    query.prepare("INSERT INTO users (pseudo, email, password_hash, salt, avatar) VALUES (:pseudo, :email, :password_hash, :salt, :avatar)");
+    query.prepare("INSERT INTO users (pseudo, email, password_hash, salt, avatar, gdpr_consent_date) VALUES (:pseudo, :email, :password_hash, :salt, :avatar, CURRENT_TIMESTAMP)");
     query.bindValue(":pseudo", pseudo);
     query.bindValue(":email", email);
     query.bindValue(":password_hash", passwordHash);

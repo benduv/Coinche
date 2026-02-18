@@ -351,38 +351,72 @@ Rectangle {
                         Layout.fillWidth: true
                         spacing: 8 * loginRoot.minRatio
 
+                        property bool showPassword: false
+
                         Text {
                             text: "Mot de passe"
                             font.pixelSize: 32 * loginRoot.minRatio
                             color: "#aaaaaa"
                         }
 
-                        TextField {
-                            id: registerPassword
+                        Item {
                             width: parent.width
                             height: 70 * loginRoot.heightRatio
-                            placeholderText: ""
-                            echoMode: TextInput.Password
-                            font.pixelSize: 30 * loginRoot.minRatio
 
-                            background: Rectangle {
-                                color: "#2a2a2a"
-                                border.color: registerPassword.activeFocus ? "#FFD700" : "#555555"
-                                border.width: 2 * loginRoot.minRatio
-                                radius: 5 * loginRoot.minRatio
+                            TextField {
+                                id: registerPassword
+                                width: parent.width
+                                height: parent.height
+                                placeholderText: ""
+                                echoMode: parent.parent.showPassword ? TextInput.Normal : TextInput.Password
+                                font.pixelSize: 30 * loginRoot.minRatio
+
+                                background: Rectangle {
+                                    color: "#2a2a2a"
+                                    border.color: registerPassword.activeFocus ? "#FFD700" : "#555555"
+                                    border.width: 2 * loginRoot.minRatio
+                                    radius: 5 * loginRoot.minRatio
+                                }
+
+                                color: "white"
+
+                                Text {
+                                    id: regPwdTxtLogin
+                                    text: registerPassword.text.length === 0 ? "   Votre mot de passe" : ""
+                                    font.pixelSize: 30 * loginRoot.minRatio
+                                    color: "#888888"
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10 * loginRoot.minRatio
+                                    verticalAlignment: Text.AlignVCenter
+                                    visible: registerPassword.text.length === 0
+                                }
                             }
 
-                            color: "white"
+                            // Icône œil pour afficher/masquer le mot de passe
+                            Rectangle {
+                                anchors.right: parent.right
+                                anchors.rightMargin: 10 * loginRoot.minRatio
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 50 * loginRoot.minRatio
+                                height: 50 * loginRoot.minRatio
+                                color: "transparent"
 
-                            Text {
-                                id: regPwdTxtLogin
-                                text: registerPassword.text.length === 0 ? "   Votre mot de passe" : ""
-                                font.pixelSize: 30 * loginRoot.minRatio
-                                color: "#888888"
-                                anchors.fill: parent
-                                anchors.leftMargin: 10 * loginRoot.minRatio
-                                verticalAlignment: Text.AlignVCenter
-                                visible: registerPassword.text.length === 0
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: 35 * loginRoot.minRatio
+                                    height: 35 * loginRoot.minRatio
+                                    source: parent.parent.parent.showPassword ? "qrc:/resources/eye-slash-svgrepo-com.svg" : "qrc:/resources/eye-svgrepo-com.svg"
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        parent.parent.parent.showPassword = !parent.parent.parent.showPassword
+                                    }
+                                }
                             }
                         }
                     }
@@ -464,6 +498,94 @@ Rectangle {
                         }
                     }
 
+                    Item { height: 10 * loginRoot.minRatio }
+
+                    // Case à cocher RGPD
+                    Row {
+                        Layout.fillWidth: true
+                        spacing: 10 * loginRoot.minRatio
+
+                        Rectangle {
+                            width: 40 * loginRoot.minRatio
+                            height: 40 * loginRoot.minRatio
+                            color: "#2a2a2a"
+                            border.color: gdprCheckbox.checked ? "#FFD700" : "#555555"
+                            border.width: 2 * loginRoot.minRatio
+                            radius: 5 * loginRoot.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Rectangle {
+                                visible: gdprCheckbox.checked
+                                anchors.centerIn: parent
+                                width: parent.width * 0.6
+                                height: parent.height * 0.6
+                                color: "#FFD700"
+                                radius: 3 * loginRoot.minRatio
+                            }
+
+                            MouseArea {
+                                id: gdprCheckbox
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                property bool checked: false
+                                onClicked: {
+                                    checked = !checked
+                                }
+                            }
+                        }
+
+                        Column {
+                            spacing: 5 * loginRoot.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width - 50 * loginRoot.minRatio
+
+                            Text {
+                                text: "J'ai lu et j'accepte la Politique de confidentialité"
+                                font.pixelSize: 24 * loginRoot.minRatio
+                                color: "white"
+                                wrapMode: Text.WordWrap
+                                width: parent.width
+                            }
+
+                            Text {
+                                text: "Voir la Politique de confidentialité"
+                                font.pixelSize: 22 * loginRoot.minRatio
+                                color: "#00aaee"
+                                font.underline: true
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        privacyPolicyPopup.open()
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Popup pour afficher la politique de confidentialité
+                    Popup {
+                        id: privacyPolicyPopup
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width * 0.95, 900 * loginRoot.widthRatio)
+                        height: Math.min(parent.height * 0.9, 700 * loginRoot.heightRatio)
+                        modal: true
+                        focus: true
+                        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+                        background: Rectangle {
+                            color: "transparent"
+                        }
+
+                        PrivacyPolicy {
+                            anchors.fill: parent
+                            onCloseRequested: {
+                                privacyPolicyPopup.close()
+                            }
+                        }
+                    }
+
                     // Message d'erreur
                     Text {
                         id: registerError
@@ -500,6 +622,11 @@ Rectangle {
                         onClicked: {
                             if (registerPseudo.text === "" || registerEmail.text === "" || registerPassword.text === "") {
                                 registerError.text = "Tous les champs sont obligatoires"
+                                return
+                            }
+
+                            if (!gdprCheckbox.checked) {
+                                registerError.text = "Vous devez accepter la Politique de confidentialité"
                                 return
                             }
 
@@ -998,6 +1125,16 @@ Rectangle {
                         text: "En tant qu'invité, votre progression ne sera pas sauvegardée"
                         font.pixelSize: 24 * loginRoot.minRatio
                         color: "orange"
+                        Layout.alignment: Qt.AlignHCenter
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    Text {
+                        text: "En jouant, vous acceptez notre Politique de confidentialité"
+                        font.pixelSize: 20 * loginRoot.minRatio
+                        color: "#aaaaaa"
                         Layout.alignment: Qt.AlignHCenter
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
