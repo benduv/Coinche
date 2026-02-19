@@ -517,7 +517,7 @@ Rectangle {
                     // Anonymiser mon profil
                     Row {
                         width: parent.width
-                        spacing: 20 * settingsRoot.minRatio
+                        spacing: 40 * settingsRoot.minRatio
                         topPadding: 10 * settingsRoot.minRatio
 
                         Text {

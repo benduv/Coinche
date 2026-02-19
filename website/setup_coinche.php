@@ -338,7 +338,7 @@ $content_d = <<<'__END_D__'
 
   <h1 style="color:#FFD700;text-align:center;font-size:2.5em;margin:0 0 10px 0;">Politique de Confidentialité</h1>
   <p style="text-align:center;color:#aaa;font-size:1.1em;margin-bottom:50px;">Coinche de l'Espace</p>
-  <p style="text-align:center;color:#888;font-style:italic;margin-bottom:40px;">Dernière mise à jour : 17 février 2026</p>
+  <p style="text-align:center;color:#888;font-style:italic;margin-bottom:40px;">Dernière mise à jour : 18 février 2026</p>
 
   <!-- ─── 1. RESPONSABLE DU TRAITEMENT ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">1. Responsable du traitement</h2>
@@ -351,7 +351,7 @@ $content_d = <<<'__END_D__'
   <!-- ─── 2. INTRODUCTION ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">2. Introduction</h2>
   <p>La protection de votre vie privée est importante pour nous. Cette politique explique quelles données sont collectées lorsque vous utilisez Coinche de l'Espace, pourquoi elles sont collectées et comment elles sont protégées.</p>
-  <p>En utilisant l'application, vous acceptez les pratiques décrites ci-dessous.</p>
+  <p>En créant un compte et en utilisant l'application, vous acceptez les pratiques décrites ci-dessous.</p>
 
   <!-- ─── 3. DONNÉES COLLECTÉES ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">3. Données collectées</h2>
@@ -369,6 +369,9 @@ $content_d = <<<'__END_D__'
     <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;">
       <strong style="color:#FFD700;">Statistiques de jeu</strong> — scores, parties, classements
     </li>
+    <li style="margin-bottom:14px;padding-left:16px;border-left:3px solid #FFD700;">
+      <strong style="color:#FFD700;">Date de consentement RGPD</strong> — traçabilité de votre accord
+    </li>
   </ul>
   <p style="background:#1a1a2e;padding:14px 18px;border-radius:6px;border-left:4px solid #4caf50;color:#fff;margin:20px 0;">
     <strong>Nous ne collectons aucune donnée sensible</strong>, ni localisation, ni contacts, ni fichiers personnels.
@@ -377,30 +380,30 @@ $content_d = <<<'__END_D__'
   <!-- ─── 4. FINALITÉS DU TRAITEMENT ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">4. Finalités du traitement</h2>
   <p>Les données sont utilisées uniquement pour :</p>
-  <ul>
-    <li>créer et gérer votre compte utilisateur</li>
-    <li>permettre le fonctionnement du jeu en ligne</li>
-    <li>afficher les scores et classements</li>
-    <li>répondre aux demandes d'assistance</li>
-    <li>sécuriser les comptes</li>
+  <ul style="list-style:none;padding:0;margin:0;">
+    <li style="margin-bottom:10px;">• Créer et gérer votre compte utilisateur</li>
+    <li style="margin-bottom:10px;">• Permettre le fonctionnement du jeu en ligne</li>
+    <li style="margin-bottom:10px;">• Afficher les scores et classements</li>
+    <li style="margin-bottom:10px;">• Répondre aux demandes d'assistance</li>
+    <li style="margin-bottom:10px;">• Sécuriser les comptes</li>
   </ul>
-  <p style="color:#FFD700;"><strong>Aucune donnée n'est utilisée à des fins publicitaires ou commerciales.</strong></p>
+  <p style="color:#FFD700;margin-top:20px;"><strong>Aucune donnée n'est utilisée à des fins publicitaires ou commerciales.</strong></p>
 
   <!-- ─── 5. BASE LÉGALE ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">5. Base légale</h2>
   <p>Le traitement repose sur :</p>
-  <ul>
-    <li>l'exécution du service (fonctionnement du jeu)</li>
-    <li>votre consentement lors de la création du compte</li>
+  <ul style="list-style:none;padding:0;margin:0;">
+    <li style="margin-bottom:10px;">• L'exécution du service (fonctionnement du jeu)</li>
+    <li style="margin-bottom:10px;">• Votre consentement explicite lors de la création du compte</li>
   </ul>
 
   <!-- ─── 6. HÉBERGEMENT ET SÉCURITÉ ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">6. Hébergement et sécurité</h2>
-  <ul>
-    <li>Les données sont hébergées chez <strong style="color:#FFD700;">OVHcloud</strong> sur des serveurs situés en <strong style="color:#FFD700;">France</strong>.</li>
-    <li>Les communications sont chiffrées via protocole <strong style="color:#FFD700;">SSL/TLS</strong>.</li>
-    <li>Les mots de passe sont stockés sous forme hachée et sécurisée.</li>
-    <li>Des mesures techniques sont mises en œuvre pour empêcher tout accès non autorisé.</li>
+  <ul style="list-style:none;padding:0;margin:0;">
+    <li style="margin-bottom:10px;">• Les données sont hébergées chez <strong style="color:#FFD700;">OVHcloud</strong> sur des serveurs situés en <strong style="color:#FFD700;">France</strong>.</li>
+    <li style="margin-bottom:10px;">• Les communications sont chiffrées via protocole <strong style="color:#FFD700;">SSL/TLS</strong>.</li>
+    <li style="margin-bottom:10px;">• Les mots de passe sont stockés sous forme hachée et sécurisée <strong style="color:#FFD700;">(SHA-256 + salt)</strong>.</li>
+    <li style="margin-bottom:10px;">• Des mesures techniques sont mises en œuvre pour empêcher tout accès non autorisé.</li>
   </ul>
 
   <!-- ─── 7. PARTAGE DES DONNÉES ─── -->
@@ -410,31 +413,32 @@ $content_d = <<<'__END_D__'
 
   <!-- ─── 8. DURÉE DE CONSERVATION ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">8. Durée de conservation</h2>
-  <ul>
-    <li>Les données sont conservées tant que votre compte est actif.</li>
-    <li>En cas de suppression du compte, les données sont supprimées immédiatement.</li>
-    <li>Les demandes de suppression par email sont traitées sous <strong style="color:#FFD700;">30 jours maximum</strong>.</li>
+  <ul style="list-style:none;padding:0;margin:0;">
+    <li style="margin-bottom:10px;">• Les données de compte sont conservées tant que votre compte est actif.</li>
+    <li style="margin-bottom:10px;">• En cas de suppression du compte, les données sont supprimées sous <strong style="color:#FFD700;">30 jours maximum</strong>.</li>
+    <li style="margin-bottom:10px;">• Les logs de sécurité sont conservés 30 jours pour la détection de brute force.</li>
   </ul>
 
   <!-- ─── 9. DROITS DES UTILISATEURS (RGPD) ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">9. Droits des utilisateurs (RGPD)</h2>
   <p>Conformément au Règlement Général sur la Protection des Données, vous disposez des droits suivants :</p>
-  <ul>
-    <li>accès à vos données</li>
-    <li>rectification</li>
-    <li>suppression</li>
-    <li>limitation du traitement</li>
-    <li>opposition</li>
-    <li>portabilité</li>
+  <ul style="list-style:none;padding:0;margin:0;">
+    <li style="margin-bottom:10px;">• Droit d'accès à vos données</li>
+    <li style="margin-bottom:10px;">• Droit de rectification (modifier votre email, pseudo, mot de passe)</li>
+    <li style="margin-bottom:10px;">• Droit de suppression (supprimer votre compte)</li>
+    <li style="margin-bottom:10px;">• Droit à la limitation du traitement</li>
+    <li style="margin-bottom:10px;">• Droit d'opposition</li>
+    <li style="margin-bottom:10px;">• Droit à la portabilité des données</li>
   </ul>
   <p style="background:#1a1a2e;padding:14px 18px;border-radius:6px;border-left:4px solid #FFD700;color:#FFD700;margin:20px 0;">
-    <strong>Pour exercer ces droits :</strong><br>
-    📩 <a href="mailto:contact@nebuludik.fr" style="color:#FFD700;text-decoration:none;">contact@nebuludik.fr</a>
+    <strong>Pour exercer ces droits, contactez-nous à :</strong><br>
+    📧 <a href="mailto:contact@nebuludik.fr" style="color:#FFD700;text-decoration:none;">contact@nebuludik.fr</a>
   </p>
 
   <!-- ─── 10. SUPPRESSION DE COMPTE ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">10. Suppression de compte</h2>
   <p>Vous pouvez supprimer votre compte directement depuis l'application dans les paramètres.</p>
+  <p>Toutes vos données personnelles (email, pseudo, mot de passe, statistiques) seront supprimées définitivement sous 30 jours.</p>
 
   <!-- ─── 11. ENFANTS ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">11. Enfants</h2>
@@ -459,6 +463,23 @@ if ( is_wp_error( $id_d ) ) coinche_err( 'Politique de Confidentialité : ' . $i
 
 
 // ============================================================
+// CONFIGURATION DU SITE
+// ============================================================
+
+// Supprimer "Sample Page" si elle existe
+$sample_page = get_page_by_path( 'sample-page', OBJECT, 'page' );
+if ( $sample_page ) {
+    wp_delete_post( $sample_page->ID, true );
+    coinche_ok( '"Sample Page" supprimée' );
+}
+
+// Changer le titre du site
+update_option( 'blogname', 'Coinche de l\'Espace' );
+update_option( 'blogdescription', 'Un jeu de coinche, enfin fait comme il faut.' );
+coinche_ok( 'Titre du site configuré → Coinche de l\'Espace' );
+
+
+// ============================================================
 // PAGE D'ACCUEIL = Présentation
 // ============================================================
 if ( ! is_wp_error( $id_a ) ) {
@@ -469,15 +490,18 @@ if ( ! is_wp_error( $id_a ) ) {
 
 
 // ============================================================
-// MENU DE NAVIGATION (créé une seule fois)
+// MENU DE NAVIGATION
 // ============================================================
 $menu_obj = wp_get_nav_menu_object( 'Menu Principal' );
 if ( $menu_obj ) {
-    coinche_log( 'Menu déjà existant — pas de modification.' );
+    coinche_log( 'Menu "Menu Principal" existe déjà. Pour réorganiser les items, supprimez le menu dans WordPress (Apparence > Menus) puis relancez ce script.' );
+    $menu_id = null;
 } else {
+    // Menu n'existe pas : le créer
     $menu_id = wp_create_nav_menu( 'Menu Principal' );
     if ( is_wp_error( $menu_id ) ) {
-        coinche_err( 'Erreur création menu.' );
+        coinche_err( 'Erreur création menu: ' . $menu_id->get_error_message() );
+        $menu_id = null;
     } else {
         wp_add_nav_menu_item( $menu_id, [
             'menu-item-title'     => 'Présentation',
@@ -494,24 +518,24 @@ if ( $menu_obj ) {
             'menu-item-object-id' => $id_b,
         ] );
         wp_add_nav_menu_item( $menu_id, [
-            'menu-item-title'     => 'Politique de Confidentialité',
-            'menu-item-status'    => 'publish',
-            'menu-item-type'      => 'post_type',
-            'menu-item-object'    => 'page',
-            'menu-item-object-id' => $id_d,
-        ] );
-        wp_add_nav_menu_item( $menu_id, [
             'menu-item-title'     => 'Contact',
             'menu-item-status'    => 'publish',
             'menu-item-type'      => 'post_type',
             'menu-item-object'    => 'page',
             'menu-item-object-id' => $id_c,
         ] );
+        wp_add_nav_menu_item( $menu_id, [
+            'menu-item-title'     => 'Politique de Confidentialité',
+            'menu-item-status'    => 'publish',
+            'menu-item-type'      => 'post_type',
+            'menu-item-object'    => 'page',
+            'menu-item-object-id' => $id_d,
+        ] );
 
         $locations = get_theme_mod( 'nav_menu_locations', [] );
         $locations['primary'] = $menu_id;
         set_theme_mod( 'nav_menu_locations', $locations );
-        coinche_ok( 'Menu créé et attaché.' );
+        coinche_ok( 'Menu créé avec le bon ordre : Présentation → Règles du Jeu → Contact → Politique de Confidentialité' );
     }
 }
 

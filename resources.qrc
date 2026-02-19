@@ -20,6 +20,7 @@
         <file>qml/PlayerStatsPopup.qml</file>
         <file>qml/Rules.qml</file>
         <file>qml/Contact.qml</file>
+        <file>qml/PrivacyPolicy.qml</file>
         <file>qml/SplashScreen.qml</file>
         <file>qml/ShootingStar.qml</file>
         <file>qml/StarryBackground.qml</file>
@@ -73,6 +74,8 @@
         <file>resources/message-svgrepo-com.svg</file>
         <file>resources/saturn-svgrepo-com.svg</file>
         <file>resources/pencil-svgrepo-com.svg</file>
+        <file>resources/eye-svgrepo-com.svg</file>
+        <file>resources/eye-slash-svgrepo-com.svg</file>
         <file>resources/avatar/avataaars1.svg</file>
         <file>resources/avatar/avataaars2.svg</file>
         <file>resources/avatar/avataaars3.svg</file>

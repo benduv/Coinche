@@ -520,8 +520,8 @@ bool DatabaseManager::createAccount(const QString &pseudo, const QString &email,
         return false;
     }
 
-    if (password.length() < 6) {
-        errorMsg = "Le mot de passe doit contenir au moins 6 caractères";
+    if (password.length() < 8) {
+        errorMsg = "Le mot de passe doit contenir au moins 8 caractères";
         return false;
     }
 
@@ -1131,8 +1131,8 @@ bool DatabaseManager::updatePassword(const QString &email, const QString &newPas
     }
 
     // Valider le nouveau mot de passe
-    if (newPassword.length() < 6) {
-        errorMsg = "Le mot de passe doit contenir au moins 6 caractères";
+    if (newPassword.length() < 8) {
+        errorMsg = "Le mot de passe doit contenir au moins 8 caractères";
         return false;
     }
 
