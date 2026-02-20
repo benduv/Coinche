@@ -2022,8 +2022,8 @@ private:
 
         qDebug() << "GameServer - Attente de 7 secondes avant d'afficher le bouton Surcoinche (animation fusée + Coinche)";
 
-        // Attendre 7 secondes et demie pour permettre l'animation fusée en spirale (5s) + explosion "Coinche !" (2s)
-        QTimer::singleShot(7650, this, [this, roomId]() {
+        // Attendre 7 secondes et demie pour permettre l'animation fusée en spirale (3s) + explosion "Coinche !" (2s)
+        QTimer::singleShot(5650, this, [this, roomId]() {
             GameRoom* room = m_gameRooms.value(roomId);
             if (!room) return;
 
