@@ -123,7 +123,6 @@ Rectangle {
     Connections {
         target: Qt.application
         function onStateChanged() {
-            console.log("CoincheView - Application state changed:", Qt.application.state)
             if (Qt.application.state === Qt.ApplicationActive) {
                 // L'application revient au premier plan
                 if (AudioSettings.musicEnabled) {
@@ -166,14 +165,12 @@ Rectangle {
 
     // Fonction pour retourner au menu principal
     function returnToMainMenu() {
-        console.log("CoincheView.returnToMainMenu - Appel de la fonction centralisée")
-
         // Appeler la fonction centralisée dans mainWindow
         var mainWindow = rootArea.Window.window
         if (mainWindow && mainWindow.returnToMainMenu) {
             mainWindow.returnToMainMenu()
         } else {
-            console.log("CoincheView.returnToMainMenu - ERREUR: mainWindow ou sa fonction returnToMainMenu non trouvée!")
+            console.error("CoincheView.returnToMainMenu - ERREUR: mainWindow ou sa fonction returnToMainMenu non trouvée!")
         }
     }
 
@@ -181,26 +178,21 @@ Rectangle {
     Connections {
         target: networkManager
         function onPlayerForfeited(playerIndex, playerName) {
-            console.log("CoincheView - Joueur", playerName, "a abandonné")
             // Afficher une notification que le joueur a été remplacé par un bot
             // Note: Si c'est le joueur local qui a abandonné, returnToMainMenu() est déjà
             // appelé depuis ExitGamePopup, donc on ne le fait pas ici pour éviter de le faire deux fois
-            console.log("Le joueur", playerName, "a été remplacé par un bot")
         }
 
         function onBotReplacement(message) {
-            console.log("CoincheView - Remplacé par un bot:", message)
             rootArea.botReplacementMessage = message
             rootArea.showBotReplacementPopup = true
         }
 
         function onRehumanizeSuccess() {
-            console.log("CoincheView - Rehumanisation réussie")
             rootArea.showBotReplacementPopup = false
         }
 
         function onNewMancheAnimation() {
-            console.log("CoincheView - Animation Nouvelle Manche (UFO)!")
             ufoNewMancheAnimation.start()
         }
     }
@@ -641,7 +633,6 @@ Rectangle {
                 target: gameModel
                 function onCurrentPliChanged() {
                     if (gameModel.currentPli.length === 0) {
-                        console.log("Pli cleared, resetting lastCardCount")
                         pliArea.lastCardCount = 0
                     }
                 }
@@ -653,7 +644,6 @@ Rectangle {
     Connections {
         target: gameModel
         function onGameOver(winner, scoreTeam1, scoreTeam2) {
-            console.log("Game Over! Winner: Team", winner, "Scores:", scoreTeam1, scoreTeam2)
             rootArea.gameOverWinner = winner
             rootArea.gameOverScoreTeam1 = scoreTeam1
             rootArea.gameOverScoreTeam2 = scoreTeam2
@@ -1161,13 +1151,11 @@ Rectangle {
                         spacing: rootArea.width * 0.005
 
                         Component.onCompleted: {
-                            console.log("bidRowWest - actualPlayerIndex:", playerWestRow.actualPlayerIndex)
                         }
 
                         Connections {
                             target: gameModel
                             function onIsCoinchedChanged() {
-                                console.log("bidRowWest - isCoinched changed:", gameModel.isCoinched, "coinchedBy:", gameModel.coinchedByPlayerIndex, "myIndex:", playerWestRow.actualPlayerIndex)
                             }
                         }
 
@@ -1699,7 +1687,6 @@ Rectangle {
             }
 
             onClicked: {
-                console.log("Bouton Coinche clique!")
                 gameModel.coincheBid()
             }
         }
@@ -1805,7 +1792,6 @@ Rectangle {
                         stop()
                         rocketImage.visible = false
                         explosionCoinche.running = true
-                        console.log("Animation fusée en spirale terminée")
                         return
                     }
 
@@ -1864,11 +1850,8 @@ Rectangle {
 
             // Fonction pour lancer l'animation avec une trajectoire en spirale
             function startRocketAnimation(playerIndex) {
-                console.log("startRocketAnimation - Joueur:", playerIndex, "myIndex:", gameModel.playerIndex)
-
                 // Convertir l'index absolu en position relative (0=Sud, 1=Ouest, 2=Nord, 3=Est)
                 var relativePos = (playerIndex - gameModel.playerIndex + 4) % 4
-                console.log("Position relative:", relativePos)
 
                 // Centre de l'écran
                 centerX = playArea.width * 0.5
@@ -1905,8 +1888,6 @@ Rectangle {
                 var dy = startY - centerY
                 initialRadius = Math.sqrt(dx * dx + dy * dy)
 
-                console.log("Départ spirale - Angle:", startAngle, "Rayon:", initialRadius)
-
                 // Réinitialiser le progrès et le compteur de fumée
                 animationProgress = 0.0
                 smokeFrameCounter = 0
@@ -1940,8 +1921,6 @@ Rectangle {
                 target: gameModel
                 function onShowCoincheAnimationChanged() {
                     if (gameModel.showCoincheAnimation) {
-                        console.log("onShowCoincheAnimationChanged - Animation spirale fusée!")
-                        console.log("coinchedByPlayerIndex:", gameModel.coinchedByPlayerIndex)
                         // Empêcher l'explosion de démarrer immédiatement
                         explosionCoinche.running = false
                         // Lancer l'animation de la fusée
@@ -1993,7 +1972,6 @@ Rectangle {
                 interval: 2000
                 repeat: false
                 onTriggered: {
-                    console.log("Arrêt de l'animation Coinche")
                     explosionCoinche.running = false
                 }
             }
@@ -2036,7 +2014,6 @@ Rectangle {
                 interval: 2000
                 repeat: false
                 onTriggered: {
-                    console.log("Arrêt de l'animation Surcoinche")
                     explosionSurcoinche.running = false
                 }
             }
@@ -2418,7 +2395,6 @@ Rectangle {
                     }
 
                     onClicked: {
-                        console.log("Bouton Surcoinche clique!")
                         gameModel.surcoincheBid()
                     }
                 }
@@ -2667,7 +2643,6 @@ Rectangle {
                 onTriggered: {
                     // Convertir la position absolue du dealer en position relative par rapport au joueur local
                     var dealerVisualPosition = rootArea.getVisualPosition(gameModel.dealerPosition)
-                    console.log("Animation carte", index, "- Dealer absolu:", gameModel.dealerPosition, "- Dealer visuel:", dealerVisualPosition, "- Target player:", targetPlayer)
 
                     // Positionner physiquement la carte à la position VISUELLE du dealer : 0=Sud(bas), 1=Ouest(gauche), 2=Nord(haut), 3=Est(droite)
                     if (dealerVisualPosition === 0) {
@@ -2697,7 +2672,6 @@ Rectangle {
 
                     // Convertir la position absolue du targetPlayer en position relative
                     var targetVisualPosition = rootArea.getVisualPosition(targetPlayer)
-                    console.log("Target player absolu:", targetPlayer, "- Target visuel:", targetVisualPosition)
 
                     // Définir la position cible selon targetVisualPosition : 0=Sud, 1=Ouest, 2=Nord, 3=Est
                     if (targetVisualPosition === 0) {
@@ -2761,7 +2735,6 @@ Rectangle {
             message: rootArea.botReplacementMessage
 
             onOkClicked: {
-                console.log("BotReplacementPopup - OK cliqué, demande de réhumanisation")
                 networkManager.requestRehumanize()
             }
         }
@@ -2799,21 +2772,6 @@ Rectangle {
             orientationHelper.setLandscape()
         }
 
-        console.log("=== CoincheView CRÉÉ - Instance ID:", rootArea, "===")
-        console.log("gameModel:", gameModel)
-        console.log("myPosition:", gameModel.myPosition)
-        console.log("player0Hand:", gameModel.player0Hand)
-        console.log("player1Hand:", gameModel.player1Hand)
-        console.log("player2Hand:", gameModel.player2Hand)
-        console.log("player3Hand:", gameModel.player3Hand)
-        if (gameModel.player0Hand) {
-            console.log("player0Hand count:", gameModel.player0Hand.count)
-            console.log("player0Hand rowCount:", gameModel.player0Hand.rowCount())
-        } else {
-            console.log("player0Hand est null!")
-        }
-        console.log("playerSouthRow.actualPlayerIndex:", playerSouthRow.actualPlayerIndex)
-
         // Démarrer la musique de fond si elle est activée
         if (AudioSettings.musicEnabled) {
             gameMusic.play()
@@ -2822,7 +2780,6 @@ Rectangle {
         // Vérifier s'il y a un message de remplacement par bot en attente (reconnexion)
         var pendingMsg = networkManager.consumePendingBotReplacement()
         if (pendingMsg && pendingMsg.length > 0) {
-            console.log("CoincheView - Message bot replacement en attente trouvé:", pendingMsg)
             rootArea.botReplacementMessage = pendingMsg
             rootArea.showBotReplacementPopup = true
         }

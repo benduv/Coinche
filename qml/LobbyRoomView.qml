@@ -319,7 +319,6 @@ Rectangle {
                 }
 
                 onClicked: {
-                    console.log("Lancement de la partie...")
                     networkManager.startLobbyGame()
                 }
             }
@@ -360,30 +359,22 @@ Rectangle {
     Connections {
         target: networkManager
         function onLobbyPlayersChanged() {
-            console.log("QML - lobbyPlayers a change! Nouveau nombre:", networkManager.lobbyPlayers.length)
-            for (var i = 0; i < networkManager.lobbyPlayers.length; i++) {
-                console.log("  Joueur", i, ":", networkManager.lobbyPlayers[i].name)
-            }
         }
 
         function onLobbyError(errorMessage) {
-            console.log("Erreur lobby:", errorMessage)
             errorPopup.errorText = errorMessage
             errorPopup.open()
         }
 
         function onLobbyGameStarting() {
-            console.log("Partie du lobby qui démarre")
             var playerCount = networkManager.lobbyPlayers.length
 
             if (playerCount === 2) {
                 // Lobby à 2 joueurs: pousser MatchMakingView pour attendre 2 autres joueurs
-                console.log("Lobby à 2 joueurs - navigation vers MatchMakingView")
                 stackView.push("qrc:/qml/MatchMakingView.qml", { autoJoin: false })
             } else if (playerCount === 4) {
                 // Lobby à 4 joueurs: ne rien faire, gameFound arrivera immédiatement
                 // et sera géré par MainMenu qui chargera directement CoincheView
-                console.log("Lobby à 4 joueurs - attente du signal gameFound")
             }
         }
     }
@@ -452,7 +443,5 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        console.log("LobbyRoomView charge - Code:", root.lobbyCode, "IsHost:", root.isHost)
-        console.log("Nombre initial de joueurs:", networkManager.lobbyPlayers.length)
     }
 }

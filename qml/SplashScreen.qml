@@ -264,7 +264,6 @@ Rectangle {
         // Priorité 1: Arguments en ligne de commande
         if (typeof autoLoginEmail !== 'undefined' && autoLoginEmail !== "" &&
             typeof autoLoginPassword !== 'undefined' && autoLoginPassword !== "") {
-            console.log("SplashScreen - Auto-login via arguments CLI:", autoLoginEmail)
             splashRoot.autoLoginAttempted = true
             networkManager.loginAccount(autoLoginEmail, autoLoginPassword)
             return
@@ -273,13 +272,11 @@ Rectangle {
         // Priorité 2: Credentials stockés (QSettings)
         if (networkManager.hasStoredCredentials &&
             (typeof disableAutoLogin === 'undefined' || !disableAutoLogin)) {
-            console.log("SplashScreen - Auto-login via QSettings:", networkManager.storedEmail)
             splashRoot.autoLoginAttempted = true
             networkManager.tryAutoLogin()
             return
         }
 
-        console.log("SplashScreen - Pas de credentials pour auto-login")
     }
 
     // Connexions au networkManager pour l'auto-login
@@ -287,22 +284,18 @@ Rectangle {
         target: networkManager
 
         function onConnectedChanged() {
-            console.log("SplashScreen - onConnectedChanged, connected:", networkManager.connected, "autoLoginAttempted:", splashRoot.autoLoginAttempted)
             if (networkManager.connected && !splashRoot.autoLoginAttempted) {
-                console.log("SplashScreen - Connexion établie, tentative d'auto-login...")
                 splashRoot.tryAutoLogin()
             }
         }
 
         function onLoginSuccess(playerName, avatar, usingTempPassword) {
-            console.log("SplashScreen - Auto-login réussi pour:", playerName)
             splashRoot.autoLoginSucceeded = true
             splashRoot.loggedInPlayerName = playerName
             // Note: Auto-login should never use temp password (credentials are only saved with permanent password)
         }
 
         function onLoginFailed(error) {
-            console.log("SplashScreen - Auto-login échoué:", error)
             // Effacer les credentials invalides
             if (splashRoot.autoLoginAttempted) {
                 networkManager.clearCredentials()
@@ -312,14 +305,11 @@ Rectangle {
 
     // Connexion au serveur et auto-login dès que possible
     Component.onCompleted: {
-        console.log("SplashScreen - Component.onCompleted")
         if (networkManager.connected) {
-            console.log("SplashScreen - Déjà connecté, tentative d'auto-login")
             splashRoot.tryAutoLogin()
         } else {
             // Initier la connexion au serveur
             var serverUrl = config.getServerUrl()
-            console.log("SplashScreen - Connexion au serveur:", serverUrl)
             networkManager.connectToServer(serverUrl)
         }
     }

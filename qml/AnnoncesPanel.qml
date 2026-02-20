@@ -45,10 +45,8 @@ Rectangle {
                     }
                 }
             } else {
-                console.log("BEEEEEEEN end of time")
                 // Temps ecoule, fermer la popup si ouverte et laisser le bot annoncer automatiquement
                 if (suitSelector.visible) {
-                    console.log("BEEEEEEEN should close suitSelector")
                     suitSelector.close()
                 }
                 //gameModel.passBid()

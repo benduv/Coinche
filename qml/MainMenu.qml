@@ -20,27 +20,13 @@ ApplicationWindow {
         }
 
         onErrorOccurred: function(error, errorString) {
-            console.log("MediaPlayer ERREUR:", error, "-", errorString)
-        }
-
-        onPlaybackStateChanged: {
-            console.log("MediaPlayer playbackState:", playbackState)
-        }
-
-        onMediaStatusChanged: {
-            console.log("MediaPlayer mediaStatus:", mediaStatus)
+            console.error("MediaPlayer ERREUR:", error, "-", errorString)
         }
     }
 
-    // Fonction pour jouer la musique avec logs
+    // Fonction pour jouer la musique
     function playMusic() {
-        console.log("playMusic() appelé - musicEnabled:", AudioSettings.musicEnabled)
-        console.log("startupSound.source:", startupSound.source)
-        console.log("startupSound.playbackState:", startupSound.playbackState)
-        console.log("startupSound.mediaStatus:", startupSound.mediaStatus)
-
         if (AudioSettings.musicEnabled) {
-            console.log("Tentative de lecture de la musique...")
             startupSound.play()
         }
     }
@@ -49,7 +35,6 @@ ApplicationWindow {
     Connections {
         target: AudioSettings
         function onMusicEnabledChanged() {
-            console.log("Signal musicEnabledChanged reçu - musicEnabled:", AudioSettings.musicEnabled)
             if (AudioSettings.musicEnabled && Qt.application.state === Qt.ApplicationActive) {
                 startupSound.play()
             } else {
@@ -62,22 +47,18 @@ ApplicationWindow {
     Connections {
         target: Qt.application
         function onStateChanged() {
-            console.log("Application state changed:", Qt.application.state)
             if (Qt.application.state === Qt.ApplicationActive) {
                 // L'application revient au premier plan
                 // Ne pas relancer la musique du menu si on est en partie (CoincheView)
                 var isInGame = mainWindow.shouldLoadCoincheView ||
                                (stackView.currentItem && stackView.currentItem.toString().indexOf("coincheViewLoader") >= 0)
-                console.log("Application active - isInGame:", isInGame)
                 if (AudioSettings.musicEnabled && !isInGame) {
-                    console.log("Reprise de la musique du menu")
                     startupSound.play()
                 }
             } else if (Qt.application.state === Qt.ApplicationSuspended ||
                        Qt.application.state === Qt.ApplicationHidden ||
                        Qt.application.state === Qt.ApplicationInactive) {
                 // L'application passe en arrière-plan ou écran verrouillé
-                console.log("Application en arrière-plan - arrêt de la musique du menu")
                 startupSound.pause()
             }
         }
@@ -89,14 +70,11 @@ ApplicationWindow {
         interval: 500  // Attendre 500ms après le chargement
         repeat: false
         onTriggered: {
-            console.log("musicStartTimer déclenché")
             playMusic()
         }
     }
 
     Component.onCompleted: {
-        console.log("MainMenu.onCompleted - Démarrage")
-
         // Ne pas forcer l'orientation ici - le splashScreen gère allOrientations,
         // puis chaque composant (LoginView, mainMenuComponent) gère sa propre orientation
         if (Qt.platform.os !== "android") {
@@ -127,8 +105,6 @@ ApplicationWindow {
 
     // Fonction pour retourner au menu principal depuis n'importe où
     function returnToMainMenu() {
-        console.log("MainMenu.returnToMainMenu - Debut, stackView depth:", stackView.depth)
-
         // Réinitialiser le flag de chargement
         shouldLoadCoincheView = false
 
@@ -137,13 +113,9 @@ ApplicationWindow {
 
         // Toujours remplacer par le menu principal
         // Cela fonctionne que ce soit depuis CoincheView, MatchMakingView, ou autre
-        console.log("MainMenu.returnToMainMenu - Replace vers mainMenuComponent")
         stackView.replace(mainMenuComponent)
 
-        console.log("MainMenu.returnToMainMenu - Termine, depth final:", stackView.depth)
-
         // Relancer la musique du menu
-        console.log("MainMenu.returnToMainMenu - Relance de la musique du menu")
         if (AudioSettings.musicEnabled && Qt.application.state === Qt.ApplicationActive) {
             startupSound.play()
         }
@@ -159,7 +131,6 @@ ApplicationWindow {
         target: networkManager
 
         function onGameFound(playerPosition, opponents, isReconnection) {
-            console.log("MainMenu - gameFound recu! Position:", playerPosition, "Reconnexion:", isReconnection)
             networkManager.createGameModel(
                 networkManager.myPosition,
                 networkManager.myCards,
@@ -169,45 +140,31 @@ ApplicationWindow {
         }
 
         function onGameModelReady() {
-            console.log("MainMenu - gameModelReady reçu")
-
             // MainMenu gère toujours le chargement de CoincheView
             // Vérifier si on n'est pas déjà sur l'écran de chargement
             var currentItem = stackView.currentItem
             var currentItemStr = currentItem ? currentItem.toString() : ""
             var isAlreadyLoading = currentItemStr.indexOf("coincheViewLoader") >= 0
 
-            console.log("Current item:", currentItem)
-            console.log("Is already loading:", isAlreadyLoading)
-            console.log("StackView depth:", stackView.depth)
-
             if (!isAlreadyLoading) {
-                console.log("MainMenu - REPLACE avec coincheViewLoaderComponent")
                 mainWindow.shouldLoadCoincheView = false
                 stackView.replace(coincheViewLoaderComponent)
                 loadDelayTimer.start()
-            } else {
-                console.log("MainMenu - PAS de replace, deja en chargement")
             }
         }
 
         function onReturnToMainMenu() {
-            console.log("MainMenu - returnToMainMenu reçu (partie terminée pendant déconnexion)")
-
             // Retourner au menu principal (nettoie la pile)
             if (stackView.depth > 1) {
-                console.log("MainMenu - Pop vers menu principal (depth:", stackView.depth, ")")
                 stackView.pop(null)  // Pop toutes les vues jusqu'à la première (menu principal)
             }
         }
 
         function onLobbyCreated(lobbyCode) {
-            console.log("MainMenu - lobbyCreated reçu, code:", lobbyCode)
             stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": true })
         }
 
         function onLobbyJoined(lobbyCode) {
-            console.log("MainMenu - lobbyJoined reçu, code:", lobbyCode)
             stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": false })
         }
     }
@@ -219,7 +176,6 @@ ApplicationWindow {
         interval: 500
         repeat: false
         onTriggered: {
-            console.log("Activation du chargement de CoincheView")
             mainWindow.shouldLoadCoincheView = true
         }
     }
@@ -243,24 +199,16 @@ ApplicationWindow {
                 onLoaded: {
                     // Auto-login réussi pendant le splash -> aller directement au menu principal
                     item.autoLoginSuccess.connect(function(playerName) {
-                        console.log("MainMenu - Auto-login réussi, passage direct au menu principal")
                         mainWindow.loggedInPlayerName = playerName
                         mainWindow.accountType = "account"
 
                         // Ne pas remplacer si on est déjà dans CoincheView (reconnexion à une partie)
                         var currentItem = stackView.currentItem
                         var currentItemStr = currentItem ? currentItem.toString() : ""
-                        console.log("MainMenu - autoLoginSuccess - currentItem:", currentItem)
-                        console.log("MainMenu - autoLoginSuccess - currentItemStr:", currentItemStr)
-                        console.log("MainMenu - autoLoginSuccess - stackView.depth:", stackView.depth)
                         var isInGame = currentItemStr.indexOf("CoincheView") >= 0 || currentItemStr.indexOf("coincheViewLoader") >= 0
-                        console.log("MainMenu - autoLoginSuccess - isInGame:", isInGame)
 
                         if (!isInGame) {
-                            console.log("MainMenu - autoLoginSuccess - Pas dans une partie, navigation vers menu")
                             stackView.replace(mainMenuComponent)
-                        } else {
-                            console.log("MainMenu - Déjà dans une partie, pas de navigation vers menu")
                         }
                     })
 
@@ -295,12 +243,10 @@ ApplicationWindow {
 
                     onTriggered: {
                         if (!networkManager.connected) {
-                            console.log("Tentative de reconnexion au serveur...")
                             var serverUrl = config.getServerUrl()
                             networkManager.connectToServer(serverUrl)
                         } else {
                             // Si reconnecté avec succès, arrêter le timer
-                            console.log("Reconnexion réussie!")
                             stop()
                         }
                     }
@@ -312,10 +258,8 @@ ApplicationWindow {
 
                     function onConnectedChanged() {
                         if (!networkManager.connected) {
-                            console.log("Connexion perdue, démarrage de la reconnexion automatique...")
                             reconnectTimer.start()
                         } else {
-                            console.log("Connexion établie")
                             reconnectTimer.stop()
                         }
                     }
@@ -324,18 +268,15 @@ ApplicationWindow {
                 // Note: La connexion au serveur est maintenant initiée par SplashScreen
                 // Le timer de reconnexion reste actif pour gérer les déconnexions
                 Component.onCompleted: {
-                    console.log("LoginView chargé - connexion déjà établie par SplashScreen")
                     // Autoriser toutes les orientations pour la saisie clavier
                     if (Qt.platform.os === "android") {
                         orientationHelper.setPortrait()
                     }
                     // Démarrer le timer de reconnexion seulement si déconnecté
                     if (!networkManager.connected) {
-                        console.log("Pas connecté, démarrage du timer de reconnexion")
                         reconnectTimer.start()
                     }
                     // Lancer la musique quand on arrive sur le LoginView
-                    console.log("LoginView - Lancement de la musique")
                     musicStartTimer.start()
                 }
 
@@ -356,7 +297,6 @@ ApplicationWindow {
 
                 // Lancer la musique quand on arrive sur le menu principal
                 Component.onCompleted: {
-                    console.log("mainMenuComponent.onCompleted - Lancement de la musique")
                     // Forcer le mode paysage sur Android
                     if (Qt.platform.os === "android") {
                         orientationHelper.setLandscape()
@@ -999,7 +939,6 @@ ApplicationWindow {
                         selectedAvatar: networkManager.playerAvatar
 
                         onAvatarSelected: function(avatar) {
-                            console.log("Avatar sélectionné:", avatar)
                             networkManager.updateAvatar(avatar)
                             avatarSelectorPopup.close()
                         }
@@ -1034,7 +973,6 @@ ApplicationWindow {
 
                 onAccountDeleted: {
                     // Retourner à l'écran de login après suppression du compte
-                    console.log("Compte supprimé - Retour à l'écran de login")
                     mainWindow.loggedInPlayerName = ""
                     mainWindow.accountType = ""
                     networkManager.clearCredentials()
@@ -1399,7 +1337,6 @@ ApplicationWindow {
                     }
 
                     onLoaded: {
-                        console.log("CoincheView chargé avec succès!")
                         // Arrêter le son du menu principal
                         startupSound.stop()
                     }

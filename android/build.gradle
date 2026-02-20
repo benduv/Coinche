@@ -132,4 +132,18 @@ afterEvaluate {
             }
         }
     }
+
+    // Copie l'AAB signé avec le nom attendu par Qt Creator
+    tasks.named('bundleRelease').configure {
+        doLast {
+            def signedAab = file('build/outputs/bundle/release/android-build-coinche-release.aab')
+            def targetAab = file('build/outputs/bundle/release/coinche-release.aab')
+            if (signedAab.exists()) {
+                targetAab.delete()
+                java.nio.file.Files.copy(signedAab.toPath(), targetAab.toPath())
+                println("AAB créé pour Qt Creator: ${targetAab.absolutePath}")
+                println("Chemin complet: ${targetAab.absolutePath}")
+            }
+        }
+    }
 }

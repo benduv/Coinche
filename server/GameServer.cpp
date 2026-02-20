@@ -1742,12 +1742,7 @@ void GameServer::handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
         // Arrêter le timer de surcoinche
         stopSurcoincheTimer(roomId);
 
-        // Notifier tous les joueurs que la surcoinche a été acceptée (masquer le bouton)
-        QJsonObject timeoutMsg;
-        timeoutMsg["type"] = "surcoincheTimeout";
-        broadcastToRoom(roomId, timeoutMsg);
-
-        // Broadcast la SURCOINCHE
+        // Broadcast la SURCOINCHE (cela affichera l'animation et masquera automatiquement les boutons)
         QJsonObject msg;
         msg["type"] = "bidMade";
         msg["playerIndex"] = playerIndex;
