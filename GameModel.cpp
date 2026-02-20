@@ -648,6 +648,25 @@ void GameModel::updateGameState(const QJsonObject& state)
                 m_showSurcoincheAnimation = false;
                 emit showCoincheAnimationChanged();
                 emit showSurcoincheAnimationChanged();
+
+                // Nettoyer les annonces : garder SEULEMENT la dernière annonce valide + Coinche si applicable
+                for (int i = 0; i < 4; i++) {
+                    if (i == m_lastBidderIndex) {
+                        // Garder l'annonce du dernier enchérisseur
+                        continue;
+                    } else if (i == m_coinchedByPlayerIndex && m_isCoinched) {
+                        // Afficher "Coinche" pour le joueur qui a coinché
+                        m_playerBids[i]["bidValue"] = "Coinche";
+                        m_playerBids[i]["suitSymbol"] = "";
+                        m_playerBids[i]["isRed"] = false;
+                    } else {
+                        // Effacer les autres annonces
+                        m_playerBids[i]["bidValue"] = "";
+                        m_playerBids[i]["suitSymbol"] = "";
+                        m_playerBids[i]["isRed"] = false;
+                    }
+                }
+                emit playerBidsChanged();
             }
         }
     }
@@ -1013,6 +1032,12 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             // Afficher l'animation Surcoinche pour tous les joueurs
             m_showSurcoincheAnimation = true;
             emit showSurcoincheAnimationChanged();
+
+            // Désactiver immédiatement le bouton et le timer pour éviter qu'ils soient visibles pendant/après l'animation
+            m_surcoincheAvailable = false;
+            m_surcoincheTimeLeft = 0;
+            emit surcoincheAvailableChanged();
+            emit surcoincheTimeLeftChanged();
         }
     } else if (action == "surcoincheOffer") {
         QJsonObject surcoincheData = data.toJsonObject();

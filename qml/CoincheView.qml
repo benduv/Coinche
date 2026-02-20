@@ -2320,7 +2320,7 @@ Rectangle {
             anchors.centerIn: playArea
             width: playArea.width * 0.4
             height: playArea.height * 0.4
-            visible: gameModel.surcoincheAvailable
+            visible: gameModel.surcoincheAvailable && !gameModel.showSurcoincheAnimation
 
             // Couches d'ombre (du plus flou au plus net)
             Rectangle {
@@ -2439,7 +2439,7 @@ Rectangle {
             anchors.centerIn: playArea
             width: playArea.width * 0.4
             height: playArea.height * 0.25
-            visible: !gameModel.surcoincheAvailable && gameModel.surcoincheTimeLeft > 0
+            visible: !gameModel.surcoincheAvailable && gameModel.surcoincheTimeLeft > 0 && !gameModel.showSurcoincheAnimation
 
             // Couches d'ombre
             Rectangle {
