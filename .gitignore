@@ -38,3 +38,9 @@ android/res/drawable-mdpi/
 android/res/drawable-xhdpi/
 android/res/drawable-xxhdpi/
 android/res/drawable-xxxhdpi/
+
+# Fichiers Android builds/tools
+*.apk
+*.apks
+*.aab
+bundletool.jar
