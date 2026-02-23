@@ -25,8 +25,6 @@ QtObject {
 
     // Fonction pour obtenir l'URL du serveur
     function getServerUrl() {
-        console.log("Environnement:", environment)
-        console.log("URL du serveur:", serverUrl)
         return serverUrl
     }
 }

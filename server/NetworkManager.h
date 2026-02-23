@@ -101,7 +101,7 @@ public:
 
     // Nouvelle méthode pour créer le GameModel
     Q_INVOKABLE void createGameModel(int position, const QJsonArray& cards, const QJsonArray& opps, bool isReconnection = false) {
-        qDebug() << "Creation du GameModel en C++ - Reconnexion:" << isReconnection;
+        // qDebug() << "Creation du GameModel en C++ - Reconnexion:" << isReconnection;
 
         // Supprimer l'ancien si existant
         if (m_gameModel) {
@@ -113,17 +113,17 @@ public:
 
         // Connecter les signaux
         connect(m_gameModel, &GameModel::cardPlayedLocally, this, [this](int cardIndex) {
-            qDebug() << "Envoi playCard au serveur:" << cardIndex;
+            // qDebug() << "Envoi playCard au serveur:" << cardIndex;
             playCard(cardIndex);
         });
 
         connect(m_gameModel, &GameModel::bidMadeLocally, this, [this](int bidValue, int suitValue) {
-            qDebug() << "Envoi makeBid au serveur:" << bidValue << suitValue;
+            // qDebug() << "Envoi makeBid au serveur:" << bidValue << suitValue;
             makeBid(bidValue, suitValue);
         });
 
         connect(m_gameModel, &GameModel::forfeitLocally, this, [this]() {
-            qDebug() << "Envoi forfeit au serveur";
+            // qDebug() << "Envoi forfeit au serveur";
             forfeitGame();
         });
 
@@ -133,19 +133,19 @@ public:
         // Définir l'avatar du joueur local
         m_gameModel->setPlayerAvatar(position, m_playerAvatar);
 
-        qDebug() << "GameModel cree et initialise - Pseudo:" << m_playerPseudo << "Avatar:" << m_playerAvatar;
+        // qDebug() << "GameModel cree et initialise - Pseudo:" << m_playerPseudo << "Avatar:" << m_playerAvatar;
 
         // Émettre signal pour que QML navigue vers CoincheView
         emit gameModelReady();
     }
 
     Q_INVOKABLE void connectToServer(const QString &url) {
-        qDebug() << "Connexion au serveur:" << url;
+        // qDebug() << "Connexion au serveur:" << url;
         m_serverUrl = url;  // Sauvegarder l'URL pour les reconnexions
 
         // Avec certificat Let's Encrypt valide via nginx, pas besoin d'ignorer les erreurs SSL
         if (url.startsWith("wss://")) {
-            qDebug() << "Connexion WSS détectée - Certificat valide attendu";
+            // qDebug() << "Connexion WSS détectée - Certificat valide attendu";
         }
 
         openSocket(url);
@@ -211,7 +211,7 @@ public:
     }
 
     Q_INVOKABLE void deleteAccount(const QString &pseudo) {
-        qDebug() << "Demande de suppression du compte:" << pseudo;
+        // qDebug() << "Demande de suppression du compte:" << pseudo;
         QJsonObject msg;
         msg["type"] = "deleteAccount";
         msg["pseudo"] = pseudo;
@@ -219,7 +219,7 @@ public:
     }
 
     Q_INVOKABLE void forgotPassword(const QString &email) {
-        qDebug() << "Demande mot de passe oublie pour:" << email;
+        // qDebug() << "Demande mot de passe oublie pour:" << email;
         QJsonObject msg;
         msg["type"] = "forgotPassword";
         msg["email"] = email;
@@ -227,7 +227,7 @@ public:
     }
 
     Q_INVOKABLE void changePassword(const QString &email, const QString &newPassword) {
-        qDebug() << "Demande changement mot de passe pour:" << email;
+        // qDebug() << "Demande changement mot de passe pour:" << email;
         QJsonObject msg;
         msg["type"] = "changePassword";
         msg["email"] = email;
@@ -236,7 +236,7 @@ public:
     }
 
     Q_INVOKABLE void changePseudo(const QString &currentPseudo, const QString &newPseudo) {
-        qDebug() << "Demande changement pseudo:" << currentPseudo << "->" << newPseudo;
+        // qDebug() << "Demande changement pseudo:" << currentPseudo << "->" << newPseudo;
         QJsonObject msg;
         msg["type"] = "changePseudo";
         msg["currentPseudo"] = currentPseudo;
@@ -245,7 +245,7 @@ public:
     }
 
     Q_INVOKABLE void changeEmail(const QString &pseudo, const QString &newEmail) {
-        qDebug() << "Demande changement email pour:" << pseudo;
+        // qDebug() << "Demande changement email pour:" << pseudo;
         QJsonObject msg;
         msg["type"] = "changeEmail";
         msg["pseudo"] = pseudo;
@@ -254,7 +254,7 @@ public:
     }
 
     Q_INVOKABLE void setAnonymous(bool anonymous) {
-        qDebug() << "Demande anonymisation:" << anonymous;
+        // qDebug() << "Demande anonymisation:" << anonymous;
         QJsonObject msg;
         msg["type"] = "setAnonymous";
         msg["pseudo"] = m_playerPseudo;
@@ -270,7 +270,7 @@ public:
     }
 
     Q_INVOKABLE void sendContactMessage(const QString &senderName, const QString &senderEmail, const QString &subject, const QString &message) {
-        qDebug() << "Envoi message de contact - De:" << senderName << "Email:" << senderEmail << "Sujet:" << subject;
+        // qDebug() << "Envoi message de contact - De:" << senderName << "Email:" << senderEmail << "Sujet:" << subject;
         QJsonObject msg;
         msg["type"] = "sendContactMessage";
         msg["senderName"] = senderName;
@@ -288,7 +288,7 @@ public:
 
     Q_INVOKABLE void clearGameModel() {
         if (m_gameModel) {
-            qDebug() << "Nettoyage du gameModel";
+            // qDebug() << "Nettoyage du gameModel";
             // IMPORTANT: Arrêter les timers AVANT de supprimer pour éviter accès mémoire invalide
             m_gameModel->pauseTimers();
             m_gameModel->deleteLater();
@@ -297,7 +297,7 @@ public:
     }
 
     Q_INVOKABLE void updateAvatar(const QString &avatar) {
-        qDebug() << "Mise à jour de l'avatar:" << avatar;
+        // qDebug() << "Mise à jour de l'avatar:" << avatar;
         m_playerAvatar = avatar;
         emit playerAvatarChanged();
 
@@ -310,7 +310,7 @@ public:
 
     // Demander à redevenir humain après avoir été remplacé par un bot
     Q_INVOKABLE void requestRehumanize() {
-        qDebug() << "Demande de réhumanisation";
+        // qDebug() << "Demande de réhumanisation";
         QJsonObject msg;
         msg["type"] = "rehumanize";
         sendMessage(msg);
@@ -321,7 +321,7 @@ public:
         QJsonObject msg;
         msg["type"] = "createPrivateLobby";
         sendMessage(msg);
-        qDebug() << "Demande de creation de lobby prive envoyee";
+        // qDebug() << "Demande de creation de lobby prive envoyee";
     }
 
     Q_INVOKABLE void joinPrivateLobby(const QString& code) {
@@ -329,7 +329,7 @@ public:
         msg["type"] = "joinPrivateLobby";
         msg["code"] = code;
         sendMessage(msg);
-        qDebug() << "Demande de rejoindre le lobby" << code;
+        // qDebug() << "Demande de rejoindre le lobby" << code;
     }
 
     Q_INVOKABLE void toggleLobbyReady(bool ready) {
@@ -337,21 +337,21 @@ public:
         msg["type"] = "lobbyReady";
         msg["ready"] = ready;
         sendMessage(msg);
-        qDebug() << "Changement de statut pret:" << ready;
+        // qDebug() << "Changement de statut pret:" << ready;
     }
 
     Q_INVOKABLE void startLobbyGame() {
         QJsonObject msg;
         msg["type"] = "startLobbyGame";
         sendMessage(msg);
-        qDebug() << "Demande de demarrage de la partie depuis le lobby";
+        // qDebug() << "Demande de demarrage de la partie depuis le lobby";
     }
 
     Q_INVOKABLE void leaveLobby() {
         QJsonObject msg;
         msg["type"] = "leaveLobby";
         sendMessage(msg);
-        qDebug() << "Quitte le lobby";
+        // qDebug() << "Quitte le lobby";
     }
 
     // Sauvegarder les credentials pour l'auto-login
@@ -359,7 +359,7 @@ public:
         QSettings settings("Nebuludik", "CoincheDelEspace");
         settings.setValue("auth/email", email);
         settings.setValue("auth/password", password);
-        qDebug() << "Credentials sauvegardés pour:" << email;
+        // qDebug() << "Credentials sauvegardés pour:" << email;
         emit storedCredentialsChanged();
     }
 
@@ -379,7 +379,7 @@ public:
             emit playerAvatarChanged();
         }
 
-        qDebug() << "Credentials et données joueur supprimés";
+        // qDebug() << "Credentials et données joueur supprimés";
         emit storedCredentialsChanged();
     }
 
@@ -390,11 +390,11 @@ public:
         QString password = settings.value("auth/password", "").toString();
 
         if (email.isEmpty() || password.isEmpty()) {
-            qDebug() << "Pas de credentials stockés pour auto-login";
+            // qDebug() << "Pas de credentials stockés pour auto-login";
             return false;
         }
 
-        qDebug() << "Tentative d'auto-login pour:" << email;
+        // qDebug() << "Tentative d'auto-login pour:" << email;
         loginAccount(email, password);
         return true;
     }
@@ -461,17 +461,17 @@ signals:
 
 private slots:
     void onConnected() {
-        qDebug() << "Connecte au serveur";
+        // qDebug() << "Connecte au serveur";
         m_connected = true;
 
         // Démarrer le heartbeat pour détecter les connexions mortes
         m_lastPongReceived = QDateTime::currentMSecsSinceEpoch();
         m_heartbeatTimer->start();
-        qDebug() << "Heartbeat démarré (ping toutes les 5 secondes)";
+        // qDebug() << "Heartbeat démarré (ping toutes les 5 secondes)";
 
         // Si on se reconnecte et qu'on avait un pseudo et avatar, se réenregistrer
         if (!m_playerPseudo.isEmpty()) {
-            qDebug() << "Reconnexion - Réenregistrement avec pseudo:" << m_playerPseudo;
+            // qDebug() << "Reconnexion - Réenregistrement avec pseudo:" << m_playerPseudo;
             registerPlayer(m_playerPseudo, m_playerAvatar);
         }
 
@@ -479,35 +479,34 @@ private slots:
     }
 
     void onDisconnected() {
-        qDebug() << "====================== onDisconnected() appelé ===============================";
-        qDebug() << "  m_connected:" << m_connected;
-        qDebug() << "  m_playerPseudo:" << m_playerPseudo;
-        qDebug() << "  m_gameModel:" << (m_gameModel != nullptr);
+        // qDebug() << "====================== onDisconnected() appelé ===============================";
+        // qDebug() << "  m_connected:" << m_connected;
+        // qDebug() << "  m_playerPseudo:" << m_playerPseudo;
+        // qDebug() << "  m_gameModel:" << (m_gameModel != nullptr);
 
         // Capturer la raison de la déconnexion pour le diagnostic
         if (m_socket) {
-            qDebug() << "  closeCode:" << m_socket->closeCode();
-            qDebug() << "  closeReason:" << m_socket->closeReason();
-            qDebug() << "  errorString:" << m_socket->errorString();
+            // qDebug() << "  closeCode:" << m_socket->closeCode();
+            // qDebug() << "  closeReason:" << m_socket->closeReason();
+            // qDebug() << "  errorString:" << m_socket->errorString();
         }
 
         bool wasConnected = m_connected;
-        //m_connected = false;
 
         // Arrêter le heartbeat
         m_heartbeatTimer->stop();
-        qDebug() << "Heartbeat arrêté";
+        //qDebug() << "Heartbeat arrêté";
 
         // Si on était en partie ou connecté, activer la reconnexion automatique
         if (wasConnected && (!m_playerPseudo.isEmpty() || m_gameModel != nullptr)) {
-            qDebug() << "Perte de connexion detectee - Demarrage tentatives de reconnexion";
+            //qDebug() << "Perte de connexion detectee - Demarrage tentatives de reconnexion";
             m_wasInGame = (m_gameModel != nullptr);  // Sauvegarder si on était en partie
 
-            qDebug() << "Reconnexion à" << m_serverUrl;
+            //qDebug() << "Reconnexion à" << m_serverUrl;
             openSocket(m_serverUrl);
         } else {
-            qDebug() << "Pas de reconnexion automatique - conditions non remplies";
-            qDebug() << "  wasConnected:" << wasConnected;
+            // qDebug() << "Pas de reconnexion automatique - conditions non remplies";
+            // qDebug() << "  wasConnected:" << wasConnected;
         }
 
         emit connectedChanged();
@@ -518,7 +517,7 @@ private slots:
         QJsonObject obj = doc.object();
         QString type = obj["type"].toString();
 
-        qDebug() << "NetWorkManager - Message recu:" << type;
+        // qDebug() << "NetWorkManager - Message recu:" << type;
 
         // Émettre le message pour que QML puisse l'écouter (ex: StatsView)
         emit messageReceived(message);
@@ -537,9 +536,9 @@ private slots:
             if (!avatar.isEmpty()) {
                 m_playerAvatar = avatar;
                 emit playerAvatarChanged();
-                qDebug() << "Enregistre avec ID:" << m_playerId << "Pseudo:" << m_playerPseudo << "Avatar:" << avatar;
+                // qDebug() << "Enregistre avec ID:" << m_playerId << "Pseudo:" << m_playerPseudo << "Avatar:" << avatar;
             } else {
-                qDebug() << "Enregistre avec ID:" << m_playerId << "Pseudo:" << m_playerPseudo;
+                // qDebug() << "Enregistre avec ID:" << m_playerId << "Pseudo:" << m_playerPseudo;
             }
         }
         else if (type == "matchmakingStatus") {
@@ -555,21 +554,21 @@ private slots:
         }
         else if (type == "matchmakingCountdown") {
             m_matchmakingCountdown = obj["seconds"].toInt();
-            qDebug() << "Countdown reçu:" << m_matchmakingCountdown << "secondes";
+            // qDebug() << "Countdown reçu:" << m_matchmakingCountdown << "secondes";
             emit matchmakingCountdownChanged();
         }
         else if (type == "gameFound") {
-            qDebug() << "=============== GAME FOUND ===============";
+            // qDebug() << "=============== GAME FOUND ===============";
 
             bool isReconnection = obj["reconnection"].toBool(false);
             m_myPosition = obj["playerPosition"].toInt();
             m_myCards = obj["myCards"].toArray();
             m_opponents = obj["opponents"].toArray();
 
-            qDebug() << "Position:" << m_myPosition;
-            qDebug() << "Nombre de cartes:" << m_myCards.size();
-            qDebug() << "Nombre d'adversaires:" << m_opponents.size();
-            qDebug() << "Reconnexion:" << isReconnection;
+            // qDebug() << "Position:" << m_myPosition;
+            // qDebug() << "Nombre de cartes:" << m_myCards.size();
+            // qDebug() << "Nombre d'adversaires:" << m_opponents.size();
+            // qDebug() << "Reconnexion:" << isReconnection;
 
             // Si c'est une NOUVELLE partie (pas une reconnexion), effacer le message de bot replacement en attente
             // car il provient de la partie précédente
@@ -596,7 +595,7 @@ private slots:
                 // Nouvelle partie (ou relance d'app) - émettre le signal pour créer un nouveau GameModel
                 emit gameDataChanged();
                 emit gameFound(m_myPosition, m_opponents, isReconnection);
-                qDebug() << "Signal gameFound emis - Reconnexion:" << isReconnection;
+                // qDebug() << "Signal gameFound emis - Reconnexion:" << isReconnection;
             }
         }
         else if (type == "cardPlayed") {
@@ -633,7 +632,7 @@ private slots:
             // Transmettre l'état du jeu au GameModel
             if (m_gameModel) {
                 m_gameModel->updateGameState(obj);
-                qDebug() << "NetworkManager - Etat du jeu mis à jour";
+                // qDebug() << "NetworkManager - Etat du jeu mis à jour";
             }
         }
         else if (type == "pliFinished") {
@@ -641,8 +640,8 @@ private slots:
             int scoreMancheTeam1 = obj["scoreMancheTeam1"].toInt();
             int scoreMancheTeam2 = obj["scoreMancheTeam2"].toInt();
 
-            qDebug() << "NetworkManager - Pli termine, gagnant:" << winnerId;
-            qDebug() << "  Scores de manche: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
+            // qDebug() << "NetworkManager - Pli termine, gagnant:" << winnerId;
+            // qDebug() << "  Scores de manche: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
 
             // Transmettre au GameModel pour nettoyer le pli et mettre à jour les scores de manche
             if (m_gameModel) {
@@ -660,9 +659,9 @@ private slots:
             int scoreMancheTeam2 = obj["scoreMancheTeam2"].toInt();
             int capotTeam = obj["capotTeam"].toInt(0);
 
-            qDebug() << "NetworkManager - Manche terminee!";
-            qDebug() << "  Scores de manche finaux: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
-            qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
+            // qDebug() << "NetworkManager - Manche terminee!";
+            // qDebug() << "  Scores de manche finaux: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
+            // qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
 
             // Transmettre au GameModel
             if (m_gameModel) {
@@ -680,8 +679,8 @@ private slots:
             int scoreTeam1 = obj["scoreTeam1"].toInt();
             int scoreTeam2 = obj["scoreTeam2"].toInt();
 
-            qDebug() << "NetworkManager - Partie terminee! Gagnant: Equipe" << winner;
-            qDebug() << "  Scores finaux: Team1 =" << scoreTeam1 << ", Team2 =" << scoreTeam2;
+            // qDebug() << "NetworkManager - Partie terminee! Gagnant: Equipe" << winner;
+            // qDebug() << "  Scores finaux: Team1 =" << scoreTeam1 << ", Team2 =" << scoreTeam2;
 
             // Transmettre au GameModel
             if (m_gameModel) {
@@ -693,7 +692,7 @@ private slots:
             }
         }
         else if (type == "newMancheAnimation") {
-            qDebug() << "NetworkManager - Animation nouvelle manche!";
+            // qDebug() << "NetworkManager - Animation nouvelle manche!";
             emit newMancheAnimation();
         }
         else if (type == "newManche") {
@@ -702,10 +701,10 @@ private slots:
             int currentPlayer = obj["currentPlayer"].toInt();
             QJsonArray myCards = obj["myCards"].toArray();
 
-            qDebug() << "NetworkManager - Nouvelle manche!";
-            qDebug() << "  Position:" << playerPosition;
-            qDebug() << "  Joueur qui commence les enchères:" << biddingPlayer;
-            qDebug() << "  Nombre de cartes:" << myCards.size();
+            // qDebug() << "NetworkManager - Nouvelle manche!";
+            // qDebug() << "  Position:" << playerPosition;
+            // qDebug() << "  Joueur qui commence les enchères:" << biddingPlayer;
+            // qDebug() << "  Nombre de cartes:" << myCards.size();
 
             // Transmettre au GameModel
             if (m_gameModel) {
@@ -720,7 +719,7 @@ private slots:
         else if (type == "surcoincheOffer") {
             int timeLeft = obj["timeLeft"].toInt();
 
-            qDebug() << "NetworkManager - Offre de surcoinche reçue, temps restant:" << timeLeft;
+            // qDebug() << "NetworkManager - Offre de surcoinche reçue, temps restant:" << timeLeft;
 
             // Transmettre au GameModel
             if (m_gameModel) {
@@ -730,7 +729,7 @@ private slots:
             }
         }
         else if (type == "surcoincheTimeout") {
-            qDebug() << "NetworkManager - Timeout de la surcoinche";
+            // qDebug() << "NetworkManager - Timeout de la surcoinche";
 
             // Transmettre au GameModel
             if (m_gameModel) {
@@ -740,7 +739,7 @@ private slots:
         else if (type == "surcoincheTimeUpdate") {
             int timeLeft = obj["timeLeft"].toInt();
 
-            qDebug() << "NetworkManager - Mise à jour temps surcoinche:" << timeLeft;
+            // qDebug() << "NetworkManager - Mise à jour temps surcoinche:" << timeLeft;
 
             // Transmettre au GameModel
             if (m_gameModel) {
@@ -752,7 +751,7 @@ private slots:
         else if (type == "surcoincheWaiting") {
             int timeLeft = obj["timeLeft"].toInt();
 
-            qDebug() << "NetworkManager - Attente surcoinche adverse, temps restant:" << timeLeft;
+            // qDebug() << "NetworkManager - Attente surcoinche adverse, temps restant:" << timeLeft;
 
             // Transmettre au GameModel
             if (m_gameModel) {
@@ -764,7 +763,7 @@ private slots:
         else if (type == "surcoincheWaitingUpdate") {
             int timeLeft = obj["timeLeft"].toInt();
 
-            qDebug() << "NetworkManager - Mise à jour attente surcoinche:" << timeLeft;
+            // qDebug() << "NetworkManager - Mise à jour attente surcoinche:" << timeLeft;
 
             // Transmettre au GameModel
             if (m_gameModel) {
@@ -775,7 +774,7 @@ private slots:
         }
         else if (type == "belote") {
             int playerIndex = obj["playerIndex"].toInt();
-            qDebug() << "NetworkManager - BELOTE annoncee par joueur" << playerIndex;
+            // qDebug() << "NetworkManager - BELOTE annoncee par joueur" << playerIndex;
 
             if (m_gameModel) {
                 m_gameModel->receivePlayerAction(playerIndex, "belote", QJsonObject());
@@ -783,7 +782,7 @@ private slots:
         }
         else if (type == "rebelote") {
             int playerIndex = obj["playerIndex"].toInt();
-            qDebug() << "NetworkManager - REBELOTE annoncee par joueur" << playerIndex;
+            // qDebug() << "NetworkManager - REBELOTE annoncee par joueur" << playerIndex;
 
             if (m_gameModel) {
                 m_gameModel->receivePlayerAction(playerIndex, "rebelote", QJsonObject());
@@ -795,14 +794,14 @@ private slots:
             if (avatar.isEmpty()) avatar = "avataaars1.svg";
             m_playerPseudo = playerName;
             m_playerAvatar = avatar;
-            qDebug() << "NetworkManager - Compte cree avec succès:" << playerName << "Avatar:" << avatar;
+            // qDebug() << "NetworkManager - Compte cree avec succès:" << playerName << "Avatar:" << avatar;
             emit playerAvatarChanged();
             emit playerPseudoChanged();
             emit registerSuccess(playerName, avatar);
         }
         else if (type == "registerAccountFailed") {
             QString error = obj["error"].toString();
-            qDebug() << "NetworkManager - Echec creation compte:" << error;
+            // qDebug() << "NetworkManager - Echec creation compte:" << error;
             emit registerFailed(error);
         }
         else if (type == "loginAccountSuccess") {
@@ -815,10 +814,10 @@ private slots:
             m_playerAvatar = avatar;
             if (!connectionId.isEmpty()) {
                 m_playerId = connectionId;
-                qDebug() << "NetworkManager - ConnectionId enregistre:" << connectionId;
+                // qDebug() << "NetworkManager - ConnectionId enregistre:" << connectionId;
             }
             m_isAnonymous = obj["isAnonymous"].toBool(false);
-            qDebug() << "NetworkManager - Connexion reussie:" << playerName << "Avatar:" << avatar << "Temp password:" << usingTempPassword << "Anonymous:" << m_isAnonymous;
+            // qDebug() << "NetworkManager - Connexion reussie:" << playerName << "Avatar:" << avatar << "Temp password:" << usingTempPassword << "Anonymous:" << m_isAnonymous;
             emit playerAvatarChanged();
             emit playerPseudoChanged();
             emit isAnonymousChanged();
@@ -826,60 +825,60 @@ private slots:
         }
         else if (type == "loginAccountFailed") {
             QString error = obj["error"].toString();
-            qDebug() << "NetworkManager - Echec connexion:" << error;
+            // qDebug() << "NetworkManager - Echec connexion:" << error;
             emit loginFailed(error);
         }
         else if (type == "deleteAccountSuccess") {
-            qDebug() << "NetworkManager - Compte supprime avec succes";
+            // qDebug() << "NetworkManager - Compte supprime avec succes";
             emit deleteAccountSuccess();
         }
         else if (type == "deleteAccountFailed") {
             QString error = obj["error"].toString();
-            qDebug() << "NetworkManager - Echec suppression compte:" << error;
+            // qDebug() << "NetworkManager - Echec suppression compte:" << error;
             emit deleteAccountFailed(error);
         }
         else if (type == "contactMessageSuccess") {
-            qDebug() << "NetworkManager - Message de contact envoye avec succes";
+            // qDebug() << "NetworkManager - Message de contact envoye avec succes";
             emit contactMessageSuccess();
         }
         else if (type == "contactMessageFailed") {
             QString error = obj["error"].toString();
-            qDebug() << "NetworkManager - Echec envoi message de contact:" << error;
+            // qDebug() << "NetworkManager - Echec envoi message de contact:" << error;
             emit contactMessageFailed(error);
         }
         else if (type == "forgotPasswordSuccess") {
-            qDebug() << "NetworkManager - Mot de passe temporaire envoye";
+            // qDebug() << "NetworkManager - Mot de passe temporaire envoye";
             emit forgotPasswordSuccess();
         }
         else if (type == "forgotPasswordFailed") {
             QString error = obj["error"].toString();
-            qDebug() << "NetworkManager - Echec mot de passe oublie:" << error;
+            // qDebug() << "NetworkManager - Echec mot de passe oublie:" << error;
             emit forgotPasswordFailed(error);
         }
         else if (type == "changePasswordSuccess") {
-            qDebug() << "NetworkManager - Mot de passe change avec succes";
+            // qDebug() << "NetworkManager - Mot de passe change avec succes";
             emit changePasswordSuccess();
         }
         else if (type == "changePasswordFailed") {
             QString error = obj["error"].toString();
-            qDebug() << "NetworkManager - Echec changement mot de passe:" << error;
+            // qDebug() << "NetworkManager - Echec changement mot de passe:" << error;
             emit changePasswordFailed(error);
         }
         else if (type == "changePseudoSuccess") {
             QString newPseudo = obj["newPseudo"].toString();
-            qDebug() << "NetworkManager - Pseudo changé avec succès:" << newPseudo;
+            // qDebug() << "NetworkManager - Pseudo changé avec succès:" << newPseudo;
             m_playerPseudo = newPseudo;
             emit playerPseudoChanged();
             emit changePseudoSuccess(newPseudo);
         }
         else if (type == "changePseudoFailed") {
             QString error = obj["error"].toString();
-            qDebug() << "NetworkManager - Echec changement pseudo:" << error;
+            // qDebug() << "NetworkManager - Echec changement pseudo:" << error;
             emit changePseudoFailed(error);
         }
         else if (type == "changeEmailSuccess") {
             QString newEmail = obj["newEmail"].toString();
-            qDebug() << "NetworkManager - Email changé avec succès:" << newEmail;
+            // qDebug() << "NetworkManager - Email changé avec succès:" << newEmail;
             m_playerEmail = newEmail;
             // Mettre à jour les credentials stockés
             QSettings settings("Nebuludik", "CoincheDelEspace");
@@ -892,24 +891,24 @@ private slots:
         }
         else if (type == "changeEmailFailed") {
             QString error = obj["error"].toString();
-            qDebug() << "NetworkManager - Echec changement email:" << error;
+            // qDebug() << "NetworkManager - Echec changement email:" << error;
             emit changeEmailFailed(error);
         }
         else if (type == "setAnonymousSuccess") {
             bool anonymous = obj["anonymous"].toBool();
-            qDebug() << "NetworkManager - Anonymisation mise à jour:" << anonymous;
+            // qDebug() << "NetworkManager - Anonymisation mise à jour:" << anonymous;
             m_isAnonymous = anonymous;
             emit isAnonymousChanged();
             emit setAnonymousSuccess(anonymous);
         }
         else if (type == "setAnonymousFailed") {
             QString error = obj["error"].toString();
-            qDebug() << "NetworkManager - Echec anonymisation:" << error;
+            // qDebug() << "NetworkManager - Echec anonymisation:" << error;
             emit setAnonymousFailed(error);
         }
         else if (type == "error") {
             QString errorMsg = obj["message"].toString();
-            qDebug() << "NetworkManager - Erreur recue:" << errorMsg;
+            // qDebug() << "NetworkManager - Erreur recue:" << errorMsg;
             emit errorOccurred(errorMsg);
         }
         else if (type == "playerDisconnected") {
@@ -919,23 +918,23 @@ private slots:
         else if (type == "playerForfeited") {
             int playerIndex = obj["playerIndex"].toInt();
             QString playerName = obj["playerName"].toString();
-            qDebug() << "NetworkManager - Joueur" << playerName << "(index:" << playerIndex << ") a abandonné la partie";
+            // qDebug() << "NetworkManager - Joueur" << playerName << "(index:" << playerIndex << ") a abandonné la partie";
             emit playerForfeited(playerIndex, playerName);
         }
         else if (type == "lobbyCreated") {
             QString code = obj["code"].toString();
-            qDebug() << "NetworkManager - Lobby créé avec le code:" << code;
+            // qDebug() << "NetworkManager - Lobby créé avec le code:" << code;
             emit lobbyCreated(code);
         }
         else if (type == "lobbyJoined") {
             QString code = obj["code"].toString();
-            qDebug() << "NetworkManager - Lobby rejoint:" << code;
+            // qDebug() << "NetworkManager - Lobby rejoint:" << code;
             emit lobbyJoined(code);
         }
         else if (type == "lobbyUpdate") {
             QJsonArray players = obj["players"].toArray();
-            qDebug() << "NetworkManager - Réception lobbyUpdate avec" << players.size() << "joueurs";
-            qDebug() << "NetworkManager - Contenu:" << players;
+            // qDebug() << "NetworkManager - Réception lobbyUpdate avec" << players.size() << "joueurs";
+            // qDebug() << "NetworkManager - Contenu:" << players;
 
             // Créer une nouvelle liste au lieu de modifier l'ancienne
             // pour que QML détecte le changement
@@ -952,22 +951,22 @@ private slots:
             }
 
             m_lobbyPlayers = newList;
-            qDebug() << "NetworkManager - Lobby mis à jour:" << m_lobbyPlayers.length() << "joueurs";
+            // qDebug() << "NetworkManager - Lobby mis à jour:" << m_lobbyPlayers.length() << "joueurs";
             emit lobbyPlayersChanged();
         }
         else if (type == "lobbyError") {
             QString errorMsg = obj["message"].toString();
-            qDebug() << "NetworkManager - Erreur lobby:" << errorMsg;
+            // qDebug() << "NetworkManager - Erreur lobby:" << errorMsg;
             emit lobbyError(errorMsg);
         }
         else if (type == "lobbyGameStart") {
-            qDebug() << "NetworkManager - La partie du lobby démarre!";
+            // qDebug() << "NetworkManager - La partie du lobby démarre!";
             emit lobbyGameStarting();
         }
         else if (type == "cardsDealt") {
-            qDebug() << "NetworkManager - Réception des cartes!";
+            // qDebug() << "NetworkManager - Réception des cartes!";
             QJsonArray cards = obj["cards"].toArray();
-            qDebug() << "  Nombre de cartes reçues:" << cards.size();
+            // qDebug() << "  Nombre de cartes reçues:" << cards.size();
 
             // Transmettre les cartes au GameModel
             if (m_gameModel) {
@@ -976,7 +975,7 @@ private slots:
         }
         else if (type == "botReplacement") {
             QString message = obj["message"].toString();
-            qDebug() << "NetworkManager - Remplace par un bot:" << message;
+            // qDebug() << "NetworkManager - Remplace par un bot:" << message;
             // Stocker le message pour que CoincheView puisse le récupérer quand il est prêt
             m_pendingBotReplacement = message;
             emit pendingBotReplacementChanged();
@@ -984,7 +983,7 @@ private slots:
             emit botReplacement(message);
         }
         else if (type == "rehumanizeSuccess") {
-            qDebug() << "NetworkManager - Rehumanisation reussie";
+            // qDebug() << "NetworkManager - Rehumanisation reussie";
             emit rehumanizeSuccess();
         }
         else if (type == "gameNoLongerExists") {
@@ -1010,21 +1009,21 @@ private:
         connect(m_socket, &QWebSocket::pong, this, [this](quint64 elapsedTime, const QByteArray &payload) {
             Q_UNUSED(payload);
             m_lastPongReceived = QDateTime::currentMSecsSinceEpoch();
-            qDebug() << "Pong reçu - latence:" << elapsedTime << "ms";
+            // qDebug() << "Pong reçu - latence:" << elapsedTime << "ms";
         });
 
         connect(m_socket, QOverload<const QList<QSslError>&>::of(&QWebSocket::sslErrors),
                 this, [this](const QList<QSslError> &errors) {
-            qDebug() << "ERREURS SSL détectées (" << errors.size() << "):";
+            qWarning() << "ERREURS SSL détectées (" << errors.size() << "):";
             for (const auto &error : errors) {
-                qDebug() << "  - Type:" << error.error() << "Message:" << error.errorString();
+                qWarning() << "  - Type:" << error.error() << "Message:" << error.errorString();
             }
         });
 
         // Handler d'erreur pour diagnostiquer les déconnexions inattendues
         connect(m_socket, &QWebSocket::errorOccurred, this, [this](QAbstractSocket::SocketError error) {
-            qDebug() << "=== ERREUR SOCKET ===" << error << ":" << m_socket->errorString();
-            qDebug() << "  État du socket:" << m_socket->state();
+            qWarning() << "=== ERREUR SOCKET ===" << error << ":" << m_socket->errorString();
+            qWarning() << "  État du socket:" << m_socket->state();
         });
 
         // Log de l'état de la connexion pour le debug
@@ -1038,7 +1037,7 @@ private:
                 case QAbstractSocket::ClosingState: stateStr = "Closing"; break;
                 default: stateStr = "Unknown"; break;
             }
-            qDebug() << "Socket state changed:" << stateStr;
+            // qDebug() << "Socket state changed:" << stateStr;
         });
     }
 
@@ -1052,8 +1051,8 @@ private:
 
         // Si on n'a pas reçu de pong depuis plus de 15 secondes, la connexion est morte
         if (m_lastPongReceived > 0 && (now - m_lastPongReceived) > 15000) {
-            qDebug() << "=== HEARTBEAT TIMEOUT - Connexion morte détectée ===";
-            qDebug() << "  Dernier pong reçu il y a" << (now - m_lastPongReceived) / 1000 << "secondes";
+            // qDebug() << "=== HEARTBEAT TIMEOUT - Connexion morte détectée ===";
+            // qDebug() << "  Dernier pong reçu il y a" << (now - m_lastPongReceived) / 1000 << "secondes";
 
             // Arrêter le heartbeat
             m_heartbeatTimer->stop();
@@ -1065,7 +1064,7 @@ private:
         }
 
         // Envoyer un ping
-        qDebug() << "Envoi ping heartbeat...";
+        // qDebug() << "Envoi ping heartbeat...";
         m_socket->ping();
     }
 
@@ -1076,7 +1075,7 @@ private:
         if (url.startsWith("wss://")) {
             QNetworkRequest request(qurl);
 
-            qDebug() << "Ouverture socket";
+            // qDebug() << "Ouverture socket";
             m_socket->open(request);
         } else {
             // Connexion non sécurisée (ws://)
@@ -1086,7 +1085,7 @@ private:
 
     void sendMessage(const QJsonObject &message) {
         if (!m_connected) {
-            qDebug() << "Erreur: non connecte au serveur";
+            // qDebug() << "Erreur: non connecte au serveur";
             return;
         }
 

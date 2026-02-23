@@ -144,10 +144,14 @@ $content_a = <<<'__END_A__'
   <h3 style="color:#FFD700;font-size:1.5em;border-bottom:1px solid #333;padding-bottom:8px;margin-top:40px;">Télécharger le jeu</h3>
   <p>Coinche de l'Espace est disponible sur <strong>Windows</strong> et <strong>Android</strong>.</p>
   <div style="display:flex;gap:16px;flex-wrap:wrap;margin:24px 0;">
-    <a href="#" style="display:inline-block;background:#FFD700;color:#0a0a1a;padding:14px 28px;border-radius:8px;font-weight:bold;text-decoration:none;font-size:1.05em;">⬇ Windows (.exe)</a>
-    <a href="#" style="display:inline-block;background:#FFD700;color:#0a0a1a;padding:14px 28px;border-radius:8px;font-weight:bold;text-decoration:none;font-size:1.05em;">⬇ Android (.apk)</a>
+    <a href="https://github.com/benduv/Coinche/releases/download/v0.1.0-beta/coinche.exe" style="display:inline-block;background:#FFD700;color:#000000 !important;padding:14px 28px;border-radius:8px;font-weight:bold;text-decoration:none;font-size:1.05em;">⬇ Windows (.exe)</a>
+    <a href="#" style="display:inline-block;background:#FFD700;color:#000000 !important;padding:14px 28px;border-radius:8px;font-weight:bold;text-decoration:none;font-size:1.05em;">⬇ Android (.apk)</a>
   </div>
-  <p style="color:#666;font-size:0.85em;font-style:italic;">Les liens de téléchargement seront mis à jour très prochainement.</p>
+  <p style="color:#666;font-size:0.85em;font-style:italic;">Version bêta — Android (.apk) bientôt disponible.</p>
+  <p style="color:#ff9900;font-size:0.9em;margin-top:16px;padding:12px;background:#2a2a2a;border-left:4px solid #ff9900;border-radius:4px;">
+    <strong>⚠️ Note importante :</strong> Lors du premier lancement sur Windows, vous pourriez voir une alerte "Windows a protégé votre PC" (SmartScreen).
+    Cliquez sur "Informations complémentaires" puis "Exécuter quand même" pour lancer le jeu. Cette alerte est normale pour les applications non signées.
+  </p>
 </div>
 <!-- /wp:html -->
 __END_A__;

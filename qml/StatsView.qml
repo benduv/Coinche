@@ -111,7 +111,6 @@ Rectangle {
             var data = JSON.parse(message)
 
             if (data.type === "statsData") {
-                console.log("Stats reçues:", JSON.stringify(data))
                 gamesPlayed = data.gamesPlayed
                 gamesWon = data.gamesWon
                 winRatio = data.winRatio
@@ -129,7 +128,6 @@ Rectangle {
                 annoncesSurcoinchees = data.annoncesSurcoinchees || 0
                 annoncesSurcoincheesGagnees = data.annoncesSurcoincheesGagnees || 0
                 maxWinStreak = data.maxWinStreak || 0
-                console.log("Stats affichées - Parties:", gamesPlayed, "Victoires:", gamesWon)
             }
         }
     }

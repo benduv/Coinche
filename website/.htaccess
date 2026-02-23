@@ -1,0 +1,43 @@
+# Forcer la redirection HTTPS
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Rediriger tout le trafic HTTP vers HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Optionnel: Rediriger www vers non-www (ou vice-versa)
+    # Décommenter si vous voulez forcer https://nebuludik.fr (sans www)
+    # RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    # RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+</IfModule>
+
+# En-têtes de sécurité
+<IfModule mod_headers.c>
+    # Forcer HTTPS pour les futures visites (HSTS)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+
+    # Protection contre le clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Protection XSS
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Empêcher le sniffing MIME
+    Header always set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# BEGIN WordPress
+# Les directives (lignes) entre « BEGIN WordPress » et « END WordPress » sont générées
+# dynamiquement et doivent être modifiées uniquement via les filtres WordPress.
+# Toute modification des directives situées entre ces marqueurs sera surchargée.
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress

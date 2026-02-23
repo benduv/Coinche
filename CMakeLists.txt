@@ -83,13 +83,25 @@ target_link_libraries(coinche_client PUBLIC
 # ========================================
 # Exécutable CLIENT (coinche)
 # ========================================
-qt_add_executable(coinche
-    main.cpp
-    server/NetworkManager.h  # Header-only, mis directement dans le client
-    WindowPositioner.h       # Header-only pour positionner les fenêtres
-    OrientationHelper.h      # Header-only pour contrôler l'orientation Android via JNI
-    resources.qrc
-)
+# WIN32 = pas de console sur Windows (GUI only)
+# Sur Android, cette option est ignorée
+if(WIN32 AND NOT ANDROID)
+    qt_add_executable(coinche WIN32
+        main.cpp
+        server/NetworkManager.h  # Header-only, mis directement dans le client
+        WindowPositioner.h       # Header-only pour positionner les fenêtres
+        OrientationHelper.h      # Header-only pour contrôler l'orientation Android via JNI
+        resources.qrc
+    )
+else()
+    qt_add_executable(coinche
+        main.cpp
+        server/NetworkManager.h  # Header-only, mis directement dans le client
+        WindowPositioner.h       # Header-only pour positionner les fenêtres
+        OrientationHelper.h      # Header-only pour contrôler l'orientation Android via JNI
+        resources.qrc
+    )
+endif()
 
 qt_add_resources(RESOURCES resources.qrc)
 target_sources(coinche PRIVATE ${RESOURCES})
@@ -149,7 +161,7 @@ endif()
 if(NOT ANDROID)
     add_executable(server
         server/server_main.cpp
-        server/GameServer.h  # Header-only, mis directement dans le serveur
+        server/GameServer.h
         server/GameServer.cpp
         server/DatabaseManager.h
         server/DatabaseManager.cpp

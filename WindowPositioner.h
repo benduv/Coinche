@@ -42,8 +42,8 @@ public:
         int x = screenGeometry.x() + (screenWidth - windowWidth) / 2;
         int y = screenGeometry.y() + (screenHeight - windowHeight) / 2;
 
-        qDebug() << "WindowPositioner - Fenêtre centrée à (" << x << "," << y << ")"
-                 << "taille:" << windowWidth << "x" << windowHeight;
+        // qDebug() << "WindowPositioner - Fenêtre centrée à (" << x << "," << y << ")"
+                //  << "taille:" << windowWidth << "x" << windowHeight;
 
         // ========== Mode test : Positionnement en grille (commenté) ==========
         /*

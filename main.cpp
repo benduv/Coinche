@@ -69,12 +69,12 @@ int main(int argc, char *argv[])
     QString autoLoginAvatar = parser.value(avatarOption);
     bool disableAutoLogin = parser.isSet(noAutoLoginOption);
 
-    qDebug() << "Nom du joueur:" << playerName;
+    // qDebug() << "Nom du joueur:" << playerName;
     if (!autoLoginEmail.isEmpty()) {
-        qDebug() << "Auto-login activé pour:" << autoLoginEmail << "avec avatar:" << autoLoginAvatar;
+        // qDebug() << "Auto-login activé pour:" << autoLoginEmail << "avec avatar:" << autoLoginAvatar;
     }
     if (disableAutoLogin) {
-        qDebug() << "Auto-login depuis QSettings désactivé";
+        // qDebug() << "Auto-login depuis QSettings désactivé";
     }
 
     QQuickStyle::setStyle("Material");
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
     
     // Mettre à jour quand gameModel est créé
     QObject::connect(&networkManager, &NetworkManager::gameModelReady, [&]() {
-        qDebug() << "Exposition de gameModel au contexte QML";
+        // qDebug() << "Exposition de gameModel au contexte QML";
         engine.rootContext()->setContextProperty("gameModel", networkManager.gameModel());
     });
 
