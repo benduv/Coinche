@@ -254,10 +254,10 @@ public:
             qDebug() << "Erreur: impossible de demarrer le serveur";
         }
 
-        // Initialiser le timer de matchmaking avec bots (45 secondes)
-        // Le timer principal attend 35 secondes, puis le countdown démarre pour 9 secondes
+        // Initialiser le timer de matchmaking avec bots (35 secondes)
+        // Le timer principal attend 30 secondes, puis le countdown démarre pour 9 secondes
         m_matchmakingTimer = new QTimer(this);
-        m_matchmakingTimer->setInterval(2000);  // 35 secondes avant le début du compte à rebours
+        m_matchmakingTimer->setInterval(25000);  // 30 secondes avant le début du compte à rebours
         m_lastQueueSize = 0;
         connect(m_matchmakingTimer, &QTimer::timeout, this, &GameServer::onMatchmakingStartCountdown);
 

@@ -38,6 +38,7 @@ if ( $_SERVER['REQUEST_METHOD'] !== 'POST' || ! isset( $_POST['coinche_run'] ) )
         <li>Page <strong>Présentation</strong> (page d'accueil)</li>
         <li>Page <strong>Règles du Jeu</strong></li>
         <li>Page <strong>Politique de Confidentialité</strong></li>
+        <li>Page <strong>Suppression de compte</strong></li>
         <li>Page <strong>Contact</strong></li>
         <li>Menu de navigation</li>
     </ul>
@@ -136,7 +137,12 @@ $content_a = <<<'__END_A__'
   <p>Coinche de l'Espace est un jeu de coinche multijoueur en ligne, développé avec passion et sans compromis sur l'expérience de jeu. Pas de jetons, pas de publicités intrusives, une coinche à la volée comme dans la vie, et une interface moderne inspirée par l'immensité de l'espace.</p>
 
   <h3 style="color:#FFD700;font-size:1.5em;border-bottom:1px solid #333;padding-bottom:8px;margin-top:40px;">Aperçu du jeu</h3>
-  <p style="color:#666;font-style:italic;">[Screenshots à ajouter — éditez cette page dans l'admin WordPress pour insérer vos images]</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin:20px 0;">
+    <img src="https://nebuludik.fr/wp-content/uploads/2026/02/Screenshot_2026-02-20-10-14-49-697_com.coinche.game_-1024x461.jpg" alt="Screenshot du jeu Coinche de l'Espace" style="width:100%;border-radius:8px;border:2px solid #FFD700;display:block;">
+    <img src="https://nebuludik.fr/wp-content/uploads/2026/02/Screenshot_2026-02-20-10-08-50-039_com.coinche.game_-1-1024x461.jpg" alt="Screenshot du jeu Coinche de l'Espace" style="width:100%;border-radius:8px;border:2px solid #FFD700;display:block;">
+    <img src="https://nebuludik.fr/wp-content/uploads/2026/02/Screenshot_2026-02-20-10-13-22-910_com.coinche.game_-1024x461.jpg" alt="Screenshot du jeu Coinche de l'Espace" style="width:100%;border-radius:8px;border:2px solid #FFD700;display:block;">
+    <img src="https://nebuludik.fr/wp-content/uploads/2026/02/Screenshot_2026-02-20-10-14-19-324_com.coinche.game_-1024x461.jpg" alt="Screenshot du jeu Coinche de l'Espace" style="width:100%;border-radius:8px;border:2px solid #FFD700;display:block;">
+  </div>
 
   <h3 style="color:#FFD700;font-size:1.5em;border-bottom:1px solid #333;padding-bottom:8px;margin-top:40px;">Gameplay</h3>
   <p style="color:#666;font-style:italic;">[Vidéos à ajouter — éditez cette page dans l'admin WordPress pour insérer vos enregistrements]</p>
@@ -443,6 +449,10 @@ $content_d = <<<'__END_D__'
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">10. Suppression de compte</h2>
   <p>Vous pouvez supprimer votre compte directement depuis l'application dans les paramètres.</p>
   <p>Toutes vos données personnelles (email, pseudo, mot de passe, statistiques) seront supprimées définitivement sous 30 jours.</p>
+  <p style="background:#1a1a3a;padding:16px 20px;border-radius:6px;border-left:4px solid #FFD700;margin:20px 0;">
+    <strong style="color:#FFD700;">ℹ️ Pour plus d'informations :</strong><br>
+    Consultez notre page dédiée → <a href="https://nebuludik.fr/index.php/suppression-compte/" style="color:#FFD700;text-decoration:none;font-weight:bold;">Suppression de compte</a>
+  </p>
 
   <!-- ─── 11. ENFANTS ─── -->
   <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">11. Enfants</h2>
@@ -464,6 +474,107 @@ __END_D__;
 
 $id_d = coinche_upsert_page( 'Politique de Confidentialité', 'politique-de-confidentialite', $content_d );
 if ( is_wp_error( $id_d ) ) coinche_err( 'Politique de Confidentialité : ' . $id_d->get_error_message() );
+
+
+// ============================================================
+// E — PAGE SUPPRESSION DE COMPTE
+// ============================================================
+$content_e = <<<'__END_E__'
+<!-- wp:html -->
+<div style="max-width:860px;margin:0 auto;padding:50px 24px;font-family:'Segoe UI',Tahoma,sans-serif;color:#cccccc;line-height:1.7;">
+
+  <h1 style="color:#FFD700;text-align:center;font-size:2.5em;margin:0 0 10px 0;">🗑️ Suppression de compte</h1>
+  <p style="text-align:center;color:#aaa;font-size:1.1em;margin-bottom:50px;">Coinche de l'Espace</p>
+
+  <p style="font-size:1.05em;">Vous souhaitez supprimer votre compte Coinche ? Cette page vous explique comment procéder.</p>
+
+  <!-- ─── MÉTHODE 1 : DEPUIS L'APPLICATION ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">Méthode 1 : Depuis l'application (Recommandé)</h2>
+  <div style="background:#1a1a3a;padding:24px;border-radius:8px;border-left:4px solid #4caf50;margin:20px 0;">
+    <p style="margin-bottom:14px;"><strong style="color:#FFD700;">Suppression instantanée depuis l'app :</strong></p>
+    <ol style="margin:10px 0 10px 20px;line-height:1.9;">
+      <li>Ouvrez l'application <strong>Coinche de l'Espace</strong> sur votre appareil</li>
+      <li>Connectez-vous à votre compte</li>
+      <li>Allez dans <strong>Paramètres</strong> ou <strong>Mon compte</strong></li>
+      <li>Cliquez sur <strong>"Supprimer mon compte"</strong></li>
+      <li>Confirmez la suppression</li>
+    </ol>
+    <p style="margin-top:14px;color:#4caf50;"><strong>⏱️ Délai :</strong> Suppression immédiate</p>
+  </div>
+
+  <!-- ─── MÉTHODE 2 : PAR EMAIL ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">Méthode 2 : Par email</h2>
+  <div style="background:#1a1a3a;padding:24px;border-radius:8px;border-left:4px solid #FFD700;margin:20px 0;">
+    <p style="margin-bottom:14px;"><strong style="color:#FFD700;">Contactez-nous pour supprimer votre compte :</strong></p>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:10px;">📧 <strong>Email :</strong> <a href="mailto:contact@nebuludik.fr" style="color:#FFD700;text-decoration:none;font-weight:bold;">contact@nebuludik.fr</a></li>
+      <li style="margin-bottom:10px;">📋 <strong>Objet :</strong> Suppression de compte Coinche</li>
+      <li style="margin-bottom:10px;">ℹ️ <strong>Informations à fournir :</strong>
+        <ul style="margin-top:8px;margin-left:20px;">
+          <li>Votre pseudo utilisé dans l'application</li>
+          <li>Votre adresse email associée au compte</li>
+        </ul>
+      </li>
+    </ul>
+    <p style="margin-top:14px;color:#FFD700;"><strong>⏱️ Délai :</strong> Traitement sous 30 jours maximum</p>
+  </div>
+
+  <!-- ─── DONNÉES SUPPRIMÉES ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">📦 Données supprimées</h2>
+  <p>Les données suivantes seront <strong style="color:#4caf50;">supprimées définitivement</strong> :</p>
+  <ul style="list-style:none;padding:0;margin:0;">
+    <li style="margin-bottom:10px;padding-left:16px;border-left:3px solid #FFD700;">✓ Votre pseudo</li>
+    <li style="margin-bottom:10px;padding-left:16px;border-left:3px solid #FFD700;">✓ Votre adresse email</li>
+    <li style="margin-bottom:10px;padding-left:16px;border-left:3px solid #FFD700;">✓ Vos statistiques de jeu (parties gagnées, perdues, etc.)</li>
+    <li style="margin-bottom:10px;padding-left:16px;border-left:3px solid #FFD700;">✓ Vos préférences et paramètres</li>
+    <li style="margin-bottom:10px;padding-left:16px;border-left:3px solid #FFD700;">✓ Toutes autres données personnelles associées à votre compte</li>
+  </ul>
+
+  <!-- ─── DONNÉES CONSERVÉES ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">💾 Données conservées (si applicable)</h2>
+  <p>Certaines données peuvent être conservées pour des raisons légales ou techniques :</p>
+  <ul style="list-style:none;padding:0;margin:0;">
+    <li style="margin-bottom:10px;">• <strong style="color:#FFD700;">Logs anonymisés</strong> (sans données personnelles) pour des raisons de sécurité et de maintenance</li>
+    <li style="margin-bottom:10px;">• <strong style="color:#FFD700;">Données légales obligatoires</strong> selon la législation française (comptabilité, conformité RGPD, etc.)</li>
+    <li style="margin-bottom:10px;">• <strong style="color:#FFD700;">Durée de conservation :</strong> Selon les obligations légales (généralement jusqu'à 3 ans pour les données comptables)</li>
+  </ul>
+
+  <!-- ─── AVERTISSEMENT ─── -->
+  <div style="background:#2a1a00;padding:20px;border-radius:8px;border-left:4px solid #ff9800;margin:30px 0;">
+    <p style="color:#ff9800;font-size:1.1em;margin:0 0 10px 0;"><strong>⚠️ Attention</strong></p>
+    <p style="margin:0;">La suppression de votre compte est <strong style="color:#ff9800;">définitive et irréversible</strong>. Vous ne pourrez pas récupérer vos statistiques, votre historique de jeu, ou toute autre donnée après la suppression.</p>
+  </div>
+
+  <!-- ─── QUESTIONS FRÉQUENTES ─── -->
+  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">❓ Questions fréquentes</h2>
+
+  <div style="margin:20px 0;">
+    <p style="margin-bottom:4px;"><strong style="color:#FFD700;">Q : Puis-je récupérer mon compte après suppression ?</strong></p>
+    <p style="margin-left:16px;color:#aaa;">R : Non, la suppression est définitive. Vous devrez créer un nouveau compte si vous souhaitez rejouer.</p>
+  </div>
+
+  <div style="margin:20px 0;">
+    <p style="margin-bottom:4px;"><strong style="color:#FFD700;">Q : Que deviennent mes parties en cours ?</strong></p>
+    <p style="margin-left:16px;color:#aaa;">R : Les parties en cours seront automatiquement abandonnées lors de la suppression de votre compte.</p>
+  </div>
+
+  <div style="margin:20px 0;">
+    <p style="margin-bottom:4px;"><strong style="color:#FFD700;">Q : Mes statistiques peuvent-elles être exportées avant suppression ?</strong></p>
+    <p style="margin-left:16px;color:#aaa;">R : Oui, vous pouvez consulter vos statistiques dans l'application avant de supprimer votre compte. Prenez une capture d'écran si vous souhaitez les conserver.</p>
+  </div>
+
+  <!-- ─── CONTACT ─── -->
+  <div style="text-align:center;margin-top:50px;padding-top:30px;border-top:1px solid #333366;">
+    <p style="font-size:1.1em;margin-bottom:10px;"><strong style="color:#FFD700;">📧 Besoin d'aide ?</strong></p>
+    <p style="margin-bottom:20px;">Contactez-nous à <a href="mailto:contact@nebuludik.fr" style="color:#FFD700;text-decoration:none;font-weight:bold;">contact@nebuludik.fr</a></p>
+    <p style="font-size:0.9em;color:#666;"><a href="https://nebuludik.fr/index.php/politique-de-confidentialite/" style="color:#FFD700;text-decoration:none;">📄 Politique de confidentialité complète</a></p>
+  </div>
+</div>
+<!-- /wp:html -->
+__END_E__;
+
+$id_e = coinche_upsert_page( 'Suppression de compte', 'suppression-compte', $content_e );
+if ( is_wp_error( $id_e ) ) coinche_err( 'Suppression de compte : ' . $id_e->get_error_message() );
 
 
 // ============================================================
@@ -535,11 +646,18 @@ if ( $menu_obj ) {
             'menu-item-object'    => 'page',
             'menu-item-object-id' => $id_d,
         ] );
+        wp_add_nav_menu_item( $menu_id, [
+            'menu-item-title'     => 'Suppression de compte',
+            'menu-item-status'    => 'publish',
+            'menu-item-type'      => 'post_type',
+            'menu-item-object'    => 'page',
+            'menu-item-object-id' => $id_e,
+        ] );
 
         $locations = get_theme_mod( 'nav_menu_locations', [] );
         $locations['primary'] = $menu_id;
         set_theme_mod( 'nav_menu_locations', $locations );
-        coinche_ok( 'Menu créé avec le bon ordre : Présentation → Règles du Jeu → Contact → Politique de Confidentialité' );
+        coinche_ok( 'Menu créé avec le bon ordre : Présentation → Règles du Jeu → Contact → Politique de Confidentialité → Suppression de compte' );
     }
 }
 
@@ -559,6 +677,7 @@ echo '<h2>Permaliens créés</h2>';
 if ( ! is_wp_error( $id_a ) ) coinche_log( 'Présentation                  : <a href="' . get_permalink( $id_a ) . '" target="_blank">' . get_permalink( $id_a ) . '</a>' );
 if ( ! is_wp_error( $id_b ) ) coinche_log( 'Règles du Jeu                 : <a href="' . get_permalink( $id_b ) . '" target="_blank">' . get_permalink( $id_b ) . '</a>' );
 if ( ! is_wp_error( $id_d ) ) coinche_log( 'Politique de Confidentialité  : <a href="' . get_permalink( $id_d ) . '" target="_blank">' . get_permalink( $id_d ) . '</a>' );
+if ( ! is_wp_error( $id_e ) ) coinche_log( 'Suppression de compte         : <a href="' . get_permalink( $id_e ) . '" target="_blank">' . get_permalink( $id_e ) . '</a>' );
 if ( ! is_wp_error( $id_c ) ) coinche_log( 'Contact                       : <a href="' . get_permalink( $id_c ) . '" target="_blank">' . get_permalink( $id_c ) . '</a>' );
 
 echo '</div></body></html>';
