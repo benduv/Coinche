@@ -43,3 +43,8 @@ android/res/drawable-xxxhdpi/
 *.apk
 *.apks
 *.aab
+
+# Base de données SQLite (données de production)
+*.db
+*.db-shm
+*.db-wal
