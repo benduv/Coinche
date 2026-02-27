@@ -32,10 +32,16 @@ if (-not (Test-Path $armv7Libs)) {
 Copy-Item -Recurse "$armv7Libs\*" $targetLibs -Force
 Write-Host "Bibliotheques armeabi-v7a copiees" -ForegroundColor Green
 
-# Modifier build.gradle pour forcer les deux architectures
-Write-Host "Configuration de build.gradle pour multi-architecture..." -ForegroundColor Green
+# Modifier build.gradle pour forcer les deux architectures et targetSdk 35
+Write-Host "Configuration de build.gradle pour multi-architecture et targetSdk 35..." -ForegroundColor Green
 $buildGradle = "$combinedBuild\build.gradle"
-(Get-Content $buildGradle) -replace 'abiFilters qtTargetAbiList\.split\(","\)', 'abiFilters "arm64-v8a", "armeabi-v7a"' | Set-Content $buildGradle
+(Get-Content $buildGradle) `
+    -replace 'abiFilters qtTargetAbiList\.split\(","\)', 'abiFilters "arm64-v8a", "armeabi-v7a"' `
+    -replace 'compileSdkVersion 34', 'compileSdkVersion 35' `
+    -replace 'targetSdkVersion = 34', 'targetSdkVersion = 35' `
+    -replace "buildToolsVersion '34\.0\.0'", "buildToolsVersion '35.0.0'" `
+    -replace 'versionCode 1', 'versionCode 2' |
+    Set-Content $buildGradle
 
 # Verifier que les deux architectures sont presentes
 Write-Host ""
