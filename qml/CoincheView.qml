@@ -805,6 +805,11 @@ Rectangle {
                                 }
                             }
 
+                            // Ondes concentriques - phase d'annonce
+                            BidWave {
+                                active: gameModel.biddingPhase && gameModel.biddingPlayer === playerSouthRow.actualPlayerIndex
+                            }
+
                             // MouseArea pour afficher les stats
                             MouseArea {
                                 anchors.fill: parent
@@ -954,6 +959,11 @@ Rectangle {
                                     ColorAnimation { duration: 300 }
                                 }
                             }
+                        }
+
+                        // Ondes concentriques - phase d'annonce
+                        BidWave {
+                            active: gameModel.biddingPhase && gameModel.biddingPlayer === playerNorthColumn.actualPlayerIndex
                         }
 
                         // MouseArea pour afficher les stats
@@ -1234,6 +1244,11 @@ Rectangle {
                             }
                         }
 
+                        // Ondes concentriques - phase d'annonce
+                        BidWave {
+                            active: gameModel.biddingPhase && gameModel.biddingPlayer === playerWestRow.actualPlayerIndex
+                        }
+
                         // MouseArea pour afficher les stats
                         MouseArea {
                             anchors.fill: parent
@@ -1443,6 +1458,11 @@ Rectangle {
                                     ColorAnimation { duration: 300 }
                                 }
                             }
+                        }
+
+                        // Ondes concentriques - phase d'annonce
+                        BidWave {
+                            active: gameModel.biddingPhase && gameModel.biddingPlayer === playerEastRow.actualPlayerIndex
                         }
 
                         // MouseArea pour afficher les stats

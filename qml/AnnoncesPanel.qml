@@ -55,12 +55,21 @@ Rectangle {
         }
     }
 
-    // Reinitialiser le timer quand le panneau devient visible
+    // Reinitialiser le timer et la position quand le panneau devient visible
     onVisibleChanged: {
         if (visible) {
             timeRemaining = maxTime
             alertSoundPlayed = false
             bidTimer.restart()
+            // Recalculer la position de depart (le binding est casse par les clics sur les fleches)
+            var lastBid = gameModel.lastBidValue
+            var startIndex = 0
+            for (var i = 0; i < bidNavigation.allBids.length; i++) {
+                if (bidNavigation.allBids[i].value <= lastBid) {
+                    startIndex = i + 1
+                }
+            }
+            bidNavigation.currentBidIndex = startIndex
         } else {
             bidTimer.stop()
             alertSound.stop()
@@ -122,6 +131,7 @@ Rectangle {
 
         // ========= Choix des annonces =========
         ColumnLayout {
+            id: bidNavigation
             Layout.alignment: Qt.AlignHCenter
             spacing: h * 0.02
 
