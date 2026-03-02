@@ -21,8 +21,12 @@ public:
     // Configurer l'heure d'envoi (par défaut: minuit)
     void setReportTime(int hour, int minute);
 
+    // Mettre à jour les maximums simultanés (appelé par GameServer)
+    void setMaxSimultaneous(int maxConnections, int maxGames);
+
 signals:
     void reportSent(bool success);
+    void maxCountersReset();
 
 private slots:
     void checkAndSendReport();
@@ -33,6 +37,8 @@ private:
     QTimer *m_dailyTimer;
     int m_reportHour;
     int m_reportMinute;
+    int m_maxSimultaneousConnections = 0;
+    int m_maxSimultaneousGames = 0;
 
     // Générer le contenu HTML de l'email
     QString generateReportHtml(

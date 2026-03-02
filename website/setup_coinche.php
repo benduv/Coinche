@@ -499,7 +499,7 @@ $content_e = <<<'__END_E__'
       <li>Cliquez sur <strong>"Supprimer mon compte"</strong></li>
       <li>Confirmez la suppression</li>
     </ol>
-    <p style="margin-top:14px;color:#4caf50;"><strong>⏱️ Délai :</strong> Suppression immédiate</p>
+    <p style="margin-top:14px;color:#4caf50;"><strong>⏱️ Délai :</strong> Traitement sous 30 jours maximum</p>
   </div>
 
   <!-- ─── MÉTHODE 2 : PAR EMAIL ─── -->
@@ -528,15 +528,6 @@ $content_e = <<<'__END_E__'
     <li style="margin-bottom:10px;padding-left:16px;border-left:3px solid #FFD700;">✓ Vos statistiques de jeu (parties gagnées, perdues, etc.)</li>
     <li style="margin-bottom:10px;padding-left:16px;border-left:3px solid #FFD700;">✓ Vos préférences et paramètres</li>
     <li style="margin-bottom:10px;padding-left:16px;border-left:3px solid #FFD700;">✓ Toutes autres données personnelles associées à votre compte</li>
-  </ul>
-
-  <!-- ─── DONNÉES CONSERVÉES ─── -->
-  <h2 style="color:#FFD700;font-size:1.8em;border-bottom:2px solid #FFD700;padding-bottom:8px;margin-top:40px;">💾 Données conservées (si applicable)</h2>
-  <p>Certaines données peuvent être conservées pour des raisons légales ou techniques :</p>
-  <ul style="list-style:none;padding:0;margin:0;">
-    <li style="margin-bottom:10px;">• <strong style="color:#FFD700;">Logs anonymisés</strong> (sans données personnelles) pour des raisons de sécurité et de maintenance</li>
-    <li style="margin-bottom:10px;">• <strong style="color:#FFD700;">Données légales obligatoires</strong> selon la législation française (comptabilité, conformité RGPD, etc.)</li>
-    <li style="margin-bottom:10px;">• <strong style="color:#FFD700;">Durée de conservation :</strong> Selon les obligations légales (généralement jusqu'à 3 ans pour les données comptables)</li>
   </ul>
 
   <!-- ─── AVERTISSEMENT ─── -->

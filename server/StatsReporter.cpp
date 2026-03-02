@@ -53,6 +53,12 @@ void StatsReporter::scheduleNextReport()
     qInfo() << "Prochain rapport planifié pour:" << nextReport.toString("yyyy-MM-dd hh:mm:ss");
 }
 
+void StatsReporter::setMaxSimultaneous(int maxConnections, int maxGames)
+{
+    m_maxSimultaneousConnections = maxConnections;
+    m_maxSimultaneousGames = maxGames;
+}
+
 void StatsReporter::checkAndSendReport()
 {
     QDateTime now = QDateTime::currentDateTime();
@@ -90,6 +96,11 @@ void StatsReporter::sendDailyReport()
 
     // Générer le contenu HTML
     QString htmlContent = generateReportHtml(today, yesterday, retention, trends7d, trends30d);
+
+    // Réinitialiser les compteurs de maximums après capture dans le rapport
+    m_maxSimultaneousConnections = 0;
+    m_maxSimultaneousGames = 0;
+    emit maxCountersReset();
 
     // Créer et configurer le client SMTP (même config que Contact)
     SmtpClient *smtp = new SmtpClient(this);
@@ -282,6 +293,18 @@ QString StatsReporter::generateReportHtml(
                 <div class="stat-trend )" + (today.crashes >= yesterday.crashes ? "trend-down" : "trend-up") + R"(">
                     )" + calculateTrend(today.crashes, yesterday.crashes) + R"(
                 </div>
+            </div>
+
+            <div class="stat-card" style="border-left-color: #00BCD4;">
+                <div class="stat-icon">🔗</div>
+                <div class="stat-label">Max connexions simultanées</div>
+                <div class="stat-value">)" + QString::number(m_maxSimultaneousConnections) + R"(</div>
+            </div>
+
+            <div class="stat-card" style="border-left-color: #8BC34A;">
+                <div class="stat-icon">🃏</div>
+                <div class="stat-label">Max parties simultanées</div>
+                <div class="stat-value">)" + QString::number(m_maxSimultaneousGames) + R"(</div>
             </div>
         </div>
 

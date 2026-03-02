@@ -269,6 +269,10 @@ public:
 
         // Initialiser le StatsReporter (rapports quotidiens)
         m_statsReporter = new StatsReporter(m_dbManager, m_smtpPassword, this);
+        connect(m_statsReporter, &StatsReporter::maxCountersReset, this, [this]() {
+            m_maxSimultaneousConnections = 0;
+            m_maxSimultaneousGames = 0;
+        });
         qInfo() << "StatsReporter initialisé - Rapports quotidiens activés";
     }
 
@@ -2471,6 +2475,10 @@ private:
     DatabaseManager *m_dbManager;
     QString m_smtpPassword;  // Mot de passe SMTP pour l'envoi d'emails
     StatsReporter *m_statsReporter;  // Rapports quotidiens de statistiques
+
+    // Suivi des maximums simultanés (pour le rapport quotidien)
+    int m_maxSimultaneousConnections = 0;
+    int m_maxSimultaneousGames = 0;
 
     // Timer pour démarrer une partie avec des bots après 30 secondes d'inactivité
     QTimer *m_matchmakingTimer;

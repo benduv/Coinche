@@ -48,6 +48,19 @@ add_action( 'wp_head', function() {
             color: #888;
         }
         footer a { color: #FFD700 !important; }
+        /* ── Masquer liens inutiles et crédits du footer ── */
+        footer nav,
+        footer .wp-block-navigation,
+        footer .wp-block-site-title,
+        footer .wp-block-template-part,
+        .wp-block-template-part footer > div {
+            display: none !important;
+        }
+        /* Masquer "Conçu avec WordPress" et "Twenty Twenty-Five" */
+        footer p, footer .powered-by,
+        footer .wp-block-paragraph {
+            display: none !important;
+        }
         /* ── Écraser les blancs du thème ── */
         .has-white-background-color,
         [style*="background:#fff"], [style*="background: #fff"],

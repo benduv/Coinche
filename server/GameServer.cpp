@@ -242,6 +242,10 @@ void GameServer::handleRegister(QWebSocket *socket, const QJsonObject &data) {
             -1     // Pas encore de position
         };
         m_connections[connectionId] = conn;
+        if (m_connections.size() > m_maxSimultaneousConnections) {
+            m_maxSimultaneousConnections = m_connections.size();
+            m_statsReporter->setMaxSimultaneous(m_maxSimultaneousConnections, m_maxSimultaneousGames);
+        }
         qDebug() << "Nouvelle connexion créée:" << connectionId << "pour" << playerName;
     }
 
@@ -670,6 +674,10 @@ void GameServer::handleRegisterAccount(QWebSocket *socket, const QJsonObject &da
             false  // isAnonymous = false par défaut pour un nouveau compte
         };
         m_connections[connectionId] = conn;
+        if (m_connections.size() > m_maxSimultaneousConnections) {
+            m_maxSimultaneousConnections = m_connections.size();
+            m_statsReporter->setMaxSimultaneous(m_maxSimultaneousConnections, m_maxSimultaneousGames);
+        }
 
         QJsonObject response;
         response["type"] = "registerAccountSuccess";
@@ -721,6 +729,10 @@ void GameServer::handleLoginAccount(QWebSocket *socket, const QJsonObject &data)
             isAnonymous
         };
         m_connections[connectionId] = conn;
+        if (m_connections.size() > m_maxSimultaneousConnections) {
+            m_maxSimultaneousConnections = m_connections.size();
+            m_statsReporter->setMaxSimultaneous(m_maxSimultaneousConnections, m_maxSimultaneousGames);
+        }
 
         QJsonObject response;
         response["type"] = "loginAccountSuccess";
@@ -1379,6 +1391,10 @@ void GameServer::tryCreateGame() {
         }
 
         m_gameRooms[roomId] = room;  // Stock le pointeur
+        if (m_gameRooms.size() > m_maxSimultaneousGames) {
+            m_maxSimultaneousGames = m_gameRooms.size();
+            m_statsReporter->setMaxSimultaneous(m_maxSimultaneousConnections, m_maxSimultaneousGames);
+        }
 
         // Init le premier joueur (celui qui commence les enchères)
         room->firstPlayerIndex = 0;  // Joueur 0 commence
@@ -2298,6 +2314,8 @@ void GameServer::createGameWithBots() {
     }
 
     m_gameRooms[roomId] = room;
+    if (m_gameRooms.size() > m_maxSimultaneousGames)
+        m_maxSimultaneousGames = m_gameRooms.size();
 
     // Initialiser le premier joueur
     room->firstPlayerIndex = 0;
