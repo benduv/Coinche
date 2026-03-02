@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import QtQuick.Effects
 import QtMultimedia
 
 Rectangle {
@@ -269,22 +270,43 @@ Rectangle {
         anchors.left: playerWestRow.right
         anchors.leftMargin: - parent.width * 0.07
         color: "transparent"
-        radius: 10
+        radius: playArea.width / 5
 
         // Image de fond du tapis avec coins arrondis
-        Rectangle {
-            id: tapisBackground
+        Item {
+            id: tapisContainer
             anchors.fill: parent
-            radius: playArea.radius
-            color: "#1a3d0f"
-            clip: true
 
-            Image {
+            Rectangle {
+                id: tapisContent
                 anchors.fill: parent
-                source: "qrc:/resources/Tapis poker3.jpg"
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                antialiasing: true
+                color: "#1a3d0f"
+                visible: false
+                layer.enabled: true
+
+                Image {
+                    anchors.fill: parent
+                    source: "qrc:/resources/Tapis poker3.jpg"
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    antialiasing: true
+                }
+            }
+
+            Rectangle {
+                id: tapisMask
+                anchors.fill: parent
+                radius: playArea.radius
+                color: "white"
+                visible: false
+                layer.enabled: true
+            }
+
+            MultiEffect {
+                anchors.fill: parent
+                source: tapisContent
+                maskEnabled: true
+                maskSource: tapisMask
             }
         }
 
@@ -304,18 +326,28 @@ Rectangle {
             anchors.margins: -parent.height * 0.01
             radius: playArea.radius
             color: "transparent"
-            border.color: "black"
-            border.width: parent.height * 0.005
+            border.color: "#7AEBE7"
+            border.width: parent.height * 0.0025
+        }
+
+        // Bordure par-dessus l'image (rainure centrale)
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: parent.height * 0.0185
+            radius: playArea.radius * 0.95
+            color: "transparent"
+            border.color: "#7AEBE7"
+            border.width: parent.height * 0.0025
         }
 
         // Bordure par-dessus l'image
         Rectangle {
             anchors.fill: parent
-            anchors.margins: parent.height * 0.04
-            radius: playArea.radius
+            anchors.margins: parent.height * 0.047
+            radius: playArea.radius * 0.88
             color: "transparent"
-            border.color: "black"
-            border.width: parent.height * 0.01
+            border.color: "#7AEBE7"
+            border.width: parent.height * 0.0025
         }
 
         // ---- Indicateur "XXX annonce ..." ----
@@ -815,7 +847,7 @@ Rectangle {
                                 anchors.fill: parent
                                 property bool isGuest: {
                                     var name = rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
-                                    return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme"
+                                    return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme" || name.startsWith("Bot")
                                 }
                                 cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                                 onClicked: {
@@ -971,7 +1003,7 @@ Rectangle {
                             anchors.fill: parent
                             property bool isGuest: {
                                 var name = rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex)
-                                return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme"
+                                return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme" || name.startsWith("Bot")
                             }
                             cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: {
@@ -1254,7 +1286,7 @@ Rectangle {
                             anchors.fill: parent
                             property bool isGuest: {
                                 var name = rootArea.getPlayerName(playerWestRow.actualPlayerIndex)
-                                return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme"
+                                return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme" || name.startsWith("Bot")
                             }
                             cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: {
@@ -1470,7 +1502,7 @@ Rectangle {
                             anchors.fill: parent
                             property bool isGuest: {
                                 var name = rootArea.getPlayerName(playerEastRow.actualPlayerIndex)
-                                return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme"
+                                return !name || name.startsWith("Invité") || name.startsWith("Joueur") || name === "Anonyme" || name.startsWith("Bot")
                             }
                             cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: {
@@ -1701,7 +1733,7 @@ Rectangle {
                 text: parent.text
                 font.pixelSize: rootArea.height * 0.05
                 font.bold: true
-                color: parent.enabled ? "white" : "#666666"
+                color: parent.enabled ? "#CDF7F7" : "#666666"
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }

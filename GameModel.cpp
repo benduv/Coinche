@@ -1212,10 +1212,8 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         int scoreTeam1 = gameOverData["scoreTeam1"].toInt();
         int scoreTeam2 = gameOverData["scoreTeam2"].toInt();
 
-        m_scoreTeam1 = scoreTeam1;
-        m_scoreTeam2 = scoreTeam2;
-        emit scoreTeam1Changed();
-        emit scoreTeam2Changed();
+        // Ne pas écraser m_scoreTeam1/m_scoreTeam2 (scores de manche) :
+        // ils ont été correctement fixés par mancheFinished et doivent rester distincts du total.
 
         // Emettre le signal de fin de partie
         emit gameOver(winner, scoreTeam1, scoreTeam2);
