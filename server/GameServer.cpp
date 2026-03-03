@@ -1931,6 +1931,9 @@ void GameServer::handleForfeit(QWebSocket *socket) {
     // rejoindre cette partie, même s'il clique sur "Jouer" ensuite
     m_playerNameToRoomId.remove(conn->playerName);
 
+    // Retirer de la file de matchmaking si le joueur y était (évite une partie normale après forfait)
+    m_matchmakingQueue.removeAll(connectionId);
+
     qInfo() << "Forfait - Joueur" << conn->playerName << "abandonne la partie" << roomId;
 
     // Vérifier si tous les joueurs sont maintenant des bots

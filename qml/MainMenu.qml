@@ -535,12 +535,12 @@ ApplicationWindow {
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: 30 * mainWindow.minRatio
+                    spacing: 20 * mainWindow.minRatio
                     z: 1
 
                     Text {
                         text: "COINCHE"
-                        font.pixelSize: 72 * mainWindow.minRatio
+                        font.pixelSize: 66 * mainWindow.minRatio
                         font.bold: true
                         color: "#FFD700"
                         Layout.alignment: Qt.AlignHCenter
@@ -620,8 +620,8 @@ ApplicationWindow {
 
                     // Bouton Jouer
                     Button {
-                        Layout.preferredWidth: 300 * mainWindow.widthRatio
-                        Layout.preferredHeight: 140 * mainWindow.heightRatio
+                        Layout.preferredWidth: 280 * mainWindow.widthRatio
+                        Layout.preferredHeight: 120 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
                         enabled: networkManager.connected
 
@@ -635,8 +635,8 @@ ApplicationWindow {
                         }
 
                         contentItem: Text {
-                            text: "JOUER"
-                            font.pixelSize: 64 * mainWindow.minRatio
+                            text: "Jouer en ligne"
+                            font.pixelSize: 50 * mainWindow.minRatio
                             font.bold: true
                             color: parent.enabled ? "white" : "#aaaaaa"
                             horizontalAlignment: Text.AlignHCenter
@@ -653,8 +653,8 @@ ApplicationWindow {
 
                     // Bouton Jouer avec des amis
                     Button {
-                        Layout.preferredWidth: 300 * mainWindow.widthRatio
-                        Layout.preferredHeight: 150 * mainWindow.heightRatio
+                        Layout.preferredWidth: 280 * mainWindow.widthRatio
+                        Layout.preferredHeight: 120 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
                         enabled: networkManager.connected
 
@@ -682,19 +682,12 @@ ApplicationWindow {
                                 }
 
                                 Text {
-                                    text: "Jouer"
-                                    font.pixelSize: 40 * mainWindow.minRatio
+                                    text: "Partie privée"
+                                    font.pixelSize: 50 * mainWindow.minRatio
                                     font.bold: true
                                     color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
-                            }
-
-                            Text {
-                                text: "avec des amis"
-                                font.pixelSize: 28 * mainWindow.minRatio
-                                color: parent.parent.enabled ? "white" : "#aaaaaa"
-                                anchors.horizontalCenter: parent.horizontalCenter
                             }
                         }
 
@@ -706,8 +699,8 @@ ApplicationWindow {
 
                     // Bouton Mode entraînement
                     Button {
-                        Layout.preferredWidth: 300 * mainWindow.widthRatio
-                        Layout.preferredHeight: 140 * mainWindow.heightRatio
+                        Layout.preferredWidth: 280 * mainWindow.widthRatio
+                        Layout.preferredHeight: 120 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
                         enabled: networkManager.connected
 
@@ -726,15 +719,8 @@ ApplicationWindow {
 
                             Text {
                                 text: "🤖 Entraînement"
-                                font.pixelSize: 36 * mainWindow.minRatio
+                                font.pixelSize: 40 * mainWindow.minRatio
                                 font.bold: true
-                                color: parent.parent.enabled ? "white" : "#aaaaaa"
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-
-                            Text {
-                                text: "vs bots"
-                                font.pixelSize: 26 * mainWindow.minRatio
                                 color: parent.parent.enabled ? "white" : "#aaaaaa"
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
@@ -743,7 +729,7 @@ ApplicationWindow {
                         onClicked: {
                             networkManager.registerPlayer(mainWindow.getPlayerName(), networkManager.playerAvatar)
                             networkManager.joinTraining()
-                            stackView.push("qrc:/qml/MatchMakingView.qml")
+                            stackView.push("qrc:/qml/MatchMakingView.qml", {"autoJoin": false})
                         }
                     }
 
