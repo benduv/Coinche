@@ -926,10 +926,25 @@ void GameModel::updateGameState(const QJsonObject& state)
         int currentPlayer = state["currentPlayer"].toInt();
         QJsonArray playableArray = state["playableCards"].toArray();
 
-        // Convertir en QList<int>
+        // Convertir les {value, suit} en indices locaux (indépendant du tri)
         QList<int> playableIndices;
-        for (const QJsonValue& val : playableArray) {
-            playableIndices.append(val.toInt());
+        if (currentPlayer == m_myPosition) {
+            Player* player = getPlayerByPosition(currentPlayer);
+            if (player) {
+                const auto& main = player->getMain();
+                for (const QJsonValue& val : playableArray) {
+                    QJsonObject cardObj = val.toObject();
+                    int cardValue = cardObj["value"].toInt();
+                    int cardSuit = cardObj["suit"].toInt();
+                    for (int i = 0; i < (int)main.size(); i++) {
+                        if (static_cast<int>(main[i]->getChiffre()) == cardValue &&
+                            static_cast<int>(main[i]->getCouleur()) == cardSuit) {
+                            playableIndices.append(i);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         // Mettre à jour le HandModel SEULEMENT si c'est le joueur local
@@ -976,14 +991,26 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_currentPli.append(cdp);
 
         // Retirer la carte de la main du joueur
+        // On cherche par identité (value+suit) pour gérer le tri inversé du joueur local
         Player* player = getPlayerByPosition(playerIndex);
-        if (player && cardIndex >= 0 && cardIndex < player->getMain().size()) {
-            player->removeCard(cardIndex);
+        if (player) {
+            int localIndex = -1;
+            const auto& main = player->getMain();
+            for (int i = 0; i < (int)main.size(); i++) {
+                if (static_cast<int>(main[i]->getChiffre()) == cardValue &&
+                    static_cast<int>(main[i]->getCouleur()) == cardSuit) {
+                    localIndex = i;
+                    break;
+                }
+            }
+            if (localIndex >= 0) {
+                player->removeCard(localIndex);
 
-            // Rafraîchir l'affichage
-            HandModel* hand = getHandModelByPosition(playerIndex);
-            if (hand) {
-                hand->refresh();
+                // Rafraîchir l'affichage
+                HandModel* hand = getHandModelByPosition(playerIndex);
+                if (hand) {
+                    hand->refresh();
+                }
             }
         }
 

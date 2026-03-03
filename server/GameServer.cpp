@@ -3419,7 +3419,12 @@ QJsonArray GameServer::calculatePlayableCards(GameRoom* room, int playerIndex) {
         );
 
         if (isPlayable) {
-            playableIndices.append(static_cast<int>(i));
+            // Envoyer l'identité (value+suit) pour que le client puisse résoudre
+            // l'index local indépendamment de son ordre de tri
+            QJsonObject cardObj;
+            cardObj["value"] = static_cast<int>(main[i]->getChiffre());
+            cardObj["suit"] = static_cast<int>(main[i]->getCouleur());
+            playableIndices.append(cardObj);
         }
     }
 

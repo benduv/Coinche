@@ -3,7 +3,7 @@
 if [ "$1" == "test" ]; then
     echo "==> Déploiement serveur TEST (v0.2.0)"
     cd ~/TestCoinche/Coinche
-    git pull origin v0.2.0
+    git pull origin v0.2.0   # Nom de branche a changer!
     mkdir -p build && cd build
     cmake .. -DCMAKE_BUILD_TYPE=Release
     make server -j$(nproc)
