@@ -32,6 +32,7 @@ class NetworkManager : public QObject {
     Q_PROPERTY(QVariantList lobbyPlayers READ lobbyPlayers NOTIFY lobbyPlayersChanged)
     Q_PROPERTY(QString pendingBotReplacement READ pendingBotReplacement NOTIFY pendingBotReplacementChanged)
     Q_PROPERTY(bool hasStoredCredentials READ hasStoredCredentials NOTIFY storedCredentialsChanged)
+    Q_PROPERTY(bool isTraining READ isTraining NOTIFY isTrainingChanged)
     Q_PROPERTY(QString storedEmail READ storedEmail NOTIFY storedCredentialsChanged)
 
 public:
@@ -78,6 +79,7 @@ public:
     QString playerPseudo() const { return m_playerPseudo; }
     QString playerEmail() const { return m_playerEmail; }
     bool isAnonymous() const { return m_isAnonymous; }
+    bool isTraining() const { return m_isTraining; }
     QVariantList lobbyPlayers() const { return m_lobbyPlayers; }
     QString pendingBotReplacement() const { return m_pendingBotReplacement; }
 
@@ -177,6 +179,8 @@ public:
         QJsonObject msg;
         msg["type"] = "joinTraining";
         sendMessage(msg);
+        m_isTraining = true;
+        emit isTrainingChanged();
     }
 
     Q_INVOKABLE void playCard(int cardIndex, int cardValue, int cardSuit) {
@@ -296,11 +300,14 @@ public:
 
     Q_INVOKABLE void clearGameModel() {
         if (m_gameModel) {
-            // qDebug() << "Nettoyage du gameModel";
             // IMPORTANT: Arrêter les timers AVANT de supprimer pour éviter accès mémoire invalide
             m_gameModel->pauseTimers();
             m_gameModel->deleteLater();
             m_gameModel = nullptr;
+        }
+        if (m_isTraining) {
+            m_isTraining = false;
+            emit isTrainingChanged();
         }
     }
 
@@ -459,6 +466,7 @@ signals:
 
     // Signal pour les credentials stockés
     void storedCredentialsChanged();
+    void isTrainingChanged();
 
     // Signaux pour les messages de contact
     void contactMessageSuccess();
@@ -501,20 +509,21 @@ private slots:
 
         bool wasConnected = m_connected;
 
+        // NE PAS METTRE m_connected à false car sinon pas de reconnexion possible
+        //m_connected = false;
+
         // Arrêter le heartbeat
         m_heartbeatTimer->stop();
-        //qDebug() << "Heartbeat arrêté";
 
         // Si on était en partie ou connecté, activer la reconnexion automatique
         if (wasConnected && (!m_playerPseudo.isEmpty() || m_gameModel != nullptr)) {
-            //qDebug() << "Perte de connexion detectee - Demarrage tentatives de reconnexion";
             m_wasInGame = (m_gameModel != nullptr);  // Sauvegarder si on était en partie
 
-            //qDebug() << "Reconnexion à" << m_serverUrl;
-            openSocket(m_serverUrl);
-        } else {
-            // qDebug() << "Pas de reconnexion automatique - conditions non remplies";
-            // qDebug() << "  wasConnected:" << wasConnected;
+            // Délai de 1 seconde avant reconnexion pour laisser le temps à l'ancien
+            // QSslSocket d'être entièrement détruit (évite le crash "destroyed signal")
+            QTimer::singleShot(1000, this, [this]() {
+                openSocket(m_serverUrl);
+            });
         }
 
         emit connectedChanged();
@@ -1125,6 +1134,7 @@ private:
     // Reconnexion automatique
     QString m_serverUrl;
     bool m_wasInGame;
+    bool m_isTraining = false;
 
     // Heartbeat pour détecter les connexions mortes
     QTimer* m_heartbeatTimer;

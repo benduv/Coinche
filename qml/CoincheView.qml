@@ -2806,6 +2806,7 @@ Rectangle {
     ExitGamePopup {
         id: exitPopup
         anchors.fill: parent
+        isTraining: networkManager.isTraining
 
         onConfirmExit: {
             // Enregistrer la défaite et retourner au menu

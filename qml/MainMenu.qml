@@ -673,7 +673,7 @@ ApplicationWindow {
 
                             Row {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                spacing: 10 * mainWindow.minRatio
+                                spacing: 15 * mainWindow.minRatio
 
                                 Text {
                                     text: "👥"
@@ -717,12 +717,23 @@ ApplicationWindow {
                             anchors.centerIn: parent
                             spacing: 5 * mainWindow.minRatio
 
-                            Text {
-                                text: "🤖 Entraînement"
-                                font.pixelSize: 40 * mainWindow.minRatio
-                                font.bold: true
-                                color: parent.parent.enabled ? "white" : "#aaaaaa"
+                            Row {
                                 anchors.horizontalCenter: parent.horizontalCenter
+                                spacing: 15 * mainWindow.minRatio
+
+                                Text {
+                                    text: "🤖"
+                                    font.pixelSize: 40 * mainWindow.minRatio
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                Text {
+                                    text: "Entraînement"
+                                    font.pixelSize: 50 * mainWindow.minRatio
+                                    font.bold: true
+                                    color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
                             }
                         }
 

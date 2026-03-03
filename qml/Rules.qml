@@ -394,7 +394,7 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "• Si vous perdez la connexion (problème réseau, fermeture accidentelle de l'app), votre place est temporairement prise par un bot\n\n• Vous pouvez rejoindre la partie en cours automatiquement en vous reconnectant\n\n• Vos cartes et votre position sont conservées\n\n• Si vous ne revenez pas avant la fin de la partie, une défaite est comptabilisée dans vos statistiques, quel que soit le résultat de votre équipe"
+                text: "• Si vous perdez la connexion (problème réseau, fermeture accidentelle de l'app), votre place est temporairement prise par un bot\n\n• Vous pouvez rejoindre la partie en cours automatiquement en vous reconnectant\n\n• Vos cartes et votre position sont conservées\n\n• Si vous ne revenez pas avant la fin de la partie, une défaite est comptabilisée dans vos statistiques (SAUF en mode Entraînement), quel que soit le résultat de votre équipe"
                 font.pixelSize: 28 * rulesRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
@@ -412,7 +412,7 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "• Si vous cliquez sur le bouton \"Quitter\" pendant une partie, vous abandonnez définitivement\n\n• Votre place est remplacée par un bot pour le reste de la partie\n\n• Une défaite est comptabilisée immédiatement dans vos statistiques\n\n• Vous ne pourrez pas rejoindre cette partie, mais vous pouvez en commencer une nouvelle"
+                text: "• Si vous cliquez sur le bouton \"Quitter\" pendant une partie, vous abandonnez définitivement\n\n• Votre place est remplacée par un bot pour le reste de la partie\n\n• Une défaite est comptabilisée immédiatement dans vos statistiques (SAUF en mode Entraînement)\n\n• Vous ne pourrez pas rejoindre cette partie, mais vous pouvez en commencer une nouvelle"
                 font.pixelSize: 28 * rulesRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
@@ -430,7 +430,7 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "• Victoire : comptabilisée uniquement si vous êtes présent à la fin de la partie quand votre équipe gagne\n\n• Défaite par abandon : comptabilisée immédiatement lorsque vous cliquez sur \"Quitter\"\n\n• Déconnexion sans retour : comptabilisée comme une défaite, même si votre équipe gagne grâce au bot qui vous a remplacé"
+                text: "• Victoire : comptabilisée uniquement si vous êtes présent à la fin de la partie quand votre équipe gagne\n\n• Défaite par abandon : comptabilisée immédiatement lorsque vous cliquez sur \"Quitter\" (SAUF en mode Entraînement)\n\n• Déconnexion sans retour : comptabilisée comme une défaite, même si votre équipe gagne grâce au bot qui vous a remplacé (SAUF en mode Entraînement)"
                 font.pixelSize: 28 * rulesRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap

@@ -12,6 +12,8 @@ Rectangle {
     signal confirmExit()
     signal cancelExit()
 
+    property bool isTraining: false
+
     MouseArea {
         anchors.fill: parent
         onClicked: {
@@ -74,6 +76,7 @@ Rectangle {
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter
+                visible: !root.isTraining
             }
 
             Item { Layout.fillHeight: true }
