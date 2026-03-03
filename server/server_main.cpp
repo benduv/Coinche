@@ -291,6 +291,7 @@ int main(int argc, char *argv[]) {
     QString sslCertPath;
     QString sslKeyPath;
     QString smtpPassword;
+    quint16 serverPort = 1234;  // Port par défaut
 
     for (int i = 1; i < argc; ++i) {
         QString arg = QString::fromLocal8Bit(argv[i]);
@@ -302,6 +303,8 @@ int main(int argc, char *argv[]) {
             sslKeyPath = QString::fromLocal8Bit(argv[++i]);
         } else if (arg == "--smtp-password" && i + 1 < argc) {
             smtpPassword = QString::fromLocal8Bit(argv[++i]);
+        } else if (arg == "--port" && i + 1 < argc) {
+            serverPort = QString::fromLocal8Bit(argv[++i]).toUShort();
         }
     }
     if (!verboseLogging) {
@@ -318,6 +321,10 @@ int main(int argc, char *argv[]) {
     // Mot de passe SMTP depuis variable d'environnement si non fourni en argument
     if (smtpPassword.isEmpty()) {
         smtpPassword = qEnvironmentVariable("COINCHE_SMTP_PASSWORD");
+    }
+    // Port depuis variable d'environnement si non fourni en argument
+    if (serverPort == 1234 && qEnvironmentVariableIsSet("COINCHE_PORT")) {
+        serverPort = qEnvironmentVariable("COINCHE_PORT").toUShort();
     }
 
     // Sauvegarder pour le crash handler
@@ -337,8 +344,10 @@ int main(int argc, char *argv[]) {
     // Déterminer le chemin du fichier de log (production vs développement)
     QString logFilePath;
     if (QFile::exists("/var/log/coinche")) {
-        // Production : utiliser /var/log/coinche
-        logFilePath = "/var/log/coinche/server.log";
+        // Production : utiliser /var/log/coinche (fichier distinct par port)
+        logFilePath = serverPort == 1234
+            ? "/var/log/coinche/server.log"
+            : QString("/var/log/coinche/server_%1.log").arg(serverPort);
     } else {
         // Développement : utiliser répertoire local
         logFilePath = "server_log.txt";
@@ -354,6 +363,7 @@ int main(int argc, char *argv[]) {
 
         qInfo() << "========================================";
         qInfo() << "Serveur de jeu démarre...";
+        qInfo() << "Port:" << serverPort;
         qInfo() << "PID:" << QCoreApplication::applicationPid();
         qInfo() << "Mode verbeux:" << (verboseLogging ? "ACTIVE" : "DESACTIVE");
         if (!sslCertPath.isEmpty() && !sslKeyPath.isEmpty()) {
@@ -371,7 +381,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Créer le serveur avec ou sans SSL, et mot de passe SMTP pour les emails de contact
-    GameServer server(1234, nullptr, sslCertPath, sslKeyPath, smtpPassword);
+    GameServer server(serverPort, nullptr, sslCertPath, sslKeyPath, smtpPassword);
 
     int result = app.exec();
 

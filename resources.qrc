@@ -16,6 +16,7 @@
         <file>qml/Config.qml</file>
         <file>qml/Settings.qml</file>
         <file>qml/AudioSettings.qml</file>
+        <file>qml/DisplaySettings.qml</file>
         <file>qml/qmldir</file>
         <file>qml/PlayerStatsPopup.qml</file>
         <file>qml/Rules.qml</file>

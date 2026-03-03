@@ -98,6 +98,9 @@ Rectangle {
     property bool musicEnabled: AudioSettings.musicEnabled
     property bool effectsEnabled: AudioSettings.effectsEnabled
 
+    // Propriété pour le tri des cartes
+    property bool strongCardsLeft: DisplaySettings.strongCardsLeft
+
     // Watcher pour mettre à jour les paramètres globaux (seulement après initialisation)
     onMusicEnabledChanged: {
         if (initialized) {
@@ -108,6 +111,12 @@ Rectangle {
     onEffectsEnabledChanged: {
         if (initialized) {
             AudioSettings.saveEffectsEnabled(effectsEnabled)
+        }
+    }
+
+    onStrongCardsLeftChanged: {
+        if (initialized) {
+            DisplaySettings.saveStrongCardsLeft(strongCardsLeft)
         }
     }
 
@@ -636,11 +645,50 @@ Rectangle {
                         color: "#FFD700"
                     }
 
-                    Text {
-                        text: "(Options d'affichage à venir...)"
-                        font.pixelSize: 25 * settingsRoot.minRatio
-                        color: "#888888"
-                        font.italic: true
+                    // Tri des cartes
+                    Row {
+                        width: parent.width
+                        spacing: isPortrait ? 20 * settingsRoot.minRatio : 40 * settingsRoot.minRatio
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: isPortrait ? parent.width * 0.05 : parent.width * 0.1
+                        }
+
+                        Text {
+                            text: "Tri des cartes:"
+                            font.pixelSize: isPortrait ? 26 * settingsRoot.minRatio : 30 * settingsRoot.minRatio
+                            color: "white"
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: isPortrait ? parent.width * 0.5 : parent.width * 0.3
+                        }
+
+                        Button {
+                            id: sortToggleButton
+                            width: isPortrait ? 240 * settingsRoot.minRatio : 280 * settingsRoot.minRatio
+                            height: isPortrait ? 80 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            background: Rectangle {
+                                color: parent.down ? "#005588" : (parent.hovered ? "#0077aa" : "#006699")
+                                radius: 10 * settingsRoot.minRatio
+                                border.color: "#FFD700"
+                                border.width: 2 * settingsRoot.minRatio
+                            }
+
+                            contentItem: Text {
+                                text: settingsRoot.strongCardsLeft ? "Forte à gauche" : "Forte à droite"
+                                font.pixelSize: isPortrait ? 22 * settingsRoot.minRatio : 26 * settingsRoot.minRatio
+                                font.bold: true
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            onClicked: {
+                                settingsRoot.strongCardsLeft = !settingsRoot.strongCardsLeft
+                            }
+                        }
                     }
                 }
             }

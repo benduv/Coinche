@@ -1,5 +1,5 @@
 cd ~/Coinche
-git pull origin main
+git pull origin v0.2.0
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make server -j$(nproc)

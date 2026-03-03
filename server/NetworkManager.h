@@ -112,9 +112,9 @@ public:
         m_gameModel = new GameModel(this);
 
         // Connecter les signaux
-        connect(m_gameModel, &GameModel::cardPlayedLocally, this, [this](int cardIndex) {
-            // qDebug() << "Envoi playCard au serveur:" << cardIndex;
-            playCard(cardIndex);
+        connect(m_gameModel, &GameModel::cardPlayedLocally, this, [this](int cardIndex, int cardValue, int cardSuit) {
+            // qDebug() << "Envoi playCard au serveur:" << cardIndex << cardValue << cardSuit;
+            playCard(cardIndex, cardValue, cardSuit);
         });
 
         connect(m_gameModel, &GameModel::bidMadeLocally, this, [this](int bidValue, int suitValue) {
@@ -173,10 +173,12 @@ public:
         sendMessage(msg);
     }
 
-    Q_INVOKABLE void playCard(int cardIndex) {
+    Q_INVOKABLE void playCard(int cardIndex, int cardValue, int cardSuit) {
         QJsonObject msg;
         msg["type"] = "playCard";
         msg["cardIndex"] = cardIndex;
+        msg["cardValue"] = cardValue;
+        msg["cardSuit"] = cardSuit;
         sendMessage(msg);
     }
 

@@ -64,6 +64,7 @@ class GameModel : public QObject {
     Q_PROPERTY(int maxPlayTime READ maxPlayTime CONSTANT)
     Q_PROPERTY(int dealerPosition READ dealerPosition NOTIFY dealerPositionChanged)
     Q_PROPERTY(int pliWinnerId READ pliWinnerId NOTIFY pliWinnerIdChanged)
+    Q_PROPERTY(bool strongCardsLeft READ strongCardsLeft NOTIFY strongCardsLeftChanged)
 
 public:
     explicit GameModel(QObject *parent = nullptr);
@@ -108,6 +109,8 @@ public:
     int maxPlayTime() const;
     int dealerPosition() const;
     int pliWinnerId() const;
+    bool strongCardsLeft() const;
+    Q_INVOKABLE void setStrongCardsLeft(bool value);
     Q_INVOKABLE QString getPlayerName(int position) const;
     Q_INVOKABLE QString getPlayerAvatar(int position) const;
     Q_INVOKABLE void setPlayerAvatar(int position, const QString& avatar);
@@ -162,11 +165,12 @@ signals:
     void playTimeRemainingChanged();
     void dealerPositionChanged();
     void pliWinnerIdChanged();
+    void strongCardsLeftChanged();
     void gameInitialized();
     void gameOver(int winner, int scoreTeam1, int scoreTeam2);
 
     // Signaux vers NetworkManager
-    void cardPlayedLocally(int cardIndex);
+    void cardPlayedLocally(int cardIndex, int cardValue, int cardSuit);
     void bidMadeLocally(int bidValue, int suitValue);
     void forfeitLocally();
 
@@ -214,6 +218,8 @@ private:
     QTimer* m_playTimer;  // Timer pour le jeu
     bool m_pliBeingCleared;  // Indique si le pli est en cours de nettoyage
     int m_pliWinnerId;  // ID du gagnant du pli en cours de nettoyage (-1 si aucun)
+
+    bool m_strongCardsLeft = false;  // Préférence de tri: true = fortes à gauche
 
     QList<Player*> m_onlinePlayers;  // Tous les joueurs de la partie
     QMap<int, QString> m_playerAvatars;  // Avatars des joueurs par position

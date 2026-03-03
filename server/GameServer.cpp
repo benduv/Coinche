@@ -1474,6 +1474,24 @@ void GameServer::handlePlayCard(QWebSocket *socket, const QJsonObject &data) {
     int playerIndex = conn->playerIndex;
     int cardIndex = data["cardIndex"].toInt();
 
+    // Si le client envoie cardValue/cardSuit, chercher le bon index côté serveur
+    // (le tri client peut différer du tri serveur selon les préférences d'affichage)
+    if (data.contains("cardValue") && data.contains("cardSuit")) {
+        int cardValue = data["cardValue"].toInt();
+        int cardSuit = data["cardSuit"].toInt();
+        Player* player = room->players[playerIndex].get();
+        if (player) {
+            const auto& main = player->getMain();
+            for (int i = 0; i < (int)main.size(); i++) {
+                if (static_cast<int>(main[i]->getChiffre()) == cardValue &&
+                    static_cast<int>(main[i]->getCouleur()) == cardSuit) {
+                    cardIndex = i;
+                    break;
+                }
+            }
+        }
+    }
+
     // Check que le jeu est en phase de jeu (pas d'annonces)
     if (room->gameState != "playing") {
         qWarning() << "[PLAY_CARD] Validation échouée - Tentative de jouer carte pendant enchères - joueur:" << playerIndex << "room:" << roomId;

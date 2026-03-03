@@ -9,7 +9,7 @@ QtObject {
     // - "emulator" : Émulateur Android - WS non sécurisé
     // - "local-network" : Tests sur réseau local (PC hotspot) - WS non sécurisé
     // - "remote" : Serveur VPS distant en production - WSS sécurisé (SSL/TLS)
-    property string environment: "remote"  // Configuré pour le VPS distant
+    property string environment: "test-remote"  // Configuré pour le serveur de test v0.2.0
 
     // URLs pour chaque environnement
     // Note: Les environnements de développement utilisent WS (non sécurisé)
@@ -18,7 +18,8 @@ QtObject {
         "localhost": "ws://localhost:1234",
         "emulator": "ws://10.0.2.2:1234",
         "local-network": "ws://172.20.10.13:1234",  // IP du PC sur le réseau local
-        "remote": "wss://game.nebuludik.fr"})  // VPS OVH via nginx reverse proxy (port 443 par défaut)    
+        "remote": "wss://game.nebuludik.fr",  // VPS OVH via nginx reverse proxy (port 443 par défaut)
+        "test-remote": "wss://test.nebuludik.fr"})  // Serveur de test v0.2.0 (port 1235 via nginx)
 
     // URL active selon l'environnement
     readonly property string serverUrl: serverUrls[environment]

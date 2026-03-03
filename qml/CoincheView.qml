@@ -120,6 +120,16 @@ Rectangle {
         }
     }
 
+    // Synchroniser la préférence de tri des cartes
+    Connections {
+        target: DisplaySettings
+        function onStrongCardsLeftChanged() {
+            if (gameModel) {
+                gameModel.setStrongCardsLeft(DisplaySettings.strongCardsLeft)
+            }
+        }
+    }
+
     // Surveiller l'état de l'application (premier plan / arrière-plan)
     Connections {
         target: Qt.application
@@ -2822,6 +2832,11 @@ Rectangle {
         // Forcer le mode paysage sur Android pendant le jeu via JNI natif
         if (Qt.platform.os === "android") {
             orientationHelper.setLandscape()
+        }
+
+        // Initialiser la préférence de tri des cartes
+        if (gameModel) {
+            gameModel.setStrongCardsLeft(DisplaySettings.strongCardsLeft)
         }
 
         // Démarrer la musique de fond si elle est activée

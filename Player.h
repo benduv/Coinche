@@ -38,13 +38,13 @@ class Player
 
         void clearHand();
 
-        void sortHand();
+        void sortHand(bool reversed = false);
 
-        void sortHandWithAtout(Carte::Couleur atout);
+        void sortHandWithAtout(Carte::Couleur atout, bool reversed = false);
 
-        void sortHandToutAtout();  // Pour le mode Tout Atout
+        void sortHandToutAtout(bool reversed = false);  // Pour le mode Tout Atout
 
-        void sortHandSansAtout();  // Pour le mode Sans Atout
+        void sortHandSansAtout(bool reversed = false);  // Pour le mode Sans Atout
 
         void addCardToHand(Carte* carte);
 

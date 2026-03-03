@@ -311,19 +311,19 @@ void Player::clearHand()
     m_hasBelotte = false;
 }
 
-void Player::sortHand()
+void Player::sortHand(bool reversed)
 {
-    std::sort(m_main.begin(), m_main.end(), [](Carte* a, Carte* b) {
+    std::sort(m_main.begin(), m_main.end(), [reversed](Carte* a, Carte* b) {
         if (a->getCouleur() == b->getCouleur()) {
-            return *a < *b;
+            return reversed ? *b < *a : *a < *b;
         }
         return a->getCouleur() < b->getCouleur();
     });
 }
 
-void Player::sortHandWithAtout(Carte::Couleur atout)
+void Player::sortHandWithAtout(Carte::Couleur atout, bool reversed)
 {
-    std::sort(m_main.begin(), m_main.end(), [atout](Carte* a, Carte* b) {
+    std::sort(m_main.begin(), m_main.end(), [atout, reversed](Carte* a, Carte* b) {
         bool aIsAtout = (a->getCouleur() == atout);
         bool bIsAtout = (b->getCouleur() == atout);
 
@@ -333,35 +333,37 @@ void Player::sortHandWithAtout(Carte::Couleur atout)
 
         // Si les deux sont atouts ou les deux ne sont pas atouts, trier par couleur puis valeur
         if (a->getCouleur() == b->getCouleur()) {
-            return *a < *b;
+            return reversed ? *b < *a : *a < *b;
         }
         return a->getCouleur() < b->getCouleur();
     });
 }
 
-void Player::sortHandToutAtout()
+void Player::sortHandToutAtout(bool reversed)
 {
     // En mode Tout Atout, trier d'abord par couleur, puis par force de carte (toutes sont atouts)
-    std::sort(m_main.begin(), m_main.end(), [](Carte* a, Carte* b) {
+    std::sort(m_main.begin(), m_main.end(), [reversed](Carte* a, Carte* b) {
         // Trier par couleur d'abord
         if (a->getCouleur() != b->getCouleur()) {
             return a->getCouleur() < b->getCouleur();
         }
         // Puis par force de carte en mode atout (7 < 8 < D < R < 10 < A < 9 < V)
-        return a->getOrdreCarteForte() < b->getOrdreCarteForte();
+        return reversed ? a->getOrdreCarteForte() > b->getOrdreCarteForte()
+                        : a->getOrdreCarteForte() < b->getOrdreCarteForte();
     });
 }
 
-void Player::sortHandSansAtout()
+void Player::sortHandSansAtout(bool reversed)
 {
     // En mode Sans Atout, trier par couleur, puis par force (7 < 8 < 9 < V < D < R < 10 < As)
-    std::sort(m_main.begin(), m_main.end(), [](Carte* a, Carte* b) {
+    std::sort(m_main.begin(), m_main.end(), [reversed](Carte* a, Carte* b) {
         // Trier par couleur d'abord
         if (a->getCouleur() != b->getCouleur()) {
             return a->getCouleur() < b->getCouleur();
         }
         // Puis par force de carte en mode normal (getOrdreCarteForte avec isAtout=false)
-        return a->getOrdreCarteForte() < b->getOrdreCarteForte();
+        return reversed ? a->getOrdreCarteForte() > b->getOrdreCarteForte()
+                        : a->getOrdreCarteForte() < b->getOrdreCarteForte();
     });
 }
 
