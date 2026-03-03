@@ -302,6 +302,76 @@ Rectangle {
                 }
             }
 
+            // Section Affichage (pour futures options)
+            Rectangle {
+                width: parent.width
+                height: displayColumn.height + 40 * settingsRoot.minRatio
+                color: "#992a2a2a"  // 0.6 opacity via alpha channel
+                radius: 10 * settingsRoot.minRatio
+                border.color: "#FFD700"
+                border.width: 2 * settingsRoot.minRatio
+
+                Column {
+                    id: displayColumn
+                    anchors.centerIn: parent
+                    width: parent.width - 40 * settingsRoot.minRatio
+                    spacing: 20 * settingsRoot.minRatio
+
+                    Text {
+                        text: "🎨 AFFICHAGE"
+                        font.pixelSize: 40 * settingsRoot.minRatio
+                        font.bold: true
+                        color: "#FFD700"
+                    }
+
+                    // Tri des cartes
+                    Row {
+                        width: parent.width
+                        //spacing: isPortrait ? 20 * settingsRoot.minRatio : 40 * settingsRoot.minRatio
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: isPortrait ? parent.width * 0.05 : parent.width * 0.1
+                        }
+
+                        Text {
+                            text: "Tri des cartes:"
+                            font.pixelSize: isPortrait ? 26 * settingsRoot.minRatio : 30 * settingsRoot.minRatio
+                            color: "white"
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: isPortrait ? parent.width * 0.5 : parent.width * 0.3
+                        }
+
+                        Button {
+                            id: sortToggleButton
+                            width: isPortrait ? 200 * settingsRoot.minRatio : 280 * settingsRoot.minRatio
+                            height: isPortrait ? 80 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            background: Rectangle {
+                                color: settingsRoot.strongCardsLeft ? "#E88976" : "#006699"
+                                radius: 10 * settingsRoot.minRatio
+                                border.color: "#FFD700"
+                                border.width: 2 * settingsRoot.minRatio
+                            }
+
+                            contentItem: Text {
+                                text: settingsRoot.strongCardsLeft ? "Fortes à gauche" : "Fortes à droite"
+                                font.pixelSize: isPortrait ? 22 * settingsRoot.minRatio : 26 * settingsRoot.minRatio
+                                font.bold: true
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            onClicked: {
+                                settingsRoot.strongCardsLeft = !settingsRoot.strongCardsLeft
+                            }
+                        }
+                    }
+                }
+            }
+
             // Section Compte (visible uniquement pour les comptes enregistrés)
             Rectangle {
                 width: parent.width
@@ -452,7 +522,7 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.margins: 10 * settingsRoot.minRatio
                                 text: settingsRoot.playerEmail
-                                font.pixelSize: 28 * settingsRoot.minRatio
+                                font.pixelSize: 26 * settingsRoot.minRatio
                                 color: "white"
                                 verticalAlignment: TextInput.AlignVCenter
                                 clip: true
@@ -618,76 +688,6 @@ Rectangle {
                         onClicked: {
                             deleteErrorText.visible = false
                             deleteConfirmPopup.open()
-                        }
-                    }
-                }
-            }
-
-            // Section Affichage (pour futures options)
-            Rectangle {
-                width: parent.width
-                height: displayColumn.height + 40 * settingsRoot.minRatio
-                color: "#992a2a2a"  // 0.6 opacity via alpha channel
-                radius: 10 * settingsRoot.minRatio
-                border.color: "#FFD700"
-                border.width: 2 * settingsRoot.minRatio
-
-                Column {
-                    id: displayColumn
-                    anchors.centerIn: parent
-                    width: parent.width - 40 * settingsRoot.minRatio
-                    spacing: 20 * settingsRoot.minRatio
-
-                    Text {
-                        text: "🎨 AFFICHAGE"
-                        font.pixelSize: 40 * settingsRoot.minRatio
-                        font.bold: true
-                        color: "#FFD700"
-                    }
-
-                    // Tri des cartes
-                    Row {
-                        width: parent.width
-                        spacing: isPortrait ? 20 * settingsRoot.minRatio : 40 * settingsRoot.minRatio
-
-                        Item {
-                            height: 40 * settingsRoot.minRatio
-                            width: isPortrait ? parent.width * 0.05 : parent.width * 0.1
-                        }
-
-                        Text {
-                            text: "Tri des cartes:"
-                            font.pixelSize: isPortrait ? 26 * settingsRoot.minRatio : 30 * settingsRoot.minRatio
-                            color: "white"
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: isPortrait ? parent.width * 0.5 : parent.width * 0.3
-                        }
-
-                        Button {
-                            id: sortToggleButton
-                            width: isPortrait ? 240 * settingsRoot.minRatio : 280 * settingsRoot.minRatio
-                            height: isPortrait ? 80 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            background: Rectangle {
-                                color: parent.down ? "#005588" : (parent.hovered ? "#0077aa" : "#006699")
-                                radius: 10 * settingsRoot.minRatio
-                                border.color: "#FFD700"
-                                border.width: 2 * settingsRoot.minRatio
-                            }
-
-                            contentItem: Text {
-                                text: settingsRoot.strongCardsLeft ? "Forte à gauche" : "Forte à droite"
-                                font.pixelSize: isPortrait ? 22 * settingsRoot.minRatio : 26 * settingsRoot.minRatio
-                                font.bold: true
-                                color: "white"
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
-
-                            onClicked: {
-                                settingsRoot.strongCardsLeft = !settingsRoot.strongCardsLeft
-                            }
                         }
                     }
                 }

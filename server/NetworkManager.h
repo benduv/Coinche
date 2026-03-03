@@ -173,6 +173,12 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void joinTraining() {
+        QJsonObject msg;
+        msg["type"] = "joinTraining";
+        sendMessage(msg);
+    }
+
     Q_INVOKABLE void playCard(int cardIndex, int cardValue, int cardSuit) {
         QJsonObject msg;
         msg["type"] = "playCard";

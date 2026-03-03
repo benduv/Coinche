@@ -72,6 +72,8 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleGetStats(sender, obj);
     } else if (type == "joinMatchmaking") {
         handleJoinMatchmaking(sender);
+    } else if (type == "joinTraining") {
+        handleJoinTraining(sender);
     } else if (type == "leaveMatchmaking") {
         handleLeaveMatchmaking(sender);
     } else if (type == "playCard") {
@@ -1718,8 +1720,8 @@ void GameServer::handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
         room->coinchePlayerIndex = playerIndex;  // Enregistrer qui a coinché
         qDebug() << "GameServer - Joueur" << playerIndex << "COINCHE l'enchère!";
 
-        // Enregistrer la tentative de coinche dans les stats (si joueur enregistré)
-        if (!room->isBot[playerIndex]) {
+        // Enregistrer la tentative de coinche dans les stats (si joueur enregistré, hors entraînement)
+        if (!room->isTraining && !room->isBot[playerIndex]) {
             PlayerConnection* coincheConn = m_connections[room->connectionIds[playerIndex]];
             if (coincheConn && !coincheConn->playerName.isEmpty()) {
                 m_dbManager->updateCoincheStats(coincheConn->playerName, true, false);
@@ -1765,8 +1767,8 @@ void GameServer::handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
         room->surcoinchePlayerIndex = playerIndex;
         qDebug() << "GameServer - Joueur" << playerIndex << "SURCOINCHE l'enchère!";
 
-        // Enregistrer la tentative de surcoinche dans les stats (si joueur enregistré)
-        if (!room->isBot[playerIndex]) {
+        // Enregistrer la tentative de surcoinche dans les stats (si joueur enregistré, hors entraînement)
+        if (!room->isTraining && !room->isBot[playerIndex]) {
             PlayerConnection* surcoincheConn = m_connections[room->connectionIds[playerIndex]];
             if (surcoincheConn && !surcoincheConn->playerName.isEmpty()) {
                 m_dbManager->updateSurcoincheStats(surcoincheConn->playerName, true, false);
@@ -1899,7 +1901,7 @@ void GameServer::handleForfeit(QWebSocket *socket) {
     qDebug() << "GameServer - Joueur" << playerIndex << "(" << conn->playerName << ") abandonne la partie";
 
     // Incrémenter le compteur de parties jouées (défaite) pour ce joueur
-    if (!conn->playerName.isEmpty()) {
+    if (!conn->playerName.isEmpty() && !room->isTraining) {
         m_dbManager->updateGameStats(conn->playerName, false);  // false = défaite
         qDebug() << "Stats mises a jour pour" << conn->playerName << "- Defaite enregistree";
     }
@@ -2008,7 +2010,7 @@ void GameServer::handlePlayerDisconnect(const QString &connectionId) {
     }
 
     // Incrémenter le compteur de parties jouées (défaite) pour ce joueur
-    if (!conn->playerName.isEmpty()) {
+    if (!conn->playerName.isEmpty() && !room->isTraining) {
         m_dbManager->updateGameStats(conn->playerName, false);  // false = défaite
         qDebug() << "Stats mises a jour pour" << conn->playerName << "- Defaite enregistree (deconnexion)";
 
@@ -2367,6 +2369,94 @@ void GameServer::createGameWithBots() {
     }
 }
 
+void GameServer::handleJoinTraining(QWebSocket *socket) {
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (connectionId.isEmpty()) return;
+
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn) return;
+
+    qDebug() << "Mode entraînement demandé par:" << conn->playerName;
+
+    // Créer une room avec 1 humain + 3 bots
+    int roomId = m_nextRoomId++;
+    GameRoom* room = new GameRoom();
+    room->roomId = roomId;
+    room->gameState = "waiting";
+    room->isTraining = true;  // Partie d'entraînement : stats non comptabilisées
+
+    // Joueur humain à la position 0
+    conn->gameRoomId = roomId;
+    conn->playerIndex = 0;
+    room->connectionIds.append(connectionId);
+    room->originalConnectionIds.append(connectionId);
+    room->playerNames.append(conn->playerName);
+    room->playerAvatars.append(conn->avatar);
+    m_playerNameToRoomId[conn->playerName] = roomId;
+
+    std::vector<Carte*> emptyHand;
+    room->players.push_back(std::make_unique<Player>(conn->playerName.toStdString(), emptyHand, 0));
+    room->isBot.push_back(false);
+
+    // 3 bots (positions 1, 2, 3)
+    for (int i = 1; i <= 3; i++) {
+        int botNumber = 100 + QRandomGenerator::global()->bounded(900);
+        QString botName = QString("Bot%1").arg(botNumber);
+        while (m_playerNameToRoomId.contains(botName)) {
+            botNumber = 100 + QRandomGenerator::global()->bounded(900);
+            botName = QString("Bot%1").arg(botNumber);
+        }
+        QString botAvatar = getRandomBotAvatar();
+
+        room->connectionIds.append("");
+        room->originalConnectionIds.append("");
+        room->playerNames.append(botName);
+        room->playerAvatars.append(botAvatar);
+
+        std::vector<Carte*> emptyBotHand;
+        room->players.push_back(std::make_unique<Player>(botName.toStdString(), emptyBotHand, i));
+        room->isBot.push_back(true);
+    }
+
+    // Distribuer les cartes
+    room->deck.shuffleDeck();
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 8; j++) {
+            Carte* carte = room->deck.drawCard();
+            if (carte) room->players[i]->addCardToHand(carte);
+        }
+    }
+
+    m_gameRooms[roomId] = room;
+    if ((int)m_gameRooms.size() > m_maxSimultaneousGames)
+        m_maxSimultaneousGames = m_gameRooms.size();
+
+    // Initialiser la phase
+    room->firstPlayerIndex = 0;
+    room->currentPlayerIndex = 0;
+    room->biddingPlayer = 0;
+    room->gameState = "bidding";
+
+    qDebug() << "Partie d'entraînement créée! Room ID:" << roomId;
+
+    // Notifier le joueur humain
+    QList<QString> humanConnections = {connectionId};
+    notifyGameStart(roomId, humanConnections);
+
+    // Démarrer les enchères
+    if (room->isBot[room->currentPlayerIndex]) {
+        QTimer::singleShot(3000, this, [this, roomId]() {
+            GameRoom* r = m_gameRooms.value(roomId);
+            if (r && r->gameState == "bidding") playBotBid(roomId, r->currentPlayerIndex);
+        });
+    } else {
+        QTimer::singleShot(BID_PANEL_DISPLAY_DELAY_MS, this, [this, roomId]() {
+            GameRoom* r = m_gameRooms.value(roomId);
+            if (r && r->gameState == "bidding") startBidTimeout(roomId, r->currentPlayerIndex);
+        });
+    }
+}
+
 void GameServer::notifyGameStart(int roomId, const QList<QString> &connectionIds) {
     GameRoom* room = m_gameRooms[roomId];
     if (!room) return;
@@ -2681,8 +2771,8 @@ void GameServer::finishManche(int roomId) {
         multiplicateur = 2;
     }
 
-    // Gestion des stats pour coinche/surcoinche
-    if (room->coinched || room->surcoinched) {
+    // Gestion des stats (ignorées en mode entraînement)
+    if (!room->isTraining && (room->coinched || room->surcoinched)) {
         if (team1HasBid) {
             // Team1 a annoncé, vérifie si elle réussit
             bool contractReussi = (pointsRealisesTeam1 >= valeurContrat);
@@ -2830,8 +2920,8 @@ void GameServer::finishManche(int roomId) {
     qDebug() << "  Equipe 1:" << room->scoreTeam1;
     qDebug() << "  Equipe 2:" << room->scoreTeam2;
 
-    // Mettre à jour les statistiques de capot et générale
-    if (isCapotAnnonce) {
+    // Mettre à jour les statistiques de capot et générale (ignorées en mode entraînement)
+    if (!room->isTraining && isCapotAnnonce) {
         // Un capot a été annoncé, mettre à jour les stats pour les joueurs de l'équipe qui a annoncé
         for (int i = 0; i < room->connectionIds.size(); i++) {
             QString connId = room->connectionIds[i];
@@ -2856,7 +2946,7 @@ void GameServer::finishManche(int roomId) {
                 }
             }
         }
-    } else if (capotReussi) {
+    } else if (!room->isTraining && capotReussi) {
         // Capot réalisé mais non annoncé
         for (int i = 0; i < room->connectionIds.size(); i++) {
             QString connId = room->connectionIds[i];
@@ -2878,7 +2968,7 @@ void GameServer::finishManche(int roomId) {
         }
     }
 
-    if (isGeneraleAnnonce) {
+    if (!room->isTraining && isGeneraleAnnonce) {
         // Une générale a été annoncée, mettre à jour les stats pour le joueur qui l'a annoncée
         if (room->lastBidderIndex >= 0 && room->lastBidderIndex < room->connectionIds.size() && !room->isBot[room->lastBidderIndex]) {
             QString connId = room->connectionIds[room->lastBidderIndex];
@@ -2942,7 +3032,8 @@ void GameServer::finishManche(int roomId) {
             qInfo() << "Partie terminée - Room" << roomId << "- Équipe 2 gagne -" << room->scoreTeam1 << "vs" << room->scoreTeam2;
         }
 
-        // Mettre à jour les statistiques pour tous les joueurs enregistrés
+        // Mettre à jour les statistiques pour tous les joueurs enregistrés (ignorées en mode entraînement)
+        if (!room->isTraining)
         for (int i = 0; i < room->connectionIds.size(); i++) {
             QString connId = room->connectionIds[i];
             if (connId.isEmpty()) continue;  // Skip déconnectés

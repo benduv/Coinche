@@ -704,6 +704,49 @@ ApplicationWindow {
                         }
                     }
 
+                    // Bouton Mode entraînement
+                    Button {
+                        Layout.preferredWidth: 300 * mainWindow.widthRatio
+                        Layout.preferredHeight: 140 * mainWindow.heightRatio
+                        Layout.alignment: Qt.AlignHCenter
+                        enabled: networkManager.connected
+
+                        background: Rectangle {
+                            color: parent.enabled ?
+                                   (parent.down ? "#1565C0" : (parent.hovered ? "#2196F3" : "#1976D2")) :
+                                   "#555555"
+                            radius: 10 * mainWindow.minRatio
+                            border.color: parent.enabled ? "#64B5F6" : "#888888"
+                            border.width: 3 * mainWindow.minRatio
+                        }
+
+                        contentItem: Column {
+                            anchors.centerIn: parent
+                            spacing: 5 * mainWindow.minRatio
+
+                            Text {
+                                text: "🤖 Entraînement"
+                                font.pixelSize: 36 * mainWindow.minRatio
+                                font.bold: true
+                                color: parent.parent.enabled ? "white" : "#aaaaaa"
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+
+                            Text {
+                                text: "vs bots"
+                                font.pixelSize: 26 * mainWindow.minRatio
+                                color: parent.parent.enabled ? "white" : "#aaaaaa"
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+                        }
+
+                        onClicked: {
+                            networkManager.registerPlayer(mainWindow.getPlayerName(), networkManager.playerAvatar)
+                            networkManager.joinTraining()
+                            stackView.push("qrc:/qml/MatchMakingView.qml")
+                        }
+                    }
+
                     // Statut connexion
                     Row {
                         Layout.alignment: Qt.AlignHCenter

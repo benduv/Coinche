@@ -48,6 +48,7 @@ struct GameRoom {
     // Les objets de jeu réels
     std::vector<std::unique_ptr<Player>> players;  // Les 4 joueurs
     std::vector<bool> isBot;  // true si le joueur à cet index est un bot
+    bool isTraining = false;  // true si partie d'entraînement (stats non enregistrées)
     Deck deck;
 
     // État de la partie
@@ -373,6 +374,7 @@ private:
     void handleGetStats(QWebSocket *socket, const QJsonObject &data);
 
     void handleJoinMatchmaking(QWebSocket *socket);
+    void handleJoinTraining(QWebSocket *socket);
 
     void handleLeaveMatchmaking(QWebSocket *socket);
 
