@@ -153,6 +153,9 @@ if(ANDROID)
     message(STATUS "OpenSSL Android: Bibliothèques configurées pour ${ANDROID_ABI}")
     message(STATUS "  - libssl_3.so: ${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libssl_3.so")
     message(STATUS "  - libcrypto_3.so: ${CMAKE_CURRENT_SOURCE_DIR}/android/libs/${ANDROID_ABI}/libcrypto_3.so")
+
+    # Support des appareils avec taille de page mémoire de 16 ko (Android 15+)
+    target_link_options(coinche PRIVATE "-Wl,-z,max-page-size=16384")
 endif()
 
 # ========================================
