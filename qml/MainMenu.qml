@@ -634,13 +634,28 @@ ApplicationWindow {
                             border.width: 3 * mainWindow.minRatio
                         }
 
-                        contentItem: Text {
-                            text: "Jouer en ligne"
-                            font.pixelSize: 50 * mainWindow.minRatio
-                            font.bold: true
-                            color: parent.enabled ? "white" : "#aaaaaa"
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                        contentItem: Column {
+                            anchors.centerIn: parent
+                            spacing: 5 * mainWindow.minRatio
+
+                            Row {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                spacing: 15 * mainWindow.minRatio
+
+                                Text {
+                                    text: "🌐"
+                                    font.pixelSize: 40 * mainWindow.minRatio
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                Text {
+                                    text: "Jouer en ligne"
+                                    font.pixelSize: 50 * mainWindow.minRatio
+                                    font.bold: true
+                                    color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            }
                         }
 
                         onClicked: {

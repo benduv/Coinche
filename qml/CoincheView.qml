@@ -872,12 +872,12 @@ Rectangle {
                         Text {
                             text: rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
                             color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "white"
-                            font.pixelSize: rootArea.height * 0.04
-                            font.bold: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
+                            font.pixelSize: rootArea.height * 0.03
+                            font.bold: true
                             anchors.top: avatarSouth.bottom
                             anchors.topMargin: rootArea.height * 0.005
                             anchors.horizontalCenter: avatarSouth.horizontalCenter
-                            width: rootArea.width * 0.11
+                            width: avatarSouth.width + rootArea.width * 0.015
                             horizontalAlignment: Text.AlignHCenter
                             elide: Text.ElideRight
                         }
@@ -1028,12 +1028,12 @@ Rectangle {
                     Text {
                         text: rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex)
                         color: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex ? "#ffff66" : "white"
-                        font.pixelSize: rootArea.height * 0.04
-                        font.bold: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex
+                        font.pixelSize: rootArea.height * 0.03
+                        font.bold: true
                         anchors.top: northAvatarRect.bottom
                         anchors.topMargin: rootArea.height * 0.005
                         anchors.horizontalCenter: northAvatarRect.horizontalCenter
-                        width: rootArea.width * 0.11
+                        width: northAvatar.width + rootArea.width * 0.015
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                     }
@@ -1311,12 +1311,12 @@ Rectangle {
                     Text {
                         text: rootArea.getPlayerName(playerWestRow.actualPlayerIndex)
                         color: gameModel.currentPlayer === playerWestRow.actualPlayerIndex ? "#ffff66" : "white"
-                        font.pixelSize: rootArea.height * 0.04
-                        font.bold: gameModel.currentPlayer === playerWestRow.actualPlayerIndex
+                        font.pixelSize: rootArea.height * 0.03
+                        font.bold: true
                         anchors.top: westAvatarRect.bottom
                         anchors.topMargin: rootArea.height * 0.005
                         anchors.horizontalCenter: westAvatarRect.horizontalCenter
-                        width: rootArea.width * 0.11
+                        width: westAvatarRect.width + rootArea.width * 0.015
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                     }
@@ -1527,12 +1527,12 @@ Rectangle {
                     Text {
                         text: rootArea.getPlayerName(playerEastRow.actualPlayerIndex)
                         color: gameModel.currentPlayer === playerEastRow.actualPlayerIndex ? "#ffff66" : "white"
-                        font.pixelSize: rootArea.height * 0.04
-                        font.bold: gameModel.currentPlayer === playerEastRow.actualPlayerIndex
+                        font.pixelSize: rootArea.height * 0.03
+                        font.bold: true
                         anchors.top: eastAvatarRect.bottom
                         anchors.topMargin: rootArea.height * 0.005
                         anchors.horizontalCenter: eastAvatarRect.horizontalCenter
-                        width: rootArea.width * 0.11
+                        width: eastAvatarRect.width + rootArea.width * 0.015
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                     }
