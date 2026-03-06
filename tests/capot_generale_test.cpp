@@ -1,10 +1,12 @@
 #include <gtest/gtest.h>
+#include "../server/ScoreCalculator.h"
 #include "../server/GameServer.h"
 #include "../Carte.h"
 #include "../Player.h"
 
 // ========================================
-// Test Fixture pour CAPOT et GENERALE
+// Test Fixture pour vérifier les compteurs de plis
+// (logique de jeu indépendante du scoring)
 // ========================================
 class CapotGeneraleTest : public ::testing::Test {
 protected:
@@ -24,7 +26,6 @@ protected:
         room.beloteTeam1 = false;
         room.beloteTeam2 = false;
 
-        // Créer 4 joueurs vides
         for (int i = 0; i < 4; i++) {
             std::vector<Carte*> emptyHand;
             auto player = std::make_unique<Player>("TestPlayer" + std::to_string(i), emptyHand, i);
@@ -32,382 +33,308 @@ protected:
         }
     }
 
-    // Utilitaire: distribution des mains pour CAPOT Team1 réussi
-    void setHandsForCapotTeam1() {
-        // PIQUE est atout
-        // Joueur 0 (Team1): Toutes les cartes fortes d'atout
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::VALET));  // 20 points atout
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::NEUF));   // 14 points atout
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::AS));     // 11 points atout
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::DIX));    // 10 points atout
-        room.players[0]->addCardToHand(new Carte(Carte::COEUR, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::COEUR, Carte::DIX));
-        room.players[0]->addCardToHand(new Carte(Carte::CARREAU, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::CARREAU, Carte::DIX));
-
-        // Joueur 2 (Team1 - partenaire): Reste des atouts et cartes fortes
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::ROI));
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::DAME));
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::HUIT));
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::SEPT));
-        room.players[2]->addCardToHand(new Carte(Carte::TREFLE, Carte::AS));
-        room.players[2]->addCardToHand(new Carte(Carte::TREFLE, Carte::DIX));
-        room.players[2]->addCardToHand(new Carte(Carte::COEUR, Carte::ROI));
-        room.players[2]->addCardToHand(new Carte(Carte::CARREAU, Carte::ROI));
-
-        // Joueur 1 (Team2): Cartes faibles
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::SEPT));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::HUIT));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::NEUF));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::DAME));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::SEPT));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::HUIT));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::NEUF));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::DAME));
-
-        // Joueur 3 (Team2): Cartes faibles
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::SEPT));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::HUIT));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::NEUF));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::DAME));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::ROI));
-        room.players[3]->addCardToHand(new Carte(Carte::COEUR, Carte::VALET));
-        room.players[3]->addCardToHand(new Carte(Carte::CARREAU, Carte::VALET));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::VALET));
-    }
-
-    void setHandsForCapotEchoue() {
-        // Similaire à CAPOT réussi mais Team2 a 1 atout fort
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::VALET));
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::DIX));
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::ROI));
-        room.players[0]->addCardToHand(new Carte(Carte::COEUR, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::COEUR, Carte::DIX));
-        room.players[0]->addCardToHand(new Carte(Carte::CARREAU, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::CARREAU, Carte::DIX));
-
-        // Joueur 1 a le NEUF d'atout (2ème meilleure carte)
-        room.players[1]->addCardToHand(new Carte(Carte::PIQUE, Carte::NEUF));  // Carte qui permet de gagner 1 pli
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::HUIT));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::NEUF));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::DAME));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::SEPT));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::HUIT));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::NEUF));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::DAME));
-
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::DAME));
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::HUIT));
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::SEPT));
-        room.players[2]->addCardToHand(new Carte(Carte::TREFLE, Carte::AS));
-        room.players[2]->addCardToHand(new Carte(Carte::TREFLE, Carte::DIX));
-        room.players[2]->addCardToHand(new Carte(Carte::COEUR, Carte::ROI));
-        room.players[2]->addCardToHand(new Carte(Carte::CARREAU, Carte::ROI));
-        room.players[2]->addCardToHand(new Carte(Carte::COEUR, Carte::SEPT));
-
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::SEPT));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::HUIT));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::NEUF));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::DAME));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::ROI));
-        room.players[3]->addCardToHand(new Carte(Carte::COEUR, Carte::VALET));
-        room.players[3]->addCardToHand(new Carte(Carte::CARREAU, Carte::VALET));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::VALET));
-    }
-
-    void setHandsForGeneralePlayer0() {
-        // Joueur 0: TOUTES les cartes qui battent tout
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::VALET));  // Meilleur atout
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::NEUF));   // 2ème meilleur atout
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::DIX));
-        room.players[0]->addCardToHand(new Carte(Carte::COEUR, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::CARREAU, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::TREFLE, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::ROI));
-
-        // Joueur 2 (partenaire): Cartes moyennes/faibles (ne doit pas gagner)
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::DAME));
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::HUIT));
-        room.players[2]->addCardToHand(new Carte(Carte::COEUR, Carte::DIX));
-        room.players[2]->addCardToHand(new Carte(Carte::COEUR, Carte::ROI));
-        room.players[2]->addCardToHand(new Carte(Carte::CARREAU, Carte::DIX));
-        room.players[2]->addCardToHand(new Carte(Carte::CARREAU, Carte::ROI));
-        room.players[2]->addCardToHand(new Carte(Carte::TREFLE, Carte::DIX));
-        room.players[2]->addCardToHand(new Carte(Carte::TREFLE, Carte::ROI));
-
-        // Team2: Cartes faibles
-        room.players[1]->addCardToHand(new Carte(Carte::PIQUE, Carte::SEPT));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::SEPT));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::HUIT));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::NEUF));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::SEPT));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::HUIT));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::NEUF));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::DAME));
-
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::SEPT));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::HUIT));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::NEUF));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::DAME));
-        room.players[3]->addCardToHand(new Carte(Carte::COEUR, Carte::VALET));
-        room.players[3]->addCardToHand(new Carte(Carte::COEUR, Carte::DAME));
-        room.players[3]->addCardToHand(new Carte(Carte::CARREAU, Carte::VALET));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::VALET));
-    }
-
-    void setHandsForGeneraleEchouee() {
-        // Joueur 0: Presque toutes les meilleures cartes
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::VALET));
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::NEUF));
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::PIQUE, Carte::DIX));
-        room.players[0]->addCardToHand(new Carte(Carte::COEUR, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::CARREAU, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::TREFLE, Carte::AS));
-        room.players[0]->addCardToHand(new Carte(Carte::COEUR, Carte::DIX));
-
-        // Joueur 2 (partenaire): A 1 carte qui peut gagner 1 pli
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::ROI));    // Peut gagner si bien joué
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::DAME));
-        room.players[2]->addCardToHand(new Carte(Carte::PIQUE, Carte::HUIT));
-        room.players[2]->addCardToHand(new Carte(Carte::COEUR, Carte::ROI));
-        room.players[2]->addCardToHand(new Carte(Carte::CARREAU, Carte::DIX));
-        room.players[2]->addCardToHand(new Carte(Carte::CARREAU, Carte::ROI));
-        room.players[2]->addCardToHand(new Carte(Carte::TREFLE, Carte::DIX));
-        room.players[2]->addCardToHand(new Carte(Carte::TREFLE, Carte::ROI));
-
-        room.players[1]->addCardToHand(new Carte(Carte::PIQUE, Carte::SEPT));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::SEPT));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::HUIT));
-        room.players[1]->addCardToHand(new Carte(Carte::COEUR, Carte::NEUF));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::SEPT));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::HUIT));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::NEUF));
-        room.players[1]->addCardToHand(new Carte(Carte::CARREAU, Carte::DAME));
-
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::SEPT));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::HUIT));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::NEUF));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::DAME));
-        room.players[3]->addCardToHand(new Carte(Carte::COEUR, Carte::VALET));
-        room.players[3]->addCardToHand(new Carte(Carte::COEUR, Carte::DAME));
-        room.players[3]->addCardToHand(new Carte(Carte::CARREAU, Carte::VALET));
-        room.players[3]->addCardToHand(new Carte(Carte::TREFLE, Carte::VALET));
-    }
-
-    // Simulation simplifiée des plis
     void playPliAutomatic(int pliNumber) {
-        // Pour CAPOT Team1, on alterne entre joueur 0 et 2
         int winner = (pliNumber % 2 == 0) ? 0 : 2;
-
         switch (winner) {
             case 0: room.plisCountPlayer0++; break;
-            case 1: room.plisCountPlayer1++; break;
             case 2: room.plisCountPlayer2++; break;
-            case 3: room.plisCountPlayer3++; break;
         }
-
         room.currentPlayerIndex = winner;
     }
 };
 
 // ========================================
-// TESTS CAPOT
+// TESTS COMPTEURS DE PLIS (logique de jeu)
 // ========================================
 
-TEST_F(CapotGeneraleTest, CapotReussiAvecBelote) {
-    // Distribuer des mains où Team1 (joueurs 0 et 2) a toutes les meilleures cartes
-    setHandsForCapotTeam1();
-
-    // Simuler l'enchère CAPOT par joueur 0
-    room.lastBidderIndex = 0;
-    room.lastBidAnnonce = Player::CAPOT;
-    room.lastBidCouleur = Carte::PIQUE;
-    room.couleurAtout = Carte::PIQUE;
-    room.firstPlayerIndex = 0;
-    room.currentPlayerIndex = 0;
-
-    // Définir l'atout pour tous les joueurs
-    for (int i = 0; i < 4; i++) {
-        room.players[i]->setAtout(Carte::PIQUE);
-    }
-
-    // Marquer que Team1 a la belote (joueur 2 a Roi et Dame de Pique)
-    room.beloteTeam1 = true;
-
-    // Auto-jouer 8 plis
+TEST_F(CapotGeneraleTest, CapotTeam1_TousLesPlis) {
     for (int pli = 0; pli < 8; pli++) {
         playPliAutomatic(pli);
     }
-
-    // Vérifier les compteurs de plis
     int plisTeam1 = room.plisCountPlayer0 + room.plisCountPlayer2;
     int plisTeam2 = room.plisCountPlayer1 + room.plisCountPlayer3;
 
     EXPECT_EQ(8, plisTeam1) << "Team1 devrait avoir fait 8 plis";
     EXPECT_EQ(0, plisTeam2) << "Team2 ne devrait avoir aucun pli";
-    EXPECT_EQ(4, room.plisCountPlayer0) << "Joueur 0 devrait avoir 4 plis";
-    EXPECT_EQ(4, room.plisCountPlayer2) << "Joueur 2 devrait avoir 4 plis";
-
-    // Vérifier le scoring
-    // CAPOT réussi: 500 points (250+250) + 20 belote = 520
-    int scoreAttenduTeam1 = 520;
-    int scoreAttenduTeam2 = 0;
-
-    EXPECT_EQ(scoreAttenduTeam1, 520) << "Team1 devrait marquer 520 points (500 CAPOT + 20 belote)";
-    EXPECT_EQ(scoreAttenduTeam2, 0) << "Team2 ne devrait marquer aucun point";
+    EXPECT_EQ(4, room.plisCountPlayer0);
+    EXPECT_EQ(4, room.plisCountPlayer2);
 }
 
-TEST_F(CapotGeneraleTest, CapotEchoue) {
-    setHandsForCapotEchoue();
-
-    room.lastBidderIndex = 0;
-    room.lastBidAnnonce = Player::CAPOT;
-    room.lastBidCouleur = Carte::PIQUE;
-    room.couleurAtout = Carte::PIQUE;
-    room.firstPlayerIndex = 0;
-    room.currentPlayerIndex = 0;
-
-    for (int i = 0; i < 4; i++) {
-        room.players[i]->setAtout(Carte::PIQUE);
-    }
-
-    // Jouer 8 plis où Team2 gagne le pli 3
+TEST_F(CapotGeneraleTest, CapotEchoue_Team2GagneUnPli) {
     for (int pli = 0; pli < 8; pli++) {
         if (pli == 3) {
-            room.plisCountPlayer1++; // Team2 gagne ce pli
+            room.plisCountPlayer1++;
         } else {
             playPliAutomatic(pli);
         }
     }
-
     int plisTeam1 = room.plisCountPlayer0 + room.plisCountPlayer2;
     int plisTeam2 = room.plisCountPlayer1 + room.plisCountPlayer3;
 
-    EXPECT_EQ(7, plisTeam1) << "Team1 devrait avoir 7 plis";
-    EXPECT_EQ(1, plisTeam2) << "Team2 devrait avoir 1 pli";
-
-    // CAPOT échoué: Team2 marque 160 + 250 = 410
-    int scoreAttenduTeam1 = 0;
-    int scoreAttenduTeam2 = 410;
-
-    EXPECT_EQ(scoreAttenduTeam1, 0) << "Team1 ne devrait marquer aucun point";
-    EXPECT_EQ(scoreAttenduTeam2, 410) << "Team2 devrait marquer 410 points (160+250)";
+    EXPECT_EQ(7, plisTeam1);
+    EXPECT_EQ(1, plisTeam2);
 }
 
-// ========================================
-// TESTS GENERALE
-// ========================================
-
-TEST_F(CapotGeneraleTest, GeneraleReussie) {
-    setHandsForGeneralePlayer0();
-
-    room.lastBidderIndex = 0;
-    room.lastBidAnnonce = Player::GENERALE;
-    room.lastBidCouleur = Carte::PIQUE;
-    room.couleurAtout = Carte::PIQUE;
-    room.firstPlayerIndex = 0;
-    room.currentPlayerIndex = 0;
-
-    for (int i = 0; i < 4; i++) {
-        room.players[i]->setAtout(Carte::PIQUE);
-    }
-
-    // Jouer 8 plis où joueur 0 gagne tout
+TEST_F(CapotGeneraleTest, Generale_JoueurSeulGagneTout) {
     for (int pli = 0; pli < 8; pli++) {
         room.plisCountPlayer0++;
     }
-
-    EXPECT_EQ(8, room.plisCountPlayer0) << "Joueur 0 devrait avoir gagné tous les 8 plis";
-    EXPECT_EQ(0, room.plisCountPlayer1) << "Joueur 1 ne devrait avoir aucun pli";
-    EXPECT_EQ(0, room.plisCountPlayer2) << "Joueur 2 (partenaire) ne devrait avoir aucun pli";
-    EXPECT_EQ(0, room.plisCountPlayer3) << "Joueur 3 ne devrait avoir aucun pli";
-
-    // GENERALE réussie: 1000 points (500+500)
-    int scoreAttenduTeam1 = 1000;
-    int scoreAttenduTeam2 = 0;
-
-    EXPECT_EQ(scoreAttenduTeam1, 1000) << "Team1 devrait marquer 1000 points (500+500)";
-    EXPECT_EQ(scoreAttenduTeam2, 0) << "Team2 ne devrait marquer aucun point";
+    EXPECT_EQ(8, room.plisCountPlayer0) << "Joueur 0 devrait avoir tous les plis";
+    EXPECT_EQ(0, room.plisCountPlayer2) << "Partenaire ne doit avoir aucun pli";
 }
 
-TEST_F(CapotGeneraleTest, GeneraleEchoueeAvecBelote) {
-    setHandsForGeneraleEchouee();
-
-    room.lastBidderIndex = 0;
-    room.lastBidAnnonce = Player::GENERALE;
-    room.lastBidCouleur = Carte::PIQUE;
-    room.couleurAtout = Carte::PIQUE;
-    room.firstPlayerIndex = 0;
-    room.currentPlayerIndex = 0;
-
-    for (int i = 0; i < 4; i++) {
-        room.players[i]->setAtout(Carte::PIQUE);
-    }
-
-    // Marquer que Team1 a la belote (joueur 2 a Roi et Dame de Pique)
-    room.beloteTeam1 = true;
-
-    // Jouer 8 plis où joueur 0 gagne 7 plis et son partenaire (joueur 2) en gagne 1
+TEST_F(CapotGeneraleTest, GeneraleEchouee_PartenaireGagneUnPli) {
     for (int pli = 0; pli < 8; pli++) {
         if (pli == 4) {
-            room.plisCountPlayer2++; // Partenaire gagne 1 pli
+            room.plisCountPlayer2++;
         } else {
-            room.plisCountPlayer0++; // Joueur 0 gagne les autres
+            room.plisCountPlayer0++;
         }
     }
-
-    EXPECT_EQ(7, room.plisCountPlayer0) << "Joueur 0 devrait avoir fait 7 plis";
-    EXPECT_EQ(1, room.plisCountPlayer2) << "Joueur 2 (partenaire) devrait avoir fait 1 pli";
-
-    // GENERALE échouée: Team1 marque 0 + 20 belote, Team2 marque 160 + 500 = 660
-    int scoreAttenduTeam1 = 20; // Belote uniquement
-    int scoreAttenduTeam2 = 660;
-
-    EXPECT_EQ(scoreAttenduTeam1, 20) << "Team1 devrait marquer 20 points (belote uniquement)";
-    EXPECT_EQ(scoreAttenduTeam2, 660) << "Team2 devrait marquer 660 points (160+500)";
+    EXPECT_EQ(7, room.plisCountPlayer0);
+    EXPECT_EQ(1, room.plisCountPlayer2);
 }
 
 // ========================================
-// TEST CAPOT NON ANNONCE
+// TESTS SCORE — CAPOT ANNONCE
+// Appels directs à ScoreCalculator::calculateMancheScore()
 // ========================================
 
-TEST_F(CapotGeneraleTest, CapotNonAnnonceReussi) {
-    // Similaire au CAPOT réussi mais Team1 annonce seulement 80
-    setHandsForCapotTeam1();
+TEST(ScoreCapotTest, CapotAnnonceReussi) {
+    // CAPOT annoncé réussi → 500 (250+250), pointsRealises ignorés
+    auto r = ScoreCalculator::calculateMancheScore(
+        162, 0,   // pointsRealises (ignorés pour capot annoncé)
+        250,      // valeurContrat = Player::getContractValue(CAPOT)
+        true,     // team1HasBid
+        false, false,
+        true,  true,   // isCapotAnnonce, capotReussi
+        false, false,
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 500) << "CAPOT annoncé réussi = 250+250 = 500";
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
 
-    room.lastBidderIndex = 0;
-    room.lastBidAnnonce = Player::QUATREVINGT;  // Annonce seulement 80, pas CAPOT
-    room.lastBidCouleur = Carte::PIQUE;
-    room.couleurAtout = Carte::PIQUE;
-    room.firstPlayerIndex = 0;
-    room.currentPlayerIndex = 0;
+TEST(ScoreCapotTest, CapotAnnonceEchoue) {
+    // CAPOT annoncé échoué → adversaire marque 160+250 = 410
+    auto r = ScoreCalculator::calculateMancheScore(
+        100, 62,
+        250,
+        true,
+        false, false,
+        true,  false,  // isCapotAnnonce, capotReussi=false
+        false, false,
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 410) << "CAPOT annoncé échoué → adversaire marque 160+250 = 410";
+}
 
-    for (int i = 0; i < 4; i++) {
-        room.players[i]->setAtout(Carte::PIQUE);
-    }
+TEST(ScoreCapotTest, CapotAnnonceReussiCoinche) {
+    // CAPOT coinché réussi → 250 + (250×2) = 750
+    auto r = ScoreCalculator::calculateMancheScore(
+        162, 0,
+        250,
+        true,
+        true, false,  // coinched
+        true, true,
+        false, false,
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 750) << "CAPOT coinché réussi = 250+(250*2) = 750";
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
 
-    // Team1 a la belote (Roi et Dame de Pique dans la main du joueur 2)
-    room.beloteTeam1 = true;
+TEST(ScoreCapotTest, CapotAnnonceEchoueCoinche) {
+    // CAPOT coinché échoué → adversaire marque 160 + (250×2) = 660
+    auto r = ScoreCalculator::calculateMancheScore(
+        100, 62,
+        250,
+        true,
+        true, false,  // coinched
+        true, false,
+        false, false,
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 660) << "CAPOT coinché échoué = 160+(250*2) = 660";
+}
 
-    // Jouer 8 plis où Team1 gagne tout
-    for (int pli = 0; pli < 8; pli++) {
-        playPliAutomatic(pli);
-    }
+// ========================================
+// TESTS SCORE — GENERALE ANNONCEE
+// ========================================
 
-    // Vérifier les compteurs de plis
-    int plisTeam1 = room.plisCountPlayer0 + room.plisCountPlayer2;
-    int plisTeam2 = room.plisCountPlayer1 + room.plisCountPlayer3;
+TEST(ScoreGeneraleTest, GeneraleReussie) {
+    // GENERALE réussie → 1000 (500+500)
+    auto r = ScoreCalculator::calculateMancheScore(
+        162, 0,
+        500,      // valeurContrat = Player::getContractValue(GENERALE)
+        true,
+        false, false,
+        false, false,
+        true, true,   // isGeneraleAnnonce, generaleReussie
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 1000) << "GENERALE réussie = 500+500 = 1000";
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
 
-    EXPECT_EQ(8, plisTeam1) << "Team1 devrait avoir fait 8 plis";
-    EXPECT_EQ(0, plisTeam2) << "Team2 ne devrait avoir aucun pli";
+TEST(ScoreGeneraleTest, GeneraleEchouee) {
+    // GENERALE échouée → adversaire marque 160+500 = 660, annonceur marque 0
+    // Note: la belote de l'annonceur (si elle était dans pointsRealises) est ignorée
+    auto r = ScoreCalculator::calculateMancheScore(
+        20, 142,  // Team1 a belote (20pts) mais pas tous les plis
+        500,
+        true,
+        false, false,
+        false, false,
+        true, false,  // isGeneraleAnnonce, generaleReussie=false
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 660) << "GENERALE échouée → adversaire marque 160+500 = 660";
+}
 
-    // CAPOT non annoncé: 250 + 80 (contrat) + 20 (belote) = 350
-    int scoreAttenduTeam1 = 350;
-    int scoreAttenduTeam2 = 0;
+TEST(ScoreGeneraleTest, GeneraleReussieSurcoinche) {
+    // GENERALE surcoinchée réussie → 500 + (500×4) = 2500
+    auto r = ScoreCalculator::calculateMancheScore(
+        162, 0,
+        500,
+        true,
+        true, true,   // coinched, surcoinched
+        false, false,
+        true, true,
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 2500) << "GENERALE surcoinchée réussie = 500+(500*4) = 2500";
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
 
-    EXPECT_EQ(scoreAttenduTeam1, 350) << "Team1 devrait marquer 350 points (250 CAPOT + 80 contrat + 20 belote)";
-    EXPECT_EQ(scoreAttenduTeam2, 0) << "Team2 ne devrait marquer aucun point";
+// ========================================
+// TESTS SCORE — CAPOT NON ANNONCE
+// ========================================
+
+TEST(ScoreCapotNonAnnonceTest, CapotNonAnnonceTeam1_Annonce80) {
+    // Annonce 80, capot réalisé → 250 + 80 = 330
+    // pointsRealisesTeam1 (172 = toutes cartes + dernier pli) ignoré par la formule
+    auto r = ScoreCalculator::calculateMancheScore(
+        172, 0,
+        80,   // valeurContrat (QUATREVINGT)
+        true,
+        false, false,
+        false, false,
+        false, false,
+        true,  false  // capotNonAnnonceTeam1
+    );
+    EXPECT_EQ(r.scoreTeam1, 330) << "Capot non annoncé (annonce 80) = 250+80 = 330";
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
+
+TEST(ScoreCapotNonAnnonceTest, CapotNonAnnonceTeam1_Annonce100) {
+    // Cas rapporté : annonce 100 coeur, capot réalisé → 250 + 100 = 350 (pas 412)
+    auto r = ScoreCalculator::calculateMancheScore(
+        172, 0,
+        100,  // valeurContrat (CENT)
+        true,
+        false, false,
+        false, false,
+        false, false,
+        true,  false
+    );
+    EXPECT_EQ(r.scoreTeam1, 350) << "Capot non annoncé (annonce 100) = 250+100 = 350";
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
+
+TEST(ScoreCapotNonAnnonceTest, CapotNonAnnonceTeam2_Annonce90) {
+    // Team2 annonce 90, capot → 250 + 90 = 340
+    auto r = ScoreCalculator::calculateMancheScore(
+        0, 172,
+        90,   // valeurContrat (QUATREVINGTDIX)
+        false, // team2HasBid
+        false, false,
+        false, false,
+        false, false,
+        false, true   // capotNonAnnonceTeam2
+    );
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 340) << "Capot non annoncé Team2 (annonce 90) = 250+90 = 340";
+}
+
+// ========================================
+// TESTS SCORE — CONTRAT NORMAL
+// ========================================
+
+TEST(ScoreContratNormalTest, ContratReussi) {
+    // Team1 annonce 100, réalise 130 pts → 100 + 130 = 230, Team2 garde ses 32 pts
+    auto r = ScoreCalculator::calculateMancheScore(
+        130, 32,
+        100,
+        true,
+        false, false,
+        false, false,
+        false, false,
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 230) << "Contrat 100 réussi (130pts) = 100+130 = 230";
+    EXPECT_EQ(r.scoreTeam2, 32);
+}
+
+TEST(ScoreContratNormalTest, ContratEchoue) {
+    // Team1 annonce 100, réalise 60 pts → 0, Team2 marque 160+100 = 260
+    auto r = ScoreCalculator::calculateMancheScore(
+        60, 102,
+        100,
+        true,
+        false, false,
+        false, false,
+        false, false,
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 260) << "Contrat 100 échoué → adversaire marque 160+100 = 260";
+}
+
+TEST(ScoreContratNormalTest, ContratReussiCoinche) {
+    // Team1 annonce 100, coinchée, réussit → 160 + (100×2) = 360
+    auto r = ScoreCalculator::calculateMancheScore(
+        130, 32,
+        100,
+        true,
+        true, false,  // coinched
+        false, false,
+        false, false,
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 360) << "Contrat 100 coinché réussi = 160+(100*2) = 360";
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
+
+TEST(ScoreContratNormalTest, ContratEchoueCoinche) {
+    // Team1 annonce 100, coinchée, échoue → 0, Team2 marque 160 + (100×2) = 360
+    auto r = ScoreCalculator::calculateMancheScore(
+        60, 102,
+        100,
+        true,
+        true, false,
+        false, false,
+        false, false,
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 360) << "Contrat 100 coinché échoué → adversaire marque 160+200 = 360";
+}
+
+TEST(ScoreContratNormalTest, ContratReussiSurcoinche) {
+    // Team1 annonce 100, surcoinchée, réussit → 160 + (100×4) = 560
+    auto r = ScoreCalculator::calculateMancheScore(
+        130, 32,
+        100,
+        true,
+        true, true,   // coinched, surcoinched
+        false, false,
+        false, false,
+        false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 560) << "Contrat 100 surcoinché réussi = 160+(100*4) = 560";
+    EXPECT_EQ(r.scoreTeam2, 0);
 }

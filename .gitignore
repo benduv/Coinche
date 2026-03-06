@@ -48,3 +48,7 @@ android/res/drawable-xxxhdpi/
 *.db
 *.db-shm
 *.db-wal
+
+# Deploiement Windows (genere par deploy.bat)
+installer/deploy/
+installer/output/

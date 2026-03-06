@@ -143,46 +143,96 @@ protected:
 // TESTS COINCHE
 // ========================================
 
-TEST_F(CoincheTest, CoincheReussiTeam1Annonce80) {
-    // Team1 annonce 80, Team2 coinche, Team1 réussit
-    setHandsForCoincheReussi();
+TEST(ScoreContratTest, CoincheReussiTeam1Annonce80) {
+    // Team1 annonce 80, coinchée, réussit avec 110 pts → 160 + (80×2) = 320
+    auto r = ScoreCalculator::calculateMancheScore(
+        110, 52, 80, true, true, false,
+        false, false, false, false, false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 320) << "Coinche réussie (annonce 80) = 160+(80×2) = 320";
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
 
-    room.lastBidderIndex = 0;  // Team1 a fait l'annonce
-    room.lastBidAnnonce = Player::QUATREVINGT;  // 80 points
-    room.lastBidCouleur = Carte::PIQUE;
-    room.couleurAtout = Carte::PIQUE;
-    room.firstPlayerIndex = 0;
-    room.currentPlayerIndex = 0;
-    room.coinched = true;  // Team2 a coinché
+TEST(ScoreContratTest, ContratReussiSansBelote) {
+    // Team1 annonce 100, réalise 110 pts, Team2 a 52 pts → 100+110=210, adversaire 52
+    auto r = ScoreCalculator::calculateMancheScore(
+        110, 52, 100, true, false, false,
+        false, false, false, false, false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 210) << "Contrat 100 réussi (110pts) = 100+110 = 210";
+    EXPECT_EQ(r.scoreTeam2, 52)  << "Team2 garde ses 52 points";
+}
 
-    // Définir l'atout pour tous les joueurs
-    for (int i = 0; i < 4; i++) {
-        room.players[i]->setAtout(Carte::PIQUE);
-    }
+TEST(ScoreContratTest, ContratReussiAvecBeloteAnnonceur) {
+    // Team1 annonce 100, réalise 100 pts + 20 belote = 120 → 100+120=220, adversaire 60
+    auto r = ScoreCalculator::calculateMancheScore(
+        120, 60, 100, true, false, false,
+        false, false, false, false, false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 220) << "Contrat 100 réussi avec belote (120pts) = 100+120 = 220";
+    EXPECT_EQ(r.scoreTeam2, 60)  << "Team2 garde ses 60 points";
+}
 
-    // Simuler que Team1 gagne 6 plis (suffisant pour 80 points)
-    for (int pli = 0; pli < 6; pli++) {
-        playPliAutomatic(pli, true);  // Team1 gagne
-    }
-    for (int pli = 6; pli < 8; pli++) {
-        playPliAutomatic(pli, false);  // Team2 gagne les 2 derniers
-    }
+TEST(ScoreContratTest, ContratReussiAvecBeloteAdversaire) {
+    // Team1 annonce 100, réalise 110 pts. Team2 a 52 pts de cartes (162-110) + 20 belote = 72
+    auto r = ScoreCalculator::calculateMancheScore(
+        110, 72, 100, true, false, false,
+        false, false, false, false, false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 210) << "Contrat 100 réussi = 100+110 = 210";
+    EXPECT_EQ(r.scoreTeam2, 72)  << "Team2 garde ses 72 points (52 cartes + 20 belote)";
+}
 
-    int plisTeam1 = room.plisCountPlayer0 + room.plisCountPlayer2;
-    int plisTeam2 = room.plisCountPlayer1 + room.plisCountPlayer3;
+TEST(ScoreContratTest, ContratEchoueSansBelote) {
+    // Team1 annonce 100, réalise seulement 70 pts → 0, Team2 marque 160+100=260
+    auto r = ScoreCalculator::calculateMancheScore(
+        70, 92, 100, true, false, false,
+        false, false, false, false, false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 0)   << "Team1 ne marque rien";
+    EXPECT_EQ(r.scoreTeam2, 260) << "Contrat 100 échoué → adversaire marque 160+100 = 260";
+}
 
-    EXPECT_EQ(6, plisTeam1) << "Team1 devrait avoir 6 plis";
-    EXPECT_EQ(2, plisTeam2) << "Team2 devrait avoir 2 plis";
+TEST(ScoreContratTest, ContratEchoueAvecBeloteAnnonceur) {
+    // Team1 annonce 100, a belote (+20) mais réalise 80+20=100 pts : contrat juste atteint
+    auto r = ScoreCalculator::calculateMancheScore(
+        100, 62, 100, true, false, false,
+        false, false, false, false, false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 200) << "Contrat 100 atteint pile (100pts avec belote) = 100+100 = 200";
+    EXPECT_EQ(r.scoreTeam2, 62);
+}
 
-    // Scoring COINCHE réussi: 160 + (contrat × 2)
-    // Team1 a 6 plis, on estime environ 110 points réalisés
-    // Score minimum = 160 + (80 × 2) = 320 points
-    // NOTE: Le score réel dépend des cartes jouées dans chaque pli
-    int scoreAttenduMinTeam1 = 160 + (80 * 2);  // 320
-    int scoreAttenduTeam2 = 0;
+TEST(ScoreContratTest, ContratEchoueAvecBeloteMaisInsuffisante) {
+    // Team1 annonce 100, a belote (+20) mais 75 pts de cartes + 20 = 95 < 100 → échec
+    // La belote (20) est toujours rendue à Team1 même sur contrat échoué
+    auto r = ScoreCalculator::calculateMancheScore(
+        95, 87, 100, true, false, false,
+        false, false, false, false, false, false,
+        20, 0  // beloteTeam1=20
+    );
+    EXPECT_EQ(r.scoreTeam1, 20)  << "Team1 garde sa belote (20) malgré l'échec";
+    EXPECT_EQ(r.scoreTeam2, 260) << "Adversaire marque 160+100 = 260";
+}
 
-    EXPECT_GE(scoreAttenduMinTeam1, 160 + (80 * 2)) << "Team1 devrait marquer au moins 160 + (80×2) = 320";
-    EXPECT_EQ(scoreAttenduTeam2, 0) << "Team2 ne devrait marquer aucun point";
+TEST(ScoreContratTest, ContratReussiTeam2SansBelote) {
+    // Team2 annonce 90, réalise 100 pts, Team1 a 62 pts → Team2 marque 90+100=190, Team1 garde 62
+    auto r = ScoreCalculator::calculateMancheScore(
+        62, 100, 90, false, false, false,
+        false, false, false, false, false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 62)  << "Team1 garde ses 62 points";
+    EXPECT_EQ(r.scoreTeam2, 190) << "Contrat 90 réussi (100pts) = 90+100 = 190";
+}
+
+TEST(ScoreContratTest, ContratEchoueTeam2) {
+    // Team2 annonce 90, réalise 60 pts → 0, Team1 marque 160+90=250
+    auto r = ScoreCalculator::calculateMancheScore(
+        102, 60, 90, false, false, false,
+        false, false, false, false, false, false
+    );
+    EXPECT_EQ(r.scoreTeam1, 250) << "Contrat 90 échoué → adversaire marque 160+90 = 250";
+    EXPECT_EQ(r.scoreTeam2, 0)   << "Team2 ne marque rien";
 }
 
 TEST_F(CoincheTest, CoincheEchoueTeam1Annonce80) {
@@ -244,14 +294,16 @@ TEST_F(CoincheTest, SurcoincheReussiTeam2Annonce120) {
     EXPECT_EQ(1, plisTeam1) << "Team1 devrait avoir 1 pli";
     EXPECT_EQ(7, plisTeam2) << "Team2 devrait avoir 7 plis";
 
-    // Scoring SURCOINCHE réussi: 160 + (contrat × 4)
-    // Team2 a 7 plis, on estime environ 130 points réalisés
-    // Score minimum = 160 + (120 × 4) = 640 points
-    int scoreAttenduTeam1 = 0;
-    int scoreAttenduMinTeam2 = 160 + (120 * 4);  // 640
-
-    EXPECT_EQ(scoreAttenduTeam1, 0) << "Team1 ne devrait marquer aucun point";
-    EXPECT_GE(scoreAttenduMinTeam2, 160 + (120 * 4)) << "Team2 devrait marquer au moins 160 + (120×4) = 640";
+    // Scoring SURCOINCHE réussi: 160 + (contrat × 4) = 160 + (120 × 4) = 640
+    auto result = ScoreCalculator::calculateMancheScore(
+        32, 130,  // Team2 a 7 plis ≈ 130 pts, Team1 ≈ 32 pts
+        120,      // valeurContrat
+        false,    // team2HasBid
+        true, true,  // coinched, surcoinched
+        false, false, false, false, false, false
+    );
+    EXPECT_EQ(result.scoreTeam1, 0)   << "Team1 ne devrait marquer aucun point";
+    EXPECT_EQ(result.scoreTeam2, 640) << "Surcoinche réussie = 160+(120×4) = 640";
 }
 
 TEST_F(CoincheTest, SurcoincheEchoueTeam2Annonce120) {

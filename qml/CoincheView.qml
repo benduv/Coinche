@@ -783,12 +783,29 @@ Rectangle {
                                     font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
                                     font.bold: true
                                 }
-                                Text {
-                                    text: rootArea.getPlayerBidSymbol(playerSouthRow.actualPlayerIndex)
-                                    color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerSouthRow.actualPlayerIndex) : "D4AF37"
-                                    font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.04 : rootArea.height * 0.04
-                                    font.bold: true
-                                    visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex)
+                                Item {
+                                    property string bidIcon: rootArea.getPlayerBidSymbol(playerSouthRow.actualPlayerIndex)
+                                    property bool isSvg: bidIcon.startsWith("qrc:/")
+                                    width: rootArea.height * 0.04
+                                    height: rootArea.height * 0.04
+                                    visible: bidIcon !== "" && !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex)
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    Text {
+                                        visible: !parent.isSvg
+                                        text: parent.bidIcon
+                                        color: "#D4AF37"
+                                        font.pixelSize: rootArea.height * 0.04
+                                        font.bold: true
+                                        anchors.centerIn: parent
+                                    }
+                                    Image {
+                                        visible: parent.isSvg
+                                        source: parent.isSvg ? parent.bidIcon : ""
+                                        width: rootArea.height * 0.038
+                                        height: rootArea.height * 0.038
+                                        fillMode: Image.PreserveAspectFit
+                                        anchors.centerIn: parent
+                                    }
                                 }
                             }
                         }
@@ -1100,12 +1117,29 @@ Rectangle {
                                 font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
                                 font.bold: true
                             }
-                            Text {
-                                text: rootArea.getPlayerBidSymbol(playerNorthColumn.actualPlayerIndex)
-                                color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerNorthColumn.actualPlayerIndex) : "D4AF37"
-                                font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.04 : rootArea.height * 0.04
-                                font.bold: true
-                                visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex)
+                            Item {
+                                property string bidIcon: rootArea.getPlayerBidSymbol(playerNorthColumn.actualPlayerIndex)
+                                property bool isSvg: bidIcon.startsWith("qrc:/")
+                                width: rootArea.height * 0.04
+                                height: rootArea.height * 0.04
+                                visible: bidIcon !== "" && !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text {
+                                    visible: !parent.isSvg
+                                    text: parent.bidIcon
+                                    color: "#D4AF37"
+                                    font.pixelSize: rootArea.height * 0.04
+                                    font.bold: true
+                                    anchors.centerIn: parent
+                                }
+                                Image {
+                                    visible: parent.isSvg
+                                    source: parent.isSvg ? parent.bidIcon : ""
+                                    width: rootArea.height * 0.038
+                                    height: rootArea.height * 0.038
+                                    fillMode: Image.PreserveAspectFit
+                                    anchors.centerIn: parent
+                                }
                             }
                         }
                     }
@@ -1219,12 +1253,29 @@ Rectangle {
                             font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
                             font.bold: true
                         }
-                        Text {
-                            text: rootArea.getPlayerBidSymbol(playerWestRow.actualPlayerIndex)
-                            color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerWestRow.actualPlayerIndex) : "D4AF37"
-                            font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.04 : rootArea.height * 0.04
-                            font.bold: true
-                            visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex)
+                        Item {
+                            property string bidIcon: rootArea.getPlayerBidSymbol(playerWestRow.actualPlayerIndex)
+                            property bool isSvg: bidIcon.startsWith("qrc:/")
+                            width: rootArea.height * 0.04
+                            height: rootArea.height * 0.04
+                            visible: bidIcon !== "" && !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex)
+                            anchors.verticalCenter: parent.verticalCenter
+                            Text {
+                                visible: !parent.isSvg
+                                text: parent.bidIcon
+                                color: "#D4AF37"
+                                font.pixelSize: rootArea.height * 0.04
+                                font.bold: true
+                                anchors.centerIn: parent
+                            }
+                            Image {
+                                visible: parent.isSvg
+                                source: parent.isSvg ? parent.bidIcon : ""
+                                width: rootArea.height * 0.038
+                                height: rootArea.height * 0.038
+                                fillMode: Image.PreserveAspectFit
+                                anchors.centerIn: parent
+                            }
                         }
                     }
                 }
@@ -1435,12 +1486,29 @@ Rectangle {
                             font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
                             font.bold: true
                         }
-                        Text {
-                            text: rootArea.getPlayerBidSymbol(playerEastRow.actualPlayerIndex)
-                            color: text!=="SA" && text!=="TA" ? rootArea.getPlayerBidSymbolColor(playerEastRow.actualPlayerIndex) : "#D4AF37"
-                            font.pixelSize: text!=="SA" && text!=="TA" ? rootArea.height * 0.04 : rootArea.height * 0.04
-                            font.bold: true
-                            visible: !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex)
+                        Item {
+                            property string bidIcon: rootArea.getPlayerBidSymbol(playerEastRow.actualPlayerIndex)
+                            property bool isSvg: bidIcon.startsWith("qrc:/")
+                            width: rootArea.height * 0.04
+                            height: rootArea.height * 0.04
+                            visible: bidIcon !== "" && !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex)
+                            anchors.verticalCenter: parent.verticalCenter
+                            Text {
+                                visible: !parent.isSvg
+                                text: parent.bidIcon
+                                color: "#D4AF37"
+                                font.pixelSize: rootArea.height * 0.04
+                                font.bold: true
+                                anchors.centerIn: parent
+                            }
+                            Image {
+                                visible: parent.isSvg
+                                source: parent.isSvg ? parent.bidIcon : ""
+                                width: rootArea.height * 0.038
+                                height: rootArea.height * 0.038
+                                fillMode: Image.PreserveAspectFit
+                                anchors.centerIn: parent
+                            }
                         }
                     }
                 }
@@ -2270,13 +2338,13 @@ Rectangle {
                 visible: gameModel.lastPliCards.length > 0 &&
                          !gameModel.biddingPhase
 
-                // Fonction pour obtenir le symbole de la couleur
-                function getSuitSymbol(suitValue) {
+                // Fonction pour obtenir l'icône SVG de la couleur
+                function getSuitIcon(suitValue) {
                     switch (suitValue) {
-                        case 3: return "♥"  // COEUR
-                        case 4: return "♣"  // TREFLE
-                        case 5: return "♦"  // CARREAU
-                        case 6: return "♠"  // PIQUE
+                        case 3: return "qrc:/resources/heart-svgrepo-com.svg"   // COEUR
+                        case 4: return "qrc:/resources/clover-svgrepo-com.svg"  // TREFLE
+                        case 5: return "qrc:/resources/diamond-svgrepo-com.svg" // CARREAU
+                        case 6: return "qrc:/resources/spade-svgrepo-com.svg"   // PIQUE
                         default: return ""
                     }
                 }
@@ -2352,14 +2420,23 @@ Rectangle {
                             }
                         }
 
-                        Text {
+                        Row {
                             anchors.centerIn: parent
-                            text: lastPliDisplay.getValueText(modelData.value) + lastPliDisplay.getSuitSymbol(modelData.suit)
-                            font.pixelSize: parent.height * 0.4
-                            font.bold: true
-                            color: lastPliDisplay.getTextColor(modelData.suit)
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                            spacing: 1
+                            Text {
+                                text: lastPliDisplay.getValueText(modelData.value)
+                                font.pixelSize: miniCard.height * 0.4
+                                font.bold: true
+                                color: lastPliDisplay.getTextColor(modelData.suit)
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                            Image {
+                                source: lastPliDisplay.getSuitIcon(modelData.suit)
+                                width: miniCard.height * 0.35
+                                height: miniCard.height * 0.35
+                                fillMode: Image.PreserveAspectFit
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
                         }
 
                         // Overlay rouge pour les cartes d'atout

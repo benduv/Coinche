@@ -150,7 +150,7 @@ $content_a = <<<'__END_A__'
   <h3 style="color:#FFD700;font-size:1.5em;border-bottom:1px solid #333;padding-bottom:8px;margin-top:40px;">Télécharger le jeu</h3>
   <p>Coinche de l'Espace est disponible sur <strong>Windows</strong> et <strong>Android</strong>.</p>
   <div style="display:flex;gap:16px;flex-wrap:wrap;margin:24px 0;">
-    <a href="https://github.com/benduv/Coinche/releases/download/v0.1.0-beta/coinche.exe" style="display:inline-block;background:#FFD700;color:#000000 !important;padding:14px 28px;border-radius:8px;font-weight:bold;text-decoration:none;font-size:1.05em;">⬇ Windows (.exe)</a>
+    <a href="https://github.com/benduv/Coinche/releases/download/v0.1.0-beta/CoinchSetup-1.0.0.exe" style="display:inline-block;background:#FFD700;color:#000000 !important;padding:14px 28px;border-radius:8px;font-weight:bold;text-decoration:none;font-size:1.05em;">⬇ Windows (.exe)</a>
     <a href="#" style="display:inline-block;background:#FFD700;color:#000000 !important;padding:14px 28px;border-radius:8px;font-weight:bold;text-decoration:none;font-size:1.05em;">⬇ Android (.apk)</a>
   </div>
   <p style="color:#666;font-size:0.85em;font-style:italic;">Version bêta — Android (.apk) bientôt disponible.</p>

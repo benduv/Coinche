@@ -435,20 +435,23 @@ ApplicationWindow {
                     Repeater {
                         model: 20
 
-                        delegate: Text {
+                        delegate: Image {
                             property int symbolIndex: index
                             property real randomOffset: (symbolIndex * 37) % 30
                             property real oscillationOffset: 0  // Déplacement pour l'oscillation
 
-                            text: {
-                                var symbols = ["♥", "♣", "♦", "♠"]
-                                return symbols[symbolIndex % 4]
+                            source: {
+                                var icons = [
+                                    "qrc:/resources/heart-svgrepo-com.svg",
+                                    "qrc:/resources/clover-svgrepo-com.svg",
+                                    "qrc:/resources/diamond-svgrepo-com.svg",
+                                    "qrc:/resources/spade-svgrepo-com.svg"
+                                ]
+                                return icons[symbolIndex % 4]
                             }
-                            color: {
-                                var colors = ["#AD1111", "#422E2E", "#AD1111", "#422E2E"]
-                                return colors[symbolIndex % 4]
-                            }
-                            font.pixelSize: (40 + (symbolIndex % 5) * 12) * mainWindow.minRatio
+                            width: (40 + (symbolIndex % 5) * 12) * mainWindow.minRatio
+                            height: width
+                            fillMode: Image.PreserveAspectFit
                             opacity: 0.2 + (symbolIndex % 3) * 0.05
 
                             // Position horizontale avec binding + oscillation

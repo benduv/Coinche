@@ -25,6 +25,8 @@ struct ScoreResult {
  * @param generaleReussie true si la générale annoncée a été réussie
  * @param capotNonAnnonceTeam1 true si l'équipe 1 a fait un capot non annoncé
  * @param capotNonAnnonceTeam2 true si l'équipe 2 a fait un capot non annoncé
+ * @param beloteTeam1 Points de belote de l'équipe 1 (20 si belote, 0 sinon) — toujours comptés
+ * @param beloteTeam2 Points de belote de l'équipe 2 (20 si belote, 0 sinon) — toujours comptés
  *
  * @return ScoreResult contenant les scores finaux pour chaque équipe
  */
@@ -40,7 +42,9 @@ inline ScoreResult calculateMancheScore(
     bool isGeneraleAnnonce,
     bool generaleReussie,
     bool capotNonAnnonceTeam1,
-    bool capotNonAnnonceTeam2
+    bool capotNonAnnonceTeam2,
+    int beloteTeam1 = 0,
+    int beloteTeam2 = 0
 ) {
     ScoreResult result;
     result.scoreTeam1 = 0;
@@ -117,7 +121,8 @@ inline ScoreResult calculateMancheScore(
                 }
             } else {
                 // Contrat échoué: équipe adverse marque 160 + (valeurContrat × multiplicateur)
-                result.scoreTeam1 = 0;
+                // La belote de l'équipe perdante est toujours comptée
+                result.scoreTeam1 = beloteTeam1;
                 result.scoreTeam2 = 160 + (valeurContrat * multiplicateur);
             }
         } else {
@@ -136,43 +141,44 @@ inline ScoreResult calculateMancheScore(
                 }
             } else {
                 // Contrat échoué: équipe adverse marque 160 + (valeurContrat × multiplicateur)
+                // La belote de l'équipe perdante est toujours comptée
                 result.scoreTeam1 = 160 + (valeurContrat * multiplicateur);
-                result.scoreTeam2 = 0;
+                result.scoreTeam2 = beloteTeam2;
             }
         }
     } else if (team1HasBid) {
         // L'équipe 1 a annoncé (contrat normal)
         if (pointsRealisesTeam1 >= valeurContrat) {
             if (capotNonAnnonceTeam1) {
-                // CAPOT non annoncé: 250 + pointsRéalisés
-                result.scoreTeam1 = 250 + pointsRealisesTeam1;
+                // CAPOT non annoncé: 250 (bonus capot) + valeurContrat
+                result.scoreTeam1 = 250 + valeurContrat;
                 result.scoreTeam2 = 0;
             } else {
-                // Contrat réussi: valeurContrat + pointsRéalisés
+                // Contrat réussi: valeurContrat + pointsRéalisés (belote déjà incluse)
                 result.scoreTeam1 = valeurContrat + pointsRealisesTeam1;
                 result.scoreTeam2 = pointsRealisesTeam2;
             }
         } else {
-            // Contrat échoué: équipe 1 marque 0, équipe 2 marque 160 + valeurContrat
-            result.scoreTeam1 = 0;
+            // Contrat échoué: la belote de l'équipe perdante est toujours comptée
+            result.scoreTeam1 = beloteTeam1;
             result.scoreTeam2 = 160 + valeurContrat;
         }
     } else {
         // L'équipe 2 a annoncé (contrat normal)
         if (pointsRealisesTeam2 >= valeurContrat) {
             if (capotNonAnnonceTeam2) {
-                // CAPOT non annoncé: 250 + pointsRéalisés
+                // CAPOT non annoncé: 250 (bonus capot) + valeurContrat
                 result.scoreTeam1 = 0;
-                result.scoreTeam2 = 250 + pointsRealisesTeam2;
+                result.scoreTeam2 = 250 + valeurContrat;
             } else {
-                // Contrat réussi: valeurContrat + pointsRéalisés
+                // Contrat réussi: valeurContrat + pointsRéalisés (belote déjà incluse)
                 result.scoreTeam1 = pointsRealisesTeam1;
                 result.scoreTeam2 = valeurContrat + pointsRealisesTeam2;
             }
         } else {
-            // Contrat échoué: équipe 2 marque 0, équipe 1 marque 160 + valeurContrat
+            // Contrat échoué: la belote de l'équipe perdante est toujours comptée
             result.scoreTeam1 = 160 + valeurContrat;
-            result.scoreTeam2 = 0;
+            result.scoreTeam2 = beloteTeam2;
         }
     }
 

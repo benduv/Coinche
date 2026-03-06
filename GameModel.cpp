@@ -884,10 +884,10 @@ void GameModel::updateGameState(const QJsonObject& state)
 
             // Convertir la couleur en symbole depuis lastBidSuit (même logique que receivePlayerAction makeBid)
             switch (bidSuit) {
-                case 3: suitSymbol = "♥"; isRed = true; break;   // COEUR
-                case 4: suitSymbol = "♣"; isRed = false; break;  // TREFLE
-                case 5: suitSymbol = "♦"; isRed = true; break;   // CARREAU
-                case 6: suitSymbol = "♠"; isRed = false; break;  // PIQUE
+                case 3: suitSymbol = "qrc:/resources/heart-svgrepo-com.svg"; isRed = true; break;   // COEUR
+                case 4: suitSymbol = "qrc:/resources/clover-svgrepo-com.svg"; isRed = false; break;  // TREFLE
+                case 5: suitSymbol = "qrc:/resources/diamond-svgrepo-com.svg"; isRed = true; break;   // CARREAU
+                case 6: suitSymbol = "qrc:/resources/spade-svgrepo-com.svg"; isRed = false; break;  // PIQUE
                 case 7: suitSymbol = "TA"; isRed = false; break; // TOUT ATOUT
                 case 8: suitSymbol = "SA"; isRed = false; break; // SANS ATOUT
                 default: suitSymbol = ""; break;
@@ -991,22 +991,28 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_currentPli.append(cdp);
 
         // Retirer la carte de la main du joueur
-        // On cherche par identité (value+suit) pour gérer le tri inversé du joueur local
         Player* player = getPlayerByPosition(playerIndex);
         if (player) {
             int localIndex = -1;
-            const auto& main = player->getMain();
-            for (int i = 0; i < (int)main.size(); i++) {
-                if (static_cast<int>(main[i]->getChiffre()) == cardValue &&
-                    static_cast<int>(main[i]->getCouleur()) == cardSuit) {
-                    localIndex = i;
-                    break;
+            if (playerIndex == m_myPosition) {
+                // Joueur local : chercher par value+suit (la main est triée)
+                const auto& main = player->getMain();
+                for (int i = 0; i < (int)main.size(); i++) {
+                    if (static_cast<int>(main[i]->getChiffre()) == cardValue &&
+                        static_cast<int>(main[i]->getCouleur()) == cardSuit) {
+                        localIndex = i;
+                        break;
+                    }
+                }
+            } else {
+                // Adversaire : cartes fantômes toutes identiques, supprimer la première
+                if (!player->getMain().empty()) {
+                    localIndex = 0;
                 }
             }
             if (localIndex >= 0) {
                 player->removeCard(localIndex);
 
-                // Rafraîchir l'affichage
                 HandModel* hand = getHandModelByPosition(playerIndex);
                 if (hand) {
                     hand->refresh();
@@ -1049,10 +1055,10 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
                 }
                 // Symbole de la couleur
                 switch (suit) {
-                    case 3: suitSymbol = QString::fromUtf8("\u2665"); break; // Coeur
-                    case 4: suitSymbol = QString::fromUtf8("\u2663"); break; // Trefle
-                    case 5: suitSymbol = QString::fromUtf8("\u2666"); break; // Carreau
-                    case 6: suitSymbol = QString::fromUtf8("\u2660"); break; // Pique
+                    case 3: suitSymbol = "qrc:/resources/heart-svgrepo-com.svg"; break; // Coeur
+                    case 4: suitSymbol = "qrc:/resources/clover-svgrepo-com.svg"; break; // Trefle
+                    case 5: suitSymbol = "qrc:/resources/diamond-svgrepo-com.svg"; break; // Carreau
+                    case 6: suitSymbol = "qrc:/resources/spade-svgrepo-com.svg"; break; // Pique
                     case 7: suitSymbol = "TA"; break; // Tout Atout
                     case 8: suitSymbol = "SA"; break; // Sans Atout
                 }

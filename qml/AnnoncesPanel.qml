@@ -304,7 +304,7 @@ Rectangle {
                 spacing: parent.width * 0.025
 
                 SuitButton {
-                    text: "♥"
+                    suitIcon: "qrc:/resources/heart-svgrepo-com.svg"
                     suitColor: "#E60000"
                     suitValue: 3
                     popupWidth: suitSelector.width
@@ -312,7 +312,7 @@ Rectangle {
                     onClicked: { bidTimer.stop(); gameModel.makeBid(suitSelector.selectedBidValue, 3); suitSelector.close() }
                 }
                 SuitButton {
-                    text: "♣"
+                    suitIcon: "qrc:/resources/clover-svgrepo-com.svg"
                     suitColor: "#000000"
                     suitValue: 4
                     popupWidth: suitSelector.width
@@ -320,7 +320,7 @@ Rectangle {
                     onClicked: { bidTimer.stop(); gameModel.makeBid(suitSelector.selectedBidValue, 4); suitSelector.close() }
                 }
                 SuitButton {
-                    text: "♦"
+                    suitIcon: "qrc:/resources/diamond-svgrepo-com.svg"
                     suitColor: "#E60000"
                     suitValue: 5
                     popupWidth: suitSelector.width
@@ -328,7 +328,7 @@ Rectangle {
                     onClicked: { bidTimer.stop(); gameModel.makeBid(suitSelector.selectedBidValue, 5); suitSelector.close() }
                 }
                 SuitButton {
-                    text: "♠"
+                    suitIcon: "qrc:/resources/spade-svgrepo-com.svg"
                     suitColor: "#000000"
                     suitValue: 6
                     popupWidth: suitSelector.width
@@ -429,6 +429,7 @@ Rectangle {
     component SuitButton: Button {
         property color suitColor
         property int suitValue
+        property string suitIcon: ""
         property real popupWidth: 100
         property real popupHeight: 100
 
@@ -437,18 +438,18 @@ Rectangle {
 
         background: Rectangle {
             color: parent.down ? "#444444" :
-                   (parent.hovered ? "#555555" : "#333333")
+                   (parent.hovered ? "#555555" : "#615E5E")
             radius: 10
             border.color: suitColor
             border.width: 3
         }
 
-        contentItem: Text {
-            text: parent.text
-            font.pixelSize: popupHeight * 0.3
-            color: suitColor
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
+        contentItem: Image {
+            source: suitIcon
+            fillMode: Image.PreserveAspectFit
+            width: popupHeight * 0.35
+            height: popupHeight * 0.35
+            anchors.centerIn: parent
         }
     }
 }

@@ -2755,7 +2755,9 @@ void GameServer::finishManche(int roomId) {
         isGeneraleAnnonce,
         generaleReussie,
         capotNonAnnonceTeam1,
-        capotNonAnnonceTeam2
+        capotNonAnnonceTeam2,
+        room->beloteTeam1 ? 20 : 0,
+        room->beloteTeam2 ? 20 : 0
     );
 
     int scoreToAddTeam1 = scoreResult.scoreTeam1;
