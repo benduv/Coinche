@@ -178,7 +178,8 @@ ApplicationWindow {
     Dialog {
         id: versionErrorDialog
         property string errorMessage: ""
-        anchors.centerIn: parent
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
         width: Math.min(parent.width * 0.85, 500)
         modal: true
         closePolicy: Dialog.NoAutoClose
