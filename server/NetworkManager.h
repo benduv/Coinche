@@ -153,11 +153,15 @@ public:
         openSocket(url);
     }
 
+    // Version du client — incrémenter à chaque mise à jour qui casse la compatibilité serveur
+    static constexpr int CLIENT_VERSION = 5;
+
     Q_INVOKABLE void registerPlayer(const QString &playerName, const QString &avatar = "avataaars1.svg") {
         QJsonObject msg;
         msg["type"] = "register";
         msg["playerName"] = playerName;
         msg["avatar"] = avatar;
+        msg["version"] = CLIENT_VERSION;
         // Indiquer si on avait un GameModel actif (pour détecter les parties terminées)
         msg["wasInGame"] = (m_gameModel != nullptr);
         sendMessage(msg);
@@ -464,6 +468,9 @@ signals:
     // Signal pour l'animation de nouvelle manche
     void newMancheAnimation();
 
+    // Signal pour version client obsolète
+    void versionError(QString message);
+
     // Signal pour les credentials stockés
     void storedCredentialsChanged();
     void isTrainingChanged();
@@ -538,6 +545,12 @@ private slots:
 
         // Émettre le message pour que QML puisse l'écouter (ex: StatsView)
         emit messageReceived(message);
+
+        if (type == "versionError") {
+            QString msg = obj["message"].toString();
+            emit versionError(msg);
+            return;
+        }
 
         if (type == "registered") {
             m_playerId = obj["connectionId"].toString();

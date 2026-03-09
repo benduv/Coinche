@@ -184,6 +184,9 @@ class GameServer : public QObject {
     friend class GameServerUtilsTest;
 
 public:
+    // Version minimale du client acceptée par le serveur
+    static constexpr int MIN_CLIENT_VERSION = 5;
+
     // Constante de délai pour l'affichage du panneau d'annonces
     static constexpr int BID_PANEL_DISPLAY_DELAY_MS = 3000;  // Délai pour laisser le temps au client de recevoir les cartes et d'afficher le panneau
 

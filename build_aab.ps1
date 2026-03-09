@@ -40,7 +40,8 @@ $buildGradle = "$combinedBuild\build.gradle"
     -replace 'compileSdkVersion 34', 'compileSdkVersion 35' `
     -replace 'targetSdkVersion = 34', 'targetSdkVersion = 35' `
     -replace "buildToolsVersion '34\.0\.0'", "buildToolsVersion '35.0.0'" `
-    -replace 'versionCode 1', 'versionCode 3' |
+    -replace 'versionCode 1', 'versionCode 5' `
+    -replace "versionName '1.0.0'", "versionName '0.2.1'" |
     Set-Content $buildGradle
 
 # Verifier que les deux architectures sont presentes

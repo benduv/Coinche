@@ -167,6 +167,78 @@ ApplicationWindow {
         function onLobbyJoined(lobbyCode) {
             stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": false })
         }
+
+        function onVersionError(message) {
+            versionErrorDialog.errorMessage = message
+            versionErrorDialog.open()
+        }
+    }
+
+    // Dialog bloquant pour version obsolète
+    Dialog {
+        id: versionErrorDialog
+        property string errorMessage: ""
+        anchors.centerIn: parent
+        width: Math.min(parent.width * 0.85, 500)
+        modal: true
+        closePolicy: Dialog.NoAutoClose
+        title: "Mise à jour requise"
+
+        background: Rectangle {
+            color: "#2a2a2a"
+            radius: 15
+            border.color: "#ff6666"
+            border.width: 2
+        }
+
+        header: Item {
+            height: 60
+            Text {
+                text: "⚠️ Mise à jour requise"
+                color: "#ff6666"
+                font.pixelSize: 22
+                font.bold: true
+                anchors.centerIn: parent
+            }
+        }
+
+        contentItem: Column {
+            spacing: 20
+            padding: 10
+
+            Text {
+                text: versionErrorDialog.errorMessage
+                color: "white"
+                font.pixelSize: 16
+                wrapMode: Text.WordWrap
+                width: parent.width - 20
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Mettre à jour"
+                onClicked: {
+                    Qt.openUrlExternally("https://play.google.com/store/apps/details?id=com.coinche.game")
+                }
+
+                background: Rectangle {
+                    color: parent.down ? "#1565C0" : (parent.hovered ? "#2196F3" : "#1976D2")
+                    radius: 8
+                    implicitWidth: 200
+                    implicitHeight: 50
+                }
+
+                contentItem: Text {
+                    text: parent.text
+                    color: "white"
+                    font.pixelSize: 18
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+        }
     }
 
     // Timer pour retarder légèrement l'activation du Loader
