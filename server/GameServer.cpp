@@ -66,7 +66,7 @@ void GameServer::onTextMessageReceived(const QString &message) {
         if (clientVersion < MIN_CLIENT_VERSION) {
             QJsonObject error;
             error["type"] = "versionError";
-            error["message"] = QString("Votre application est obsolète (v%1). Veuillez la mettre à jour depuis le Play Store (v%2 minimum requise).")
+            error["message"] = QString("Votre application est obsolète. Veuillez la mettre à jour depuis le Play Store pour continuer à jouer.")
                                 .arg(clientVersion).arg(MIN_CLIENT_VERSION);
             sendMessage(sender, error);
             qWarning() << "Client version trop ancienne:" << clientVersion << "< min" << MIN_CLIENT_VERSION

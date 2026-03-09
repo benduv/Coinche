@@ -174,13 +174,16 @@ ApplicationWindow {
         }
     }
 
+    property bool isPortrait: height > width
+
     // Dialog bloquant pour version obsolète
     Dialog {
         id: versionErrorDialog
         property string errorMessage: ""
         x: (parent.width - width) / 2
         y: (parent.height - height) / 2
-        width: Math.min(parent.width * 0.85, 500)
+        width: parent.width * 0.75
+        height: isPortrait ? parent.height * 0.35 : parent.height * 0.65
         modal: true
         closePolicy: Dialog.NoAutoClose
         title: "Mise à jour requise"

@@ -9,8 +9,11 @@ if [ "$1" == "test" ]; then
     make server -j$(nproc)
     sudo systemctl restart test-coinche
 else
+    if [ "$(pwd)" != "/home/coinche/Coinche" ]; then
+        echo "Vous devez etre dans /home/coinche/Coinche pour mettre a jour le server de prod, ou bien lancer avec arg test"
+        exit 1
+    fi
     echo "==> Déploiement serveur PROD (main)"
-    #cd ~/Coinche ne pas aller automatiquement dans le dossier de l'application, pour eviter de faire l'erreur de couper le server de prod en testant le script
     git pull origin main
     mkdir -p build && cd build
     cmake .. -DCMAKE_BUILD_TYPE=Release
