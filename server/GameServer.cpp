@@ -60,6 +60,21 @@ void GameServer::onTextMessageReceived(const QString &message) {
 
     qDebug() << "GameServer - Message recu:" << type;
 
+    // Vérifier la version du client pour les messages d'authentification
+    if (type == "register" || type == "registerAccount" || type == "loginAccount") {
+        int clientVersion = obj["version"].toInt(0);
+        if (clientVersion < MIN_CLIENT_VERSION) {
+            QJsonObject error;
+            error["type"] = "versionError";
+            error["message"] = QString("Votre application est obsolète (v%1). Veuillez la mettre à jour depuis le Play Store (v%2 minimum requise).")
+                                .arg(clientVersion).arg(MIN_CLIENT_VERSION);
+            sendMessage(sender, error);
+            qWarning() << "Client version trop ancienne:" << clientVersion << "< min" << MIN_CLIENT_VERSION
+                       << "pour message" << type;
+            return;
+        }
+    }
+
     if (type == "register") {
         handleRegister(sender, obj);
     } else if (type == "registerAccount") {
@@ -201,18 +216,6 @@ void GameServer::onDisconnected() {
 
 
 void GameServer::handleRegister(QWebSocket *socket, const QJsonObject &data) {
-    // Vérifier la version du client
-    int clientVersion = data["version"].toInt(0);
-    if (clientVersion < MIN_CLIENT_VERSION) {
-        QJsonObject error;
-        error["type"] = "versionError";
-        error["message"] = QString("Votre application est obsolète (v%1). Veuillez la mettre à jour depuis le Play Store (v%2 minimum requise).")
-                            .arg(clientVersion).arg(MIN_CLIENT_VERSION);
-        sendMessage(socket, error);
-        qWarning() << "Client version trop ancienne:" << clientVersion << "< min" << MIN_CLIENT_VERSION;
-        return;
-    }
-
     QString playerName = data["playerName"].toString();
     QString avatar = data["avatar"].toString();
     if (avatar.isEmpty()) avatar = "avataaars1.svg";

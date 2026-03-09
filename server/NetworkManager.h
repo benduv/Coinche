@@ -213,6 +213,7 @@ public:
         msg["email"] = email;
         msg["password"] = password;
         msg["avatar"] = avatar;
+        msg["version"] = CLIENT_VERSION;
         sendMessage(msg);
     }
 
@@ -223,6 +224,7 @@ public:
         msg["type"] = "loginAccount";
         msg["email"] = email;
         msg["password"] = password;
+        msg["version"] = CLIENT_VERSION;
         sendMessage(msg);
     }
 
