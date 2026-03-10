@@ -8,6 +8,9 @@ Item {
 
     property bool active: false
     property real waveRadius: 5   // doit correspondre au radius du Rectangle parent
+    property int startDelay: 0    // délai avant de lancer les ondes (ms)
+
+    signal delayConsumed()         // émis quand le délai a été consommé
 
     anchors.fill: parent
 
@@ -15,13 +18,29 @@ Item {
         if (active) {
             wave1.scale = 1.0; wave1.opacity = 0
             wave2.scale = 1.0; wave2.opacity = 0
-            anim1.restart()
-            anim2.restart()
+            if (startDelay > 0) {
+                delayTimer.restart()
+            } else {
+                anim1.restart()
+                anim2.restart()
+            }
         } else {
+            delayTimer.stop()
             anim1.stop()
             anim2.stop()
             wave1.opacity = 0; wave1.scale = 1.0
             wave2.opacity = 0; wave2.scale = 1.0
+        }
+    }
+
+    Timer {
+        id: delayTimer
+        interval: root.startDelay
+        repeat: false
+        onTriggered: {
+            anim1.restart()
+            anim2.restart()
+            root.delayConsumed()
         }
     }
 

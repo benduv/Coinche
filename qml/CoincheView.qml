@@ -83,8 +83,33 @@ Rectangle {
         audioOutput: AudioOutput {}
     }
 
+    // Son comète d'annonce
+    MediaPlayer {
+        id: cometSound
+        source: "qrc:/resources/sons/126531__sinkhole7__tink3d.wav"
+        audioOutput: AudioOutput { volume: 0.7 }
+    }
+
+    Timer {
+        id: cometSoundTimer
+        interval: 25
+        repeat: false
+        onTriggered: {
+            if (AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
+                cometSound.stop()
+                cometSound.play()
+            }
+        }
+    }
+
     // Flag pour éviter de jouer le son d'alerte plusieurs fois par tour
     property bool playTimeAlertPlayed: false
+
+    // True quand la dernière annonce a déclenché une comète (pas un Passe)
+    property bool lastBidHadComet: false
+
+    // Délai d'affichage du panneau d'annonces après une comète
+    property bool annoncePanelReady: true
 
     // Surveiller le temps restant pour jouer une carte
     Connections {
@@ -266,6 +291,49 @@ Rectangle {
         return "white"
     }
 
+    // Animation de comète pour les annonces
+    BidCometAnimation {
+        id: bidComet
+    }
+
+    // Timer pour afficher l'annonce au moment de l'impact de la comète (400ms = durée du vol)
+    Timer {
+        id: pendingBidTimer
+        interval: 400
+        repeat: false
+        onTriggered: {
+            gameModel.showPendingBid()
+            rootArea.annoncePanelReady = true
+        }
+    }
+
+    // Déclencher la comète quand un joueur fait une annonce
+    Connections {
+        target: gameModel
+        function onBidAnimationRequested(playerIndex) {
+            var bidRect
+            switch (getVisualPosition(playerIndex)) {
+                case 0: bidRect = bidRectSouth; break
+                case 1: bidRect = bidRectWest; break
+                case 2: bidRect = bidRectNorth; break
+                case 3: bidRect = bidRectEast; break
+                default: return
+            }
+
+            // Convertir la position du bidRect en coordonnées de rootArea
+            var pos = bidRect.mapToItem(rootArea, bidRect.width / 2, bidRect.height / 2)
+            bidComet.targetX = pos.x
+            bidComet.targetY = pos.y
+            bidComet.start()
+            cometSoundTimer.restart()
+            rootArea.lastBidHadComet = true
+            rootArea.annoncePanelReady = false
+
+            // Afficher l'annonce au moment de l'impact
+            pendingBidTimer.restart()
+        }
+    }
+
     // =====================
     // ZONE CENTRALE DE JEU
     // =====================
@@ -443,10 +511,11 @@ Rectangle {
             anchors.leftMargin: parent.width * 0.09
             anchors.rightMargin: parent.width * 0.09
             anchors.topMargin: parent.height * 0.21
-            anchors.bottomMargin: parent.height * 0.19
+            anchors.bottomMargin: parent.height * 0.2
             visible: gameModel.biddingPhase &&
                      gameModel.distributionPhase === 0 &&    // Attendre fin de distribution
                      gameModel.biddingPlayer === gameModel.myPosition &&
+                     rootArea.annoncePanelReady &&           // Attendre fin de l'animation comète
                      !gameModel.showCoincheAnimation &&      // Masquer si animation Coinche
                      !gameModel.showSurcoincheAnimation &&   // Masquer si animation Surcoinche
                      !gameModel.surcoincheAvailable &&       // Masquer si bouton Surcoinche visible
@@ -742,7 +811,7 @@ Rectangle {
                     // Item wrapper pour annonce + avatar + nom (layout indépendant pour le nom)
                     Item {
                         width: rootArea.width * 0.08
-                        height: rootArea.height * 0.045 + rootArea.height * 0.005 + rootArea.width * 0.075 + rootArea.height * 0.005 + rootArea.height * 0.04
+                        height: rootArea.height * 0.05 + rootArea.height * 0.005 + rootArea.width * 0.075 + rootArea.height * 0.005 + rootArea.height * 0.04
 
                         // Indicateur d'annonce (espace toujours reserve)
                         Rectangle {
@@ -750,11 +819,11 @@ Rectangle {
                             anchors.top: parent.top
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: Math.max(bidRowSouth.width + rootArea.width * 0.02, rootArea.width * 0.08)
-                            height: rootArea.height * 0.045
+                            height: rootArea.height * 0.05
                             radius: height / 4
                             color: "grey"
-                            border.color: "#4a8a4a"
-                            border.width: 1
+                            border.color: gameModel.lastBidderIndex === playerSouthRow.actualPlayerIndex ? "cyan" : "#4a8a4a"
+                            border.width: gameModel.lastBidderIndex === playerSouthRow.actualPlayerIndex ? 2 : 1
                             opacity: {
                                 // Visible si le joueur a fait une annonce OU s'il a coinché
                                 if (rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "" &&
@@ -867,6 +936,8 @@ Rectangle {
                             // Ondes concentriques - phase d'annonce
                             BidWave {
                                 active: gameModel.biddingPhase && gameModel.biddingPlayer === playerSouthRow.actualPlayerIndex
+                                startDelay: rootArea.lastBidHadComet ? 400 : 0
+                                onDelayConsumed: rootArea.lastBidHadComet = false
                             }
 
                             // MouseArea pour afficher les stats
@@ -1023,6 +1094,8 @@ Rectangle {
                         // Ondes concentriques - phase d'annonce
                         BidWave {
                             active: gameModel.biddingPhase && gameModel.biddingPlayer === playerNorthColumn.actualPlayerIndex
+                            startDelay: rootArea.lastBidHadComet ? 400 : 0
+                            onDelayConsumed: rootArea.lastBidHadComet = false
                         }
 
                         // MouseArea pour afficher les stats
@@ -1083,13 +1156,14 @@ Rectangle {
 
                     // Indicateur d'annonce en bas
                     Rectangle {
+                        id: bidRectNorth
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: Math.max(bidRowNorth.width + rootArea.width * 0.02, rootArea.width * 0.08)
-                        height: rootArea.height * 0.045
+                        height: rootArea.height * 0.05
                         radius: height / 4
                         color: "grey"
-                        border.color: "#4a8a4a"
-                        border.width: 1
+                        border.color: gameModel.lastBidderIndex === playerNorthColumn.actualPlayerIndex ? "cyan" : "#4a8a4a"
+                        border.width: gameModel.lastBidderIndex === playerNorthColumn.actualPlayerIndex ? 2 : 1
                         opacity: {
                             // Visible si le joueur a fait une annonce OU s'il a coinché
                             if (rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "" &&
@@ -1208,13 +1282,14 @@ Rectangle {
 
                 // Indicateur d'annonce (espace toujours reserve)
                 Rectangle {
+                    id: bidRectWest
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: Math.max(bidRowWest.width + rootArea.width * 0.015, rootArea.width * 0.08)
-                    height: rootArea.height * 0.045
+                    height: rootArea.height * 0.05
                     radius: height / 4
                     color: "grey"
-                    border.color: "#4a8a4a"
-                    border.width: 1
+                    border.color: gameModel.lastBidderIndex === playerWestRow.actualPlayerIndex ? "cyan" : "#4a8a4a"
+                    border.width: gameModel.lastBidderIndex === playerWestRow.actualPlayerIndex ? 2 : 1
                     opacity: {
                         // Visible si le joueur a fait une annonce OU s'il a coinché
                         if (rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "" &&
@@ -1340,6 +1415,8 @@ Rectangle {
                         // Ondes concentriques - phase d'annonce
                         BidWave {
                             active: gameModel.biddingPhase && gameModel.biddingPlayer === playerWestRow.actualPlayerIndex
+                            startDelay: rootArea.lastBidHadComet ? 400 : 0
+                            onDelayConsumed: rootArea.lastBidHadComet = false
                         }
 
                         // MouseArea pour afficher les stats
@@ -1451,13 +1528,14 @@ Rectangle {
 
                 // Indicateur d'annonce (espace toujours reserve)
                 Rectangle {
+                    id: bidRectEast
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: Math.max(bidRowEast.width + rootArea.width * 0.02, rootArea.width * 0.08)
-                    height: rootArea.height * 0.045
+                    height: rootArea.height * 0.05
                     radius: height / 4
                     color: "grey"
-                    border.color: "#4a8a4a"
-                    border.width: 1
+                    border.color: gameModel.lastBidderIndex === playerEastRow.actualPlayerIndex ? "cyan" : "#4a8a4a"
+                    border.width: gameModel.lastBidderIndex === playerEastRow.actualPlayerIndex ? 2 : 1
                     opacity: {
                         // Visible si le joueur a fait une annonce OU s'il a coinché
                         if (rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "" &&
@@ -1573,6 +1651,8 @@ Rectangle {
                         // Ondes concentriques - phase d'annonce
                         BidWave {
                             active: gameModel.biddingPhase && gameModel.biddingPlayer === playerEastRow.actualPlayerIndex
+                            startDelay: rootArea.lastBidHadComet ? 400 : 0
+                            onDelayConsumed: rootArea.lastBidHadComet = false
                         }
 
                         // MouseArea pour afficher les stats

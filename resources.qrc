@@ -29,6 +29,7 @@
         <file>qml/ExplosionAnimation.qml</file>
         <file>qml/UfoNewMancheAnimation.qml</file>
         <file>qml/BidWave.qml</file>
+        <file>qml/BidCometAnimation.qml</file>
         <file>resources/animations/UFO_404.gif</file>
         <file>resources/animations/Rocket.gif</file>
         <file>resources/cards/back.png</file>
@@ -122,5 +123,6 @@
         <file>resources/sons/75328__oddworld__oddworld_explosionecho.wav</file>
         <file>resources/sons/55847__sergenious__rocket.wav</file>
         <file>resources/sons/405571__parasonya__explosion-1.flac</file>
+        <file>resources/sons/126531__sinkhole7__tink3d.wav</file>
     </qresource>
 </RCC>

@@ -111,6 +111,7 @@ public:
     int pliWinnerId() const;
     bool strongCardsLeft() const;
     Q_INVOKABLE void setStrongCardsLeft(bool value);
+    Q_INVOKABLE void showPendingBid();
     Q_INVOKABLE QString getPlayerName(int position) const;
     Q_INVOKABLE QString getPlayerAvatar(int position) const;
     Q_INVOKABLE void setPlayerAvatar(int position, const QString& avatar);
@@ -162,6 +163,7 @@ signals:
     void lastPliCardsChanged();
     void distributionPhaseChanged();
     void playerBidsChanged();
+    void bidAnimationRequested(int playerIndex);
     void playTimeRemainingChanged();
     void dealerPositionChanged();
     void pliWinnerIdChanged();
@@ -220,6 +222,10 @@ private:
     int m_pliWinnerId;  // ID du gagnant du pli en cours de nettoyage (-1 si aucun)
 
     bool m_strongCardsLeft = false;  // Préférence de tri: true = fortes à gauche
+
+    // Annonce en attente (affichage retardé pour synchroniser avec l'animation comète)
+    QVariantMap m_pendingBid;
+    int m_pendingBidPlayerIndex = -1;
 
     QList<Player*> m_onlinePlayers;  // Tous les joueurs de la partie
     QMap<int, QString> m_playerAvatars;  // Avatars des joueurs par position

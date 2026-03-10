@@ -356,6 +356,15 @@ void GameModel::setStrongCardsLeft(bool value)
     }
 }
 
+void GameModel::showPendingBid()
+{
+    if (m_pendingBidPlayerIndex >= 0 && m_pendingBidPlayerIndex < m_playerBids.size()) {
+        m_playerBids[m_pendingBidPlayerIndex] = m_pendingBid;
+        emit playerBidsChanged();
+        m_pendingBidPlayerIndex = -1;
+    }
+}
+
 QString GameModel::getPlayerName(int position) const
 {
     Player* player = const_cast<GameModel*>(this)->getPlayerByPosition(position);
@@ -1015,6 +1024,11 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
 
                 HandModel* hand = getHandModelByPosition(playerIndex);
                 if (hand) {
+                    // Vider les indices jouables pour éviter qu'une carte adjacente
+                    // apparaisse brièvement comme jouable après le décalage d'indices
+                    if (playerIndex == m_myPosition) {
+                        hand->setPlayableCards({});
+                    }
                     hand->refresh();
                 }
             }
@@ -1071,8 +1085,18 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
                 // Trefle (4) et Pique (6) sont noirs
                 // TA (7) et SA (8) sont blancs (isRed = false)
                 bid["isRed"] = (suit == 3 || suit == 5);
-                m_playerBids[playerIndex] = bid;
-                emit playerBidsChanged();
+
+                // Pour les vraies annonces : lancer la comète d'abord, retarder l'affichage
+                if (annonce != Player::PASSE) {
+                    // Stocker les données pour affichage différé
+                    m_pendingBid = bid;
+                    m_pendingBidPlayerIndex = playerIndex;
+                    emit bidAnimationRequested(playerIndex);
+                    // L'affichage sera déclenché par QML via showPendingBid() après le vol de la comète
+                } else {
+                    m_playerBids[playerIndex] = bid;
+                    emit playerBidsChanged();
+                }
             }
         }
 
@@ -1211,7 +1235,8 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         });
 
         // Attendre un peu pour que l'utilisateur voie le pli, puis le nettoyer
-        QTimer::singleShot(1500, this, [this, winnerId]() {
+        // 1650ms > 1500ms serveur pour absorber la latence réseau
+        QTimer::singleShot(1650, this, [this, winnerId]() {
             // Sauvegarder le pli courant comme dernier pli avant de le nettoyer
             // On copie les VALEURS des cartes, pas les pointeurs
             m_lastPliCards.clear();

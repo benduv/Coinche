@@ -82,6 +82,27 @@ include(GoogleTest)
 gtest_discover_tests(test_coinche)
 
 # ========================================
+# Tests unitaires ScoreCalculator
+# ========================================
+add_executable(test_scorecalculator
+    scorecalculator_test.cpp
+)
+
+target_include_directories(test_scorecalculator PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_scorecalculator PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_scorecalculator)
+
+# ========================================
 # Tests unitaires GameServer
 # ========================================
 add_executable(test_gameserver

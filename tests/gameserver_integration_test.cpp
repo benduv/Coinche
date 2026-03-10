@@ -85,6 +85,7 @@ public:
         msg["playerName"] = m_playerName;
         msg["avatar"] = "avataaars1.svg";
         msg["wasInGame"] = wasInGame;
+        msg["version"] = GameServer::MIN_CLIENT_VERSION;
         sendMessage(msg);
     }
 

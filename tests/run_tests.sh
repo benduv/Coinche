@@ -31,7 +31,7 @@ cd "$BUILD_DIR"
 # Compiler
 echo -e "${BLUE}Compilation...${NC}"
 if [ "$TEST_TYPE" == "all" ]; then
-    cmake --build . --target coinche_tests test_gameserver test_capot_generale test_coinche test_databasemanager test_networkmanager test_networkmanager_integration test_gameserver_integration
+    cmake --build . --target coinche_tests test_gameserver test_capot_generale test_coinche test_scorecalculator test_databasemanager test_networkmanager test_networkmanager_integration test_gameserver_integration
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erreur de compilation${NC}"
         echo ""
@@ -91,6 +91,10 @@ case $TEST_TYPE in
         echo -e "${BLUE}Exécution des tests COINCHE/SURCOINCHE...${NC}"
         ./test_coinche
         ;;
+    scorecalculator)
+        echo -e "${BLUE}Exécution des tests ScoreCalculator...${NC}"
+        ./test_scorecalculator
+        ;;
     databasemanager)
         echo -e "${BLUE}Exécution des tests DatabaseManager...${NC}"
         ./test_databasemanager
@@ -119,6 +123,7 @@ case $TEST_TYPE in
         run_test "test_gameserver" "Tests GameServer"
         run_test "test_capot_generale" "Tests CAPOT/GENERALE"
         run_test "test_coinche" "Tests COINCHE/SURCOINCHE"
+        run_test "test_scorecalculator" "Tests ScoreCalculator"
         run_test "test_databasemanager" "Tests DatabaseManager"
         run_test "test_networkmanager" "Tests NetworkManager"
         run_test "test_networkmanager_integration" "Tests Intégration NetworkManager"
@@ -126,7 +131,7 @@ case $TEST_TYPE in
         ;;
     *)
         echo -e "${RED}Type de test invalide: $TEST_TYPE${NC}"
-        echo "Usage: ./run_tests.sh [gameserver|capot|coinche|databasemanager|networkmanager|networkmanager_integration|gameserver_integration|coinche_tests|all]"
+        echo "Usage: ./run_tests.sh [gameserver|capot|coinche|scorecalculator|databasemanager|networkmanager|networkmanager_integration|gameserver_integration|coinche_tests|all]"
         echo ""
         echo "Appuyez sur Entrée pour fermer..."
         read

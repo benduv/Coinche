@@ -2685,17 +2685,8 @@ void GameServer::finishManche(int roomId) {
     int pointsRealisesTeam1 = room->scoreMancheTeam1;
     int pointsRealisesTeam2 = room->scoreMancheTeam2;
 
-    // Ajoute les points de Belote (détectée au début de la phase de jeu)
-    if (room->beloteTeam1) {
-        pointsRealisesTeam1 += 20;
-        qDebug() << "GameServer - +20 points de Belote pour l'Équipe 1";
-    }
-    if (room->beloteTeam2) {
-        pointsRealisesTeam2 += 20;
-        qDebug() << "GameServer - +20 points de Belote pour l'Équipe 2";
-    }
-
-    qDebug() << "GameServer - Points realises dans la manche (avec Belote):";
+    // Note: la Belote (+20) est gérée par ScoreCalculator, pas ici
+    qDebug() << "GameServer - Points realises dans la manche (hors Belote):";
     qDebug() << "  Equipe 1 (joueurs 0 et 2):" << pointsRealisesTeam1 << "points";
     qDebug() << "  Equipe 2 (joueurs 1 et 3):" << pointsRealisesTeam2 << "points";
 
