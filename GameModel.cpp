@@ -1206,6 +1206,10 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             m_showBeloteAnimation = false;
             emit showBeloteAnimationChanged();
         });
+    } else if (action == "emojiReaction") {
+        QJsonObject emojiData = data.toJsonObject();
+        int emojiId = emojiData["emojiId"].toInt();
+        emit emojiReactionReceived(playerIndex, emojiId);
     } else if (action == "rebelote") {
         // Afficher l'animation Rebelote pour tous les joueurs
         m_showRebeloteAnimation = true;

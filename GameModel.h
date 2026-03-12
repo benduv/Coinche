@@ -170,6 +170,7 @@ signals:
     void strongCardsLeftChanged();
     void gameInitialized();
     void gameOver(int winner, int scoreTeam1, int scoreTeam2);
+    void emojiReactionReceived(int playerIndex, int emojiId);
 
     // Signaux vers NetworkManager
     void cardPlayedLocally(int cardIndex, int cardValue, int cardSuit);

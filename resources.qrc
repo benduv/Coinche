@@ -32,6 +32,12 @@
         <file>qml/BidCometAnimation.qml</file>
         <file>resources/animations/UFO_404.gif</file>
         <file>resources/animations/Rocket.gif</file>
+        <file>resources/animations/Crying_emoji.gif</file>
+        <file>resources/animations/Raised_Eyebrow_Emoji.gif</file>
+        <file>resources/animations/Star_Strike_Emoji.gif</file>
+        <file>resources/animations/Winking_Emoji.gif</file>
+        <file>resources/animations/sunglass_emoji.gif</file>
+        <file>resources/emoji-happy-svgrepo-com.svg</file>
         <file>resources/cards/back.png</file>
         <file>resources/cards/carreau_7.png</file>
         <file>resources/cards/carreau_8.png</file>

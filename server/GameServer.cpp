@@ -115,6 +115,8 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleSendContactMessage(sender, obj);
     } else if (type == "reportCrash") {
         handleReportCrash(sender, obj);
+    } else if (type == "sendEmoji") {
+        handleSendEmoji(sender, obj);
     } else if (type == "forgotPassword") {
         handleForgotPassword(sender, obj);
     } else if (type == "changePassword") {
@@ -1209,6 +1211,27 @@ void GameServer::handleReportCrash(QWebSocket *socket, const QJsonObject &data) 
     response["type"] = "crashReported";
     response["success"] = true;
     sendMessage(socket, response);
+}
+
+void GameServer::handleSendEmoji(QWebSocket *socket, const QJsonObject &data) {
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (connectionId.isEmpty()) return;
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn || conn->gameRoomId == -1) return;
+
+    int emojiId = data["emojiId"].toInt(-1);
+    if (emojiId < 0 || emojiId > 4) return;
+
+    // Rate limit : 3 secondes entre chaque emoji
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (now - conn->lastEmojiTimestamp < 3000) return;
+    conn->lastEmojiTimestamp = now;
+
+    QJsonObject msg;
+    msg["type"] = "emojiReaction";
+    msg["playerIndex"] = conn->playerIndex;
+    msg["emojiId"] = emojiId;
+    broadcastToRoom(conn->gameRoomId, msg);
 }
 
 void GameServer::handleGetStats(QWebSocket *socket, const QJsonObject &data) {

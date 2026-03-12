@@ -204,6 +204,13 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void sendEmoji(int emojiId) {
+        QJsonObject msg;
+        msg["type"] = "sendEmoji";
+        msg["emojiId"] = emojiId;
+        sendMessage(msg);
+    }
+
     Q_INVOKABLE void registerAccount(const QString &pseudo, const QString &email, const QString &password, const QString &avatar = "avataaars1.svg") {
         m_playerEmail = email;
         emit playerEmailChanged();
@@ -825,6 +832,15 @@ private slots:
 
             if (m_gameModel) {
                 m_gameModel->receivePlayerAction(playerIndex, "rebelote", QJsonObject());
+            }
+        }
+        else if (type == "emojiReaction") {
+            int playerIndex = obj["playerIndex"].toInt();
+            int emojiId = obj["emojiId"].toInt();
+            if (m_gameModel) {
+                QJsonObject emojiData;
+                emojiData["emojiId"] = emojiId;
+                m_gameModel->receivePlayerAction(playerIndex, "emojiReaction", emojiData);
             }
         }
         else if (type == "registerAccountSuccess") {

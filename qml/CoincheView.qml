@@ -183,6 +183,15 @@ Rectangle {
     property real heightRatio: height / 1080
     property real minRatio: Math.min(widthRatio, heightRatio)
 
+    // Sources des emojis GIF
+    property var emojiSources: [
+        "qrc:/resources/animations/Winking_Emoji.gif",
+        "qrc:/resources/animations/sunglass_emoji.gif",
+        "qrc:/resources/animations/Star_Strike_Emoji.gif",
+        "qrc:/resources/animations/Raised_Eyebrow_Emoji.gif",
+        "qrc:/resources/animations/Crying_emoji.gif"
+    ]
+
     // Propriétés pour la popup de fin de partie
     property bool showGameOverPopup: false
     property int gameOverWinner: 1
@@ -2528,6 +2537,195 @@ Rectangle {
                             visible: modelData.suit === gameModel.lastBidSuitValue
                         }
                     }
+                }
+            }
+        }
+
+        // =====================
+        // BOUTON EMOJI + MENU + ANIMATIONS
+        // =====================
+
+        // Overlay pour fermer le menu emoji en cliquant en dehors
+        MouseArea {
+            anchors.fill: parent
+            visible: emojiButton.emojiMenuOpen
+            z: 499
+            onClicked: emojiButton.emojiMenuOpen = false
+        }
+
+        // Bouton emoji (bas-gauche)
+        Button {
+            id: emojiButton
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.bottomMargin: parent.height * 0.02
+            anchors.leftMargin: parent.width * 0.01
+            width: rootArea.height * 0.08
+            height: rootArea.height * 0.08
+            z: 500
+
+            property bool emojiMenuOpen: false
+            property bool canSendEmoji: true
+
+            background: Rectangle {
+                color: parent.down ? "#006080" : (parent.hovered ? "#008faf" : "#00bcd4")
+                radius: 5
+                border.color: "#4dd0e1"
+                border.width: 2
+
+                Image {
+                    source: "qrc:/resources/emoji-happy-svgrepo-com.svg"
+                    anchors.fill: parent
+                    anchors.margins: parent.width * 0.15
+                    fillMode: Image.PreserveAspectFit
+                }
+            }
+
+            onClicked: {
+                emojiMenuOpen = !emojiMenuOpen
+            }
+        }
+
+        // Menu emoji (vertical, bord gauche, semi-transparent)
+        Rectangle {
+            id: emojiMenu
+            visible: emojiButton.emojiMenuOpen
+            anchors.bottom: emojiButton.top
+            anchors.left: parent.left
+            anchors.bottomMargin: parent.height * 0.01
+            anchors.leftMargin: parent.width * 0.01
+            width: rootArea.height * 0.10
+            height: rootArea.height * 0.55
+            color: "#AA000000"
+            radius: 10
+            z: 501
+
+            Column {
+                anchors.centerIn: parent
+                spacing: emojiMenu.height * 0.03
+
+                Repeater {
+                    model: 5
+                    delegate: Item {
+                        width: emojiMenu.width * 0.8
+                        height: width
+
+                        AnimatedImage {
+                            anchors.fill: parent
+                            source: rootArea.emojiSources[index]
+                            playing: false
+                            fillMode: Image.PreserveAspectFit
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (emojiButton.canSendEmoji) {
+                                    networkManager.sendEmoji(index)
+                                    emojiButton.canSendEmoji = false
+                                    emojiCooldownTimer.start()
+                                }
+                                emojiButton.emojiMenuOpen = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Cooldown client (3s, miroir du rate limit serveur)
+        Timer {
+            id: emojiCooldownTimer
+            interval: 3000
+            repeat: false
+            onTriggered: emojiButton.canSendEmoji = true
+        }
+
+        // 4 AnimatedImage pour les réactions emoji (une par position visuelle)
+        AnimatedImage {
+            id: emojiAnimSouth
+            visible: false
+            playing: visible
+            width: rootArea.width * 0.08
+            height: rootArea.width * 0.08
+            fillMode: Image.PreserveAspectFit
+            z: 150
+        }
+        AnimatedImage {
+            id: emojiAnimNorth
+            visible: false
+            playing: visible
+            width: rootArea.width * 0.08
+            height: rootArea.width * 0.08
+            fillMode: Image.PreserveAspectFit
+            z: 150
+        }
+        AnimatedImage {
+            id: emojiAnimWest
+            visible: false
+            playing: visible
+            width: rootArea.width * 0.08
+            height: rootArea.width * 0.08
+            fillMode: Image.PreserveAspectFit
+            z: 150
+        }
+        AnimatedImage {
+            id: emojiAnimEast
+            visible: false
+            playing: visible
+            width: rootArea.width * 0.08
+            height: rootArea.width * 0.08
+            fillMode: Image.PreserveAspectFit
+            z: 150
+        }
+
+        // Timers auto-hide (2.5s)
+        Timer { id: emojiTimerSouth; interval: 2500; repeat: false; onTriggered: emojiAnimSouth.visible = false }
+        Timer { id: emojiTimerNorth; interval: 2500; repeat: false; onTriggered: emojiAnimNorth.visible = false }
+        Timer { id: emojiTimerWest; interval: 2500; repeat: false; onTriggered: emojiAnimWest.visible = false }
+        Timer { id: emojiTimerEast; interval: 2500; repeat: false; onTriggered: emojiAnimEast.visible = false }
+
+        // Handler de réception des réactions emoji
+        Connections {
+            target: gameModel
+            function onEmojiReactionReceived(playerIndex, emojiId) {
+                var source = rootArea.emojiSources[emojiId]
+                var animTarget = null
+                var timer = null
+
+                if (playerIndex === playerSouthRow.actualPlayerIndex) {
+                    animTarget = emojiAnimSouth
+                    timer = emojiTimerSouth
+                    var posSouth = avatarSouth.mapToItem(rootArea, 0, 0)
+                    animTarget.x = posSouth.x + (avatarSouth.width - animTarget.width) / 2
+                    animTarget.y = posSouth.y - animTarget.height - rootArea.height * 0.01
+                } else if (playerIndex === playerEastRow.actualPlayerIndex) {
+                    animTarget = emojiAnimEast
+                    timer = emojiTimerEast
+                    var posEast = eastAvatarRect.mapToItem(rootArea, 0, 0)
+                    animTarget.x = posEast.x - animTarget.width - rootArea.width * 0.01
+                    animTarget.y = posEast.y + (eastAvatarRect.height - animTarget.height) / 2
+                } else if (playerIndex === playerNorthColumn.actualPlayerIndex) {
+                    animTarget = emojiAnimNorth
+                    timer = emojiTimerNorth
+                    var posNorth = northAvatarRect.mapToItem(rootArea, 0, 0)
+                    animTarget.x = posNorth.x + (northAvatarRect.width - animTarget.width) / 2
+                    animTarget.y = posNorth.y + northAvatarRect.height + rootArea.height * 0.01
+                } else if (playerIndex === playerWestRow.actualPlayerIndex) {
+                    animTarget = emojiAnimWest
+                    timer = emojiTimerWest
+                    var posWest = westAvatarRect.mapToItem(rootArea, 0, 0)
+                    animTarget.x = posWest.x + westAvatarRect.width + rootArea.width * 0.01
+                    animTarget.y = posWest.y + (westAvatarRect.height - animTarget.height) / 2
+                }
+
+                if (animTarget) {
+                    animTarget.source = ""
+                    animTarget.source = source
+                    animTarget.visible = true
+                    animTarget.currentFrame = 0
+                    timer.restart()
                 }
             }
         }

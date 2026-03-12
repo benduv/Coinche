@@ -34,6 +34,7 @@ struct PlayerConnection {
     int playerIndex;           // Position dans la partie (0-3)
     QString lobbyPartnerId;    // ID du partenaire de lobby (vide si pas de partenaire)
     bool isAnonymous = false;  // RGPD - droit à l'opposition
+    qint64 lastEmojiTimestamp = 0;  // Rate limit emojis (ms since epoch)
 };
 
 // Une partie de jeu avec la vraie logique
@@ -373,6 +374,7 @@ private:
     void handleSetAnonymous(QWebSocket *socket, const QJsonObject &data);
 
     void handleReportCrash(QWebSocket *socket, const QJsonObject &data);
+    void handleSendEmoji(QWebSocket *socket, const QJsonObject &data);
 
     void handleGetStats(QWebSocket *socket, const QJsonObject &data);
 
