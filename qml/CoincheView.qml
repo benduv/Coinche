@@ -92,7 +92,7 @@ Rectangle {
 
     Timer {
         id: cometSoundTimer
-        interval: 25
+        interval: 250
         repeat: false
         onTriggered: {
             if (AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {

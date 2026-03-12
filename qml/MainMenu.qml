@@ -1110,7 +1110,8 @@ ApplicationWindow {
                     mainWindow.loggedInPlayerName = ""
                     mainWindow.accountType = ""
                     networkManager.clearCredentials()
-                    // Forcer le mode portrait avant de naviguer vers LoginView
+                    // Empêcher Settings.onDestruction de remettre en paysage
+                    skipLandscapeRestore = true
                     if (Qt.platform.os === "android") {
                         orientationHelper.setPortrait()
                     }

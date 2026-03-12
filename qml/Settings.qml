@@ -30,9 +30,11 @@ Rectangle {
         initialized = true
     }
 
+    property bool skipLandscapeRestore: false
+
     Component.onDestruction: {
-        // Restaurer le mode paysage via JNI natif
-        if (Qt.platform.os === "android") {
+        // Restaurer le mode paysage via JNI natif (sauf si on retourne au login après suppression de compte)
+        if (Qt.platform.os === "android" && !skipLandscapeRestore) {
             orientationHelper.setLandscape()
         }
     }

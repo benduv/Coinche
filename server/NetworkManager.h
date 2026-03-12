@@ -524,24 +524,24 @@ private slots:
 
         bool wasConnected = m_connected;
 
-        // NE PAS METTRE m_connected à false car sinon pas de reconnexion possible
-        //m_connected = false;
-
         // Arrêter le heartbeat
         m_heartbeatTimer->stop();
 
-        // Si on était en partie ou connecté, activer la reconnexion automatique
-        if (wasConnected && (!m_playerPseudo.isEmpty() || m_gameModel != nullptr)) {
-            m_wasInGame = (m_gameModel != nullptr);  // Sauvegarder si on était en partie
+        // Toujours tenter la reconnexion automatique si on était connecté
+        if (wasConnected) {
+            // Garder m_connected à true pendant la tentative de reconnexion
+            // pour ne pas bloquer l'UI inutilement
+            m_wasInGame = (m_gameModel != nullptr);
 
             // Délai de 1 seconde avant reconnexion pour laisser le temps à l'ancien
             // QSslSocket d'être entièrement détruit (évite le crash "destroyed signal")
             QTimer::singleShot(1000, this, [this]() {
                 openSocket(m_serverUrl);
             });
+        } else {
+            m_connected = false;
+            emit connectedChanged();
         }
-
-        emit connectedChanged();
     }
 
     void onMessageReceived(const QString &message) {

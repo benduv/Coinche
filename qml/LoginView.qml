@@ -284,6 +284,7 @@ Rectangle {
                             placeholderText: ""
                             font.pixelSize: 30 * loginRoot.minRatio
                             maximumLength: 12
+                            onTextChanged: if (text.indexOf(' ') >= 0) text = text.replace(/ /g, '')
 
                             background: Rectangle {
                                 color: "#2a2a2a"
@@ -324,6 +325,7 @@ Rectangle {
                             placeholderText: ""
                             font.pixelSize: 30 * loginRoot.minRatio
                             inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                            onTextChanged: if (text.indexOf(' ') >= 0) text = text.replace(/ /g, '')
 
                             background: Rectangle {
                                 color: "#2a2a2a"
@@ -367,6 +369,7 @@ Rectangle {
                                 id: registerPassword
                                 width: parent.width
                                 height: parent.height
+                                onTextChanged: if (text.indexOf(' ') >= 0) { text = text.replace(/ /g, ''); registerError.text = "Les espaces ne sont pas autorisés dans le mot de passe" }
                                 placeholderText: ""
                                 echoMode: parent.parent.showPassword ? TextInput.Normal : TextInput.Password
                                 font.pixelSize: 30 * loginRoot.minRatio
@@ -621,6 +624,9 @@ Rectangle {
                             registerScreenRec.pendingEmail = registerEmail.text
                             registerScreenRec.pendingPassword = registerPassword.text
 
+                            registerError.text = ""
+                            registerTimeoutTimer.restart()
+
                             // Envoyer la requête au serveur avec l'avatar sélectionné
                             networkManager.registerAccount(registerPseudo.text, registerEmail.text, registerPassword.text, registerScreenRec.selectedAvatar)
                         }
@@ -631,9 +637,20 @@ Rectangle {
                 property string pendingEmail: ""
                 property string pendingPassword: ""
 
+                // Timeout : si pas de réponse du serveur après 10 secondes, afficher une erreur
+                Timer {
+                    id: registerTimeoutTimer
+                    interval: 10000
+                    repeat: false
+                    onTriggered: {
+                        registerError.text = "Le serveur ne répond pas. Vérifiez votre connexion et réessayez."
+                    }
+                }
+
                 Connections {
                     target: networkManager
                     function onRegisterSuccess(playerName, avatar) {
+                        registerTimeoutTimer.stop()
                         // Sauvegarder les credentials pour l'auto-login
                         if (registerScreenRec.pendingEmail !== "" && registerScreenRec.pendingPassword !== "") {
                             networkManager.saveCredentials(registerScreenRec.pendingEmail, registerScreenRec.pendingPassword)
@@ -643,6 +660,7 @@ Rectangle {
                         loginRoot.loginSuccess(playerName, "account")
                     }
                     function onRegisterFailed(error) {
+                        registerTimeoutTimer.stop()
                         registerError.text = error
                         registerScreenRec.pendingEmail = ""
                         registerScreenRec.pendingPassword = ""
