@@ -908,12 +908,12 @@ void GameServer::handleForgotPassword(QWebSocket *socket, const QJsonObject &dat
 
         smtp->sendEmail(email, subject, emailBody);
     } else {
-        // Email not found
+        // Email non trouvé ou erreur - renvoyer un succès pour ne pas révéler
+        // si l'adresse email existe dans la base (protection contre l'énumération de comptes)
         QJsonObject response;
-        response["type"] = "forgotPasswordFailed";
-        response["error"] = errorMsg.isEmpty() ? "Cette adresse mail ne correspond a aucun compte" : errorMsg;
+        response["type"] = "forgotPasswordSuccess";
         sendMessage(socket, response);
-        qDebug() << "Echec mot de passe oublie:" << errorMsg;
+        qDebug() << "Echec mot de passe oublie (masqué au client):" << errorMsg;
     }
 }
 

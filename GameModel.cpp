@@ -505,24 +505,30 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         emit gameInitialized();
     } else {
         // Animation de distribution 3-2-3 pour une nouvelle partie
+        m_distributionGeneration++;
+        int gen = m_distributionGeneration;
         // Phase 1 : 3 cartes (apres 250ms)
-        QTimer::singleShot(250, this, [this, myNewCartes]() {
+        QTimer::singleShot(250, this, [this, myNewCartes, gen]() {
+            if (gen != m_distributionGeneration) return;  // Invalidée par resync
             distributeCards(0, 3, myNewCartes);
 
             // Phase 2 : 2 cartes (après 1000ms supplémentaires)
-            QTimer::singleShot(1000, this, [this, myNewCartes]() {
+            QTimer::singleShot(1000, this, [this, myNewCartes, gen]() {
+                if (gen != m_distributionGeneration) return;
                 m_distributionPhase = 2;
                 emit distributionPhaseChanged();
                 distributeCards(3, 5, myNewCartes);
 
                 // Phase 3 : 3 cartes (après 1000ms supplémentaires)
-                QTimer::singleShot(1000 , this, [this, myNewCartes]() {
+                QTimer::singleShot(1000 , this, [this, myNewCartes, gen]() {
+                    if (gen != m_distributionGeneration) return;
                     m_distributionPhase = 3;
                     emit distributionPhaseChanged();
                     distributeCards(5, 8, myNewCartes);
 
                     // Fin de distribution (après 1000ms supplémentaires)
-                    QTimer::singleShot(1000, this, [this]() {
+                    QTimer::singleShot(1000, this, [this, gen]() {
+                        if (gen != m_distributionGeneration) return;
                         m_distributionPhase = 0;
                         emit distributionPhaseChanged();
                         emit gameInitialized();
@@ -1405,25 +1411,31 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
 
         // Animation de distribution 3-2-3
         // Phase 1 : 3 cartes (apres 250ms)
-    QTimer::singleShot(250, this, [this, myNewCartes]() {
+        m_distributionGeneration++;
+        int gen = m_distributionGeneration;
+    QTimer::singleShot(250, this, [this, myNewCartes, gen]() {
+        if (gen != m_distributionGeneration) return;  // Invalidée par resync
         m_distributionPhase = 1;
         emit distributionPhaseChanged();
         distributeCards(0, 3, myNewCartes);
 
         // Phase 2 : 2 cartes (après 1000ms supplémentaires)
-        QTimer::singleShot(1000, this, [this, myNewCartes]() {
+        QTimer::singleShot(1000, this, [this, myNewCartes, gen]() {
+            if (gen != m_distributionGeneration) return;
             m_distributionPhase = 2;
             emit distributionPhaseChanged();
             distributeCards(3, 5, myNewCartes);
 
             // Phase 3 : 3 cartes (après 1000ms supplémentaires)
-            QTimer::singleShot(1000 , this, [this, myNewCartes]() {
+            QTimer::singleShot(1000 , this, [this, myNewCartes, gen]() {
+                if (gen != m_distributionGeneration) return;
                 m_distributionPhase = 3;
                 emit distributionPhaseChanged();
                 distributeCards(5, 8, myNewCartes);
 
                 // Fin de distribution (après 1000ms supplémentaires)
-                QTimer::singleShot(1000, this, [this]() {
+                QTimer::singleShot(1000, this, [this, gen]() {
+                    if (gen != m_distributionGeneration) return;
                     m_distributionPhase = 0;
                     emit distributionPhaseChanged();
                     emit gameInitialized();
@@ -1440,6 +1452,8 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
     Player* localPlayer = getPlayerByPosition(m_myPosition);
     if (!localPlayer) return;
 
+    int gen = m_distributionGeneration;  // Capturer la génération courante
+
     // Distribuer les cartes une par une avec un délai
     int numCards = endIdx - startIdx;
     for (int cardOffset = 0; cardOffset < numCards; cardOffset++) {
@@ -1447,7 +1461,8 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
         int delay = cardOffset * 250;  // 250ms entre chaque carte
 
         // Distribuer au joueur local (avec délai)
-        QTimer::singleShot(delay, this, [this, localPlayer, cardIndex, myCards]() {
+        QTimer::singleShot(delay, this, [this, localPlayer, cardIndex, myCards, gen]() {
+            if (gen != m_distributionGeneration) return;  // Distribution invalidée par resync
             if (cardIndex < static_cast<int>(myCards.size())) {
                 localPlayer->addCardToHand(myCards[cardIndex]);
 
@@ -1461,7 +1476,8 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
             for (int playerPos = 0; playerPos < 4; playerPos++) {
                 if (playerPos == m_myPosition) continue;
 
-                QTimer::singleShot(delay, this, [this, playerPos]() {
+                QTimer::singleShot(delay, this, [this, playerPos, gen]() {
+                    if (gen != m_distributionGeneration) return;  // Distribution invalidée par resync
                     Player* player = getPlayerByPosition(playerPos);
                     if (player) {
                         Carte* phantomCard = new Carte(Carte::COEUR, Carte::SEPT);
@@ -1477,7 +1493,8 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
 
     // Trier les cartes APRÈS la dernière carte de cette phase
     int sortDelay = numCards * 250;  // Après toutes les cartes de cette phase
-    QTimer::singleShot(sortDelay, this, [this, localPlayer]() {
+    QTimer::singleShot(sortDelay, this, [this, localPlayer, gen]() {
+        if (gen != m_distributionGeneration) return;  // Distribution invalidée par resync
         localPlayer->sortHand(m_strongCardsLeft);
         HandModel* hand = getHandModelByPosition(m_myPosition);
         if (hand) hand->refresh();
@@ -1503,26 +1520,32 @@ void GameModel::receiveCardsDealt(const QJsonArray& cards)
     }
 
     // Lancer l'animation de distribution 3-2-3
+    m_distributionGeneration++;
+    int gen = m_distributionGeneration;
     // Phase 1 : 3 cartes (apres 250ms)
-    QTimer::singleShot(250, this, [this, myNewCartes]() {
+    QTimer::singleShot(250, this, [this, myNewCartes, gen]() {
+        if (gen != m_distributionGeneration) return;
         m_distributionPhase = 1;
         emit distributionPhaseChanged();
         distributeCards(0, 3, myNewCartes, false);  // false = pas de cartes fantômes (lobby mode)
 
         // Phase 2 : 2 cartes (après 1000ms supplémentaires)
-        QTimer::singleShot(1000, this, [this, myNewCartes]() {
+        QTimer::singleShot(1000, this, [this, myNewCartes, gen]() {
+            if (gen != m_distributionGeneration) return;
             m_distributionPhase = 2;
             emit distributionPhaseChanged();
             distributeCards(3, 5, myNewCartes, false);  // false = pas de cartes fantômes (lobby mode)
 
             // Phase 3 : 3 cartes (après 1000ms supplémentaires)
-            QTimer::singleShot(1000 , this, [this, myNewCartes]() {
+            QTimer::singleShot(1000 , this, [this, myNewCartes, gen]() {
+                if (gen != m_distributionGeneration) return;
                 m_distributionPhase = 3;
                 emit distributionPhaseChanged();
                 distributeCards(5, 8, myNewCartes, false);  // false = pas de cartes fantômes (lobby mode)
 
                 // Fin de distribution (après 1000ms supplémentaires)
-                QTimer::singleShot(1000, this, [this]() {
+                QTimer::singleShot(1000, this, [this, gen]() {
+                    if (gen != m_distributionGeneration) return;
                     m_distributionPhase = 0;
                     emit distributionPhaseChanged();
                 });
@@ -1533,6 +1556,33 @@ void GameModel::receiveCardsDealt(const QJsonArray& cards)
 
 void GameModel::resyncCards(const QJsonArray& cards)
 {
+    // Invalider les timers de distribution en cours (évite les doublons de cartes après reconnexion)
+    m_distributionGeneration++;
+    m_distributionPhase = 0;
+    emit distributionPhaseChanged();
+
+    // Réinitialiser l'affichage des annonces de la manche précédente
+    // Le gameState envoyé juste après par le serveur restaurera les bonnes valeurs si nécessaire
+    m_lastBidAnnonce = Player::ANNONCEINVALIDE;
+    m_lastBidCouleur = Carte::COULEURINVALIDE;
+    m_lastBidderIndex = -1;
+    m_isCoinched = false;
+    m_isSurcoinched = false;
+    m_coinchedByPlayerIndex = -1;
+    m_surcoinchedByPlayerIndex = -1;
+    for (int i = 0; i < 4; i++) {
+        m_playerBids[i]["bidValue"] = "";
+        m_playerBids[i]["suitSymbol"] = "";
+        m_playerBids[i]["isRed"] = false;
+    }
+    emit lastBidChanged();
+    emit lastBidderIndexChanged();
+    emit isCoinchedChanged();
+    emit isSurcoinchedChanged();
+    emit coinchedByPlayerIndexChanged();
+    emit surcoinchedByPlayerIndexChanged();
+    emit playerBidsChanged();
+
     Player* localPlayer = getPlayerByPosition(m_myPosition);
     if (!localPlayer) {
         qWarning() << "resyncCards - Joueur local non trouvé";

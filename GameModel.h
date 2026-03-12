@@ -214,6 +214,7 @@ private:
     bool m_showCapotAnimation;
     QList<CarteDuPliSauvegardee> m_lastPliCards;  // Cartes du dernier pli terminé (avec copie des valeurs)
     int m_distributionPhase;  // 0=pas de distribution, 1=3 cartes, 2=2 cartes, 3=3 cartes
+    int m_distributionGeneration = 0;  // Compteur incrémenté à chaque nouvelle distribution, pour invalider les timers obsolètes
     QList<QVariantMap> m_playerBids;  // Annonces de chaque joueur {value, suit, text}
     int m_playTimeRemaining;  // Temps restant pour jouer (en secondes)
     int m_maxPlayTime;  // Temps maximum pour jouer (15 secondes)

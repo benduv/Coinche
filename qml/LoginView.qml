@@ -771,38 +771,73 @@ Rectangle {
                         Layout.fillWidth: true
                         spacing: 8 * loginRoot.minRatio
 
+                        property bool showLoginPassword: false
+
                         Text {
                             text: "Mot de passe"
                             font.pixelSize: 30 * loginRoot.minRatio
                             color: "#aaaaaa"
                         }
 
-                        TextField {
-                            id: loginPassword
+                        Item {
                             width: parent.width
                             height: 70 * loginRoot.heightRatio
-                            placeholderText: ""
-                            echoMode: TextInput.Password
-                            font.pixelSize: 30 * loginRoot.minRatio
-                            inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
 
-                            background: Rectangle {
-                                color: "#2a2a2a"
-                                border.color: loginPassword.activeFocus ? "#FFD700" : "#555555"
-                                border.width: 2 * loginRoot.minRatio
-                                radius: 5 * loginRoot.minRatio
+                            TextField {
+                                id: loginPassword
+                                width: parent.width
+                                height: parent.height
+                                placeholderText: ""
+                                echoMode: parent.parent.showLoginPassword ? TextInput.Normal : TextInput.Password
+                                font.pixelSize: 30 * loginRoot.minRatio
+                                inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+
+                                background: Rectangle {
+                                    color: "#2a2a2a"
+                                    border.color: loginPassword.activeFocus ? "#FFD700" : "#555555"
+                                    border.width: 2 * loginRoot.minRatio
+                                    radius: 5 * loginRoot.minRatio
+                                }
+
+                                color: "white"
+
+                                Text {
+                                    text: loginPassword.text.length === 0 ? "   Votre mot de passe" : ""
+                                    font.pixelSize: 30 * loginRoot.minRatio
+                                    color: "#888888"
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10 * loginRoot.minRatio
+                                    verticalAlignment: Text.AlignVCenter
+                                    visible: loginPassword.text.length === 0
+                                }
                             }
 
-                            color: "white"
+                            // Icône œil pour afficher/masquer le mot de passe
+                            Rectangle {
+                                anchors.right: parent.right
+                                anchors.rightMargin: 10 * loginRoot.minRatio
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 50 * loginRoot.minRatio
+                                height: 50 * loginRoot.minRatio
+                                color: "transparent"
+                                radius: 5 * loginRoot.minRatio
 
-                            Text {
-                                text: loginPassword.text.length === 0 ? "   Votre mot de passe" : ""
-                                font.pixelSize: 30 * loginRoot.minRatio
-                                color: "#888888"
-                                anchors.fill: parent
-                                anchors.leftMargin: 10 * loginRoot.minRatio
-                                verticalAlignment: Text.AlignVCenter
-                                visible: loginPassword.text.length === 0
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: 35 * loginRoot.minRatio
+                                    height: 35 * loginRoot.minRatio
+                                    source: parent.parent.parent.showLoginPassword ? "qrc:/resources/eye-slash-svgrepo-com.svg" : "qrc:/resources/eye-svgrepo-com.svg"
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        parent.parent.parent.showLoginPassword = !parent.parent.parent.showLoginPassword
+                                    }
+                                }
                             }
                         }
                     }
@@ -1313,7 +1348,7 @@ Rectangle {
                         id: forgotPasswordMessage
                         text: ""
                         font.pixelSize: 26 * loginRoot.minRatio
-                        color: forgotPasswordMessage.text.includes("succès") ? "#00ff00" : "#ff6666"
+                        color: "#00ff00"
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignHCenter
                         horizontalAlignment: Text.AlignHCenter
@@ -1359,19 +1394,22 @@ Rectangle {
                 Connections {
                     target: networkManager
                     function onForgotPasswordSuccess() {
-                        forgotPasswordMessage.text = "Un mot de passe temporaire a été envoyé à votre adresse email"
+                        forgotPasswordMessage.text = "Votre demande a bien été prise en compte. Si cette adresse email correspond à un compte, vous recevrez un email permettant de créer un nouveau mot de passe."
                         forgotEmail.text = ""
-                        // Auto-retour après 3 secondes
+                        // Auto-retour après 5 secondes (message plus long à lire)
                         forgotPasswordSuccessTimer.start()
                     }
                     function onForgotPasswordFailed(error) {
-                        forgotPasswordMessage.text = error
+                        // Même message générique pour ne pas révéler si l'email existe
+                        forgotPasswordMessage.text = "Votre demande a bien été prise en compte. Si cette adresse email correspond à un compte, vous recevrez un email permettant de créer un nouveau mot de passe."
+                        forgotEmail.text = ""
+                        forgotPasswordSuccessTimer.start()
                     }
                 }
 
                 Timer {
                     id: forgotPasswordSuccessTimer
-                    interval: 3000
+                    interval: 5000
                     repeat: false
                     onTriggered: {
                         loginStack.pop()

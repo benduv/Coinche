@@ -214,7 +214,9 @@ public:
         msg["password"] = password;
         msg["avatar"] = avatar;
         msg["version"] = CLIENT_VERSION;
-        sendMessage(msg);
+        if (!sendMessage(msg)) {
+            emit registerFailed("Connexion au serveur perdue. Veuillez réessayer.");
+        }
     }
 
     Q_INVOKABLE void loginAccount(const QString &email, const QString &password) {
@@ -225,7 +227,9 @@ public:
         msg["email"] = email;
         msg["password"] = password;
         msg["version"] = CLIENT_VERSION;
-        sendMessage(msg);
+        if (!sendMessage(msg)) {
+            emit loginFailed("Connexion au serveur perdue. Veuillez réessayer.");
+        }
     }
 
     Q_INVOKABLE void deleteAccount(const QString &pseudo) {
@@ -241,7 +245,9 @@ public:
         QJsonObject msg;
         msg["type"] = "forgotPassword";
         msg["email"] = email;
-        sendMessage(msg);
+        if (!sendMessage(msg)) {
+            emit forgotPasswordFailed("Connexion au serveur perdue. Veuillez réessayer.");
+        }
     }
 
     Q_INVOKABLE void changePassword(const QString &email, const QString &newPassword) {
@@ -1116,14 +1122,15 @@ private:
         }
     }
 
-    void sendMessage(const QJsonObject &message) {
+    bool sendMessage(const QJsonObject &message) {
         if (!m_connected) {
-            // qDebug() << "Erreur: non connecte au serveur";
-            return;
+            qWarning() << "sendMessage - Non connecte au serveur, message perdu:" << message["type"].toString();
+            return false;
         }
 
         QJsonDocument doc(message);
         m_socket->sendTextMessage(doc.toJson(QJsonDocument::Compact));
+        return true;
     }
 
     QWebSocket *m_socket;

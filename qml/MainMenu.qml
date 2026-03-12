@@ -1110,6 +1110,10 @@ ApplicationWindow {
                     mainWindow.loggedInPlayerName = ""
                     mainWindow.accountType = ""
                     networkManager.clearCredentials()
+                    // Forcer le mode portrait avant de naviguer vers LoginView
+                    if (Qt.platform.os === "android") {
+                        orientationHelper.setPortrait()
+                    }
                     while (stackView.depth > 1) {
                         stackView.pop()
                     }
