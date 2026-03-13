@@ -86,11 +86,11 @@ Rectangle {
     // Son comète d'annonce
     MediaPlayer {
         id: cometSound
-        source: "qrc:/resources/sons/126531__sinkhole7__tink3d.wav"
-        audioOutput: AudioOutput { volume: 0.7 }
+        source: "qrc:/resources/sons/511485__mlaudio__cartoon_wink_magic_sparkle.wav"
+        audioOutput: AudioOutput {}
     }
 
-    Timer {
+    /*Timer {
         id: cometSoundTimer
         interval: 250
         repeat: false
@@ -100,7 +100,7 @@ Rectangle {
                 cometSound.play()
             }
         }
-    }
+    }*/
 
     // Flag pour éviter de jouer le son d'alerte plusieurs fois par tour
     property bool playTimeAlertPlayed: false
@@ -334,7 +334,11 @@ Rectangle {
             bidComet.targetX = pos.x
             bidComet.targetY = pos.y
             bidComet.start()
-            cometSoundTimer.restart()
+            if (AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
+                cometSound.stop()
+                cometSound.play()
+            }
+            //cometSoundTimer.restart()
             rootArea.lastBidHadComet = true
             rootArea.annoncePanelReady = false
 

@@ -672,8 +672,7 @@ Rectangle {
                         id: verificationCodeField
                         Layout.fillWidth: true
                         Layout.preferredHeight: 80 * loginRoot.heightRatio
-                        placeholderText: "000000"
-                        placeholderTextColor: "#666666"
+                        placeholderText: ""
                         font.pixelSize: 48 * loginRoot.minRatio
                         horizontalAlignment: Text.AlignHCenter
                         maximumLength: 6
@@ -686,6 +685,16 @@ Rectangle {
                             radius: 5 * loginRoot.minRatio
                         }
                         color: "white"
+
+                        Text {
+                            text: "000000"
+                            font.pixelSize: 48 * loginRoot.minRatio
+                            color: "#888888"
+                            anchors.fill: parent
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            visible: verificationCodeField.text.length === 0
+                        }
                     }
 
                     Text {
