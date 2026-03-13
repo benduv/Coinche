@@ -2560,8 +2560,9 @@ Rectangle {
             anchors.left: parent.left
             anchors.bottomMargin: parent.height * 0.02
             anchors.leftMargin: parent.width * 0.01
-            width: rootArea.height * 0.08
-            height: rootArea.height * 0.08
+            width: rootArea.height * 0.1
+            height: rootArea.height * 0.1
+            padding: 0
             z: 500
 
             property bool emojiMenuOpen: false
@@ -2576,7 +2577,7 @@ Rectangle {
                 Image {
                     source: "qrc:/resources/emoji-happy-svgrepo-com.svg"
                     anchors.fill: parent
-                    anchors.margins: parent.width * 0.15
+                    anchors.margins: parent.width * 0.1
                     fillMode: Image.PreserveAspectFit
                 }
             }
@@ -2594,8 +2595,8 @@ Rectangle {
             anchors.left: parent.left
             anchors.bottomMargin: parent.height * 0.01
             anchors.leftMargin: parent.width * 0.01
-            width: rootArea.height * 0.10
-            height: rootArea.height * 0.55
+            width: rootArea.height * 0.15
+            height: rootArea.height * 0.7
             color: "#AA000000"
             radius: 10
             z: 501
