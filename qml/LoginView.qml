@@ -207,6 +207,11 @@ Rectangle {
                 // Variable pour stocker l'avatar sélectionné
                 property string selectedAvatar: "avataaars1.svg"
 
+                // Vérification email
+                property bool showVerificationStep: false
+                property string verificationEmail: ""
+                property int resendCooldown: 0
+
                 // Bouton retour en haut à gauche
                 Rectangle {
                     anchors.top: parent.top
@@ -236,7 +241,11 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            loginStack.pop()
+                            if (registerScreenRec.showVerificationStep) {
+                                registerScreenRec.showVerificationStep = false
+                            } else {
+                                loginStack.pop()
+                            }
                         }
                         onEntered: {
                             parent.scale = 1.1
@@ -255,6 +264,7 @@ Rectangle {
                     anchors.centerIn: parent
                     spacing: loginRoot.isPortrait ? 10 * loginRoot.minRatio : 8 * loginRoot.minRatio
                     width: Math.min(parent.width * loginRoot.formWidthRatio, 500 * loginRoot.widthRatio)
+                    visible: !registerScreenRec.showVerificationStep
 
                     Text {
                         text: "Créer un compte"
@@ -627,8 +637,134 @@ Rectangle {
                             registerError.text = ""
                             registerTimeoutTimer.restart()
 
-                            // Envoyer la requête au serveur avec l'avatar sélectionné
-                            networkManager.registerAccount(registerPseudo.text, registerEmail.text, registerPassword.text, registerScreenRec.selectedAvatar)
+                            // Envoyer la demande de code de vérification
+                            networkManager.requestVerificationCode(registerPseudo.text, registerEmail.text, registerPassword.text, registerScreenRec.selectedAvatar)
+                        }
+                    }
+                }
+
+                // Panneau de vérification du code email
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 15 * loginRoot.minRatio
+                    width: Math.min(parent.width * loginRoot.formWidthRatio, 500 * loginRoot.widthRatio)
+                    visible: registerScreenRec.showVerificationStep
+
+                    Text {
+                        text: "Vérification de votre email"
+                        font.pixelSize: 42 * loginRoot.minRatio
+                        font.bold: true
+                        color: "#FFD700"
+                        Layout.alignment: Qt.AlignHCenter
+                    }
+
+                    Text {
+                        text: "Un code de vérification a été envoyé à\n" + registerScreenRec.verificationEmail
+                        font.pixelSize: 28 * loginRoot.minRatio
+                        color: "white"
+                        Layout.alignment: Qt.AlignHCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+
+                    TextField {
+                        id: verificationCodeField
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 80 * loginRoot.heightRatio
+                        placeholderText: "000000"
+                        placeholderTextColor: "#666666"
+                        font.pixelSize: 48 * loginRoot.minRatio
+                        horizontalAlignment: Text.AlignHCenter
+                        maximumLength: 6
+                        inputMethodHints: Qt.ImhDigitsOnly
+                        validator: IntValidator { bottom: 0; top: 999999 }
+                        background: Rectangle {
+                            color: "#2a2a2a"
+                            border.color: verificationCodeField.activeFocus ? "#FFD700" : "#555555"
+                            border.width: 2 * loginRoot.minRatio
+                            radius: 5 * loginRoot.minRatio
+                        }
+                        color: "white"
+                    }
+
+                    Text {
+                        id: verificationError
+                        text: ""
+                        font.pixelSize: 24 * loginRoot.minRatio
+                        color: "#ff6666"
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignHCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                        opacity: text === "" ? 0 : 1
+                    }
+
+                    Button {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: loginRoot.isPortrait ? 100 * loginRoot.heightRatio : 90 * loginRoot.heightRatio
+
+                        background: Rectangle {
+                            color: parent.down ? "#0088cc" : (parent.hovered ? "#00aaee" : "#0099dd")
+                            radius: 8 * loginRoot.minRatio
+                        }
+
+                        contentItem: Text {
+                            text: "Valider"
+                            font.pixelSize: 40 * loginRoot.minRatio
+                            font.bold: true
+                            color: "white"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: {
+                            if (verificationCodeField.text.length !== 6) {
+                                verificationError.text = "Veuillez entrer le code à 6 chiffres"
+                                return
+                            }
+                            verificationError.text = ""
+                            networkManager.verifyCodeAndRegister(registerScreenRec.verificationEmail, verificationCodeField.text)
+                        }
+                    }
+
+                    Text {
+                        text: registerScreenRec.resendCooldown > 0
+                              ? "Renvoyer le code (" + registerScreenRec.resendCooldown + "s)"
+                              : "Renvoyer le code"
+                        font.pixelSize: 26 * loginRoot.minRatio
+                        color: registerScreenRec.resendCooldown > 0 ? "#666666" : "#00aaee"
+                        font.underline: registerScreenRec.resendCooldown === 0
+                        Layout.alignment: Qt.AlignHCenter
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: registerScreenRec.resendCooldown > 0 ? Qt.ArrowCursor : Qt.PointingHandCursor
+                            onClicked: {
+                                if (registerScreenRec.resendCooldown > 0) return
+                                verificationError.text = ""
+                                networkManager.requestVerificationCode(
+                                    registerPseudo.text, registerScreenRec.verificationEmail,
+                                    registerScreenRec.pendingPassword, registerScreenRec.selectedAvatar)
+                            }
+                        }
+                    }
+
+                    Text {
+                        text: "Modifier les informations"
+                        font.pixelSize: 26 * loginRoot.minRatio
+                        color: "#aaaaaa"
+                        font.underline: true
+                        Layout.alignment: Qt.AlignHCenter
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                registerScreenRec.showVerificationStep = false
+                                verificationCodeField.text = ""
+                                verificationError.text = ""
+                            }
                         }
                     }
                 }
@@ -643,7 +779,23 @@ Rectangle {
                     interval: 10000
                     repeat: false
                     onTriggered: {
-                        registerError.text = "Le serveur ne répond pas. Vérifiez votre connexion et réessayez."
+                        if (registerScreenRec.showVerificationStep) {
+                            verificationError.text = "Le serveur ne répond pas. Vérifiez votre connexion et réessayez."
+                        } else {
+                            registerError.text = "Le serveur ne répond pas. Vérifiez votre connexion et réessayez."
+                        }
+                    }
+                }
+
+                Timer {
+                    id: resendCooldownTimer
+                    interval: 1000
+                    repeat: true
+                    onTriggered: {
+                        if (registerScreenRec.resendCooldown > 0)
+                            registerScreenRec.resendCooldown--
+                        else
+                            stop()
                     }
                 }
 
@@ -664,6 +816,24 @@ Rectangle {
                         registerError.text = error
                         registerScreenRec.pendingEmail = ""
                         registerScreenRec.pendingPassword = ""
+                    }
+                    function onVerificationCodeSent(email) {
+                        registerTimeoutTimer.stop()
+                        registerScreenRec.verificationEmail = email
+                        registerScreenRec.showVerificationStep = true
+                        registerScreenRec.resendCooldown = 60
+                        resendCooldownTimer.start()
+                    }
+                    function onVerificationCodeFailed(error) {
+                        registerTimeoutTimer.stop()
+                        if (registerScreenRec.showVerificationStep) {
+                            verificationError.text = error
+                        } else {
+                            registerError.text = error
+                        }
+                    }
+                    function onVerifyCodeFailed(error) {
+                        verificationError.text = error
                     }
                 }
             }

@@ -37,6 +37,18 @@ struct PlayerConnection {
     qint64 lastEmojiTimestamp = 0;  // Rate limit emojis (ms since epoch)
 };
 
+// Vérification email en attente (inscription en 2 étapes)
+struct PendingVerification {
+    QString pseudo;
+    QString email;
+    QString password;
+    QString avatar;
+    QString code;
+    qint64 createdAt;       // msecs since epoch
+    qint64 lastResendAt;    // msecs since epoch, cooldown 60s
+    int attempts;           // tentatives erronées
+};
+
 // Une partie de jeu avec la vraie logique
 struct GameRoom {
     int roomId;
@@ -295,6 +307,10 @@ public:
         // Libére tous les lobbies privés
         qDeleteAll(m_privateLobbies.values());
         m_privateLobbies.clear();
+
+        // Libère les vérifications en attente
+        qDeleteAll(m_pendingVerifications.values());
+        m_pendingVerifications.clear();
     }
 
     // Accès au StatsReporter (pour tests et monitoring)
@@ -358,6 +374,9 @@ private:
     void handleSendContactMessage(QWebSocket *socket, const QJsonObject &data);
 
     void handleRegisterAccount(QWebSocket *socket, const QJsonObject &data);
+
+    void handleRequestVerificationCode(QWebSocket *socket, const QJsonObject &data);
+    void handleVerifyCodeAndRegister(QWebSocket *socket, const QJsonObject &data);
 
     void handleLoginAccount(QWebSocket *socket, const QJsonObject &data);
 
@@ -2478,6 +2497,7 @@ private:
     QMap<int, GameRoom*> m_gameRooms;
     QMap<QString, int> m_playerNameToRoomId;  // playerName → roomId pour reconnexion
     QMap<QString, PrivateLobby*> m_privateLobbies;  // code → PrivateLobby
+    QMap<QString, PendingVerification*> m_pendingVerifications; // email → pending verification
     int m_nextRoomId;
     DatabaseManager *m_dbManager;
     QString m_smtpPassword;  // Mot de passe SMTP pour l'envoi d'emails

@@ -226,6 +226,32 @@ public:
         }
     }
 
+    Q_INVOKABLE void requestVerificationCode(const QString &pseudo, const QString &email, const QString &password, const QString &avatar = "avataaars1.svg") {
+        m_playerEmail = email;
+        emit playerEmailChanged();
+        QJsonObject msg;
+        msg["type"] = "requestVerificationCode";
+        msg["pseudo"] = pseudo;
+        msg["email"] = email;
+        msg["password"] = password;
+        msg["avatar"] = avatar;
+        msg["version"] = CLIENT_VERSION;
+        if (!sendMessage(msg)) {
+            emit verificationCodeFailed("Connexion au serveur perdue. Veuillez réessayer.");
+        }
+    }
+
+    Q_INVOKABLE void verifyCodeAndRegister(const QString &email, const QString &code) {
+        QJsonObject msg;
+        msg["type"] = "verifyCodeAndRegister";
+        msg["email"] = email;
+        msg["code"] = code;
+        msg["version"] = CLIENT_VERSION;
+        if (!sendMessage(msg)) {
+            emit verificationCodeFailed("Connexion au serveur perdue. Veuillez réessayer.");
+        }
+    }
+
     Q_INVOKABLE void loginAccount(const QString &email, const QString &password) {
         m_playerEmail = email;
         emit playerEmailChanged();
@@ -448,6 +474,9 @@ signals:
     void errorOccurred(QString error);
     void registerSuccess(QString playerName, QString avatar);
     void registerFailed(QString error);
+    void verificationCodeSent(QString email);
+    void verificationCodeFailed(QString error);
+    void verifyCodeFailed(QString error);
     void loginSuccess(QString playerName, QString avatar, bool usingTempPassword);
     void loginFailed(QString error);
     void deleteAccountSuccess();
@@ -858,6 +887,18 @@ private slots:
             QString error = obj["error"].toString();
             // qDebug() << "NetworkManager - Echec creation compte:" << error;
             emit registerFailed(error);
+        }
+        else if (type == "requestVerificationCodeSuccess") {
+            QString email = obj["email"].toString();
+            emit verificationCodeSent(email);
+        }
+        else if (type == "requestVerificationCodeFailed") {
+            QString error = obj["error"].toString();
+            emit verificationCodeFailed(error);
+        }
+        else if (type == "verifyCodeFailed") {
+            QString error = obj["error"].toString();
+            emit verifyCodeFailed(error);
         }
         else if (type == "loginAccountSuccess") {
             QString playerName = obj["playerName"].toString();

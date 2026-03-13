@@ -61,7 +61,8 @@ void GameServer::onTextMessageReceived(const QString &message) {
     qDebug() << "GameServer - Message recu:" << type;
 
     // Vérifier la version du client pour les messages d'authentification
-    if (type == "register" || type == "registerAccount" || type == "loginAccount") {
+    if (type == "register" || type == "registerAccount" || type == "loginAccount"
+        || type == "requestVerificationCode" || type == "verifyCodeAndRegister") {
         int clientVersion = obj["version"].toInt(0);
         if (clientVersion < MIN_CLIENT_VERSION) {
             QJsonObject error;
@@ -79,6 +80,10 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleRegister(sender, obj);
     } else if (type == "registerAccount") {
         handleRegisterAccount(sender, obj);
+    } else if (type == "requestVerificationCode") {
+        handleRequestVerificationCode(sender, obj);
+    } else if (type == "verifyCodeAndRegister") {
+        handleVerifyCodeAndRegister(sender, obj);
     } else if (type == "loginAccount") {
         handleLoginAccount(sender, obj);
     } else if (type == "deleteAccount") {
@@ -719,6 +724,246 @@ void GameServer::handleRegisterAccount(QWebSocket *socket, const QJsonObject &da
         response["error"] = errorMsg;
         sendMessage(socket, response);
         qDebug() << "Echec creation compte:" << errorMsg;
+    }
+}
+
+void GameServer::handleRequestVerificationCode(QWebSocket *socket, const QJsonObject &data) {
+    QString pseudo = data["pseudo"].toString();
+    QString email = data["email"].toString();
+    QString password = data["password"].toString();
+    QString avatar = data["avatar"].toString();
+
+    qDebug() << "GameServer - Demande code vérification pour:" << pseudo << email;
+
+    // Valider les champs avant d'envoyer le code
+    if (pseudo.isEmpty() || email.isEmpty() || password.isEmpty()) {
+        QJsonObject response;
+        response["type"] = "requestVerificationCodeFailed";
+        response["error"] = "Tous les champs sont obligatoires";
+        sendMessage(socket, response);
+        return;
+    }
+    if (pseudo.length() < 3) {
+        QJsonObject response;
+        response["type"] = "requestVerificationCodeFailed";
+        response["error"] = "Le pseudonyme doit contenir au moins 3 caractères";
+        sendMessage(socket, response);
+        return;
+    }
+    if (password.length() < 8) {
+        QJsonObject response;
+        response["type"] = "requestVerificationCodeFailed";
+        response["error"] = "Le mot de passe doit contenir au moins 8 caractères";
+        sendMessage(socket, response);
+        return;
+    }
+    if (!email.contains("@") || !email.contains(".")) {
+        QJsonObject response;
+        response["type"] = "requestVerificationCodeFailed";
+        response["error"] = "Adresse email invalide";
+        sendMessage(socket, response);
+        return;
+    }
+    if (m_dbManager->emailExists(email)) {
+        QJsonObject response;
+        response["type"] = "requestVerificationCodeFailed";
+        response["error"] = "Cette adresse email est déjà utilisée";
+        sendMessage(socket, response);
+        return;
+    }
+    if (m_dbManager->pseudoExists(pseudo)) {
+        QJsonObject response;
+        response["type"] = "requestVerificationCodeFailed";
+        response["error"] = "Ce pseudonyme est déjà utilisé";
+        sendMessage(socket, response);
+        return;
+    }
+
+    // Vérifier cooldown de renvoi si une vérification existe déjà pour cet email
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (m_pendingVerifications.contains(email)) {
+        PendingVerification *existing = m_pendingVerifications[email];
+        if (now - existing->lastResendAt < 60000) {
+            QJsonObject response;
+            response["type"] = "requestVerificationCodeFailed";
+            response["error"] = "Veuillez patienter avant de renvoyer un code";
+            sendMessage(socket, response);
+            return;
+        }
+        delete existing;
+        m_pendingVerifications.remove(email);
+    }
+
+    // Nettoyage lazy des vérifications expirées (> 10 min)
+    QStringList expiredKeys;
+    for (auto it = m_pendingVerifications.begin(); it != m_pendingVerifications.end(); ++it) {
+        if (now - it.value()->createdAt > 600000) {
+            expiredKeys.append(it.key());
+        }
+    }
+    for (const QString &key : expiredKeys) {
+        delete m_pendingVerifications[key];
+        m_pendingVerifications.remove(key);
+    }
+
+    // Générer le code à 6 chiffres
+    QString code = QString::number(QRandomGenerator::global()->bounded(100000, 1000000));
+
+    // Stocker la vérification en attente
+    PendingVerification *pending = new PendingVerification{
+        pseudo, email, password, avatar, code, now, now, 0
+    };
+    m_pendingVerifications[email] = pending;
+
+    // Envoyer l'email avec le code
+    SmtpClient *smtp = new SmtpClient(this);
+    smtp->setHost("ssl0.ovh.net", 587);
+    smtp->setCredentials("contact@nebuludik.fr", m_smtpPassword);
+    smtp->setFrom("contact@nebuludik.fr", "Coinche de l'Espace");
+
+    QString subject = "Votre code de vérification";
+    QString emailBody = QString(
+        "<html><body style='font-family: Arial, sans-serif; color: #333;'>"
+        "<h2 style='color: #FFD700;'>Coinche de l'Espace</h2>"
+        "<p>Bonjour <b>%1</b>,</p>"
+        "<p>Votre code de vérification est :</p>"
+        "<div style='text-align: center; margin: 20px 0;'>"
+        "<span style='font-size: 32px; font-weight: bold; letter-spacing: 8px; "
+        "background-color: #f0f0f0; padding: 15px 25px; border-radius: 8px;'>%2</span>"
+        "</div>"
+        "<p>Ce code est valable pendant <b>10 minutes</b>.</p>"
+        "<p>Si vous n'avez pas demandé ce code, ignorez ce message.</p>"
+        "<br><p>Cordialement,<br>L'équipe Coinche de l'Espace</p>"
+        "</body></html>"
+    ).arg(pseudo, code);
+
+    QObject::connect(smtp, &SmtpClient::emailSent, [socket, smtp, email, this](bool success, const QString &error) {
+        if (success) {
+            QJsonObject response;
+            response["type"] = "requestVerificationCodeSuccess";
+            response["email"] = email;
+            sendMessage(socket, response);
+            qDebug() << "Code de vérification envoyé à:" << email;
+        } else {
+            QJsonObject response;
+            response["type"] = "requestVerificationCodeFailed";
+            response["error"] = "Erreur lors de l'envoi de l'email. Veuillez réessayer.";
+            sendMessage(socket, response);
+            qWarning() << "Echec envoi code vérification:" << error;
+            // Supprimer le pending en cas d'échec d'envoi
+            if (m_pendingVerifications.contains(email)) {
+                delete m_pendingVerifications[email];
+                m_pendingVerifications.remove(email);
+            }
+        }
+        smtp->deleteLater();
+    });
+
+    smtp->sendEmail(email, subject, emailBody, true);
+}
+
+void GameServer::handleVerifyCodeAndRegister(QWebSocket *socket, const QJsonObject &data) {
+    QString email = data["email"].toString();
+    QString code = data["code"].toString();
+
+    qDebug() << "GameServer - Vérification code pour:" << email;
+
+    if (!m_pendingVerifications.contains(email)) {
+        QJsonObject response;
+        response["type"] = "verifyCodeFailed";
+        response["error"] = "Aucune vérification en cours pour cet email. Veuillez recommencer.";
+        sendMessage(socket, response);
+        return;
+    }
+
+    PendingVerification *pending = m_pendingVerifications[email];
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+
+    // Vérifier expiration (10 min)
+    if (now - pending->createdAt > 600000) {
+        delete pending;
+        m_pendingVerifications.remove(email);
+        QJsonObject response;
+        response["type"] = "verifyCodeFailed";
+        response["error"] = "Le code a expiré. Veuillez en demander un nouveau.";
+        sendMessage(socket, response);
+        return;
+    }
+
+    // Vérifier nombre de tentatives
+    if (pending->attempts >= 5) {
+        delete pending;
+        m_pendingVerifications.remove(email);
+        QJsonObject response;
+        response["type"] = "verifyCodeFailed";
+        response["error"] = "Trop de tentatives. Veuillez demander un nouveau code.";
+        sendMessage(socket, response);
+        return;
+    }
+
+    // Vérifier le code
+    if (pending->code != code) {
+        pending->attempts++;
+        int remaining = 5 - pending->attempts;
+        QJsonObject response;
+        response["type"] = "verifyCodeFailed";
+        if (remaining > 0) {
+            response["error"] = QString("Code incorrect. Il vous reste %1 tentative%2.")
+                .arg(remaining).arg(remaining > 1 ? "s" : "");
+        } else {
+            response["error"] = "Trop de tentatives. Veuillez demander un nouveau code.";
+            delete pending;
+            m_pendingVerifications.remove(email);
+        }
+        sendMessage(socket, response);
+        return;
+    }
+
+    // Code correct — créer le compte
+    QString errorMsg;
+    if (m_dbManager->createAccount(pending->pseudo, pending->email, pending->password, pending->avatar, errorMsg)) {
+        QString connectionId = QUuid::createUuid().toString();
+
+        PlayerConnection *conn = new PlayerConnection{
+            socket,
+            connectionId,
+            pending->pseudo,
+            pending->avatar,
+            -1,    // Pas encore en partie
+            -1,    // Pas encore de position
+            QString(), // lobbyPartnerId
+            false  // isAnonymous
+        };
+        m_connections[connectionId] = conn;
+        if (m_connections.size() > m_maxSimultaneousConnections) {
+            m_maxSimultaneousConnections = m_connections.size();
+            m_statsReporter->setMaxSimultaneous(m_maxSimultaneousConnections, m_maxSimultaneousGames);
+        }
+
+        QJsonObject response;
+        response["type"] = "registerAccountSuccess";
+        response["playerName"] = pending->pseudo;
+        response["avatar"] = pending->avatar;
+        response["connectionId"] = connectionId;
+        sendMessage(socket, response);
+        qDebug() << "Compte créé avec succès après vérification:" << pending->pseudo;
+
+        m_dbManager->recordNewAccount();
+        m_dbManager->recordLogin(pending->pseudo);
+        m_dbManager->recordSessionStart(pending->pseudo);
+
+        // Nettoyer le pending
+        delete pending;
+        m_pendingVerifications.remove(email);
+    } else {
+        QJsonObject response;
+        response["type"] = "verifyCodeFailed";
+        response["error"] = errorMsg;
+        sendMessage(socket, response);
+        qDebug() << "Echec création compte après vérification:" << errorMsg;
+
+        delete pending;
+        m_pendingVerifications.remove(email);
     }
 }
 
