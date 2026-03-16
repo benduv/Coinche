@@ -40,8 +40,8 @@ Item {
             default: valueName = "7"
         }
 
-        // Format: resources/cards/coeur_7.png
-        return "qrc:/resources/cards/" + suitName + "_" + valueName + ".png"
+        // Format: resources/cards/cards2/coeur_7.svg
+        return "qrc:/resources/cards/cards2/" + suitName + "_" + valueName + ".svg"
     }
 
     // Animation de sélection
@@ -62,7 +62,7 @@ Item {
     Rectangle {
         id: cardBorder
         anchors.fill: parent
-        color: "white"
+        //color: "white"
         border.color: selected ? "#FFD700" : "#000000"
         border.width: selected ? 3 : 1
         radius: 5
@@ -76,8 +76,8 @@ Item {
             source: root.faceUp ? root.getCardImagePath() : ""
             visible: root.faceUp
             fillMode: Image.PreserveAspectFit
-            smooth: true
-            antialiasing: true
+            //smooth: true
+            //antialiasing: true
             onStatusChanged: {
                 if (status === Image.Ready) {
                     root.cardRatio = implicitWidth / implicitHeight
@@ -88,7 +88,7 @@ Item {
         // Overlay rose pour les atouts
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 1
+            //anchors.margins: 1
             radius: cardBorder.radius
             color: "red"  // Rose pâle
             opacity: root.isAtout && root.faceUp ? 0.2 : 0
@@ -98,7 +98,7 @@ Item {
         // Overlay gris pour les cartes non jouables
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 1
+            //anchors.margins: 1
             radius: cardBorder.radius
             color: "black"
             opacity: !root.isPlayable && root.faceUp ? 0.4 : 0
@@ -111,7 +111,7 @@ Item {
             id: cardBack
             anchors.fill: parent
             anchors.margins: 1
-            source: "qrc:/resources/cards/back.png"
+            source: "qrc:/resources/cards/cards2/back.svg"
             visible: !root.faceUp
             fillMode: Image.PreserveAspectFit
             smooth: true

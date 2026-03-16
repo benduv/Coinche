@@ -721,9 +721,11 @@ ApplicationWindow {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 spacing: 15 * mainWindow.minRatio
 
-                                Text {
-                                    text: "🌐"
-                                    font.pixelSize: 40 * mainWindow.minRatio
+                                Image {
+                                    source: "qrc:/resources/world-wide-signal-svgrepo-com.svg"
+                                    width: 40 * mainWindow.minRatio
+                                    height: 40 * mainWindow.minRatio
+                                    sourceSize: Qt.size(width, height)
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
 
@@ -769,14 +771,16 @@ ApplicationWindow {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 spacing: 15 * mainWindow.minRatio
 
-                                Text {
-                                    text: "👥"
-                                    font.pixelSize: 40 * mainWindow.minRatio
+                                Image {
+                                    source: "qrc:/resources/group-of-people-svgrepo-com.svg"
+                                    width: 45 * mainWindow.minRatio
+                                    height: 45 * mainWindow.minRatio
+                                    sourceSize: Qt.size(width, height)
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
 
                                 Text {
-                                    text: "Partie privée"
+                                    text: " Partie privée "
                                     font.pixelSize: 50 * mainWindow.minRatio
                                     font.bold: true
                                     color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
@@ -815,14 +819,16 @@ ApplicationWindow {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 spacing: 15 * mainWindow.minRatio
 
-                                Text {
-                                    text: "🤖"
-                                    font.pixelSize: 40 * mainWindow.minRatio
+                                Image {
+                                    source: "qrc:/resources/bot-svgrepo-com.svg"
+                                    width: 45 * mainWindow.minRatio
+                                    height: 45 * mainWindow.minRatio
+                                    sourceSize: Qt.size(width, height)
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
 
                                 Text {
-                                    text: "Entraînement"
+                                    text: " Entraînement "
                                     font.pixelSize: 50 * mainWindow.minRatio
                                     font.bold: true
                                     color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
@@ -885,7 +891,7 @@ ApplicationWindow {
                     }
 
                     contentItem: Image {
-                        source: "qrc:/resources/message-svgrepo-com.svg"
+                        source: "qrc:/resources/support-svgrepo-com.svg"
                         fillMode: Image.PreserveAspectFit
                         anchors.fill: parent
                         anchors.margins: 20 * mainWindow.minRatio

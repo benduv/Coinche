@@ -38,39 +38,39 @@
         <file>resources/animations/Winking_Emoji.gif</file>
         <file>resources/animations/sunglass_emoji.gif</file>
         <file>resources/emoji-happy-svgrepo-com.svg</file>
-        <file>resources/cards/back.png</file>
-        <file>resources/cards/carreau_7.png</file>
-        <file>resources/cards/carreau_8.png</file>
-        <file>resources/cards/carreau_9.png</file>
-        <file>resources/cards/carreau_10.png</file>
-        <file>resources/cards/carreau_valet.png</file>
-        <file>resources/cards/carreau_dame.png</file>
-        <file>resources/cards/carreau_roi.png</file>
-        <file>resources/cards/carreau_as.png</file>
-        <file>resources/cards/coeur_7.png</file>
-        <file>resources/cards/coeur_8.png</file>
-        <file>resources/cards/coeur_9.png</file>
-        <file>resources/cards/coeur_10.png</file>
-        <file>resources/cards/coeur_valet.png</file>
-        <file>resources/cards/coeur_dame.png</file>
-        <file>resources/cards/coeur_roi.png</file>
-        <file>resources/cards/coeur_as.png</file>
-        <file>resources/cards/pique_7.png</file>
-        <file>resources/cards/pique_8.png</file>
-        <file>resources/cards/pique_9.png</file>
-        <file>resources/cards/pique_10.png</file>
-        <file>resources/cards/pique_valet.png</file>
-        <file>resources/cards/pique_dame.png</file>
-        <file>resources/cards/pique_roi.png</file>
-        <file>resources/cards/pique_as.png</file>
-        <file>resources/cards/trefle_7.png</file>
-        <file>resources/cards/trefle_8.png</file>
-        <file>resources/cards/trefle_9.png</file>
-        <file>resources/cards/trefle_10.png</file>
-        <file>resources/cards/trefle_valet.png</file>
-        <file>resources/cards/trefle_dame.png</file>
-        <file>resources/cards/trefle_roi.png</file>
-        <file>resources/cards/trefle_as.png</file>
+        <file>resources/cards/cards2/back.svg</file>
+        <file>resources/cards/cards2/carreau_7.svg</file>
+        <file>resources/cards/cards2/carreau_8.svg</file>
+        <file>resources/cards/cards2/carreau_9.svg</file>
+        <file>resources/cards/cards2/carreau_10.svg</file>
+        <file>resources/cards/cards2/carreau_valet.svg</file>
+        <file>resources/cards/cards2/carreau_dame.svg</file>
+        <file>resources/cards/cards2/carreau_roi.svg</file>
+        <file>resources/cards/cards2/carreau_as.svg</file>
+        <file>resources/cards/cards2/coeur_7.svg</file>
+        <file>resources/cards/cards2/coeur_8.svg</file>
+        <file>resources/cards/cards2/coeur_9.svg</file>
+        <file>resources/cards/cards2/coeur_10.svg</file>
+        <file>resources/cards/cards2/coeur_valet.svg</file>
+        <file>resources/cards/cards2/coeur_dame.svg</file>
+        <file>resources/cards/cards2/coeur_roi.svg</file>
+        <file>resources/cards/cards2/coeur_as.svg</file>
+        <file>resources/cards/cards2/pique_7.svg</file>
+        <file>resources/cards/cards2/pique_8.svg</file>
+        <file>resources/cards/cards2/pique_9.svg</file>
+        <file>resources/cards/cards2/pique_10.svg</file>
+        <file>resources/cards/cards2/pique_valet.svg</file>
+        <file>resources/cards/cards2/pique_dame.svg</file>
+        <file>resources/cards/cards2/pique_roi.svg</file>
+        <file>resources/cards/cards2/pique_as.svg</file>
+        <file>resources/cards/cards2/trefle_7.svg</file>
+        <file>resources/cards/cards2/trefle_8.svg</file>
+        <file>resources/cards/cards2/trefle_9.svg</file>
+        <file>resources/cards/cards2/trefle_10.svg</file>
+        <file>resources/cards/cards2/trefle_valet.svg</file>
+        <file>resources/cards/cards2/trefle_dame.svg</file>
+        <file>resources/cards/cards2/trefle_roi.svg</file>
+        <file>resources/cards/cards2/trefle_as.svg</file>
         <file>resources/Tapis poker3.jpg</file>
         <file>resources/cielEtoile.jpg</file>
         <file>resources/back-square-svgrepo-com.svg</file>
@@ -80,7 +80,7 @@
         <file>resources/stats-svgrepo-com.svg</file>
         <file>resources/setting-svgrepo-com.svg</file>
         <file>resources/question-svgrepo-com.svg</file>
-        <file>resources/message-svgrepo-com.svg</file>
+        <file>resources/support-svgrepo-com.svg</file>
         <file>resources/saturn-svgrepo-com.svg</file>
         <file>resources/pencil-svgrepo-com.svg</file>
         <file>resources/eye-svgrepo-com.svg</file>
@@ -89,6 +89,12 @@
         <file>resources/clover-svgrepo-com.svg</file>
         <file>resources/diamond-svgrepo-com.svg</file>
         <file>resources/spade-svgrepo-com.svg</file>
+        <file>resources/cross-small-svgrepo-com.svg</file>
+        <file>resources/check-svgrepo-com.svg</file>
+        <file>resources/play-alt-svgrepo-com.svg</file>
+        <file>resources/world-wide-signal-svgrepo-com.svg</file>
+        <file>resources/group-of-people-svgrepo-com.svg</file>
+        <file>resources/bot-svgrepo-com.svg</file>
         <file>resources/avatar/avataaars1.svg</file>
         <file>resources/avatar/avataaars2.svg</file>
         <file>resources/avatar/avataaars3.svg</file>

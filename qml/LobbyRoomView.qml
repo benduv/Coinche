@@ -246,11 +246,13 @@ Rectangle {
                     anchors.centerIn: parent
                     spacing: 10 * root.minRatio
 
-                    Text {
-                        text: readyButton.isReady ? "✗" : "✓"
-                        font.pixelSize: 36 * root.minRatio
-                        font.bold: true
-                        color: "white"
+                    Image {
+                        source: readyButton.isReady
+                            ? "qrc:/resources/cross-small-svgrepo-com.svg"
+                            : "qrc:/resources/check-svgrepo-com.svg"
+                        width: 42 * root.minRatio
+                        height: 42 * root.minRatio
+                        sourceSize: Qt.size(width, height)
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
@@ -289,7 +291,7 @@ Rectangle {
 
                     // Animation de pulsation quand actif
                     SequentialAnimation on scale {
-                        running: parent.parent.enabled
+                        running: parent.enabled
                         loops: Animation.Infinite
                         NumberAnimation { to: 1.05; duration: 800; easing.type: Easing.InOutQuad }
                         NumberAnimation { to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
@@ -300,11 +302,11 @@ Rectangle {
                     anchors.centerIn: parent
                     spacing: 12 * root.minRatio
 
-                    Text {
-                        text: "▶"
-                        font.pixelSize: 36 * root.minRatio
-                        font.bold: true
-                        color: parent.parent.parent.enabled ? "white" : "#666666"
+                    Image {
+                        source: "qrc:/resources/play-alt-svgrepo-com.svg"
+                        width: 42 * root.minRatio
+                        height: 42 * root.minRatio
+                        sourceSize: Qt.size(width, height)
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
@@ -337,13 +339,25 @@ Rectangle {
                     Behavior on color { ColorAnimation { duration: 200 } }
                 }
 
-                contentItem: Text {
-                    text: "✗ Quitter"
-                    font.pixelSize: 36 * root.minRatio
-                    font.bold: true
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                contentItem: Row {
+                    anchors.centerIn: parent
+                    spacing: 10 * root.minRatio
+
+                    Image {
+                        source: "qrc:/resources/cross-small-svgrepo-com.svg"
+                        width: 42 * root.minRatio
+                        height: 42 * root.minRatio
+                        sourceSize: Qt.size(width, height)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "Quitter"
+                        font.pixelSize: 36 * root.minRatio
+                        font.bold: true
+                        color: "white"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
 
                 onClicked: {
