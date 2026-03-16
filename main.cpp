@@ -12,6 +12,12 @@
 
 int main(int argc, char *argv[])
 {
+#ifdef Q_OS_ANDROID
+    // Utiliser le backend audio natif Android au lieu de FFmpeg
+    // Évite les problèmes de compatibilité 16KB page size sur Android 15+
+    qputenv("QT_MEDIA_BACKEND", "android");
+#endif
+
     QGuiApplication app(argc, argv);
 
     // Configuration pour QSettings (utilisé par QtCore.Settings en QML)

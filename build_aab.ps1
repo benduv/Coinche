@@ -40,8 +40,8 @@ $buildGradle = "$combinedBuild\build.gradle"
     -replace 'compileSdkVersion 34', 'compileSdkVersion 35' `
     -replace 'targetSdkVersion = 34', 'targetSdkVersion = 35' `
     -replace "buildToolsVersion '34\.0\.0'", "buildToolsVersion '35.0.0'" `
-    -replace 'versionCode 1', 'versionCode 5' `
-    -replace "versionName '1.0.0'", "versionName '0.2.1'" |
+    -replace 'versionCode 1', 'versionCode 6' `
+    -replace "versionName '1.0.0'", "versionName '0.2.2'" |
     Set-Content $buildGradle
 
 # Verifier que les deux architectures sont presentes
@@ -49,6 +49,22 @@ Write-Host ""
 Write-Host "Architectures presentes:" -ForegroundColor Cyan
 Get-ChildItem "$combinedBuild\libs" -Directory | ForEach-Object {
     Write-Host "  - $($_.Name)" -ForegroundColor White
+}
+
+# Supprimer les libs FFmpeg (inutiles car on utilise le backend Android natif)
+# Evite le warning Google Play sur la compatibilite 16KB page size
+Write-Host ""
+Write-Host "Suppression des bibliotheques FFmpeg (non utilisees)..." -ForegroundColor Yellow
+$ffmpegLibs = @("libavcodec.so", "libavformat.so", "libavutil.so", "libswresample.so", "libswscale.so")
+$abis = @("arm64-v8a", "armeabi-v7a")
+foreach ($abi in $abis) {
+    foreach ($lib in $ffmpegLibs) {
+        $libPath = "$combinedBuild\libs\$abi\$lib"
+        if (Test-Path $libPath) {
+            Remove-Item $libPath -Force
+            Write-Host "  Supprime: $abi/$lib" -ForegroundColor Gray
+        }
+    }
 }
 
 # Lancer la creation de l'AAB
