@@ -156,6 +156,22 @@ if(ANDROID)
 
     # Support des appareils avec taille de page mémoire de 16 ko (Android 15+)
     target_link_options(coinche PRIVATE "-Wl,-z,max-page-size=16384")
+
+    # Supprimer les libs FFmpeg après chaque build (incompatibles Android 16)
+    # Le backend Android natif est utilisé à la place (QT_MEDIA_BACKEND=android)
+    set(FFMPEG_LIBS_TO_REMOVE
+        libavcodec.so libavformat.so libavutil.so libswresample.so libswscale.so
+        libplugins_multimedia_ffmpegmediaplugin_${ANDROID_ABI}.so
+        libQt6FFmpegStub-crypto_${ANDROID_ABI}.so
+        libQt6FFmpegStub-ssl_${ANDROID_ABI}.so
+    )
+    foreach(ffmpeg_lib ${FFMPEG_LIBS_TO_REMOVE})
+        add_custom_command(TARGET coinche POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E remove -f
+                "${CMAKE_BINARY_DIR}/android-build-coinche/libs/${ANDROID_ABI}/${ffmpeg_lib}"
+            COMMENT "Suppression FFmpeg: ${ffmpeg_lib}"
+        )
+    endforeach()
 endif()
 
 # ========================================

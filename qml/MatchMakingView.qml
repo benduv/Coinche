@@ -269,6 +269,18 @@ Rectangle {
         }
     }
 
+    Connections {
+        target: Qt.application
+        function onStateChanged() {
+            if (Qt.application.state !== Qt.ApplicationActive) {
+                networkManager.leaveMatchmaking()
+                var mainMenuItem = stackView.get(stackView.depth - 2)
+                if (mainMenuItem) mainMenuItem.matchmakingInterrupted = true
+                stackView.pop()
+            }
+        }
+    }
+
     Component.onCompleted: {
         if (networkManager.connected && autoJoin) {
             console.log("MatchmakingView - Rejoindre le matchmaking (mode normal)")

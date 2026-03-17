@@ -371,6 +371,38 @@ ApplicationWindow {
                 anchors.fill: parent
                 color: "#0a0a2e"
 
+                property bool matchmakingInterrupted: false
+
+                // Toast "matchmaking interrompu"
+                Rectangle {
+                    id: matchmakingInterruptedToast
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: parent.height * 0.04
+                    width: toastText.implicitWidth + 60 * mainWindow.minRatio
+                    height: 70 * mainWindow.minRatio
+                    radius: 10 * mainWindow.minRatio
+                    color: "#aa2200"
+                    border.color: "#ff5533"
+                    border.width: 2 * mainWindow.minRatio
+                    visible: parent.matchmakingInterrupted
+                    z: 1000
+
+                    Text {
+                        id: toastText
+                        anchors.centerIn: parent
+                        text: "Recherche interrompue, veuillez réessayer."
+                        font.pixelSize: 28 * mainWindow.minRatio
+                        color: "white"
+                    }
+
+                    Timer {
+                        running: parent.visible
+                        interval: 4000
+                        onTriggered: parent.parent.matchmakingInterrupted = false
+                    }
+                }
+
                 // Lancer la musique quand on arrive sur le menu principal
                 Component.onCompleted: {
                     // Forcer le mode paysage sur Android

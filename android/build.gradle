@@ -97,9 +97,47 @@ android {
     packagingOptions {
         jniLibs {
             useLegacyPackaging true
+            // Exclure les libs FFmpeg (incompatibles Android 16 - 16KB page size)
+            // Le backend Android natif est utilisé à la place (QT_MEDIA_BACKEND=android)
+            excludes += [
+                '**/libavcodec.so', '**/libavformat.so', '**/libavutil.so',
+                '**/libswresample.so', '**/libswscale.so',
+                '**/libplugins_multimedia_ffmpegmediaplugin*.so',
+                '**/libQt6FFmpegStub-crypto*.so',
+                '**/libQt6FFmpegStub-ssl*.so'
+            ]
         }
     }
 
+}
+
+// Supprimer les entrées FFmpeg de libs.xml (généré par androiddeployqt)
+// FFmpeg est incompatible Android 16 (16KB page size) et n'est pas utilisé
+// (QT_MEDIA_BACKEND=android dans main.cpp utilise le backend natif Android)
+tasks.register('removeFFmpegFromLibsXml') {
+    doLast {
+        def libsXml = file("res/values/libs.xml")
+        if (libsXml.exists()) {
+            def content = libsXml.text
+            // Supprimer les libs FFmpeg de qt_libs
+            content = content.replaceAll(/\s*<item>[^<]*;av(codec|format|util)<\/item>/, '')
+            content = content.replaceAll(/\s*<item>[^<]*;sw(resample|scale)<\/item>/, '')
+            content = content.replaceAll(/\s*<item>[^<]*;Qt6FFmpegStub[^<]*<\/item>/, '')
+            // Supprimer le plugin FFmpeg de load_local_libs (garder androidmediaplugin)
+            content = content.replaceAll(/libplugins_multimedia_ffmpegmediaplugin[^:]*\.so:?/, '')
+            // Nettoyer les ':' en trop
+            content = content.replaceAll(/::/, ':')
+            content = content.replaceAll(/:(?=<)/, '')
+            libsXml.text = content
+            println("FFmpeg entries removed from libs.xml")
+        }
+    }
+}
+
+tasks.whenTaskAdded { task ->
+    if (task.name.startsWith('merge') && task.name.endsWith('Resources')) {
+        task.dependsOn 'removeFFmpegFromLibsXml'
+    }
 }
 
 // Workaround: androiddeployqt (Qt 6.9.3) inserts package="" into the manifest,
