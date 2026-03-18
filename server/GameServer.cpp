@@ -51,7 +51,7 @@ void GameServer::onTextMessageReceived(const QString &message) {
     }
 
     QJsonObject obj = doc.object();
-    QString type = obj["type"].toString();
+    QString type = obj["type"].toString().trimmed();
 
     if (type.isEmpty()) {
         qWarning() << "[JSON_PARSE] Champ 'type' manquant ou vide - message:" << message.left(100);
