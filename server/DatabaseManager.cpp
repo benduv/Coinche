@@ -447,6 +447,25 @@ bool DatabaseManager::createTables()
 
     qDebug() << "Triggers RGPD crees/verifies";
 
+    // Table des amis
+    QString createFriendsTable = R"(
+        CREATE TABLE IF NOT EXISTS friends (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            requester_pseudo TEXT NOT NULL,
+            target_pseudo TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(requester_pseudo, target_pseudo)
+        )
+    )";
+
+    if (!query.exec(createFriendsTable)) {
+        qCritical() << "Erreur creation table friends:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Table 'friends' creee/verifiee";
+
     return true;
 }
 
@@ -1014,6 +1033,17 @@ bool DatabaseManager::deleteAccount(const QString &pseudo, QString &errorMsg)
     }
     qInfo() << "[DELETE_ACCOUNT] Audit RGPD enregistré pour userId:" << userId;
 
+    // Supprimer les relations d'amitié
+    QSqlQuery deleteFriendsQuery(m_db);
+    deleteFriendsQuery.prepare("DELETE FROM friends WHERE requester_pseudo = :pseudo1 OR target_pseudo = :pseudo2");
+    deleteFriendsQuery.bindValue(":pseudo1", pseudo);
+    deleteFriendsQuery.bindValue(":pseudo2", pseudo);
+    if (!deleteFriendsQuery.exec()) {
+        qWarning() << "[DELETE_ACCOUNT] Erreur suppression friends pour pseudo:" << pseudo << "-" << deleteFriendsQuery.lastError().text();
+    } else {
+        qInfo() << "[DELETE_ACCOUNT] Friends supprimés - rows:" << deleteFriendsQuery.numRowsAffected();
+    }
+
     // Supprimer d'abord les statistiques (table stats)
     QSqlQuery deleteStatsQuery(m_db);
     deleteStatsQuery.prepare("DELETE FROM stats WHERE user_id = :user_id");
@@ -1194,6 +1224,23 @@ bool DatabaseManager::updatePseudo(const QString &currentPseudo, const QString &
         errorMsg = "Erreur lors de la mise à jour du pseudo: " + query.lastError().text();
         qCritical() << "Erreur updatePseudo:" << query.lastError().text();
         return false;
+    }
+
+    // Mettre à jour le pseudo dans la table friends
+    QSqlQuery friendsQuery1(m_db);
+    friendsQuery1.prepare("UPDATE friends SET requester_pseudo = :newPseudo WHERE requester_pseudo = :oldPseudo");
+    friendsQuery1.bindValue(":newPseudo", newPseudo);
+    friendsQuery1.bindValue(":oldPseudo", currentPseudo);
+    if (!friendsQuery1.exec()) {
+        qWarning() << "Erreur update friends requester_pseudo:" << friendsQuery1.lastError().text();
+    }
+
+    QSqlQuery friendsQuery2(m_db);
+    friendsQuery2.prepare("UPDATE friends SET target_pseudo = :newPseudo WHERE target_pseudo = :oldPseudo");
+    friendsQuery2.bindValue(":newPseudo", newPseudo);
+    friendsQuery2.bindValue(":oldPseudo", currentPseudo);
+    if (!friendsQuery2.exec()) {
+        qWarning() << "Erreur update friends target_pseudo:" << friendsQuery2.lastError().text();
     }
 
     // Audit RGPD : enregistrer le changement de pseudo
@@ -1631,4 +1678,206 @@ QList<DatabaseManager::DailyStats> DatabaseManager::getTrendStats(int days)
     }
 
     return trends;
+}
+
+// ==================== FRIENDS SYSTEM METHODS ====================
+
+bool DatabaseManager::sendFriendRequest(const QString &requester, const QString &target, QString &errorMsg)
+{
+    if (requester.isEmpty() || target.isEmpty()) {
+        errorMsg = "Pseudo invalide";
+        return false;
+    }
+
+    if (requester == target) {
+        errorMsg = "Vous ne pouvez pas vous ajouter vous-même";
+        return false;
+    }
+
+    if (!pseudoExists(target)) {
+        errorMsg = "Joueur introuvable";
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+
+    // Vérifier si une relation existe déjà (dans les 2 sens)
+    query.prepare("SELECT status FROM friends WHERE (requester_pseudo = :r AND target_pseudo = :t) OR (requester_pseudo = :t2 AND target_pseudo = :r2)");
+    query.bindValue(":r", requester);
+    query.bindValue(":t", target);
+    query.bindValue(":t2", target);
+    query.bindValue(":r2", requester);
+
+    if (!query.exec()) {
+        errorMsg = "Erreur base de données";
+        return false;
+    }
+
+    if (query.next()) {
+        QString status = query.value(0).toString();
+        if (status == "accepted") {
+            errorMsg = "Vous êtes déjà amis";
+            return false;
+        }
+        if (status == "pending") {
+            // Vérifier si c'est une demande inverse (target → requester) → auto-accept
+            QSqlQuery checkQuery(m_db);
+            checkQuery.prepare("SELECT id FROM friends WHERE requester_pseudo = :target AND target_pseudo = :requester AND status = 'pending'");
+            checkQuery.bindValue(":target", target);
+            checkQuery.bindValue(":requester", requester);
+            if (checkQuery.exec() && checkQuery.next()) {
+                // Auto-accept: la demande inverse existe
+                QSqlQuery acceptQuery(m_db);
+                acceptQuery.prepare("UPDATE friends SET status = 'accepted' WHERE requester_pseudo = :target AND target_pseudo = :requester AND status = 'pending'");
+                acceptQuery.bindValue(":target", target);
+                acceptQuery.bindValue(":requester", requester);
+                if (acceptQuery.exec()) {
+                    qInfo() << "[FRIENDS] Auto-accept:" << requester << "<->" << target;
+                    return true;
+                }
+                errorMsg = "Erreur lors de l'acceptation automatique";
+                return false;
+            }
+            errorMsg = "Demande déjà envoyée";
+            return false;
+        }
+    }
+
+    // Insérer la nouvelle demande
+    query.prepare("INSERT INTO friends (requester_pseudo, target_pseudo, status) VALUES (:requester, :target, 'pending')");
+    query.bindValue(":requester", requester);
+    query.bindValue(":target", target);
+
+    if (!query.exec()) {
+        errorMsg = "Erreur lors de l'envoi de la demande";
+        qWarning() << "[FRIENDS] Erreur INSERT:" << query.lastError().text();
+        return false;
+    }
+
+    qInfo() << "[FRIENDS] Demande envoyée:" << requester << "->" << target;
+    return true;
+}
+
+bool DatabaseManager::acceptFriendRequest(const QString &requester, const QString &accepter, QString &errorMsg)
+{
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE friends SET status = 'accepted' WHERE requester_pseudo = :requester AND target_pseudo = :accepter AND status = 'pending'");
+    query.bindValue(":requester", requester);
+    query.bindValue(":accepter", accepter);
+
+    if (!query.exec()) {
+        errorMsg = "Erreur base de données";
+        return false;
+    }
+
+    if (query.numRowsAffected() == 0) {
+        errorMsg = "Demande d'ami introuvable";
+        return false;
+    }
+
+    qInfo() << "[FRIENDS] Demande acceptée:" << requester << "<->" << accepter;
+    return true;
+}
+
+bool DatabaseManager::rejectFriendRequest(const QString &requester, const QString &rejecter, QString &errorMsg)
+{
+    QSqlQuery query(m_db);
+    query.prepare("DELETE FROM friends WHERE requester_pseudo = :requester AND target_pseudo = :rejecter AND status = 'pending'");
+    query.bindValue(":requester", requester);
+    query.bindValue(":rejecter", rejecter);
+
+    if (!query.exec()) {
+        errorMsg = "Erreur base de données";
+        return false;
+    }
+
+    if (query.numRowsAffected() == 0) {
+        errorMsg = "Demande d'ami introuvable";
+        return false;
+    }
+
+    qInfo() << "[FRIENDS] Demande rejetée:" << requester << "->" << rejecter;
+    return true;
+}
+
+QJsonArray DatabaseManager::getFriendsList(const QString &pseudo)
+{
+    QJsonArray friends;
+    QSqlQuery query(m_db);
+    query.prepare(R"(
+        SELECT
+            CASE WHEN f.requester_pseudo = :pseudo1 THEN f.target_pseudo ELSE f.requester_pseudo END AS friend_pseudo,
+            u.avatar
+        FROM friends f
+        JOIN users u ON u.pseudo = CASE WHEN f.requester_pseudo = :pseudo2 THEN f.target_pseudo ELSE f.requester_pseudo END
+        WHERE (f.requester_pseudo = :pseudo3 OR f.target_pseudo = :pseudo4) AND f.status = 'accepted'
+    )");
+    query.bindValue(":pseudo1", pseudo);
+    query.bindValue(":pseudo2", pseudo);
+    query.bindValue(":pseudo3", pseudo);
+    query.bindValue(":pseudo4", pseudo);
+
+    if (!query.exec()) {
+        qWarning() << "[FRIENDS] Erreur getFriendsList:" << query.lastError().text();
+        return friends;
+    }
+
+    while (query.next()) {
+        QJsonObject friendObj;
+        friendObj["pseudo"] = query.value(0).toString();
+        friendObj["avatar"] = query.value(1).toString();
+        friends.append(friendObj);
+    }
+
+    return friends;
+}
+
+QJsonArray DatabaseManager::getPendingFriendRequests(const QString &pseudo)
+{
+    QJsonArray pending;
+    QSqlQuery query(m_db);
+    query.prepare(R"(
+        SELECT f.requester_pseudo, u.avatar
+        FROM friends f
+        JOIN users u ON u.pseudo = f.requester_pseudo
+        WHERE f.target_pseudo = :pseudo AND f.status = 'pending'
+    )");
+    query.bindValue(":pseudo", pseudo);
+
+    if (!query.exec()) {
+        qWarning() << "[FRIENDS] Erreur getPendingFriendRequests:" << query.lastError().text();
+        return pending;
+    }
+
+    while (query.next()) {
+        QJsonObject req;
+        req["pseudo"] = query.value(0).toString();
+        req["avatar"] = query.value(1).toString();
+        pending.append(req);
+    }
+
+    return pending;
+}
+
+bool DatabaseManager::removeFriend(const QString &pseudo1, const QString &pseudo2, QString &errorMsg)
+{
+    QSqlQuery query(m_db);
+    query.prepare("DELETE FROM friends WHERE ((requester_pseudo = :a AND target_pseudo = :b) OR (requester_pseudo = :b2 AND target_pseudo = :a2)) AND status = 'accepted'");
+    query.bindValue(":a", pseudo1);
+    query.bindValue(":b", pseudo2);
+    query.bindValue(":b2", pseudo2);
+    query.bindValue(":a2", pseudo1);
+
+    if (!query.exec()) {
+        errorMsg = "Erreur base de données";
+        return false;
+    }
+
+    if (query.numRowsAffected() == 0) {
+        errorMsg = "Relation d'amitié introuvable";
+        return false;
+    }
+
+    qInfo() << "[FRIENDS] Amitié supprimée:" << pseudo1 << "<->" << pseudo2;
+    return true;
 }

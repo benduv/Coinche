@@ -8,6 +8,8 @@
 #include <QString>
 #include <QCryptographicHash>
 #include <QDebug>
+#include <QJsonArray>
+#include <QJsonObject>
 
 class DatabaseManager : public QObject
 {
@@ -135,6 +137,14 @@ public:
     bool updatePseudo(const QString &currentPseudo, const QString &newPseudo, QString &errorMsg);
     bool updateEmail(const QString &pseudo, const QString &newEmail, QString &errorMsg);
     bool setAnonymous(const QString &pseudo, bool anonymous, QString &errorMsg);
+
+    // Friends system
+    bool sendFriendRequest(const QString &requester, const QString &target, QString &errorMsg);
+    bool acceptFriendRequest(const QString &requester, const QString &accepter, QString &errorMsg);
+    bool rejectFriendRequest(const QString &requester, const QString &rejecter, QString &errorMsg);
+    QJsonArray getFriendsList(const QString &pseudo);
+    QJsonArray getPendingFriendRequests(const QString &pseudo);
+    bool removeFriend(const QString &pseudo1, const QString &pseudo2, QString &errorMsg);
 
 private:
     QSqlDatabase m_db;

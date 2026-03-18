@@ -905,7 +905,7 @@ ApplicationWindow {
                     }
                 }
 
-                // Bouton Contact en haut à gauche
+                // Bouton Amis en haut à gauche
                 Button {
                     anchors.left: parent.left
                     anchors.top: parent.top
@@ -923,7 +923,7 @@ ApplicationWindow {
                     }
 
                     contentItem: Image {
-                        source: "qrc:/resources/support-svgrepo-com.svg"
+                        source: "qrc:/resources/group-of-people-svgrepo-com.svg"
                         fillMode: Image.PreserveAspectFit
                         anchors.fill: parent
                         anchors.margins: 20 * mainWindow.minRatio
@@ -931,7 +931,7 @@ ApplicationWindow {
                     }
 
                     onClicked: {
-                        stackView.push(contactViewComponent)
+                        stackView.push(friendsViewComponent)
                     }
                 }
 
@@ -1177,6 +1177,19 @@ ApplicationWindow {
             Contact {
                 onBackToMenu: {
                     stackView.pop()
+                }
+            }
+        }
+
+        Component {
+            id: friendsViewComponent
+
+            FriendsView {
+                onBackToMenu: {
+                    stackView.pop()
+                }
+                onOpenContact: {
+                    stackView.replace(contactViewComponent)
                 }
             }
         }
@@ -1518,6 +1531,108 @@ ApplicationWindow {
                         startupSound.stop()
                     }
                 }
+            }
+        }
+    }
+
+    // Toast demande d'ami reçue (dans le menu principal)
+    Rectangle {
+        id: menuFriendRequestToast
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 20
+        width: Math.min(parent.width * 0.8, 500)
+        height: 80
+        radius: 15
+        color: "#0077bb"
+        border.color: "#FFD700"
+        border.width: 2
+        visible: false
+        z: 2000
+
+        property string fromPseudo: ""
+
+        Row {
+            anchors.centerIn: parent
+            spacing: 15
+
+            Text {
+                text: menuFriendRequestToast.fromPseudo + " vous demande en ami"
+                font.pixelSize: 18
+                font.bold: true
+                color: "white"
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Rectangle {
+                width: 60
+                height: 40
+                radius: 8
+                color: "#006600"
+                anchors.verticalCenter: parent.verticalCenter
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Oui"
+                    font.pixelSize: 16
+                    font.bold: true
+                    color: "white"
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        networkManager.acceptFriendRequest(menuFriendRequestToast.fromPseudo)
+                        menuFriendRequestToast.visible = false
+                        menuFriendRequestTimer.stop()
+                    }
+                }
+            }
+
+            Rectangle {
+                width: 60
+                height: 40
+                radius: 8
+                color: "#cc0000"
+                anchors.verticalCenter: parent.verticalCenter
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Non"
+                    font.pixelSize: 16
+                    font.bold: true
+                    color: "white"
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        networkManager.rejectFriendRequest(menuFriendRequestToast.fromPseudo)
+                        menuFriendRequestToast.visible = false
+                        menuFriendRequestTimer.stop()
+                    }
+                }
+            }
+        }
+
+        Timer {
+            id: menuFriendRequestTimer
+            interval: 10000
+            onTriggered: menuFriendRequestToast.visible = false
+        }
+    }
+
+    Connections {
+        target: networkManager
+
+        function onFriendRequestReceived(fromPseudo, fromAvatar) {
+            // Afficher le toast seulement si pas en partie
+            if (!mainWindow.shouldLoadCoincheView) {
+                menuFriendRequestToast.fromPseudo = fromPseudo
+                menuFriendRequestToast.visible = true
+                menuFriendRequestTimer.restart()
             }
         }
     }

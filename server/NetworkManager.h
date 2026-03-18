@@ -326,6 +326,41 @@ public:
         sendMessage(msg);
     }
 
+    // Friends system
+    Q_INVOKABLE void sendFriendRequest(const QString &targetPseudo) {
+        QJsonObject msg;
+        msg["type"] = "sendFriendRequest";
+        msg["targetPseudo"] = targetPseudo;
+        sendMessage(msg);
+    }
+
+    Q_INVOKABLE void acceptFriendRequest(const QString &requesterPseudo) {
+        QJsonObject msg;
+        msg["type"] = "acceptFriendRequest";
+        msg["requesterPseudo"] = requesterPseudo;
+        sendMessage(msg);
+    }
+
+    Q_INVOKABLE void rejectFriendRequest(const QString &requesterPseudo) {
+        QJsonObject msg;
+        msg["type"] = "rejectFriendRequest";
+        msg["requesterPseudo"] = requesterPseudo;
+        sendMessage(msg);
+    }
+
+    Q_INVOKABLE void getFriendsList() {
+        QJsonObject msg;
+        msg["type"] = "getFriendsList";
+        sendMessage(msg);
+    }
+
+    Q_INVOKABLE void removeFriend(const QString &pseudo) {
+        QJsonObject msg;
+        msg["type"] = "removeFriend";
+        msg["pseudo"] = pseudo;
+        sendMessage(msg);
+    }
+
     Q_INVOKABLE void sendContactMessage(const QString &senderName, const QString &senderEmail, const QString &subject, const QString &message) {
         // qDebug() << "Envoi message de contact - De:" << senderName << "Email:" << senderEmail << "Sujet:" << subject;
         QJsonObject msg;
@@ -522,6 +557,15 @@ signals:
     // Signaux pour les messages de contact
     void contactMessageSuccess();
     void contactMessageFailed(QString error);
+
+    // Friends system signals
+    void friendRequestSent();
+    void friendRequestFailed(QString error);
+    void friendRequestReceived(QString fromPseudo, QString fromAvatar);
+    void friendRequestAccepted(QString pseudo);
+    void friendRequestRejected();
+    void friendsListReceived(QVariantList friends, QVariantList pendingRequests);
+    void friendRemoved(QString pseudo);
 
     // Signal pour retourner au menu après reconnexion (partie terminée)
     void returnToMainMenu();
@@ -1081,6 +1125,30 @@ private slots:
         else if (type == "rehumanizeSuccess") {
             // qDebug() << "NetworkManager - Rehumanisation reussie";
             emit rehumanizeSuccess();
+        }
+        // Friends system
+        else if (type == "friendRequestSent") {
+            emit friendRequestSent();
+        }
+        else if (type == "friendRequestFailed") {
+            emit friendRequestFailed(obj["error"].toString());
+        }
+        else if (type == "friendRequestReceived") {
+            emit friendRequestReceived(obj["fromPseudo"].toString(), obj["fromAvatar"].toString());
+        }
+        else if (type == "friendRequestAccepted") {
+            emit friendRequestAccepted(obj["pseudo"].toString());
+        }
+        else if (type == "friendRequestRejected") {
+            emit friendRequestRejected();
+        }
+        else if (type == "friendsList") {
+            QJsonArray friendsArr = obj["friends"].toArray();
+            QJsonArray pendingArr = obj["pendingRequests"].toArray();
+            emit friendsListReceived(friendsArr.toVariantList(), pendingArr.toVariantList());
+        }
+        else if (type == "friendRemoved") {
+            emit friendRemoved(obj["pseudo"].toString());
         }
         else if (type == "gameNoLongerExists") {
             QString message = obj["message"].toString();

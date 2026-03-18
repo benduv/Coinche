@@ -132,6 +132,16 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleChangeEmail(sender, obj);
     } else if (type == "setAnonymous") {
         handleSetAnonymous(sender, obj);
+    } else if (type == "sendFriendRequest") {
+        handleSendFriendRequest(sender, obj);
+    } else if (type == "acceptFriendRequest") {
+        handleAcceptFriendRequest(sender, obj);
+    } else if (type == "rejectFriendRequest") {
+        handleRejectFriendRequest(sender, obj);
+    } else if (type == "getFriendsList") {
+        handleGetFriendsList(sender);
+    } else if (type == "removeFriend") {
+        handleRemoveFriend(sender, obj);
     } else {
         qWarning() << "[MSG_DISPATCH] Type de message non reconnu:" << type;
     }
@@ -1013,6 +1023,31 @@ void GameServer::handleLoginAccount(QWebSocket *socket, const QJsonObject &data)
 
         // Démarrer le tracking de session (lightweight - pas de timer)
         m_dbManager->recordSessionStart(pseudo);
+
+        // Envoyer la liste d'amis au login
+        {
+            QJsonArray friends = m_dbManager->getFriendsList(pseudo);
+            // Marquer le statut en ligne pour chaque ami
+            for (int i = 0; i < friends.size(); i++) {
+                QJsonObject f = friends[i].toObject();
+                QString friendPseudo = f["pseudo"].toString();
+                bool online = false;
+                for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+                    if (it.value() && it.value()->playerName == friendPseudo) {
+                        online = true;
+                        break;
+                    }
+                }
+                f["online"] = online;
+                friends[i] = f;
+            }
+            QJsonArray pending = m_dbManager->getPendingFriendRequests(pseudo);
+            QJsonObject friendsMsg;
+            friendsMsg["type"] = "friendsList";
+            friendsMsg["friends"] = friends;
+            friendsMsg["pendingRequests"] = pending;
+            sendMessage(socket, friendsMsg);
+        }
 
         // Vérifier si le joueur peut se reconnecter à une partie en cours
         if (m_playerNameToRoomId.contains(pseudo)) {
@@ -3804,9 +3839,153 @@ QJsonArray GameServer::calculatePlayableCards(GameRoom* room, int playerIndex) {
     return playableIndices;
 }
 
+// ==================== FRIENDS SYSTEM HANDLERS ====================
 
+void GameServer::handleSendFriendRequest(QWebSocket *socket, const QJsonObject &data) {
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (connectionId.isEmpty()) return;
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn) return;
 
+    QString requester = conn->playerName;
+    QString target = data["targetPseudo"].toString();
 
+    QString errorMsg;
+    if (m_dbManager->sendFriendRequest(requester, target, errorMsg)) {
+        QJsonObject response;
+        response["type"] = "friendRequestSent";
+        sendMessage(socket, response);
+
+        // Notifier la cible si elle est en ligne
+        for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+            if (it.value() && it.value()->playerName == target) {
+                QJsonObject notif;
+                notif["type"] = "friendRequestReceived";
+                notif["fromPseudo"] = requester;
+                notif["fromAvatar"] = conn->avatar;
+                sendMessage(it.value()->socket, notif);
+                break;
+            }
+        }
+    } else {
+        QJsonObject response;
+        response["type"] = "friendRequestFailed";
+        response["error"] = errorMsg;
+        sendMessage(socket, response);
+    }
+}
+
+void GameServer::handleAcceptFriendRequest(QWebSocket *socket, const QJsonObject &data) {
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (connectionId.isEmpty()) return;
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn) return;
+
+    QString requester = data["requesterPseudo"].toString();
+    QString accepter = conn->playerName;
+
+    QString errorMsg;
+    if (m_dbManager->acceptFriendRequest(requester, accepter, errorMsg)) {
+        QJsonObject response;
+        response["type"] = "friendRequestAccepted";
+        response["pseudo"] = requester;
+        sendMessage(socket, response);
+
+        // Notifier le demandeur si en ligne
+        for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+            if (it.value() && it.value()->playerName == requester) {
+                QJsonObject notif;
+                notif["type"] = "friendRequestAccepted";
+                notif["pseudo"] = accepter;
+                sendMessage(it.value()->socket, notif);
+                break;
+            }
+        }
+    } else {
+        QJsonObject response;
+        response["type"] = "friendRequestFailed";
+        response["error"] = errorMsg;
+        sendMessage(socket, response);
+    }
+}
+
+void GameServer::handleRejectFriendRequest(QWebSocket *socket, const QJsonObject &data) {
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (connectionId.isEmpty()) return;
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn) return;
+
+    QString requester = data["requesterPseudo"].toString();
+    QString rejecter = conn->playerName;
+
+    QString errorMsg;
+    if (m_dbManager->rejectFriendRequest(requester, rejecter, errorMsg)) {
+        QJsonObject response;
+        response["type"] = "friendRequestRejected";
+        sendMessage(socket, response);
+    } else {
+        QJsonObject response;
+        response["type"] = "friendRequestFailed";
+        response["error"] = errorMsg;
+        sendMessage(socket, response);
+    }
+}
+
+void GameServer::handleGetFriendsList(QWebSocket *socket) {
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (connectionId.isEmpty()) return;
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn) return;
+
+    QString pseudo = conn->playerName;
+    QJsonArray friends = m_dbManager->getFriendsList(pseudo);
+
+    // Marquer le statut en ligne
+    for (int i = 0; i < friends.size(); i++) {
+        QJsonObject f = friends[i].toObject();
+        QString friendPseudo = f["pseudo"].toString();
+        bool online = false;
+        for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+            if (it.value() && it.value()->playerName == friendPseudo) {
+                online = true;
+                break;
+            }
+        }
+        f["online"] = online;
+        friends[i] = f;
+    }
+
+    QJsonArray pending = m_dbManager->getPendingFriendRequests(pseudo);
+
+    QJsonObject response;
+    response["type"] = "friendsList";
+    response["friends"] = friends;
+    response["pendingRequests"] = pending;
+    sendMessage(socket, response);
+}
+
+void GameServer::handleRemoveFriend(QWebSocket *socket, const QJsonObject &data) {
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (connectionId.isEmpty()) return;
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn) return;
+
+    QString pseudo1 = conn->playerName;
+    QString pseudo2 = data["pseudo"].toString();
+
+    QString errorMsg;
+    if (m_dbManager->removeFriend(pseudo1, pseudo2, errorMsg)) {
+        QJsonObject response;
+        response["type"] = "friendRemoved";
+        response["pseudo"] = pseudo2;
+        sendMessage(socket, response);
+    } else {
+        QJsonObject response;
+        response["type"] = "friendRemoveFailed";
+        response["error"] = errorMsg;
+        sendMessage(socket, response);
+    }
+}
 
 
 

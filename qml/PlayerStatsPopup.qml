@@ -37,6 +37,7 @@ Rectangle {
     property int tauxGeneraleReussite: 0
 
     signal closePopup()
+    signal addFriend(string playerName)
 
     // Fonction pour charger les stats depuis le serveur
     function loadPlayerStats(name) {
@@ -71,6 +72,31 @@ Rectangle {
             anchors.fill: parent
             onClicked: {
                 // Ne rien faire - bloquer la propagation
+            }
+        }
+
+        // Bouton X fermer en haut à droite
+        Rectangle {
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 10
+            width: 40
+            height: 40
+            radius: 20
+            color: "#cc0000"
+            z: 10
+
+            Image {
+                anchors.fill: parent
+                anchors.margins: 8
+                source: "qrc:/resources/cross-small-svgrepo-com.svg"
+                fillMode: Image.PreserveAspectFit
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: statsPopup.closePopup()
             }
         }
 
@@ -238,28 +264,31 @@ Rectangle {
                 }
             }
 
-            // Bouton fermer
+            // Bouton demander en ami
             Button {
                 width: parent.width
                 height: 50
 
                 background: Rectangle {
-                    color: parent.pressed ? "#2a2a2a" : "#3a3a3a"
+                    color: parent.pressed ? "#004400" : "#006600"
                     radius: 10
-                    border.color: "#FFD700"
+                    border.color: "#00cc00"
                     border.width: 2
                 }
 
                 contentItem: Text {
-                    text: "Fermer"
+                    text: "Demander en ami"
                     font.pixelSize: 20
                     font.bold: true
-                    color: "#FFD700"
+                    color: "#ffffff"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
 
-                onClicked: statsPopup.closePopup()
+                onClicked: {
+                    statsPopup.addFriend(statsPopup.playerName)
+                    statsPopup.closePopup()
+                }
             }
         }
     }

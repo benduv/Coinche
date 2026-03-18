@@ -397,6 +397,13 @@ private:
 
     void handleGetStats(QWebSocket *socket, const QJsonObject &data);
 
+    // Friends system
+    void handleSendFriendRequest(QWebSocket *socket, const QJsonObject &data);
+    void handleAcceptFriendRequest(QWebSocket *socket, const QJsonObject &data);
+    void handleRejectFriendRequest(QWebSocket *socket, const QJsonObject &data);
+    void handleGetFriendsList(QWebSocket *socket);
+    void handleRemoveFriend(QWebSocket *socket, const QJsonObject &data);
+
     void handleJoinMatchmaking(QWebSocket *socket);
     void handleJoinTraining(QWebSocket *socket);
 

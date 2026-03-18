@@ -21,6 +21,7 @@
         <file>qml/PlayerStatsPopup.qml</file>
         <file>qml/Rules.qml</file>
         <file>qml/Contact.qml</file>
+        <file>qml/FriendsView.qml</file>
         <file>qml/PrivacyPolicy.qml</file>
         <file>qml/SplashScreen.qml</file>
         <file>qml/ShootingStar.qml</file>

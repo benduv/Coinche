@@ -3187,6 +3187,109 @@ Rectangle {
         onClosePopup: {
             playerStatsPopup.visible = false
         }
+
+        onAddFriend: function(playerName) {
+            networkManager.sendFriendRequest(playerName)
+        }
+    }
+
+    // Toast demande d'ami reçue
+    Rectangle {
+        id: friendRequestToast
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 20
+        width: Math.min(parent.width * 0.8, 500)
+        height: 80
+        radius: 15
+        color: "#0077bb"
+        border.color: "#FFD700"
+        border.width: 2
+        visible: false
+        z: 2000
+
+        property string fromPseudo: ""
+
+        Row {
+            anchors.centerIn: parent
+            spacing: 15
+
+            Text {
+                text: friendRequestToast.fromPseudo + " vous demande en ami"
+                font.pixelSize: 18
+                font.bold: true
+                color: "white"
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Rectangle {
+                width: 60
+                height: 40
+                radius: 8
+                color: "#006600"
+                anchors.verticalCenter: parent.verticalCenter
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Oui"
+                    font.pixelSize: 16
+                    font.bold: true
+                    color: "white"
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        networkManager.acceptFriendRequest(friendRequestToast.fromPseudo)
+                        friendRequestToast.visible = false
+                        friendRequestTimer.stop()
+                    }
+                }
+            }
+
+            Rectangle {
+                width: 60
+                height: 40
+                radius: 8
+                color: "#cc0000"
+                anchors.verticalCenter: parent.verticalCenter
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Non"
+                    font.pixelSize: 16
+                    font.bold: true
+                    color: "white"
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        networkManager.rejectFriendRequest(friendRequestToast.fromPseudo)
+                        friendRequestToast.visible = false
+                        friendRequestTimer.stop()
+                    }
+                }
+            }
+        }
+
+        Timer {
+            id: friendRequestTimer
+            interval: 10000
+            onTriggered: friendRequestToast.visible = false
+        }
+    }
+
+    Connections {
+        target: networkManager
+
+        function onFriendRequestReceived(fromPseudo, fromAvatar) {
+            friendRequestToast.fromPseudo = fromPseudo
+            friendRequestToast.visible = true
+            friendRequestTimer.restart()
+        }
     }
 
     Component.onCompleted: {
