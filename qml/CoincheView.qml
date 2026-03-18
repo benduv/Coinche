@@ -1803,7 +1803,7 @@ Rectangle {
                 }
 
                 Text {
-                    text: (gameModel.myPosition % 2 === 0) ? "Nous" : "Eux"
+                    text: "Nous"
                     color: "white"
                     font.family: "Serif"
                     font.italic: true
@@ -1812,20 +1812,20 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
-                    text: gameModel.scoreTeam1
+                    text: (gameModel.myPosition % 2 === 0) ? gameModel.scoreTeam1 : gameModel.scoreTeam2
                     color: "white"
                     font.pixelSize: parent.height * 0.2
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
-                    text: gameModel.scoreTotalTeam1
+                    text: (gameModel.myPosition % 2 === 0) ? gameModel.scoreTotalTeam1 : gameModel.scoreTotalTeam2
                     color: "white"
                     font.pixelSize: parent.height * 0.2
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
 
                 Text {
-                    text: (gameModel.myPosition % 2 === 0) ? "Eux" : "Nous"
+                    text: "Eux"
                     color: "white"
                     font.family: "Serif"
                     font.italic: true
@@ -1834,13 +1834,13 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
-                    text: gameModel.scoreTeam2
+                    text: (gameModel.myPosition % 2 === 0) ? gameModel.scoreTeam2 : gameModel.scoreTeam1
                     color: "white"
                     font.pixelSize: parent.height * 0.2
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
-                    text: gameModel.scoreTotalTeam2
+                    text: (gameModel.myPosition % 2 === 0) ? gameModel.scoreTotalTeam2 : gameModel.scoreTotalTeam1
                     color: "white"
                     font.pixelSize: parent.height * 0.2
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter

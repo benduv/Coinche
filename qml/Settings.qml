@@ -17,26 +17,13 @@ Rectangle {
     property real minRatio: Math.min(widthRatio, heightRatio)
 
     // Largeur du formulaire adaptée à l'orientation
-    property real formWidthRatio: isPortrait ? 0.9 : 0.8
+    property real formWidthRatio: 0.8
 
     Component.onCompleted: {
-        // Forcer le mode portrait pour la saisie clavier
-        if (Qt.platform.os === "android") {
-            orientationHelper.setPortrait()
-        }
         // Synchroniser avec les paramètres globaux
         musicEnabled = AudioSettings.musicEnabled
         effectsEnabled = AudioSettings.effectsEnabled
         initialized = true
-    }
-
-    property bool skipLandscapeRestore: false
-
-    Component.onDestruction: {
-        // Restaurer le mode paysage via JNI natif (sauf si on retourne au login après suppression de compte)
-        if (Qt.platform.os === "android" && !skipLandscapeRestore) {
-            orientationHelper.setLandscape()
-        }
     }
 
     // Fond étoilé
@@ -168,7 +155,8 @@ Rectangle {
     }
 
     // Contenu des réglages
-    ScrollView {
+    Flickable {
+        id: settingsScrollView
         anchors.top: settingsTitle.bottom
         anchors.topMargin: isPortrait ? 20 * minRatio : 30 * minRatio
         anchors.left: parent.left
@@ -178,15 +166,22 @@ Rectangle {
         anchors.rightMargin: isPortrait ? 20 * minRatio : parent.width * 0.1
         anchors.bottomMargin: isPortrait ? 20 * minRatio : 40 * minRatio
         clip: true
+        contentHeight: settingsColumn.height
+        boundsBehavior: Flickable.StopAtBounds
 
-        ScrollBar.vertical.policy: ScrollBar.AsNeeded
-        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-        contentWidth: availableWidth
+        // Scroll vers un champ quand il obtient le focus
+        function scrollToItem(item) {
+            var targetY = item.mapToItem(settingsColumn, 0, 0).y
+            var scrollTarget = targetY - 20 * settingsRoot.minRatio
+            if (scrollTarget > 0) {
+                settingsScrollView.contentY = Math.min(scrollTarget, settingsScrollView.contentHeight - settingsScrollView.height)
+            }
+        }
 
         Column {
-            width: parent ? parent.width : 0
-            spacing: isPortrait ? 20 * settingsRoot.minRatio : 30 * settingsRoot.minRatio
+            id: settingsColumn
+            width: parent.width
+            spacing: 30 * settingsRoot.minRatio
 
             // Section Audio
             Rectangle {
@@ -212,99 +207,72 @@ Rectangle {
 
                     // Musique ON/OFF
                     Row {
-                        width: parent.width
-                        spacing: isPortrait ? 20 * settingsRoot.minRatio : 40 * settingsRoot.minRatio
+
+                        spacing: 60 * settingsRoot.minRatio
 
                         Item {
                             height: 40 * settingsRoot.minRatio
-                            width: isPortrait ? parent.width * 0.05 : parent.width * 0.1
+                            width: parent.width * 0.001
                         }
 
                         Text {
-                            text: "Musique:"
-                            font.pixelSize: isPortrait ? 26 * settingsRoot.minRatio : 30 * settingsRoot.minRatio
+                            text: "Musique :"
+                            font.pixelSize: 30 * settingsRoot.minRatio
                             color: "white"
                             anchors.verticalCenter: parent.verticalCenter
-                            width: isPortrait ? parent.width * 0.5 : parent.width * 0.3
+                            width: parent.width * 0.5
                         }
 
-                        Button {
-                            id: musicToggleButton
-                            width: isPortrait ? 120 * settingsRoot.minRatio : 150 * settingsRoot.minRatio
-                            height: isPortrait ? 80 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
+                        Image {
+                            width: 100 * settingsRoot.minRatio
+                            height: 80 * settingsRoot.minRatio
                             anchors.verticalCenter: parent.verticalCenter
-
-                            background: Rectangle {
-                                color: settingsRoot.musicEnabled ? "#00aa00" : "#aa0000"
-                                radius: 10 * settingsRoot.minRatio
-                                border.color: "#FFD700"
-                                border.width: 2 * settingsRoot.minRatio
-                            }
-
-                            contentItem: Text {
-                                text: settingsRoot.musicEnabled ? "ON" : "OFF"
-                                font.pixelSize: 30 * settingsRoot.minRatio
-                                font.bold: true
-                                color: "white"
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
-
-                            onClicked: {
-                                settingsRoot.musicEnabled = !settingsRoot.musicEnabled
+                            source: settingsRoot.musicEnabled ? "qrc:/resources/switchon-svgrepo-com.svg" : "qrc:/resources/switchoff-svgrepo-com.svg"
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: settingsRoot.musicEnabled = !settingsRoot.musicEnabled
                             }
                         }
                     }
 
                     // Effets sonores ON/OFF
                     Row {
-                        width: parent.width
-                        spacing: isPortrait ? 20 * settingsRoot.minRatio : 40 * settingsRoot.minRatio
+                        spacing: 60 * settingsRoot.minRatio
 
                         Item {
                             height: 40 * settingsRoot.minRatio
-                            width: isPortrait ? parent.width * 0.05 : parent.width * 0.1
+                            width: parent.width * 0.001
                         }
 
                         Text {
-                            text: "Effets sonores:"
-                            font.pixelSize: isPortrait ? 26 * settingsRoot.minRatio : 30 * settingsRoot.minRatio
+                            text: "Effets sonores :"
+                            font.pixelSize: 30 * settingsRoot.minRatio
                             color: "white"
                             anchors.verticalCenter: parent.verticalCenter
-                            width: isPortrait ? parent.width * 0.5 : parent.width * 0.3
+                            width: parent.width * 0.5
                         }
 
-                        Button {
-                            id: effectsToggleButton
-                            width: isPortrait ? 120 * settingsRoot.minRatio : 150 * settingsRoot.minRatio
-                            height: isPortrait ? 80 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
+                        Image {
+                            width: 100 * settingsRoot.minRatio
+                            height: 80 * settingsRoot.minRatio
                             anchors.verticalCenter: parent.verticalCenter
-
-                            background: Rectangle {
-                                color: settingsRoot.effectsEnabled ? "#00aa00" : "#aa0000"
-                                radius: 10 * settingsRoot.minRatio
-                                border.color: "#FFD700"
-                                border.width: 2 * settingsRoot.minRatio
-                            }
-
-                            contentItem: Text {
-                                text: settingsRoot.effectsEnabled ? "ON" : "OFF"
-                                font.pixelSize: 30 * settingsRoot.minRatio
-                                font.bold: true
-                                color: "white"
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
-
-                            onClicked: {
-                                settingsRoot.effectsEnabled = !settingsRoot.effectsEnabled
+                            source: settingsRoot.effectsEnabled ? "qrc:/resources/switchon-svgrepo-com.svg" : "qrc:/resources/switchoff-svgrepo-com.svg"
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: settingsRoot.effectsEnabled = !settingsRoot.effectsEnabled
                             }
                         }
                     }
                 }
             }
 
-            // Section Affichage (pour futures options)
+            // Section Affichage
             Rectangle {
                 width: parent.width
                 height: displayColumn.height + 40 * settingsRoot.minRatio
@@ -328,46 +296,87 @@ Rectangle {
 
                     // Tri des cartes
                     Row {
-                        width: parent.width
-                        //spacing: isPortrait ? 20 * settingsRoot.minRatio : 40 * settingsRoot.minRatio
+                        spacing: 60 * settingsRoot.minRatio
 
                         Item {
-                            height: 40 * settingsRoot.minRatio
-                            width: isPortrait ? parent.width * 0.05 : parent.width * 0.1
+                            height: 80 * settingsRoot.minRatio
+                            width: parent.parent.width * 0.001
                         }
 
                         Text {
-                            text: "Tri des cartes:"
-                            font.pixelSize: isPortrait ? 26 * settingsRoot.minRatio : 30 * settingsRoot.minRatio
+                            text: "Tri des cartes :"
+                            font.pixelSize: 30 * settingsRoot.minRatio
                             color: "white"
                             anchors.verticalCenter: parent.verticalCenter
-                            width: isPortrait ? parent.width * 0.5 : parent.width * 0.3
+                            width: parent.width * 0.28
                         }
 
-                        Button {
-                            id: sortToggleButton
-                            width: isPortrait ? 200 * settingsRoot.minRatio : 280 * settingsRoot.minRatio
-                            height: isPortrait ? 80 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
+                        // Segmented control
+                        Row {
+                            spacing: 0
                             anchors.verticalCenter: parent.verticalCenter
 
-                            background: Rectangle {
-                                color: settingsRoot.strongCardsLeft ? "#E88976" : "#006699"
+                            // Bouton "Fortes à gauche"
+                            Rectangle {
+                                width: 230 * settingsRoot.minRatio
+                                height: 60 * settingsRoot.minRatio
                                 radius: 10 * settingsRoot.minRatio
-                                border.color: "#FFD700"
+                                color: settingsRoot.strongCardsLeft ? "#FFD700" : "#3a3a3a"
+                                border.color: settingsRoot.strongCardsLeft ? "#FFD700" : "#3a3a3a"
                                 border.width: 2 * settingsRoot.minRatio
+
+                                Rectangle {
+                                    anchors.right: parent.right
+                                    width: parent.radius
+                                    height: parent.height
+                                    color: parent.color
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Fortes à gauche"
+                                    font.pixelSize: 24 * settingsRoot.minRatio
+                                    font.bold: settingsRoot.strongCardsLeft
+                                    color: settingsRoot.strongCardsLeft ? "#2a2a2a" : "#aaaaaa"
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: settingsRoot.strongCardsLeft = true
+                                }
                             }
 
-                            contentItem: Text {
-                                text: settingsRoot.strongCardsLeft ? "Fortes à gauche" : "Fortes à droite"
-                                font.pixelSize: isPortrait ? 22 * settingsRoot.minRatio : 26 * settingsRoot.minRatio
-                                font.bold: true
-                                color: "white"
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
+                            // Bouton "Fortes à droite"
+                            Rectangle {
+                                width: 230 * settingsRoot.minRatio
+                                height: 60 * settingsRoot.minRatio
+                                radius: 10 * settingsRoot.minRatio
+                                color: !settingsRoot.strongCardsLeft ? "#FFD700" : "#3a3a3a"
+                                border.color: !settingsRoot.strongCardsLeft ? "#FFD700" : "#3a3a3a"
+                                border.width: 2 * settingsRoot.minRatio
 
-                            onClicked: {
-                                settingsRoot.strongCardsLeft = !settingsRoot.strongCardsLeft
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    width: parent.radius
+                                    height: parent.height
+                                    color: parent.color
+                                    border.width: 0
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Fortes à droite"
+                                    font.pixelSize: 24 * settingsRoot.minRatio
+                                    font.bold: !settingsRoot.strongCardsLeft
+                                    color: !settingsRoot.strongCardsLeft ? "#2a2a2a" : "#aaaaaa"
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: settingsRoot.strongCardsLeft = false
+                                }
                             }
                         }
                     }
@@ -398,8 +407,8 @@ Rectangle {
                     }
 
                     Text {
-                        text: "Connecté en tant que : " + settingsRoot.playerName
-                        font.pixelSize: 28 * settingsRoot.minRatio
+                        text: "   Connecté en tant que : " + settingsRoot.playerName
+                        font.pixelSize: 30 * settingsRoot.minRatio
                         color: "white"
                     }
 
@@ -412,19 +421,24 @@ Rectangle {
 
                     // Modifier le pseudo
                     Text {
-                        text: "Pseudo"
-                        font.pixelSize: isPortrait ? 24 * settingsRoot.minRatio : 28 * settingsRoot.minRatio
+                        text: "   Pseudo"
+                        font.pixelSize: 30 * settingsRoot.minRatio
                         color: "#cccccc"
                         topPadding: 10 * settingsRoot.minRatio
                     }
 
                     Row {
                         width: parent.width
-                        spacing: isPortrait ? 15 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
+                        spacing: 20 * settingsRoot.minRatio
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: parent.width * 0.001
+                        }
 
                         Rectangle {
-                            width: parent.width - pseudoButton.width - (isPortrait ? 15 : 100) * settingsRoot.minRatio
-                            height: isPortrait ? 60 * settingsRoot.minRatio : 80 * settingsRoot.minRatio
+                            width: parent.width - pseudoButton.width - 100 * settingsRoot.minRatio
+                            height: 80 * settingsRoot.minRatio
                             color: "#3a3a3a"
                             radius: 8 * settingsRoot.minRatio
                             border.color: pseudoInput.activeFocus ? "#FFD700" : "#666666"
@@ -435,18 +449,25 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.margins: 10 * settingsRoot.minRatio
                                 text: settingsRoot.playerName
-                                font.pixelSize: 26 * settingsRoot.minRatio
+                                font.pixelSize: 30 * settingsRoot.minRatio
                                 color: "white"
                                 verticalAlignment: TextInput.AlignVCenter
                                 clip: true
-                                maximumLength: 20
+                                maximumLength: 12
+                                onTextChanged: if (text.indexOf(' ') >= 0) text = text.replace(/ /g, '')
+                                onActiveFocusChanged: if (activeFocus) settingsScrollView.scrollToItem(pseudoInput.parent)
                             }
+                        }
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: parent.width * 0.001
                         }
 
                         Button {
                             id: pseudoButton
-                            width: isPortrait ? 120 * settingsRoot.minRatio : 160 * settingsRoot.minRatio
-                            height: isPortrait ? 60 * settingsRoot.minRatio : 80 * settingsRoot.minRatio
+                            width: 160 * settingsRoot.minRatio
+                            height: 80 * settingsRoot.minRatio
 
                             background: Rectangle {
                                 color: parent.down ? "#ccaa00" : (parent.hovered ? "#e6c200" : "#FFD700")
@@ -454,8 +475,8 @@ Rectangle {
                             }
 
                             contentItem: Text {
-                                text: "Modifier"
-                                font.pixelSize: 26 * settingsRoot.minRatio
+                                text: "Modifier "
+                                font.pixelSize: 28 * settingsRoot.minRatio
                                 font.bold: true
                                 color: "#2a2a2a"
                                 horizontalAlignment: Text.AlignHCenter
@@ -466,17 +487,22 @@ Rectangle {
                                 pseudoErrorText.visible = false
                                 pseudoSuccessText.visible = false
                                 if (pseudoInput.text.trim() === "") {
-                                    pseudoErrorText.text = "Le pseudo ne peut pas être vide"
+                                    pseudoErrorText.text = "    Le pseudo ne peut pas être vide"
                                     pseudoErrorText.visible = true
                                     return
                                 }
                                 if (pseudoInput.text.trim() === settingsRoot.playerName) {
-                                    pseudoErrorText.text = "Le nouveau pseudo est identique à l'actuel"
+                                    pseudoErrorText.text = "    Le nouveau pseudo est identique à l'actuel"
                                     pseudoErrorText.visible = true
                                     return
                                 }
                                 networkManager.changePseudo(settingsRoot.playerName, pseudoInput.text.trim())
                             }
+                        }
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: parent.width * 0.15
                         }
                     }
 
@@ -484,7 +510,7 @@ Rectangle {
                         id: pseudoErrorText
                         width: parent.width
                         text: ""
-                        font.pixelSize: 20 * settingsRoot.minRatio
+                        font.pixelSize: 24 * settingsRoot.minRatio
                         color: "#ff6666"
                         wrapMode: Text.WordWrap
                         visible: false
@@ -493,27 +519,32 @@ Rectangle {
                     Text {
                         id: pseudoSuccessText
                         width: parent.width
-                        text: "Pseudo modifié avec succès"
-                        font.pixelSize: 20 * settingsRoot.minRatio
+                        text: "    Pseudo modifié avec succès"
+                        font.pixelSize: 24 * settingsRoot.minRatio
                         color: "#66ff66"
                         visible: false
                     }
 
                     // Modifier l'email
                     Text {
-                        text: "Email"
-                        font.pixelSize: isPortrait ? 24 * settingsRoot.minRatio : 28 * settingsRoot.minRatio
+                        text: "   Email"
+                        font.pixelSize: 30 * settingsRoot.minRatio
                         color: "#cccccc"
                         topPadding: 10 * settingsRoot.minRatio
                     }
 
                     Row {
                         width: parent.width
-                        spacing: isPortrait ? 15 * settingsRoot.minRatio : 100 * settingsRoot.minRatio
+                        spacing: 20 * settingsRoot.minRatio
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: parent.width * 0.001
+                        }
 
                         Rectangle {
-                            width: parent.width - emailButton.width - (isPortrait ? 15 : 100) * settingsRoot.minRatio
-                            height: isPortrait ? 60 * settingsRoot.minRatio : 80 * settingsRoot.minRatio
+                            width: parent.width - emailButton.width - 100 * settingsRoot.minRatio
+                            height: 80 * settingsRoot.minRatio
                             color: "#3a3a3a"
                             radius: 8 * settingsRoot.minRatio
                             border.color: emailInput.activeFocus ? "#FFD700" : "#666666"
@@ -524,18 +555,25 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.margins: 10 * settingsRoot.minRatio
                                 text: settingsRoot.playerEmail
-                                font.pixelSize: 26 * settingsRoot.minRatio
+                                font.pixelSize: 30 * settingsRoot.minRatio
                                 color: "white"
                                 verticalAlignment: TextInput.AlignVCenter
                                 clip: true
-                                inputMethodHints: Qt.ImhEmailCharactersOnly
+                                inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                                onTextChanged: if (text.indexOf(' ') >= 0) text = text.replace(/ /g, '')
+                                onActiveFocusChanged: if (activeFocus) settingsScrollView.scrollToItem(emailInput.parent)
                             }
+                        }
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: parent.width * 0.001
                         }
 
                         Button {
                             id: emailButton
-                            width: isPortrait ? 120 * settingsRoot.minRatio : 160 * settingsRoot.minRatio
-                            height: isPortrait ? 60 * settingsRoot.minRatio : 80 * settingsRoot.minRatio
+                            width: 160 * settingsRoot.minRatio
+                            height: 80 * settingsRoot.minRatio
 
                             background: Rectangle {
                                 color: parent.down ? "#ccaa00" : (parent.hovered ? "#e6c200" : "#FFD700")
@@ -543,8 +581,8 @@ Rectangle {
                             }
 
                             contentItem: Text {
-                                text: "Modifier"
-                                font.pixelSize: 26 * settingsRoot.minRatio
+                                text: "Modifier "
+                                font.pixelSize: 28 * settingsRoot.minRatio
                                 font.bold: true
                                 color: "#2a2a2a"
                                 horizontalAlignment: Text.AlignHCenter
@@ -555,17 +593,28 @@ Rectangle {
                                 emailErrorText.visible = false
                                 emailSuccessText.visible = false
                                 if (emailInput.text.trim() === "") {
-                                    emailErrorText.text = "L'email ne peut pas être vide"
+                                    emailErrorText.text = "    L'email ne peut pas être vide"
                                     emailErrorText.visible = true
                                     return
                                 }
-                                if (emailInput.text.trim() === settingsRoot.playerEmail) {
-                                    emailErrorText.text = "Le nouvel email est identique à l'actuel"
+                                var email = emailInput.text.trim()
+                                if (email.indexOf("@") === -1 || email.indexOf(".") === -1) {
+                                    emailErrorText.text = "    Adresse email invalide"
                                     emailErrorText.visible = true
                                     return
                                 }
-                                networkManager.changeEmail(settingsRoot.playerName, emailInput.text.trim())
+                                if (email === settingsRoot.playerEmail) {
+                                    emailErrorText.text = "    Le nouvel email est identique à l'actuel"
+                                    emailErrorText.visible = true
+                                    return
+                                }
+                                networkManager.changeEmail(settingsRoot.playerName, email)
                             }
+                        }
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: parent.width * 0.15
                         }
                     }
 
@@ -573,7 +622,7 @@ Rectangle {
                         id: emailErrorText
                         width: parent.width
                         text: ""
-                        font.pixelSize: 20 * settingsRoot.minRatio
+                        font.pixelSize: 24 * settingsRoot.minRatio
                         color: "#ff6666"
                         wrapMode: Text.WordWrap
                         visible: false
@@ -582,8 +631,8 @@ Rectangle {
                     Text {
                         id: emailSuccessText
                         width: parent.width
-                        text: "Email modifié avec succès"
-                        font.pixelSize: 20 * settingsRoot.minRatio
+                        text: "    Email modifié avec succès"
+                        font.pixelSize: 24 * settingsRoot.minRatio
                         color: "#66ff66"
                         visible: false
                     }
@@ -597,53 +646,50 @@ Rectangle {
 
                     // Anonymiser mon profil
                     Row {
-                        width: parent.width
-                        spacing: 40 * settingsRoot.minRatio
-                        topPadding: 10 * settingsRoot.minRatio
+                        //width: parent.width
+                        spacing: 30 * settingsRoot.minRatio
+                        //topPadding: 10 * settingsRoot.minRatio
+
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: parent.width * 0.001
+                        }
 
                         Text {
                             text: "Anonymiser mon profil :"
-                            font.pixelSize: 26 * settingsRoot.minRatio
+                            font.pixelSize: 30 * settingsRoot.minRatio
                             color: "white"
                             anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width * 0.5
+                            width: parent.width * 0.6
                         }
 
-                        Button {
-                            id: anonymousToggleButton
-                            width: isPortrait ? 120 * settingsRoot.minRatio : 150 * settingsRoot.minRatio
-                            height: isPortrait ? 60 * settingsRoot.minRatio : 80 * settingsRoot.minRatio
+                        Item {
+                            height: 40 * settingsRoot.minRatio
+                            width: parent.width * 0.001
+                        }
+
+                        Image {
+                            width: 100 * settingsRoot.minRatio
+                            height: 80 * settingsRoot.minRatio
                             anchors.verticalCenter: parent.verticalCenter
-
-                            property bool isAnonymous: networkManager.isAnonymous
-
-                            background: Rectangle {
-                                color: anonymousToggleButton.isAnonymous ? "#00aa00" : "#aa0000"
-                                radius: 10 * settingsRoot.minRatio
-                                border.color: "#FFD700"
-                                border.width: 2 * settingsRoot.minRatio
-                            }
-
-                            contentItem: Text {
-                                text: anonymousToggleButton.isAnonymous ? "ON" : "OFF"
-                                font.pixelSize: 26 * settingsRoot.minRatio
-                                font.bold: true
-                                color: "white"
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
-
-                            onClicked: {
-                                anonymousErrorText.visible = false
-                                networkManager.setAnonymous(!anonymousToggleButton.isAnonymous)
+                            source: networkManager.isAnonymous ? "qrc:/resources/switchon-svgrepo-com.svg" : "qrc:/resources/switchoff-svgrepo-com.svg"
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    anonymousErrorText.visible = false
+                                    networkManager.setAnonymous(!networkManager.isAnonymous)
+                                }
                             }
                         }
                     }
 
                     Text {
                         width: parent.width
-                        text: "Les autres joueurs verront \"Anonyme\" comme pseudo et ne verront plus vos statistiques en cliquant sur votre avatar"
-                        font.pixelSize: 18 * settingsRoot.minRatio
+                        text: "    Les autres joueurs verront \"Anonyme\" comme pseudo et ne verront plus vos statistiques en cliquant sur votre avatar"
+                        font.pixelSize: 20 * settingsRoot.minRatio
                         color: "#888888"
                         font.italic: true
                         wrapMode: Text.WordWrap
@@ -694,6 +740,9 @@ Rectangle {
                     }
                 }
             }
+
+            // Espace supplémentaire pour scroller les champs au-dessus du clavier
+            Item { height: settingsRoot.height * 0.2; width: 1 }
         }
     }
 
@@ -775,7 +824,7 @@ Rectangle {
                     }
 
                     contentItem: Text {
-                        text: "Annuler"
+                        text: "Annuler "
                         font.pixelSize: 24 * settingsRoot.minRatio
                         color: "white"
                         horizontalAlignment: Text.AlignHCenter
@@ -800,7 +849,7 @@ Rectangle {
                     }
 
                     contentItem: Text {
-                        text: "Supprimer"
+                        text: "Supprimer "
                         font.pixelSize: 24 * settingsRoot.minRatio
                         font.bold: true
                         color: "white"
@@ -814,6 +863,7 @@ Rectangle {
                     }
                 }
             }
+
         }
     }
 }

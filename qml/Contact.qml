@@ -19,19 +19,6 @@ Rectangle {
     // Largeur du formulaire adaptée à l'orientation
     property real formWidthRatio: isPortrait ? 0.9 : 0.7
 
-    Component.onCompleted: {
-        // Forcer le mode portrait pour la saisie clavier
-        if (Qt.platform.os === "android") {
-            orientationHelper.setPortrait()
-        }
-    }
-
-    Component.onDestruction: {
-        // Restaurer le mode paysage via JNI natif
-        if (Qt.platform.os === "android") {
-            orientationHelper.setLandscape()
-        }
-    }
 
     // Fond étoilé
     StarryBackground {
@@ -116,7 +103,7 @@ Rectangle {
     }
 
     // Contenu principal scrollable
-    /*Flickable {
+    Flickable {
         id: mainFlickable
         anchors.fill: parent
         anchors.topMargin: contactRoot.isPortrait ? 100 * contactRoot.minRatio : 120 * contactRoot.minRatio
@@ -124,19 +111,27 @@ Rectangle {
         anchors.rightMargin: contactRoot.isPortrait ? 20 * contactRoot.minRatio : 40 * contactRoot.minRatio
         anchors.bottomMargin: 40 * contactRoot.minRatio
         contentHeight: contentColumn.height
-        clip: true*/
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+
+        // Scroll vers un champ quand il obtient le focus
+        function scrollToItem(item) {
+            var targetY = item.mapToItem(contentColumn, 0, 0).y
+            var scrollTarget = targetY - 20 * contactRoot.minRatio
+            if (scrollTarget > 0) {
+                mainFlickable.contentY = Math.min(scrollTarget, mainFlickable.contentHeight - mainFlickable.height)
+            }
+        }
 
         Column {
             id: contentColumn
-            anchors.top: parent.top
-            anchors.topMargin: contactRoot.isPortrait ? 100 * contactRoot.minRatio : 120 * contactRoot.minRatio
             width: parent.width
             spacing: 30 * contactRoot.minRatio
 
             // Titre
             Text {
-                text: "NOUS CONTACTER"
-                font.pixelSize: 38 * contactRoot.minRatio
+                text: "CONTACT"
+                font.pixelSize: 60 * contactRoot.minRatio
                 font.bold: true
                 color: "#FFD700"
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -198,6 +193,7 @@ Rectangle {
                                 // Bouton "Suivant" pour passer au champ message
                                 inputMethodHints: Qt.ImhNone
                                 Keys.onReturnPressed: messageArea.forceActiveFocus()
+                                onActiveFocusChanged: if (activeFocus) mainFlickable.scrollToItem(subjectField.parent)
 
                                 Text {
                                     anchors.fill: parent
@@ -270,19 +266,9 @@ Rectangle {
                                         }
                                     }
 
-                                    // Scroll automatique du formulaire vers le champ message quand il obtient le focus
-                                    /*onActiveFocusChanged: {
-                                        if (activeFocus) {
-                                            // Calculer la position Y du champ message dans le contentColumn
-                                            var targetY = messageFieldRect.mapToItem(contentColumn, 0, 0).y
-                                            // Scroller pour que le champ message soit visible en haut de la zone visible
-                                            // avec une petite marge
-                                            var scrollTarget = targetY - 20 * contactRoot.minRatio
-                                            if (scrollTarget > 0) {
-                                                mainFlickable.contentY = Math.min(scrollTarget, mainFlickable.contentHeight - mainFlickable.height)
-                                            }
-                                        }
-                                    }*/
+                                    onActiveFocusChanged: {
+                                        if (activeFocus) mainFlickable.scrollToItem(messageFieldRect)
+                                    }
                                 }
                             }
 
@@ -382,9 +368,11 @@ Rectangle {
                 }
             }
 
-            Item { height: 40 * contactRoot.minRatio; width: 1 }
+            // Espace supplémentaire pour permettre de scroller le champ message
+            // au-dessus du clavier en mode paysage
+            Item { height: contactRoot.height * 0.3; width: 1 }
         }
-    //}
+    }
 
     // Popup de succes
     Popup {
@@ -419,7 +407,7 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "Merci pour votre message ! Nous prendrons en compte vos remarques au plus vite"
+                text: "Merci pour votre message ! Vos remarques seront pris en compte au plus vite !"
                 font.pixelSize: 22 * contactRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
@@ -500,7 +488,7 @@ Rectangle {
 
             Text {
                 width: parent.width
-                text: "Vous pouvez aussi nous contacter directement à : " + contactRoot.contactEmail
+                text: "Vous pouvez aussi écrire directement à : " + contactRoot.contactEmail
                 font.pixelSize: 18 * contactRoot.minRatio
                 color: "#aaaaaa"
                 wrapMode: Text.WordWrap

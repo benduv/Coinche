@@ -5,6 +5,10 @@
 #include <QCommandLineParser>
 #include <QRandomGenerator>
 #include <QQuickWindow>
+#ifdef Q_OS_ANDROID
+#include <QJniObject>
+#include <QCoreApplication>
+#endif
 #include "server/NetworkManager.h"
 #include "GameModel.h"
 #include "WindowPositioner.h"
@@ -19,6 +23,21 @@ int main(int argc, char *argv[])
 #endif
 
     QGuiApplication app(argc, argv);
+
+#ifdef Q_OS_ANDROID
+    // Désactiver le clavier plein écran en mode paysage
+    QJniObject activity = QJniObject::callStaticObjectMethod(
+        "org/qtproject/qt/android/QtNative",
+        "activity",
+        "()Landroid/app/Activity;");
+    if (activity.isValid()) {
+        QJniObject::callStaticMethod<void>(
+            "fr/nebuludik/coinche/KeyboardHelper",
+            "install",
+            "(Landroid/app/Activity;)V",
+            activity.object<jobject>());
+    }
+#endif
 
     // Configuration pour QSettings (utilisé par QtCore.Settings en QML)
     app.setOrganizationName("Nebuludik");
