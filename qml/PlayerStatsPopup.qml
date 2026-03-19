@@ -10,6 +10,7 @@ Rectangle {
     z: 1000
 
     property string playerName: ""
+    property bool isFriend: false
     property int gamesPlayed: 0
     property int gamesWon: 0
     property int winRate: 0
@@ -264,30 +265,33 @@ Rectangle {
                 }
             }
 
-            // Bouton demander en ami
+            // Bouton demander en ami / déjà ami
             Button {
                 width: parent.width
                 height: 50
+                enabled: !statsPopup.isFriend
 
                 background: Rectangle {
-                    color: parent.pressed ? "#004400" : "#006600"
+                    color: statsPopup.isFriend ? "#555555" : (parent.pressed ? "#004400" : "#006600")
                     radius: 10
-                    border.color: "#00cc00"
+                    border.color: statsPopup.isFriend ? "#888888" : "#00cc00"
                     border.width: 2
                 }
 
                 contentItem: Text {
-                    text: "Demander en ami"
+                    text: statsPopup.isFriend ? "Déjà ami" : "Demander en ami"
                     font.pixelSize: 20
                     font.bold: true
-                    color: "#ffffff"
+                    color: statsPopup.isFriend ? "#cccccc" : "#ffffff"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
 
                 onClicked: {
-                    statsPopup.addFriend(statsPopup.playerName)
-                    statsPopup.closePopup()
+                    if (!statsPopup.isFriend) {
+                        statsPopup.addFriend(statsPopup.playerName)
+                        statsPopup.closePopup()
+                    }
                 }
             }
         }
@@ -345,6 +349,7 @@ Rectangle {
             try {
                 var msg = JSON.parse(message)
                 if (msg.type === "statsData") {
+                    statsPopup.isFriend = msg.isFriend || false
                     statsPopup.gamesPlayed = msg.gamesPlayed || 0
                     statsPopup.gamesWon = msg.gamesWon || 0
                     // winRatio est un ratio (0.0 à 1.0), on le convertit en pourcentage

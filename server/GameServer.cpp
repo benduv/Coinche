@@ -1521,8 +1521,26 @@ void GameServer::handleGetStats(QWebSocket *socket, const QJsonObject &data) {
 
     DatabaseManager::PlayerStats stats = m_dbManager->getPlayerStats(pseudo);
 
+    // Vérifier si le demandeur est ami avec le joueur consulté
+    QString requesterPseudo;
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (!connectionId.isEmpty() && m_connections.contains(connectionId)) {
+        requesterPseudo = m_connections[connectionId]->playerName;
+    }
+    bool isFriend = false;
+    if (!requesterPseudo.isEmpty() && requesterPseudo != pseudo) {
+        QJsonArray friends = m_dbManager->getFriendsList(requesterPseudo);
+        for (int i = 0; i < friends.size(); i++) {
+            if (friends[i].toObject()["pseudo"].toString() == pseudo) {
+                isFriend = true;
+                break;
+            }
+        }
+    }
+
     QJsonObject response;
     response["type"] = "statsData";
+    response["isFriend"] = isFriend;
     response["gamesPlayed"] = stats.gamesPlayed;
     response["gamesWon"] = stats.gamesWon;
     response["winRatio"] = stats.winRatio;

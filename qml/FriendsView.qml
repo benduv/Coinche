@@ -232,21 +232,24 @@ Rectangle {
 
                 Rectangle {
                     width: mainColumn.width
-                    height: 60 * minRatio
+                    height: 75 * minRatio
                     color: "#1a1a1a"
                     radius: 10
                     border.color: "#3a3a3a"
                     border.width: 1
 
                     Row {
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: deleteButton.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
                         anchors.margins: 10 * minRatio
                         spacing: 15 * minRatio
 
                         // Pastille en ligne / hors ligne
                         Rectangle {
-                            width: 12 * minRatio
-                            height: 12 * minRatio
+                            width: 14 * minRatio
+                            height: 14 * minRatio
                             radius: width / 2
                             color: model.online ? "#4CAF50" : "#666666"
                             anchors.verticalCenter: parent.verticalCenter
@@ -254,8 +257,8 @@ Rectangle {
 
                         // Avatar rond
                         Rectangle {
-                            width: 40 * minRatio
-                            height: 40 * minRatio
+                            width: 50 * minRatio
+                            height: 50 * minRatio
                             radius: width / 2
                             color: "#3a3a3a"
                             anchors.verticalCenter: parent.verticalCenter
@@ -272,7 +275,7 @@ Rectangle {
                         // Pseudo
                         Text {
                             text: model.pseudo
-                            font.pixelSize: 20 * minRatio
+                            font.pixelSize: 22 * minRatio
                             font.bold: true
                             color: "white"
                             anchors.verticalCenter: parent.verticalCenter
@@ -281,9 +284,37 @@ Rectangle {
                         // Statut texte
                         Text {
                             text: model.online ? "En ligne" : "Hors ligne"
-                            font.pixelSize: 14 * minRatio
+                            font.pixelSize: 15 * minRatio
                             color: model.online ? "#4CAF50" : "#666666"
                             anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    // Bouton supprimer ami
+                    Rectangle {
+                        id: deleteButton
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10 * minRatio
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 35 * minRatio
+                        height: 35 * minRatio
+                        radius: width / 2
+                        color: "#cc0000"
+
+                        Image {
+                            anchors.fill: parent
+                            anchors.margins: 8 * minRatio
+                            source: "qrc:/resources/cross-small-svgrepo-com.svg"
+                            fillMode: Image.PreserveAspectFit
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                deleteFriendPopup.friendToDelete = model.pseudo
+                                deleteFriendPopup.visible = true
+                            }
                         }
                     }
                 }
@@ -316,6 +347,103 @@ Rectangle {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: friendsRoot.openContact()
+        }
+    }
+
+    // Popup de confirmation de suppression d'ami
+    Rectangle {
+        id: deleteFriendPopup
+        anchors.fill: parent
+        color: "#CC000000"
+        visible: false
+        z: 500
+
+        property string friendToDelete: ""
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: deleteFriendPopup.visible = false
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(parent.width * 0.8, 400)
+            height: 180 * minRatio
+            color: "#1a1a1a"
+            radius: 15
+            border.color: "#FFD700"
+            border.width: 2
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {} // bloquer propagation
+            }
+
+            Column {
+                anchors.centerIn: parent
+                spacing: 25 * minRatio
+
+                Text {
+                    text: "Supprimer " + deleteFriendPopup.friendToDelete + " de vos amis ?"
+                    font.pixelSize: 20 * minRatio
+                    font.bold: true
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                Row {
+                    spacing: 30 * minRatio
+                    anchors.horizontalCenter: parent.horizontalCenter
+
+                    Rectangle {
+                        width: 100 * minRatio
+                        height: 45 * minRatio
+                        radius: 10
+                        color: "#cc0000"
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Oui"
+                            font.pixelSize: 18 * minRatio
+                            font.bold: true
+                            color: "white"
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                networkManager.removeFriend(deleteFriendPopup.friendToDelete)
+                                deleteFriendPopup.visible = false
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 100 * minRatio
+                        height: 45 * minRatio
+                        radius: 10
+                        color: "#3a3a3a"
+                        border.color: "#FFD700"
+                        border.width: 2
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Non"
+                            font.pixelSize: 18 * minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: deleteFriendPopup.visible = false
+                        }
+                    }
+                }
+            }
         }
     }
 
