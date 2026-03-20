@@ -142,6 +142,8 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleGetFriendsList(sender);
     } else if (type == "removeFriend") {
         handleRemoveFriend(sender, obj);
+    } else if (type == "inviteToLobby") {
+        handleInviteToLobby(sender, obj);
     } else {
         qWarning() << "[MSG_DISPATCH] Type de message non reconnu:" << type;
     }
@@ -4005,7 +4007,53 @@ void GameServer::handleRemoveFriend(QWebSocket *socket, const QJsonObject &data)
     }
 }
 
+void GameServer::handleInviteToLobby(QWebSocket *socket, const QJsonObject &data) {
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (connectionId.isEmpty()) return;
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn) return;
 
+    QString hostName = conn->playerName;
+
+    // Trouver le lobby dont ce joueur est l'hôte
+    QString lobbyCode;
+    for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ++it) {
+        if (it.value()->hostPlayerName == hostName) {
+            lobbyCode = it.key();
+            break;
+        }
+    }
+
+    if (lobbyCode.isEmpty()) {
+        QJsonObject response;
+        response["type"] = "lobbyError";
+        response["message"] = "Vous n'êtes pas l'hôte d'un lobby";
+        sendMessage(socket, response);
+        return;
+    }
+
+    QJsonArray invitedPseudos = data["invitedPseudos"].toArray();
+
+    for (const QJsonValue &val : invitedPseudos) {
+        QString targetPseudo = val.toString();
+
+        // Trouver la connexion de la cible si elle est en ligne
+        for (auto it = m_connections.begin(); it != m_connections.end(); ++it) {
+            if (it.value() && it.value()->playerName == targetPseudo) {
+                QJsonObject notif;
+                notif["type"] = "lobbyInviteReceived";
+                notif["fromPseudo"] = hostName;
+                notif["lobbyCode"] = lobbyCode;
+                sendMessage(it.value()->socket, notif);
+                break;
+            }
+        }
+    }
+
+    QJsonObject response;
+    response["type"] = "lobbyInviteSent";
+    sendMessage(socket, response);
+}
 
 
 

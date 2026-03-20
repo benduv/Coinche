@@ -361,6 +361,17 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void inviteFriendsToLobby(const QVariantList &pseudos) {
+        QJsonObject msg;
+        msg["type"] = "inviteToLobby";
+        QJsonArray arr;
+        for (const QVariant &p : pseudos) {
+            arr.append(p.toString());
+        }
+        msg["invitedPseudos"] = arr;
+        sendMessage(msg);
+    }
+
     Q_INVOKABLE void sendContactMessage(const QString &senderName, const QString &senderEmail, const QString &subject, const QString &message) {
         // qDebug() << "Envoi message de contact - De:" << senderName << "Email:" << senderEmail << "Sujet:" << subject;
         QJsonObject msg;
@@ -566,6 +577,10 @@ signals:
     void friendRequestRejected();
     void friendsListReceived(QVariantList friends, QVariantList pendingRequests);
     void friendRemoved(QString pseudo);
+
+    // Lobby invite signals
+    void lobbyInviteReceived(QString fromPseudo, QString lobbyCode);
+    void lobbyInviteSent();
 
     // Signal pour retourner au menu après reconnexion (partie terminée)
     void returnToMainMenu();
@@ -1149,6 +1164,12 @@ private slots:
         }
         else if (type == "friendRemoved") {
             emit friendRemoved(obj["pseudo"].toString());
+        }
+        else if (type == "lobbyInviteReceived") {
+            emit lobbyInviteReceived(obj["fromPseudo"].toString(), obj["lobbyCode"].toString());
+        }
+        else if (type == "lobbyInviteSent") {
+            emit lobbyInviteSent();
         }
         else if (type == "gameNoLongerExists") {
             QString message = obj["message"].toString();

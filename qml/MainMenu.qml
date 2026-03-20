@@ -1548,6 +1548,18 @@ ApplicationWindow {
         }
     }
 
+    // Toast invitation lobby reçue
+    LobbyInviteToast {
+        id: lobbyInviteToast
+
+        onAccepted: function(lobbyCode) {
+            networkManager.joinPrivateLobby(lobbyCode)
+        }
+        onRejected: {
+            // Rien de spécial
+        }
+    }
+
     Connections {
         target: networkManager
 
@@ -1555,6 +1567,13 @@ ApplicationWindow {
             // Afficher le toast seulement si pas en partie
             if (!mainWindow.shouldLoadCoincheView) {
                 menuFriendRequestToast.showRequest(fromPseudo)
+            }
+        }
+
+        function onLobbyInviteReceived(fromPseudo, lobbyCode) {
+            // Afficher le toast seulement si pas en partie
+            if (!mainWindow.shouldLoadCoincheView) {
+                lobbyInviteToast.showInvite(fromPseudo, lobbyCode)
             }
         }
     }

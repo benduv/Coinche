@@ -403,6 +403,7 @@ private:
     void handleRejectFriendRequest(QWebSocket *socket, const QJsonObject &data);
     void handleGetFriendsList(QWebSocket *socket);
     void handleRemoveFriend(QWebSocket *socket, const QJsonObject &data);
+    void handleInviteToLobby(QWebSocket *socket, const QJsonObject &data);
 
     void handleJoinMatchmaking(QWebSocket *socket);
     void handleJoinTraining(QWebSocket *socket);

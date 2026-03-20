@@ -5,7 +5,13 @@ import QtQuick.Layouts
 Rectangle {
     id: root
     anchors.fill: parent
-    color: "#1a472a"
+    color: "transparent"
+
+    StarryBackground {
+        anchors.fill: parent
+        minRatio: root.minRatio
+        z: -1
+    }
 
     Rectangle { // Solution du pauvre pour mettre en noire la bar du haut de l'ecran (selfie)
         anchors.left: parent.right
@@ -44,6 +50,36 @@ Rectangle {
             radius: 20 * root.minRatio
             border.color: "#FFD700"
             border.width: 3 * root.minRatio
+
+            // Bouton inviter des amis (hôte uniquement)
+            Rectangle {
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.margins: 15 * root.minRatio
+                width: 70 * root.minRatio
+                height: 70 * root.minRatio
+                radius: 15 * root.minRatio
+                color: "#8EEDF5"
+                visible: root.isHost
+                z: 10
+
+                Image {
+                    anchors.fill: parent
+                    anchors.margins: 8 * root.minRatio
+                    source: "qrc:/resources/friend-svgrepo-com.svg"
+                    fillMode: Image.PreserveAspectFit
+                    sourceSize: Qt.size(width, height)
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        networkManager.getFriendsList()
+                        inviteFriendsPopup.visible = true
+                    }
+                }
+            }
 
             ColumnLayout {
                 anchors.centerIn: parent
@@ -452,6 +488,253 @@ Rectangle {
                 }
 
                 onClicked: errorPopup.close()
+            }
+        }
+    }
+
+    // Popup d'invitation d'amis
+    Rectangle {
+        id: inviteFriendsPopup
+        anchors.fill: parent
+        color: "#CC000000"
+        visible: false
+        z: 500
+
+        property int selectedCount: 0
+
+        ListModel { id: onlineFriendsModel }
+
+        function getSelectedPseudos() {
+            var list = []
+            for (var i = 0; i < onlineFriendsModel.count; i++) {
+                if (onlineFriendsModel.get(i).selected) {
+                    list.push(onlineFriendsModel.get(i).pseudo)
+                }
+            }
+            return list
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: inviteFriendsPopup.visible = false
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(parent.width * 0.85, 700 * root.minRatio)
+            height: Math.min(parent.height * 0.7, 600 * root.minRatio)
+            color: "#1a1a1a"
+            radius: 20 * root.minRatio
+            border.color: "#FFD700"
+            border.width: 3 * root.minRatio
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {} // bloquer propagation
+            }
+
+            Column {
+                anchors.fill: parent
+                anchors.margins: 25 * root.minRatio
+                spacing: 20 * root.minRatio
+
+                Text {
+                    text: "Inviter des amis"
+                    font.pixelSize: 36 * root.minRatio
+                    font.bold: true
+                    color: "#FFD700"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                Text {
+                    text: inviteFriendsPopup.selectedCount + "/3 sélectionnés"
+                    font.pixelSize: 22 * root.minRatio
+                    color: "#aaaaaa"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                // Message si aucun ami en ligne
+                Text {
+                    visible: onlineFriendsModel.count === 0
+                    text: "Aucun ami en ligne"
+                    font.pixelSize: 24 * root.minRatio
+                    color: "#888888"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                // Liste des amis en ligne
+                Flickable {
+                    width: parent.width
+                    height: parent.height - 200 * root.minRatio
+                    contentHeight: friendsColumn.height
+                    clip: true
+                    flickableDirection: Flickable.VerticalFlick
+
+                    Column {
+                        id: friendsColumn
+                        width: parent.width
+                        spacing: 10 * root.minRatio
+
+                        Repeater {
+                            model: onlineFriendsModel
+
+                            Rectangle {
+                                width: friendsColumn.width
+                                height: 70 * root.minRatio
+                                radius: 10 * root.minRatio
+                                color: model.selected ? "#2a4a2a" : "#2a2a2a"
+                                border.color: model.selected ? "#4CAF50" : "#3a3a3a"
+                                border.width: 2 * root.minRatio
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.margins: 10 * root.minRatio
+                                    spacing: 15 * root.minRatio
+
+                                    // Checkbox visuelle
+                                    Rectangle {
+                                        width: 30 * root.minRatio
+                                        height: 30 * root.minRatio
+                                        radius: 5 * root.minRatio
+                                        color: model.selected ? "#4CAF50" : "#3a3a3a"
+                                        border.color: model.selected ? "#4CAF50" : "#666666"
+                                        border.width: 2 * root.minRatio
+                                        anchors.verticalCenter: parent.verticalCenter
+
+                                        Image {
+                                            anchors.fill: parent
+                                            anchors.margins: 4 * root.minRatio
+                                            source: "qrc:/resources/check-svgrepo-com.svg"
+                                            fillMode: Image.PreserveAspectFit
+                                            visible: model.selected
+                                        }
+                                    }
+
+                                    // Avatar
+                                    Rectangle {
+                                        width: 50 * root.minRatio
+                                        height: 50 * root.minRatio
+                                        radius: width / 2
+                                        color: "#3a3a3a"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        clip: true
+
+                                        Image {
+                                            anchors.fill: parent
+                                            anchors.margins: 6 * root.minRatio
+                                            source: model.avatar ? "qrc:/resources/avatar/" + model.avatar : ""
+                                            fillMode: Image.PreserveAspectFit
+                                            visible: model.avatar !== ""
+                                        }
+                                    }
+
+                                    // Pseudo
+                                    Text {
+                                        text: model.pseudo
+                                        font.pixelSize: 28 * root.minRatio
+                                        font.bold: true
+                                        color: "white"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (model.selected) {
+                                            onlineFriendsModel.setProperty(index, "selected", false)
+                                            inviteFriendsPopup.selectedCount--
+                                        } else if (inviteFriendsPopup.selectedCount < 3) {
+                                            onlineFriendsModel.setProperty(index, "selected", true)
+                                            inviteFriendsPopup.selectedCount++
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Boutons
+                Row {
+                    spacing: 30 * root.minRatio
+                    anchors.horizontalCenter: parent.horizontalCenter
+
+                    Rectangle {
+                        width: 160 * root.minRatio
+                        height: 50 * root.minRatio
+                        radius: 10 * root.minRatio
+                        color: inviteFriendsPopup.selectedCount > 0 ? "#006600" : "#333333"
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Inviter"
+                            font.pixelSize: 24 * root.minRatio
+                            font.bold: true
+                            color: inviteFriendsPopup.selectedCount > 0 ? "white" : "#666666"
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: inviteFriendsPopup.selectedCount > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: {
+                                if (inviteFriendsPopup.selectedCount > 0) {
+                                    var pseudos = inviteFriendsPopup.getSelectedPseudos()
+                                    networkManager.inviteFriendsToLobby(pseudos)
+                                    inviteFriendsPopup.visible = false
+                                    inviteFriendsPopup.selectedCount = 0
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 160 * root.minRatio
+                        height: 50 * root.minRatio
+                        radius: 10 * root.minRatio
+                        color: "#3a3a3a"
+                        border.color: "#FFD700"
+                        border.width: 2 * root.minRatio
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Annuler"
+                            font.pixelSize: 24 * root.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                inviteFriendsPopup.visible = false
+                                inviteFriendsPopup.selectedCount = 0
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Connexion pour recevoir la liste d'amis (popup invitation)
+    Connections {
+        target: networkManager
+        enabled: inviteFriendsPopup.visible
+
+        function onFriendsListReceived(friends, pendingRequests) {
+            onlineFriendsModel.clear()
+            inviteFriendsPopup.selectedCount = 0
+            for (var i = 0; i < friends.length; i++) {
+                if (friends[i].online) {
+                    onlineFriendsModel.append({
+                        pseudo: friends[i].pseudo,
+                        avatar: friends[i].avatar || "",
+                        selected: false
+                    })
+                }
             }
         }
     }
