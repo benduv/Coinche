@@ -228,3 +228,55 @@ target_link_libraries(test_gameserver_integration PRIVATE
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
 gtest_discover_tests(test_gameserver_integration)
+
+# ========================================
+# Tests unitaires système d'amis (DatabaseManager)
+# ========================================
+add_executable(test_friends
+    friends_test.cpp
+    ../server/DatabaseManager.cpp
+)
+
+target_include_directories(test_friends PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_friends PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Sql
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_friends)
+
+# ========================================
+# Tests d'intégration système d'amis (WebSocket)
+# ========================================
+add_executable(test_friends_integration
+    friends_integration_test.cpp
+    ../server/GameServer.cpp
+    ../server/DatabaseManager.cpp
+    ../server/SmtpClient.cpp
+    ../server/StatsReporter.cpp
+)
+
+target_include_directories(test_friends_integration PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_friends_integration PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Network
+    Qt6::WebSockets
+    Qt6::Sql
+    Qt6::Test
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_friends_integration)

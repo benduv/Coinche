@@ -12,7 +12,6 @@ Rectangle {
     property real minRatio: Math.min(widthRatio, heightRatio)
 
     signal backToMenu()
-    signal openContact()
 
     ListModel { id: friendsModel }
     ListModel { id: pendingRequestsModel }
@@ -75,8 +74,8 @@ Rectangle {
         id: friendsFlickable
         anchors.top: titleText.bottom
         anchors.topMargin: 30 * minRatio
-        anchors.bottom: contactButton.top
-        anchors.bottomMargin: 20 * minRatio
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 30 * minRatio
         anchors.horizontalCenter: parent.horizontalCenter
         width: Math.min(parent.width * 0.9, 700)
         contentHeight: mainColumn.height
@@ -112,7 +111,7 @@ Rectangle {
 
                 Rectangle {
                     width: mainColumn.width
-                    height: 60 * minRatio
+                    height: 90 * minRatio
                     color: "#1a1a1a"
                     radius: 10
                     border.color: "#FF9800"
@@ -125,8 +124,8 @@ Rectangle {
 
                         // Avatar rond
                         Rectangle {
-                            width: 40 * minRatio
-                            height: 40 * minRatio
+                            width: 70 * minRatio
+                            height: 70 * minRatio
                             radius: width / 2
                             color: "#3a3a3a"
                             anchors.verticalCenter: parent.verticalCenter
@@ -134,7 +133,8 @@ Rectangle {
 
                             Image {
                                 anchors.fill: parent
-                                source: model.avatar ? "qrc:/resources/" + model.avatar : ""
+                                anchors.margins: 9 * minRatio
+                                source: model.avatar ? "qrc:/resources/avatar/" + model.avatar : ""
                                 fillMode: Image.PreserveAspectFit
                                 visible: model.avatar !== ""
                             }
@@ -143,18 +143,18 @@ Rectangle {
                         // Pseudo
                         Text {
                             text: model.pseudo
-                            font.pixelSize: 20 * minRatio
+                            font.pixelSize: 30 * minRatio
                             font.bold: true
                             color: "white"
                             anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 200 * minRatio
+                            width: parent.width - 370 * minRatio
                             elide: Text.ElideRight
                         }
 
                         // Bouton Accepter
                         Rectangle {
-                            width: 80 * minRatio
-                            height: 35 * minRatio
+                            width: 120 * minRatio
+                            height: 50 * minRatio
                             radius: 8
                             color: "#006600"
                             anchors.verticalCenter: parent.verticalCenter
@@ -162,7 +162,7 @@ Rectangle {
                             Text {
                                 anchors.centerIn: parent
                                 text: "Accepter"
-                                font.pixelSize: 14 * minRatio
+                                font.pixelSize: 22 * minRatio
                                 font.bold: true
                                 color: "white"
                             }
@@ -176,8 +176,8 @@ Rectangle {
 
                         // Bouton Refuser
                         Rectangle {
-                            width: 80 * minRatio
-                            height: 35 * minRatio
+                            width: 120 * minRatio
+                            height: 50 * minRatio
                             radius: 8
                             color: "#cc0000"
                             anchors.verticalCenter: parent.verticalCenter
@@ -185,7 +185,7 @@ Rectangle {
                             Text {
                                 anchors.centerIn: parent
                                 text: "Refuser"
-                                font.pixelSize: 14 * minRatio
+                                font.pixelSize: 22 * minRatio
                                 font.bold: true
                                 color: "white"
                             }
@@ -232,11 +232,25 @@ Rectangle {
 
                 Rectangle {
                     width: mainColumn.width
-                    height: 75 * minRatio
+                    height: 90 * minRatio
                     color: "#1a1a1a"
                     radius: 10
                     border.color: "#3a3a3a"
                     border.width: 1
+
+                    // Zone cliquable pour ouvrir les stats
+                    MouseArea {
+                        anchors.left: parent.left
+                        anchors.right: deleteButton.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            friendStatsPopup.hideFriendButton = true
+                            friendStatsPopup.loadPlayerStats(model.pseudo)
+                            friendStatsPopup.visible = true
+                        }
+                    }
 
                     Row {
                         anchors.left: parent.left
@@ -248,8 +262,8 @@ Rectangle {
 
                         // Pastille en ligne / hors ligne
                         Rectangle {
-                            width: 14 * minRatio
-                            height: 14 * minRatio
+                            width: 16 * minRatio
+                            height: 16 * minRatio
                             radius: width / 2
                             color: model.online ? "#4CAF50" : "#666666"
                             anchors.verticalCenter: parent.verticalCenter
@@ -257,8 +271,8 @@ Rectangle {
 
                         // Avatar rond
                         Rectangle {
-                            width: 50 * minRatio
-                            height: 50 * minRatio
+                            width: 70 * minRatio
+                            height: 70 * minRatio
                             radius: width / 2
                             color: "#3a3a3a"
                             anchors.verticalCenter: parent.verticalCenter
@@ -266,7 +280,8 @@ Rectangle {
 
                             Image {
                                 anchors.fill: parent
-                                source: model.avatar ? "qrc:/resources/" + model.avatar : ""
+                                anchors.margins: 9 * minRatio
+                                source: model.avatar ? "qrc:/resources/avatar/" + model.avatar : ""
                                 fillMode: Image.PreserveAspectFit
                                 visible: model.avatar !== ""
                             }
@@ -275,16 +290,21 @@ Rectangle {
                         // Pseudo
                         Text {
                             text: model.pseudo
-                            font.pixelSize: 22 * minRatio
+                            font.pixelSize: 28 * minRatio
                             font.bold: true
                             color: "white"
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
+                        Item {
+                            width: 1
+                            height: 1
+                        }
+
                         // Statut texte
                         Text {
                             text: model.online ? "En ligne" : "Hors ligne"
-                            font.pixelSize: 15 * minRatio
+                            font.pixelSize: 20 * minRatio
                             color: model.online ? "#4CAF50" : "#666666"
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -296,14 +316,14 @@ Rectangle {
                         anchors.right: parent.right
                         anchors.rightMargin: 10 * minRatio
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 35 * minRatio
-                        height: 35 * minRatio
+                        width: 45 * minRatio
+                        height: 45 * minRatio
                         radius: width / 2
                         color: "#cc0000"
 
                         Image {
                             anchors.fill: parent
-                            anchors.margins: 8 * minRatio
+                            //anchors.margins: 1 * minRatio
                             source: "qrc:/resources/cross-small-svgrepo-com.svg"
                             fillMode: Image.PreserveAspectFit
                         }
@@ -319,34 +339,6 @@ Rectangle {
                     }
                 }
             }
-        }
-    }
-
-    // Bouton Contacter Nebuludik
-    Rectangle {
-        id: contactButton
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 30 * minRatio
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: Math.min(parent.width * 0.7, 400)
-        height: 50 * minRatio
-        radius: 10
-        color: "#3a3a3a"
-        border.color: "#FFD700"
-        border.width: 2
-
-        Text {
-            anchors.centerIn: parent
-            text: "Contacter Nebuludik"
-            font.pixelSize: 20 * minRatio
-            font.bold: true
-            color: "#FFD700"
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: friendsRoot.openContact()
         }
     }
 
@@ -476,6 +468,17 @@ Rectangle {
 
         function onFriendRemoved(pseudo) {
             networkManager.getFriendsList()
+        }
+    }
+
+    // Popup de statistiques d'un ami
+    PlayerStatsPopup {
+        id: friendStatsPopup
+        anchors.fill: parent
+        hideFriendButton: true
+
+        onClosePopup: {
+            friendStatsPopup.visible = false
         }
     }
 

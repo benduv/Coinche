@@ -9,6 +9,11 @@ Rectangle {
     opacity: 0.8
     z: 1000
 
+    property bool isPortrait: height > width
+    property real widthRatio: isPortrait ? width / 600 : width / 1024
+    property real heightRatio: isPortrait ? height / 1024 : height / 768
+    property real minRatio: Math.min(widthRatio, heightRatio)
+
     property string playerName: ""
     property bool isFriend: false
     property int gamesPlayed: 0
@@ -36,6 +41,7 @@ Rectangle {
     property int generalesTentees: 0
     property int generalesReussies: 0
     property int tauxGeneraleReussite: 0
+    property bool hideFriendButton: false
 
     signal closePopup()
     signal addFriend(string playerName)
@@ -61,12 +67,12 @@ Rectangle {
     Rectangle {
         id: popupContent
         anchors.centerIn: parent
-        width: Math.min(parent.width * 0.9, 800)
-        height: Math.min(parent.height * 0.9, 600)
+        width: parent.width * 0.9
+        height: parent.height * 0.9
         color: "#1a1a1a"
-        radius: 15
+        radius: 30 * minRatio
         border.color: "#FFD700"
-        border.width: 3
+        border.width: 6 * minRatio
 
         // Empêcher la fermeture quand on clique dans la popup
         MouseArea {
@@ -80,16 +86,16 @@ Rectangle {
         Rectangle {
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: 10
-            width: 40
-            height: 40
-            radius: 20
+            anchors.margins: 20 * minRatio
+            width: 80 * minRatio
+            height: 80 * minRatio
+            radius: 16 * minRatio
             color: "#cc0000"
             z: 10
 
             Image {
                 anchors.fill: parent
-                anchors.margins: 8
+                anchors.margins: 3 * minRatio
                 source: "qrc:/resources/cross-small-svgrepo-com.svg"
                 fillMode: Image.PreserveAspectFit
             }
@@ -103,29 +109,29 @@ Rectangle {
 
         Column {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 15
+            anchors.margins: 40 * minRatio
+            spacing: 30 * minRatio
 
             // Header avec nom du joueur
             Rectangle {
                 width: parent.width
-                height: 60
+                height: 120 * minRatio
                 color: "#2a2a2a"
-                radius: 10
+                radius: 20 * minRatio
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 15
+                    spacing: 30 * minRatio
 
                     Text {
                         text: "📊"
-                        font.pixelSize: 32
+                        font.pixelSize: 64 * minRatio
                         color: "#FFD700"
                     }
 
                     Text {
                         text: "Statistiques de " + statsPopup.playerName
-                        font.pixelSize: 28
+                        font.pixelSize: 56 * minRatio
                         font.bold: true
                         color: "#FFD700"
                         anchors.verticalCenter: parent.verticalCenter
@@ -136,12 +142,12 @@ Rectangle {
             // Scrollable content
             ScrollView {
                 width: parent.width
-                height: parent.height - 120
+                height: parent.height - (240 * minRatio)
                 clip: true
 
                 Column {
                     width: parent.width
-                    spacing: 20
+                    spacing: 40 * minRatio
 
                     // Section: Parties
                     StatsSection {
@@ -151,8 +157,8 @@ Rectangle {
 
                     Grid {
                         columns: 2
-                        columnSpacing: 40
-                        rowSpacing: 10
+                        columnSpacing: 80 * minRatio
+                        rowSpacing: 20 * minRatio
                         width: parent.width
 
                         StatItem { label: "Parties jouées"; value: statsPopup.gamesPlayed }
@@ -169,8 +175,8 @@ Rectangle {
 
                     Grid {
                         columns: 3
-                        columnSpacing: 10
-                        rowSpacing: 10
+                        columnSpacing: 20 * minRatio
+                        rowSpacing: 20 * minRatio
                         width: parent.width
 
                         StatItem { label: "Coinches tentées"; value: statsPopup.coinches }
@@ -186,8 +192,8 @@ Rectangle {
 
                     Grid {
                         columns: 3
-                        columnSpacing: 10
-                        rowSpacing: 10
+                        columnSpacing: 20 * minRatio
+                        rowSpacing: 20 * minRatio
                         width: parent.width
 
                         StatItem { label: "Coinches subies"; value: statsPopup.annoncesCoinchees }
@@ -203,8 +209,8 @@ Rectangle {
 
                     Grid {
                         columns: 3
-                        columnSpacing: 10
-                        rowSpacing: 10
+                        columnSpacing: 20 * minRatio
+                        rowSpacing: 20 * minRatio
                         width: parent.width
 
                         StatItem { label: "Surcoinches tentées"; value: statsPopup.surcoinchesTentees }
@@ -220,8 +226,8 @@ Rectangle {
 
                     Grid {
                         columns: 3
-                        columnSpacing: 10
-                        rowSpacing: 10
+                        columnSpacing: 20 * minRatio
+                        rowSpacing: 20 * minRatio
                         width: parent.width
 
                         StatItem { label: "Surcoinches subies"; value: statsPopup.annoncesSurcoinchees }
@@ -237,8 +243,8 @@ Rectangle {
 
                     Grid {
                         columns: 3
-                        columnSpacing: 10
-                        rowSpacing: 10
+                        columnSpacing: 20 * minRatio
+                        rowSpacing: 20 * minRatio
                         width: parent.width
 
                         StatItem { label: "Capots annoncés"; value: statsPopup.capotsAnnonces }
@@ -254,8 +260,8 @@ Rectangle {
 
                     Grid {
                         columns: 3
-                        columnSpacing: 10
-                        rowSpacing: 10
+                        columnSpacing: 20 * minRatio
+                        rowSpacing: 20 * minRatio
                         width: parent.width
 
                         StatItem { label: "Générales tentées"; value: statsPopup.generalesTentees }
@@ -267,20 +273,23 @@ Rectangle {
 
             // Bouton demander en ami / déjà ami
             Button {
-                width: parent.width
-                height: 50
+                visible: !statsPopup.hideFriendButton
+                width: parent.width / 2.3
+                height: visible ? 100 * minRatio : 0
                 enabled: !statsPopup.isFriend
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottomMargin: 5 * minRatio
 
                 background: Rectangle {
                     color: statsPopup.isFriend ? "#555555" : (parent.pressed ? "#004400" : "#006600")
-                    radius: 10
+                    radius: 20 * minRatio
                     border.color: statsPopup.isFriend ? "#888888" : "#00cc00"
-                    border.width: 2
+                    border.width: 4 * minRatio
                 }
 
                 contentItem: Text {
                     text: statsPopup.isFriend ? "Déjà ami" : "Demander en ami"
-                    font.pixelSize: 20
+                    font.pixelSize: 40 * minRatio
                     font.bold: true
                     color: statsPopup.isFriend ? "#cccccc" : "#ffffff"
                     horizontalAlignment: Text.AlignHCenter
@@ -303,16 +312,16 @@ Rectangle {
         property color titleColor: "#FFD700"
 
         width: parent.width
-        height: 40
+        height: 80 * minRatio
         color: "#2a2a2a"
-        radius: 5
+        radius: 10 * minRatio
 
         Text {
             anchors.left: parent.left
-            anchors.leftMargin: 15
+            anchors.leftMargin: 30 * minRatio
             anchors.verticalCenter: parent.verticalCenter
             text: title
-            font.pixelSize: 20
+            font.pixelSize: 40 * minRatio
             font.bold: true
             color: titleColor
         }
@@ -323,19 +332,19 @@ Rectangle {
         property string label: ""
         property var value: 0
 
-        spacing: 10
+        spacing: 20 * minRatio
         width: (parent.width - parent.columnSpacing) / 3
 
         Text {
             id: labelText
             text: label + ":"
-            font.pixelSize: 16
+            font.pixelSize: 32 * minRatio
             color: "#CCCCCC"
         }
 
         Text {
             text: value.toString()
-            font.pixelSize: 16
+            font.pixelSize: 32 * minRatio
             font.bold: true
             color: "#FFD700"
         }

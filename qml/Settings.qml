@@ -40,6 +40,7 @@ Rectangle {
 
     signal backToMenu()
     signal accountDeleted()
+    signal openContact()
 
     // Flag pour éviter de sauvegarder pendant l'initialisation
     property bool initialized: false
@@ -142,23 +143,11 @@ Rectangle {
         }
     }
 
-    // Titre
-    Text {
-        id: settingsTitle
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: isPortrait ? 100 * minRatio : 50 * minRatio
-        text: "RÉGLAGES"
-        font.pixelSize: isPortrait ? 50 * minRatio : 60 * minRatio
-        font.bold: true
-        color: "#FFD700"
-    }
-
     // Contenu des réglages
     Flickable {
         id: settingsScrollView
-        anchors.top: settingsTitle.bottom
-        anchors.topMargin: isPortrait ? 20 * minRatio : 30 * minRatio
+        anchors.top: parent.top
+        anchors.topMargin: isPortrait ? 100 * minRatio : 50 * minRatio
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
@@ -182,6 +171,16 @@ Rectangle {
             id: settingsColumn
             width: parent.width
             spacing: 30 * settingsRoot.minRatio
+
+            // Titre
+            Text {
+                id: settingsTitle
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "RÉGLAGES"
+                font.pixelSize: isPortrait ? 50 * minRatio : 60 * minRatio
+                font.bold: true
+                color: "#FFD700"
+            }
 
             // Section Audio
             Rectangle {
@@ -737,6 +736,80 @@ Rectangle {
                             deleteErrorText.visible = false
                             deleteConfirmPopup.open()
                         }
+                    }
+                }
+            }
+
+            // Section Contacter Nebuludik
+            Rectangle {
+                width: parent.width
+                height: contactColumn.height + 40 * settingsRoot.minRatio
+                color: "#992a2a2a"
+                radius: 10 * settingsRoot.minRatio
+                border.color: "#FFD700"
+                border.width: 2 * settingsRoot.minRatio
+
+                Column {
+                    id: contactColumn
+                    anchors.centerIn: parent
+                    width: parent.width - 40 * settingsRoot.minRatio
+                    spacing: 20 * settingsRoot.minRatio
+
+                    Row {
+                        spacing: 20 * settingsRoot.minRatio
+
+                        Rectangle {
+                            width: 60 * settingsRoot.minRatio
+                            height: 60 * settingsRoot.minRatio
+                            radius: 10 * settingsRoot.minRatio
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Image {
+                                anchors.fill: parent
+                                anchors.margins: 8 * settingsRoot.minRatio
+                                source: "qrc:/resources/support-svgrepo-com.svg"
+                                fillMode: Image.PreserveAspectFit
+                            }
+                        }
+
+                        Text {
+                            text: "CONTACTER NEBULUDIK"
+                            font.pixelSize: 40 * settingsRoot.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    Text {
+                        text: "   Une suggestion, un bug ou un avis ? Cliquez ici"
+                        font.pixelSize: 26 * settingsRoot.minRatio
+                        color: "#cccccc"
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                    }
+
+                    Button {
+                        width: parent.width * 0.6
+                        height: 80 * settingsRoot.minRatio
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        background: Rectangle {
+                            color: parent.down ? "#ccaa00" : (parent.hovered ? "#e6c200" : "#FFD700")
+                            radius: 10 * settingsRoot.minRatio
+                        }
+
+                        contentItem: Text {
+                            text: "Contacter Nebuludik"
+                            font.pixelSize: 30 * settingsRoot.minRatio
+                            font.bold: true
+                            color: "#2a2a2a"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: settingsRoot.openContact()
                     }
                 }
             }

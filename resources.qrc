@@ -22,6 +22,7 @@
         <file>qml/Rules.qml</file>
         <file>qml/Contact.qml</file>
         <file>qml/FriendsView.qml</file>
+        <file>qml/FriendRequestToast.qml</file>
         <file>qml/PrivacyPolicy.qml</file>
         <file>qml/SplashScreen.qml</file>
         <file>qml/ShootingStar.qml</file>
@@ -73,6 +74,8 @@
         <file>resources/cards/cards2/trefle_roi.svg</file>
         <file>resources/cards/cards2/trefle_as.svg</file>
         <file>resources/Tapis poker3.jpg</file>
+        <file>resources/galaxie_feutre.png</file>
+        <file>resources/galaxie_feutre_small.png</file>
         <file>resources/cielEtoile.jpg</file>
         <file>resources/back-square-svgrepo-com.svg</file>
         <file>resources/right-arrow-next-svgrepo-com.svg</file>
@@ -94,7 +97,8 @@
         <file>resources/check-svgrepo-com.svg</file>
         <file>resources/play-alt-svgrepo-com.svg</file>
         <file>resources/world-wide-signal-svgrepo-com.svg</file>
-        <file>resources/group-of-people-svgrepo-com.svg</file>
+        <file>resources/friend-svgrepo-com.svg</file>
+        <file>resources/private-svgrepo-com.svg</file>
         <file>resources/bot-svgrepo-com.svg</file>
         <file>resources/switchon-svgrepo-com.svg</file>
         <file>resources/switchoff-svgrepo-com.svg</file>

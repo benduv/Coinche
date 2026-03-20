@@ -55,23 +55,11 @@ Rectangle {
         }
     }
 
-    // Titre
-    Text {
-        id: titleText
-        text: "Règles de la Coinche"
-        font.pixelSize: 56 * rulesRoot.minRatio
-        font.bold: true
-        color: "#FFD700"
-        anchors.top: parent.top
-        anchors.topMargin: 40 * rulesRoot.minRatio
-        anchors.horizontalCenter: parent.horizontalCenter
-    }
-
     // ScrollView pour les règles
     ScrollView {
         id: rulesScrollView
-        anchors.top: titleText.bottom
-        anchors.topMargin: 30 * rulesRoot.minRatio
+        anchors.top: parent.top
+        anchors.topMargin: 40 * rulesRoot.minRatio
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
@@ -88,6 +76,16 @@ Rectangle {
         Column {
             width: rulesScrollView.availableWidth
             spacing: 25 * rulesRoot.minRatio
+
+            // Titre
+            Text {
+                id: titleText
+                text: "Règles de la Coinche"
+                font.pixelSize: 56 * rulesRoot.minRatio
+                font.bold: true
+                color: "#FFD700"
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
 
             // But du jeu
             Text {

@@ -740,7 +740,7 @@ ApplicationWindow {
                             color: parent.enabled ?
                                    (parent.down ? "#00aa00" : (parent.hovered ? "#00dd00" : "#00cc00")) :
                                    "#555555"
-                            radius: 10 * mainWindow.minRatio
+                            radius: 15 * mainWindow.minRatio
                             border.color: parent.enabled ? "#FFD700" : "#888888"
                             border.width: 3 * mainWindow.minRatio
                         }
@@ -755,8 +755,8 @@ ApplicationWindow {
 
                                 Image {
                                     source: "qrc:/resources/world-wide-signal-svgrepo-com.svg"
-                                    width: 40 * mainWindow.minRatio
-                                    height: 40 * mainWindow.minRatio
+                                    width: 45 * mainWindow.minRatio
+                                    height: 45 * mainWindow.minRatio
                                     sourceSize: Qt.size(width, height)
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
@@ -790,7 +790,7 @@ ApplicationWindow {
                             color: parent.enabled ?
                                    (parent.down ? "#6a4c93" : (parent.hovered ? "#8a6cb3" : "#7a5ca3")) :
                                    "#555555"
-                            radius: 10 * mainWindow.minRatio
+                            radius: 15 * mainWindow.minRatio
                             border.color: parent.enabled ? "#FFD700" : "#888888"
                             border.width: 3 * mainWindow.minRatio
                         }
@@ -804,9 +804,9 @@ ApplicationWindow {
                                 spacing: 15 * mainWindow.minRatio
 
                                 Image {
-                                    source: "qrc:/resources/group-of-people-svgrepo-com.svg"
-                                    width: 45 * mainWindow.minRatio
-                                    height: 45 * mainWindow.minRatio
+                                    source: "qrc:/resources/private-svgrepo-com.svg"
+                                    width: 50 * mainWindow.minRatio
+                                    height: 50 * mainWindow.minRatio
                                     sourceSize: Qt.size(width, height)
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
@@ -838,8 +838,8 @@ ApplicationWindow {
                             color: parent.enabled ?
                                    (parent.down ? "#1565C0" : (parent.hovered ? "#2196F3" : "#1976D2")) :
                                    "#555555"
-                            radius: 10 * mainWindow.minRatio
-                            border.color: parent.enabled ? "#64B5F6" : "#888888"
+                            radius: 15 * mainWindow.minRatio
+                            border.color: parent.enabled ? "#FFD700"/*"#64B5F6"*/ : "#888888"
                             border.width: 3 * mainWindow.minRatio
                         }
 
@@ -853,8 +853,8 @@ ApplicationWindow {
 
                                 Image {
                                     source: "qrc:/resources/bot-svgrepo-com.svg"
-                                    width: 45 * mainWindow.minRatio
-                                    height: 45 * mainWindow.minRatio
+                                    width: 50 * mainWindow.minRatio
+                                    height: 50 * mainWindow.minRatio
                                     sourceSize: Qt.size(width, height)
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
@@ -923,10 +923,10 @@ ApplicationWindow {
                     }
 
                     contentItem: Image {
-                        source: "qrc:/resources/group-of-people-svgrepo-com.svg"
+                        source: "qrc:/resources/friend-svgrepo-com.svg"
                         fillMode: Image.PreserveAspectFit
                         anchors.fill: parent
-                        anchors.margins: 20 * mainWindow.minRatio
+                        anchors.margins: 15 * mainWindow.minRatio
                         smooth: true
                     }
 
@@ -1143,6 +1143,10 @@ ApplicationWindow {
                     stackView.pop()
                 }
 
+                onOpenContact: {
+                    stackView.push(contactViewComponent)
+                }
+
                 onAccountDeleted: {
                     // Retourner à l'écran de login après suppression du compte
                     mainWindow.loggedInPlayerName = ""
@@ -1187,9 +1191,6 @@ ApplicationWindow {
             FriendsView {
                 onBackToMenu: {
                     stackView.pop()
-                }
-                onOpenContact: {
-                    stackView.replace(contactViewComponent)
                 }
             }
         }
@@ -1536,91 +1537,14 @@ ApplicationWindow {
     }
 
     // Toast demande d'ami reçue (dans le menu principal)
-    Rectangle {
+    FriendRequestToast {
         id: menuFriendRequestToast
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.topMargin: 20
-        width: Math.min(parent.width * 0.8, 500)
-        height: 80
-        radius: 15
-        color: "#0077bb"
-        border.color: "#FFD700"
-        border.width: 2
-        visible: false
-        z: 2000
 
-        property string fromPseudo: ""
-
-        Row {
-            anchors.centerIn: parent
-            spacing: 15
-
-            Text {
-                text: menuFriendRequestToast.fromPseudo + " vous demande en ami"
-                font.pixelSize: 18
-                font.bold: true
-                color: "white"
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Rectangle {
-                width: 60
-                height: 40
-                radius: 8
-                color: "#006600"
-                anchors.verticalCenter: parent.verticalCenter
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "Oui"
-                    font.pixelSize: 16
-                    font.bold: true
-                    color: "white"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        networkManager.acceptFriendRequest(menuFriendRequestToast.fromPseudo)
-                        menuFriendRequestToast.visible = false
-                        menuFriendRequestTimer.stop()
-                    }
-                }
-            }
-
-            Rectangle {
-                width: 60
-                height: 40
-                radius: 8
-                color: "#cc0000"
-                anchors.verticalCenter: parent.verticalCenter
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "Non"
-                    font.pixelSize: 16
-                    font.bold: true
-                    color: "white"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        networkManager.rejectFriendRequest(menuFriendRequestToast.fromPseudo)
-                        menuFriendRequestToast.visible = false
-                        menuFriendRequestTimer.stop()
-                    }
-                }
-            }
+        onAccepted: function(pseudo) {
+            networkManager.acceptFriendRequest(pseudo)
         }
-
-        Timer {
-            id: menuFriendRequestTimer
-            interval: 10000
-            onTriggered: menuFriendRequestToast.visible = false
+        onRejected: function(pseudo) {
+            networkManager.rejectFriendRequest(pseudo)
         }
     }
 
@@ -1630,9 +1554,7 @@ ApplicationWindow {
         function onFriendRequestReceived(fromPseudo, fromAvatar) {
             // Afficher le toast seulement si pas en partie
             if (!mainWindow.shouldLoadCoincheView) {
-                menuFriendRequestToast.fromPseudo = fromPseudo
-                menuFriendRequestToast.visible = true
-                menuFriendRequestTimer.restart()
+                menuFriendRequestToast.showRequest(fromPseudo)
             }
         }
     }

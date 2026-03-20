@@ -377,7 +377,7 @@ Rectangle {
 
                 Image {
                     anchors.fill: parent
-                    source: "qrc:/resources/Tapis poker3.jpg"
+                    source: "qrc:/resources/galaxie_feutre_small.png"
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     antialiasing: true
@@ -835,7 +835,7 @@ Rectangle {
                             height: rootArea.height * 0.05
                             radius: height / 4
                             color: "grey"
-                            border.color: gameModel.lastBidderIndex === playerSouthRow.actualPlayerIndex ? "cyan" : "#4a8a4a"
+                            border.color: gameModel.lastBidderIndex === playerSouthRow.actualPlayerIndex ? "cyan" : "darkgrey"
                             border.width: gameModel.lastBidderIndex === playerSouthRow.actualPlayerIndex ? 2 : 1
                             opacity: {
                                 // Visible si le joueur a fait une annonce OU s'il a coinché
@@ -963,7 +963,9 @@ Rectangle {
                                 cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                                 onClicked: {
                                     if (!isGuest) {
-                                        playerStatsPopup.loadPlayerStats(rootArea.getPlayerName(playerSouthRow.actualPlayerIndex))
+                                        var pName = rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
+                                        playerStatsPopup.hideFriendButton = (pName === networkManager.playerPseudo)
+                                        playerStatsPopup.loadPlayerStats(pName)
                                         playerStatsPopup.visible = true
                                     }
                                 }
@@ -1121,7 +1123,9 @@ Rectangle {
                             cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: {
                                 if (!isGuest) {
-                                    playerStatsPopup.loadPlayerStats(rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex))
+                                    var pName = rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex)
+                                    playerStatsPopup.hideFriendButton = (pName === networkManager.playerPseudo)
+                                    playerStatsPopup.loadPlayerStats(pName)
                                     playerStatsPopup.visible = true
                                 }
                             }
@@ -1175,7 +1179,7 @@ Rectangle {
                         height: rootArea.height * 0.05
                         radius: height / 4
                         color: "grey"
-                        border.color: gameModel.lastBidderIndex === playerNorthColumn.actualPlayerIndex ? "cyan" : "#4a8a4a"
+                        border.color: gameModel.lastBidderIndex === playerNorthColumn.actualPlayerIndex ? "cyan" : "darkgrey"
                         border.width: gameModel.lastBidderIndex === playerNorthColumn.actualPlayerIndex ? 2 : 1
                         opacity: {
                             // Visible si le joueur a fait une annonce OU s'il a coinché
@@ -1301,7 +1305,7 @@ Rectangle {
                     height: rootArea.height * 0.05
                     radius: height / 4
                     color: "grey"
-                    border.color: gameModel.lastBidderIndex === playerWestRow.actualPlayerIndex ? "cyan" : "#4a8a4a"
+                    border.color: gameModel.lastBidderIndex === playerWestRow.actualPlayerIndex ? "cyan" : "darkgrey"
                     border.width: gameModel.lastBidderIndex === playerWestRow.actualPlayerIndex ? 2 : 1
                     opacity: {
                         // Visible si le joueur a fait une annonce OU s'il a coinché
@@ -1442,7 +1446,9 @@ Rectangle {
                             cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: {
                                 if (!isGuest) {
-                                    playerStatsPopup.loadPlayerStats(rootArea.getPlayerName(playerWestRow.actualPlayerIndex))
+                                    var pName = rootArea.getPlayerName(playerWestRow.actualPlayerIndex)
+                                    playerStatsPopup.hideFriendButton = (pName === networkManager.playerPseudo)
+                                    playerStatsPopup.loadPlayerStats(pName)
                                     playerStatsPopup.visible = true
                                 }
                             }
@@ -1547,7 +1553,7 @@ Rectangle {
                     height: rootArea.height * 0.05
                     radius: height / 4
                     color: "grey"
-                    border.color: gameModel.lastBidderIndex === playerEastRow.actualPlayerIndex ? "cyan" : "#4a8a4a"
+                    border.color: gameModel.lastBidderIndex === playerEastRow.actualPlayerIndex ? "cyan" : "darkgrey"
                     border.width: gameModel.lastBidderIndex === playerEastRow.actualPlayerIndex ? 2 : 1
                     opacity: {
                         // Visible si le joueur a fait une annonce OU s'il a coinché
@@ -1678,7 +1684,9 @@ Rectangle {
                             cursorShape: isGuest ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: {
                                 if (!isGuest) {
-                                    playerStatsPopup.loadPlayerStats(rootArea.getPlayerName(playerEastRow.actualPlayerIndex))
+                                    var pName = rootArea.getPlayerName(playerEastRow.actualPlayerIndex)
+                                    playerStatsPopup.hideFriendButton = (pName === networkManager.playerPseudo)
+                                    playerStatsPopup.loadPlayerStats(pName)
                                     playerStatsPopup.visible = true
                                 }
                             }
@@ -3194,91 +3202,14 @@ Rectangle {
     }
 
     // Toast demande d'ami reçue
-    Rectangle {
+    FriendRequestToast {
         id: friendRequestToast
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.topMargin: 20
-        width: Math.min(parent.width * 0.8, 500)
-        height: 80
-        radius: 15
-        color: "#0077bb"
-        border.color: "#FFD700"
-        border.width: 2
-        visible: false
-        z: 2000
 
-        property string fromPseudo: ""
-
-        Row {
-            anchors.centerIn: parent
-            spacing: 15
-
-            Text {
-                text: friendRequestToast.fromPseudo + " vous demande en ami"
-                font.pixelSize: 18
-                font.bold: true
-                color: "white"
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Rectangle {
-                width: 60
-                height: 40
-                radius: 8
-                color: "#006600"
-                anchors.verticalCenter: parent.verticalCenter
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "Oui"
-                    font.pixelSize: 16
-                    font.bold: true
-                    color: "white"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        networkManager.acceptFriendRequest(friendRequestToast.fromPseudo)
-                        friendRequestToast.visible = false
-                        friendRequestTimer.stop()
-                    }
-                }
-            }
-
-            Rectangle {
-                width: 60
-                height: 40
-                radius: 8
-                color: "#cc0000"
-                anchors.verticalCenter: parent.verticalCenter
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "Non"
-                    font.pixelSize: 16
-                    font.bold: true
-                    color: "white"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        networkManager.rejectFriendRequest(friendRequestToast.fromPseudo)
-                        friendRequestToast.visible = false
-                        friendRequestTimer.stop()
-                    }
-                }
-            }
+        onAccepted: function(pseudo) {
+            networkManager.acceptFriendRequest(pseudo)
         }
-
-        Timer {
-            id: friendRequestTimer
-            interval: 10000
-            onTriggered: friendRequestToast.visible = false
+        onRejected: function(pseudo) {
+            networkManager.rejectFriendRequest(pseudo)
         }
     }
 
@@ -3286,9 +3217,7 @@ Rectangle {
         target: networkManager
 
         function onFriendRequestReceived(fromPseudo, fromAvatar) {
-            friendRequestToast.fromPseudo = fromPseudo
-            friendRequestToast.visible = true
-            friendRequestTimer.restart()
+            friendRequestToast.showRequest(fromPseudo)
         }
     }
 

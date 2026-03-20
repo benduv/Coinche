@@ -250,8 +250,8 @@ Rectangle {
                         source: readyButton.isReady
                             ? "qrc:/resources/cross-small-svgrepo-com.svg"
                             : "qrc:/resources/check-svgrepo-com.svg"
-                        width: 42 * root.minRatio
-                        height: 42 * root.minRatio
+                        width: 50 * root.minRatio
+                        height: 50 * root.minRatio
                         sourceSize: Qt.size(width, height)
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -345,8 +345,8 @@ Rectangle {
 
                     Image {
                         source: "qrc:/resources/cross-small-svgrepo-com.svg"
-                        width: 42 * root.minRatio
-                        height: 42 * root.minRatio
+                        width: 50 * root.minRatio
+                        height: 50 * root.minRatio
                         sourceSize: Qt.size(width, height)
                         anchors.verticalCenter: parent.verticalCenter
                     }
