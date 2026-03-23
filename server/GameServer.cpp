@@ -1610,9 +1610,60 @@ void GameServer::handleLeaveMatchmaking(QWebSocket *socket) {
     QString connectionId = getConnectionIdBySocket(socket);
     if (connectionId.isEmpty()) return;
 
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn) return;
+
+    // Vérifier si ce joueur vient d'un lobby (partenaire de lobby)
+    QString partnerId = conn->lobbyPartnerId;
+    QString lobbyCode = conn->lobbyCode;
+
     m_matchmakingQueue.removeAll(connectionId);
     qDebug() << "Joueur quitte la queue:" << connectionId
                 << "Queue size:" << m_matchmakingQueue.size();
+
+    // Si le joueur avait un partenaire de lobby, retirer aussi le partenaire et restaurer le lobby
+    if (!partnerId.isEmpty() && !lobbyCode.isEmpty()) {
+        // Retirer le partenaire du matchmaking aussi
+        m_matchmakingQueue.removeAll(partnerId);
+        qDebug() << "Partenaire de lobby retiré de la queue:" << partnerId;
+
+        // Réinitialiser les marqueurs de partenariat
+        conn->lobbyPartnerId = "";
+        conn->lobbyCode = "";
+        if (m_connections.contains(partnerId)) {
+            PlayerConnection* partner = m_connections[partnerId];
+            partner->lobbyPartnerId = "";
+            partner->lobbyCode = "";
+        }
+
+        // Restaurer le lobby : remettre les statuts "prêt" à false
+        if (m_privateLobbies.contains(lobbyCode)) {
+            PrivateLobby* lobby = m_privateLobbies[lobbyCode];
+            for (int i = 0; i < lobby->readyStatus.size(); i++) {
+                lobby->readyStatus[i] = false;
+            }
+
+            qDebug() << "Lobby" << lobbyCode << "restauré après annulation du matchmaking";
+
+            // Notifier les deux joueurs de revenir au lobby
+            // Envoyer isHost à chaque joueur
+            QJsonObject restoreMsg1;
+            restoreMsg1["type"] = "lobbyRestored";
+            restoreMsg1["code"] = lobbyCode;
+            restoreMsg1["isHost"] = (conn->playerName == lobby->hostPlayerName);
+            sendMessage(socket, restoreMsg1);
+            if (m_connections.contains(partnerId)) {
+                QJsonObject restoreMsg2;
+                restoreMsg2["type"] = "lobbyRestored";
+                restoreMsg2["code"] = lobbyCode;
+                restoreMsg2["isHost"] = (m_connections[partnerId]->playerName == lobby->hostPlayerName);
+                sendMessage(m_connections[partnerId]->socket, restoreMsg2);
+            }
+
+            // Envoyer la mise à jour du lobby
+            sendLobbyUpdate(lobbyCode);
+        }
+    }
 
     // Notifier le joueur qui quitte
     QJsonObject response;
@@ -1668,9 +1719,17 @@ void GameServer::tryCreateGame() {
             connectionIds[0] = partner1;
             connectionIds[2] = partner2;
 
-            // Réinitialiser les marqueurs de partenariat
+            // Réinitialiser les marqueurs de partenariat et supprimer le lobby
+            QString lobbyCodeToRemove = m_connections[partner1]->lobbyCode;
             m_connections[partner1]->lobbyPartnerId = "";
+            m_connections[partner1]->lobbyCode = "";
             m_connections[partner2]->lobbyPartnerId = "";
+            m_connections[partner2]->lobbyCode = "";
+            if (!lobbyCodeToRemove.isEmpty() && m_privateLobbies.contains(lobbyCodeToRemove)) {
+                delete m_privateLobbies[lobbyCodeToRemove];
+                m_privateLobbies.remove(lobbyCodeToRemove);
+                qDebug() << "Lobby" << lobbyCodeToRemove << "supprimé après création de partie";
+            }
 
             // Placer les autres joueurs aux positions 1 et 3
             int otherIndex = 1;
@@ -2533,14 +2592,14 @@ void GameServer::handleStartLobbyGame(QWebSocket *socket) {
     if (playerCount == 4) {
         // Lancer une partie directement avec ces 4 joueurs
         startLobbyGameWith4Players(lobby);
+        // Supprimer le lobby (partie complète, pas de matchmaking)
+        delete lobby;
+        m_privateLobbies.remove(lobbyCode);
     } else if (playerCount == 2) {
         // Ajouter les 2 joueurs au matchmaking en tant que partenaires
+        // Le lobby est conservé pour pouvoir être restauré si le matchmaking est annulé
         startLobbyGameWith2Players(lobby);
     }
-
-    // Supprimer le lobby
-    delete lobby;
-    m_privateLobbies.remove(lobbyCode);
 }
 
 void GameServer::handleLeaveLobby(QWebSocket *socket) {

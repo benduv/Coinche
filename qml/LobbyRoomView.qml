@@ -47,6 +47,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 180 * root.heightRatio
             color: "#2a2a2a"
+            opacity: 0.7
             radius: 20 * root.minRatio
             border.color: "#FFD700"
             border.width: 3 * root.minRatio
@@ -54,12 +55,13 @@ Rectangle {
             // Bouton inviter des amis (hôte uniquement)
             Rectangle {
                 anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.margins: 15 * root.minRatio
-                width: 70 * root.minRatio
-                height: 70 * root.minRatio
+                //anchors.top: parent.top
+                anchors.leftMargin: 15 * root.minRatio
+                anchors.verticalCenter: parent.verticalCenter
+                width: 120 * root.minRatio
+                height: 120 * root.minRatio
                 radius: 15 * root.minRatio
-                color: "#8EEDF5"
+                color: "#1976D2"
                 visible: root.isHost
                 z: 10
 
@@ -116,6 +118,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 530 * root.heightRatio
             color: "#2a2a2a"
+            opacity: 0.7
             radius: 20 * root.minRatio
             border.color: "#FFD700"
             border.width: 3 * root.minRatio
@@ -480,7 +483,7 @@ Rectangle {
                 }
 
                 contentItem: Text {
-                    text: "OK"
+                    text: "OK "
                     font.pixelSize: 36 * root.minRatio
                     color: "white"
                     horizontalAlignment: Text.AlignHCenter
@@ -520,9 +523,10 @@ Rectangle {
         }
 
         Rectangle {
+            id: popupRect
             anchors.centerIn: parent
-            width: Math.min(parent.width * 0.85, 700 * root.minRatio)
-            height: Math.min(parent.height * 0.7, 600 * root.minRatio)
+            width: parent.width * 0.6
+            height: parent.height * 0.75
             color: "#1a1a1a"
             radius: 20 * root.minRatio
             border.color: "#FFD700"
@@ -533,185 +537,196 @@ Rectangle {
                 onClicked: {} // bloquer propagation
             }
 
-            Column {
-                anchors.fill: parent
-                anchors.margins: 25 * root.minRatio
-                spacing: 20 * root.minRatio
+            // Titre
+            Text {
+                id: popupTitle
+                text: "Inviter des amis"
+                font.pixelSize: 44 * root.minRatio
+                font.bold: true
+                color: "#FFD700"
+                anchors.top: parent.top
+                anchors.topMargin: 25 * root.minRatio
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
 
-                Text {
-                    text: "Inviter des amis"
-                    font.pixelSize: 36 * root.minRatio
-                    font.bold: true
-                    color: "#FFD700"
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
+            // Compteur
+            Text {
+                id: popupCounter
+                text: inviteFriendsPopup.selectedCount + "/3 sélectionnés"
+                font.pixelSize: 26 * root.minRatio
+                color: "#aaaaaa"
+                anchors.top: popupTitle.bottom
+                anchors.topMargin: 15 * root.minRatio
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
 
-                Text {
-                    text: inviteFriendsPopup.selectedCount + "/3 sélectionnés"
-                    font.pixelSize: 22 * root.minRatio
-                    color: "#aaaaaa"
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
+            // Message si aucun ami en ligne
+            Text {
+                visible: onlineFriendsModel.count === 0
+                text: "Aucun ami en ligne"
+                font.pixelSize: 30 * root.minRatio
+                color: "#888888"
+                anchors.centerIn: parent
+            }
 
-                // Message si aucun ami en ligne
-                Text {
-                    visible: onlineFriendsModel.count === 0
-                    text: "Aucun ami en ligne"
-                    font.pixelSize: 24 * root.minRatio
-                    color: "#888888"
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
+            // Liste des amis en ligne
+            Flickable {
+                anchors.top: popupCounter.bottom
+                anchors.topMargin: 20 * root.minRatio
+                anchors.bottom: popupButtons.top
+                anchors.bottomMargin: 15 * root.minRatio
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 25 * root.minRatio
+                anchors.rightMargin: 25 * root.minRatio
+                contentHeight: friendsColumn.height
+                clip: true
+                flickableDirection: Flickable.VerticalFlick
 
-                // Liste des amis en ligne
-                Flickable {
+                Column {
+                    id: friendsColumn
                     width: parent.width
-                    height: parent.height - 200 * root.minRatio
-                    contentHeight: friendsColumn.height
-                    clip: true
-                    flickableDirection: Flickable.VerticalFlick
+                    spacing: 10 * root.minRatio
 
-                    Column {
-                        id: friendsColumn
-                        width: parent.width
-                        spacing: 10 * root.minRatio
+                    Repeater {
+                        model: onlineFriendsModel
 
-                        Repeater {
-                            model: onlineFriendsModel
+                        Rectangle {
+                            width: friendsColumn.width
+                            height: 90 * root.minRatio
+                            radius: 10 * root.minRatio
+                            color: model.selected ? "#2a4a2a" : "#2a2a2a"
+                            border.color: model.selected ? "#4CAF50" : "#3a3a3a"
+                            border.width: 2 * root.minRatio
 
-                            Rectangle {
-                                width: friendsColumn.width
-                                height: 70 * root.minRatio
-                                radius: 10 * root.minRatio
-                                color: model.selected ? "#2a4a2a" : "#2a2a2a"
-                                border.color: model.selected ? "#4CAF50" : "#3a3a3a"
-                                border.width: 2 * root.minRatio
+                            Row {
+                                anchors.fill: parent
+                                anchors.margins: 10 * root.minRatio
+                                spacing: 15 * root.minRatio
 
-                                Row {
-                                    anchors.fill: parent
-                                    anchors.margins: 10 * root.minRatio
-                                    spacing: 15 * root.minRatio
+                                // Checkbox visuelle
+                                Rectangle {
+                                    width: 40 * root.minRatio
+                                    height: 40 * root.minRatio
+                                    radius: 5 * root.minRatio
+                                    color: model.selected ? "#4CAF50" : "#3a3a3a"
+                                    border.color: model.selected ? "#4CAF50" : "#666666"
+                                    border.width: 2 * root.minRatio
+                                    anchors.verticalCenter: parent.verticalCenter
 
-                                    // Checkbox visuelle
-                                    Rectangle {
-                                        width: 30 * root.minRatio
-                                        height: 30 * root.minRatio
-                                        radius: 5 * root.minRatio
-                                        color: model.selected ? "#4CAF50" : "#3a3a3a"
-                                        border.color: model.selected ? "#4CAF50" : "#666666"
-                                        border.width: 2 * root.minRatio
-                                        anchors.verticalCenter: parent.verticalCenter
-
-                                        Image {
-                                            anchors.fill: parent
-                                            anchors.margins: 4 * root.minRatio
-                                            source: "qrc:/resources/check-svgrepo-com.svg"
-                                            fillMode: Image.PreserveAspectFit
-                                            visible: model.selected
-                                        }
-                                    }
-
-                                    // Avatar
-                                    Rectangle {
-                                        width: 50 * root.minRatio
-                                        height: 50 * root.minRatio
-                                        radius: width / 2
-                                        color: "#3a3a3a"
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        clip: true
-
-                                        Image {
-                                            anchors.fill: parent
-                                            anchors.margins: 6 * root.minRatio
-                                            source: model.avatar ? "qrc:/resources/avatar/" + model.avatar : ""
-                                            fillMode: Image.PreserveAspectFit
-                                            visible: model.avatar !== ""
-                                        }
-                                    }
-
-                                    // Pseudo
-                                    Text {
-                                        text: model.pseudo
-                                        font.pixelSize: 28 * root.minRatio
-                                        font.bold: true
-                                        color: "white"
-                                        anchors.verticalCenter: parent.verticalCenter
+                                    Image {
+                                        anchors.fill: parent
+                                        anchors.margins: 4 * root.minRatio
+                                        source: "qrc:/resources/check-svgrepo-com.svg"
+                                        fillMode: Image.PreserveAspectFit
+                                        visible: model.selected
                                     }
                                 }
 
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        if (model.selected) {
-                                            onlineFriendsModel.setProperty(index, "selected", false)
-                                            inviteFriendsPopup.selectedCount--
-                                        } else if (inviteFriendsPopup.selectedCount < 3) {
-                                            onlineFriendsModel.setProperty(index, "selected", true)
-                                            inviteFriendsPopup.selectedCount++
-                                        }
+                                // Avatar
+                                Rectangle {
+                                    width: 70 * root.minRatio
+                                    height: 70 * root.minRatio
+                                    radius: width / 2
+                                    color: "#3a3a3a"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    clip: true
+
+                                    Image {
+                                        anchors.fill: parent
+                                        anchors.margins: 9 * root.minRatio
+                                        source: model.avatar ? "qrc:/resources/avatar/" + model.avatar : ""
+                                        fillMode: Image.PreserveAspectFit
+                                        visible: model.avatar !== ""
+                                    }
+                                }
+
+                                // Pseudo
+                                Text {
+                                    text: model.pseudo
+                                    font.pixelSize: 30 * root.minRatio
+                                    font.bold: true
+                                    color: "white"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (model.selected) {
+                                        onlineFriendsModel.setProperty(index, "selected", false)
+                                        inviteFriendsPopup.selectedCount--
+                                    } else if (inviteFriendsPopup.selectedCount < 3) {
+                                        onlineFriendsModel.setProperty(index, "selected", true)
+                                        inviteFriendsPopup.selectedCount++
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
 
-                // Boutons
-                Row {
-                    spacing: 30 * root.minRatio
-                    anchors.horizontalCenter: parent.horizontalCenter
+            // Boutons ancrés en bas de la popup
+            Row {
+                id: popupButtons
+                spacing: 30 * root.minRatio
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 25 * root.minRatio
+                anchors.horizontalCenter: parent.horizontalCenter
 
-                    Rectangle {
-                        width: 160 * root.minRatio
-                        height: 50 * root.minRatio
-                        radius: 10 * root.minRatio
-                        color: inviteFriendsPopup.selectedCount > 0 ? "#006600" : "#333333"
+                Rectangle {
+                    width: 200 * root.minRatio
+                    height: 60 * root.minRatio
+                    radius: 10 * root.minRatio
+                    color: inviteFriendsPopup.selectedCount > 0 ? "#006600" : "#333333"
 
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Inviter"
-                            font.pixelSize: 24 * root.minRatio
-                            font.bold: true
-                            color: inviteFriendsPopup.selectedCount > 0 ? "white" : "#666666"
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: inviteFriendsPopup.selectedCount > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: {
-                                if (inviteFriendsPopup.selectedCount > 0) {
-                                    var pseudos = inviteFriendsPopup.getSelectedPseudos()
-                                    networkManager.inviteFriendsToLobby(pseudos)
-                                    inviteFriendsPopup.visible = false
-                                    inviteFriendsPopup.selectedCount = 0
-                                }
-                            }
-                        }
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Inviter"
+                        font.pixelSize: 26 * root.minRatio
+                        font.bold: true
+                        color: inviteFriendsPopup.selectedCount > 0 ? "white" : "#666666"
                     }
 
-                    Rectangle {
-                        width: 160 * root.minRatio
-                        height: 50 * root.minRatio
-                        radius: 10 * root.minRatio
-                        color: "#3a3a3a"
-                        border.color: "#FFD700"
-                        border.width: 2 * root.minRatio
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Annuler"
-                            font.pixelSize: 24 * root.minRatio
-                            font.bold: true
-                            color: "#FFD700"
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: inviteFriendsPopup.selectedCount > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: {
+                            if (inviteFriendsPopup.selectedCount > 0) {
+                                var pseudos = inviteFriendsPopup.getSelectedPseudos()
+                                networkManager.inviteFriendsToLobby(pseudos)
                                 inviteFriendsPopup.visible = false
                                 inviteFriendsPopup.selectedCount = 0
                             }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 200 * root.minRatio
+                    height: 60 * root.minRatio
+                    radius: 10 * root.minRatio
+                    color: "#3a3a3a"
+                    border.color: "#FFD700"
+                    border.width: 2 * root.minRatio
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Annuler "
+                        font.pixelSize: 28 * root.minRatio
+                        font.bold: true
+                        color: "#FFD700"
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            inviteFriendsPopup.visible = false
+                            inviteFriendsPopup.selectedCount = 0
                         }
                     }
                 }

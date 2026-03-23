@@ -244,7 +244,7 @@ Rectangle {
             }
 
             contentItem: Text {
-                text: "Annuler"
+                text: "Annuler "
                 font.pixelSize: 36 * root.minRatio
                 color: "white"
                 horizontalAlignment: Text.AlignHCenter
@@ -253,7 +253,11 @@ Rectangle {
 
             onClicked: {
                 networkManager.leaveMatchmaking()
-                stackView.pop()  // Retour au MainMenu
+                if (root.autoJoin) {
+                    stackView.pop()  // Retour au MainMenu (matchmaking normal)
+                }
+                // En mode lobby (!autoJoin), le serveur envoie lobbyRestored
+                // qui gère le retour au LobbyRoomView via MainMenu
             }
         }
     }

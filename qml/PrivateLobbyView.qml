@@ -279,7 +279,7 @@ Item {
                     }
 
                     contentItem: Text {
-                        text: "Annuler"
+                        text: "Annuler "
                         font.pixelSize: 36 * root.minRatio
                         color: "white"
                         horizontalAlignment: Text.AlignHCenter
@@ -358,7 +358,7 @@ Item {
                 }
 
                 contentItem: Text {
-                    text: "OK"
+                    text: "OK "
                     font.pixelSize: 36 * root.minRatio
                     color: "white"
                     horizontalAlignment: Text.AlignHCenter

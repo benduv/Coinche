@@ -33,6 +33,7 @@ struct PlayerConnection {
     int gameRoomId;
     int playerIndex;           // Position dans la partie (0-3)
     QString lobbyPartnerId;    // ID du partenaire de lobby (vide si pas de partenaire)
+    QString lobbyCode;         // Code du lobby d'origine (pour restauration après annulation matchmaking)
     bool isAnonymous = false;  // RGPD - droit à l'opposition
     qint64 lastEmojiTimestamp = 0;  // Rate limit emojis (ms since epoch)
 };
@@ -2409,11 +2410,13 @@ private:
             return;
         }
 
-        // Marquer les 2 joueurs comme partenaires
+        // Marquer les 2 joueurs comme partenaires et stocker le lobbyCode
         PlayerConnection* player1 = m_connections[lobbyConnectionIds[0]];
         PlayerConnection* player2 = m_connections[lobbyConnectionIds[1]];
         player1->lobbyPartnerId = lobbyConnectionIds[1];
         player2->lobbyPartnerId = lobbyConnectionIds[0];
+        player1->lobbyCode = lobby->code;
+        player2->lobbyCode = lobby->code;
 
         qDebug() << "Joueurs marqués comme partenaires:" << player1->playerName << "et" << player2->playerName;
 

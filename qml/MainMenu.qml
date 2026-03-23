@@ -168,6 +168,14 @@ ApplicationWindow {
             stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": false })
         }
 
+        function onLobbyRestored(code, isHost) {
+            // Revenir au lobby après annulation du matchmaking
+            // D'abord, dépiler jusqu'au menu principal (retirer MatchMakingView et LobbyRoomView)
+            stackView.pop(null)
+            // Puis pousser le LobbyRoomView avec le bon code
+            stackView.push(lobbyRoomViewComponent, { "lobbyCode": code, "isHost": isHost })
+        }
+
         function onVersionError(message) {
             versionErrorDialog.errorMessage = message
             versionErrorDialog.open()
@@ -872,7 +880,6 @@ ApplicationWindow {
                         onClicked: {
                             networkManager.registerPlayer(mainWindow.getPlayerName(), networkManager.playerAvatar)
                             networkManager.joinTraining()
-                            stackView.push("qrc:/qml/MatchMakingView.qml", {"autoJoin": false})
                         }
                     }
 

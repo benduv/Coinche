@@ -549,6 +549,7 @@ signals:
     void lobbyError(QString message);
     void lobbyPlayersChanged();
     void lobbyGameStarting();
+    void lobbyRestored(QString code, bool isHost);
 
     // Signaux pour le remplacement par bot
     void botReplacement(QString message);
@@ -1117,6 +1118,12 @@ private slots:
         else if (type == "lobbyGameStart") {
             // qDebug() << "NetworkManager - La partie du lobby démarre!";
             emit lobbyGameStarting();
+        }
+        else if (type == "lobbyRestored") {
+            QString code = obj["code"].toString();
+            bool isHost = obj["isHost"].toBool();
+            qDebug() << "NetworkManager - Lobby restauré:" << code << "isHost:" << isHost;
+            emit lobbyRestored(code, isHost);
         }
         else if (type == "cardsDealt") {
             // qDebug() << "NetworkManager - Réception des cartes!";
