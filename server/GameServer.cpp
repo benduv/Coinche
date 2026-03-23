@@ -707,6 +707,7 @@ void GameServer::handleRegisterAccount(QWebSocket *socket, const QJsonObject &da
             -1,    // Pas encore en partie
             -1,    // Pas encore de position
             QString(), // lobbyPartnerId
+            QString(), // lobbyCode
             false  // isAnonymous = false par défaut pour un nouveau compte
         };
         m_connections[connectionId] = conn;
@@ -944,6 +945,7 @@ void GameServer::handleVerifyCodeAndRegister(QWebSocket *socket, const QJsonObje
             -1,    // Pas encore en partie
             -1,    // Pas encore de position
             QString(), // lobbyPartnerId
+            QString(), // lobbyCode
             false  // isAnonymous
         };
         m_connections[connectionId] = conn;
@@ -1002,6 +1004,7 @@ void GameServer::handleLoginAccount(QWebSocket *socket, const QJsonObject &data)
             -1,    // Pas encore en partie
             -1,    // Pas encore de position
             QString(), // lobbyPartnerId
+            QString(), // lobbyCode
             isAnonymous
         };
         m_connections[connectionId] = conn;
