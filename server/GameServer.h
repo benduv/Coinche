@@ -2291,17 +2291,27 @@ private:
             return;
         }
 
+        // Réarranger pour respecter les équipes du lobby
+        // Lobby : indices 0,1 = Équipe 1, indices 2,3 = Équipe 2
+        // Jeu   : positions 0,2 = partenaires (Équipe 1), positions 1,3 = partenaires (Équipe 2)
+        // Mapping : lobby[0]→pos 0, lobby[2]→pos 1, lobby[1]→pos 2, lobby[3]→pos 3
+        QList<QString> orderedIds;
+        orderedIds.append(connectionIds[0]);  // Équipe 1 - joueur A → position 0
+        orderedIds.append(connectionIds[2]);  // Équipe 2 - joueur C → position 1
+        orderedIds.append(connectionIds[1]);  // Équipe 1 - joueur B → position 2
+        orderedIds.append(connectionIds[3]);  // Équipe 2 - joueur D → position 3
+
         // Créer la partie (similaire à tryCreateGame)
         int roomId = m_nextRoomId++;
         GameRoom* room = new GameRoom();
         room->roomId = roomId;
-        room->connectionIds = connectionIds;
-        room->originalConnectionIds = connectionIds;
+        room->connectionIds = orderedIds;
+        room->originalConnectionIds = orderedIds;
         room->gameState = "waiting";
 
         // Crée les joueurs du jeu
         for (int i = 0; i < 4; i++) {
-            PlayerConnection* conn = m_connections.value(connectionIds[i]);
+            PlayerConnection* conn = m_connections.value(orderedIds[i]);
             if (!conn) {
                 qDebug() << "ERREUR: Connection non trouvée pour lobby player" << i;
                 continue;
@@ -2373,7 +2383,7 @@ private:
             gameFoundMsg["opponents"] = opponentsArray;
             gameFoundMsg["myCards"] = myCards;  // Ajouter les cartes ici
 
-            sendMessage(m_connections[connectionIds[i]]->socket, gameFoundMsg);
+            sendMessage(m_connections[orderedIds[i]]->socket, gameFoundMsg);
         }
 
         // Les cartes sont maintenant incluses dans gameFound, pas besoin de message séparé
