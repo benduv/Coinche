@@ -205,6 +205,33 @@ void GameServer::onDisconnected() {
                 }
             }
 
+            // Retirer le joueur d'un éventuel lobby
+            if (!playerName.isEmpty()) {
+                for (auto lobbyIt = m_privateLobbies.begin(); lobbyIt != m_privateLobbies.end(); ++lobbyIt) {
+                    PrivateLobby* lobby = lobbyIt.value();
+                    if (lobby && lobby->playerNames.contains(playerName)) {
+                        int idx = lobby->playerNames.indexOf(playerName);
+                        lobby->playerNames.removeAt(idx);
+                        lobby->playerAvatars.removeAt(idx);
+                        lobby->readyStatus.removeAt(idx);
+                        qDebug() << "Joueur déconnecté" << playerName << "retiré du lobby" << lobbyIt.key();
+
+                        if (lobby->playerNames.isEmpty()) {
+                            qDebug() << "Lobby" << lobbyIt.key() << "supprimé (vide après déconnexion)";
+                            delete lobby;
+                            m_privateLobbies.erase(lobbyIt);
+                        } else {
+                            if (lobby->hostPlayerName == playerName) {
+                                lobby->hostPlayerName = lobby->playerNames.first();
+                                qDebug() << "Nouvel hôte du lobby:" << lobby->hostPlayerName;
+                            }
+                            sendLobbyUpdate(lobby->code);
+                        }
+                        break;
+                    }
+                }
+            }
+
             // Terminer le tracking de session (lightweight)
             if (!playerName.isEmpty()) {
                 m_dbManager->recordSessionEnd(playerName);

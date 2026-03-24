@@ -142,7 +142,7 @@ Rectangle {
             // Scrollable content
             ScrollView {
                 width: parent.width
-                height: parent.height - (240 * minRatio)
+                height: parent.height - (statsPopup.hideFriendButton ? 130 : 240) * minRatio
                 clip: true
 
                 Column {

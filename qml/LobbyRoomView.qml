@@ -190,16 +190,11 @@ Rectangle {
                                 RowLayout {
                                     anchors.fill: parent
                                     anchors.margins: 15 * root.minRatio
-                                    spacing: 15 * root.minRatio
+                                    spacing: 30 * root.minRatio
 
-                                    // Label équipe
-                                    Text {
-                                        text: delegateRoot.isTeam1 ? "Éq.1" : "Éq.2"
-                                        font.pixelSize: 22 * root.minRatio
-                                        font.bold: true
-                                        color: delegateRoot.isTeam1 ? "#4CAF50" : "#F44336"
-                                        visible: delegateRoot.showTeams
-                                        Layout.preferredWidth: visible ? 70 * root.minRatio : 0
+                                    Item {
+                                        width: 1
+                                        height: 1
                                     }
 
                                     // Avatar avec cercle
@@ -225,6 +220,18 @@ Rectangle {
                                         font.pixelSize: 32 * root.minRatio
                                         font.bold: true
                                         color: "white"
+                                        //Layout.fillWidth: true
+                                        Layout.preferredWidth: 350 * root.minRatio
+                                    }
+
+                                    // Label équipe
+                                    Text {
+                                        text: delegateRoot.isTeam1 ? "Équipe 1" : "Équipe 2"
+                                        font.pixelSize: 28 * root.minRatio
+                                        font.bold: true
+                                        color: delegateRoot.isTeam1 ? "#4CAF50" : "#F44336"
+                                        visible: delegateRoot.showTeams
+                                        //Layout.preferredWidth: visible ? 630 * root.minRatio : 0
                                         Layout.fillWidth: true
                                     }
 
@@ -233,7 +240,7 @@ Rectangle {
                                         text: "\uD83D\uDC51"
                                         font.pixelSize: 32 * root.minRatio
                                         visible: model.isHost
-                                        Layout.preferredWidth: visible ? 35 * root.minRatio : 0
+                                        Layout.preferredWidth: 35 * root.minRatio
                                     }
 
                                     // Indicateur ready
@@ -263,11 +270,11 @@ Rectangle {
                                     // Drag handle (hôte uniquement, 3+ joueurs)
                                     Image {
                                         source: "qrc:/resources/drag-handle-vertical-1-svgrepo-com.svg"
-                                        Layout.preferredWidth: 40 * root.minRatio
-                                        Layout.preferredHeight: 40 * root.minRatio
+                                        Layout.preferredWidth: 50 * root.minRatio
+                                        Layout.preferredHeight: 50 * root.minRatio
                                         sourceSize: Qt.size(width, height)
-                                        visible: root.isHost && playerListContainer.playerCount >= 3
-                                        opacity: 0.6
+                                        //visible: root.isHost && playerListContainer.playerCount >= 3
+                                        opacity: root.isHost && playerListContainer.playerCount >= 3 ? 1 : 0
 
                                         MouseArea {
                                             id: dragArea
@@ -318,6 +325,11 @@ Rectangle {
                                                 networkManager.reorderLobbyPlayers(newOrder)
                                             }
                                         }
+                                    }
+
+                                    Item {
+                                        width: 1
+                                        height: 1
                                     }
                                 }
                             }
