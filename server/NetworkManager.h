@@ -460,6 +460,17 @@ public:
         // qDebug() << "Quitte le lobby";
     }
 
+    Q_INVOKABLE void reorderLobbyPlayers(const QVariantList &newOrder) {
+        QJsonObject msg;
+        msg["type"] = "reorderLobbyPlayers";
+        QJsonArray arr;
+        for (const QVariant &name : newOrder) {
+            arr.append(name.toString());
+        }
+        msg["order"] = arr;
+        sendMessage(msg);
+    }
+
     // Sauvegarder les credentials pour l'auto-login
     Q_INVOKABLE void saveCredentials(const QString &email, const QString &password) {
         QSettings settings("Nebuludik", "CoincheDelEspace");

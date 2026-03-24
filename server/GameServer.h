@@ -2232,6 +2232,7 @@ private:
 
     void handleStartLobbyGame(QWebSocket *socket);
 
+    void handleReorderLobbyPlayers(QWebSocket *socket, const QJsonObject &obj);
     void handleLeaveLobby(QWebSocket *socket);
 
     void sendLobbyUpdate(const QString &lobbyCode) {

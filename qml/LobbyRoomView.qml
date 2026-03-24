@@ -31,11 +31,14 @@ Rectangle {
 
     property string lobbyCode: ""
     property bool isHost: false
+    property int draggedIndex: -1
 
     // Ratios pour le responsive
     property real widthRatio: width / 1920
     property real heightRatio: height / 1080
     property real minRatio: Math.min(widthRatio, heightRatio)
+
+    ListModel { id: localPlayersModel }
 
     ColumnLayout {
         anchors.fill: parent
@@ -46,8 +49,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 180 * root.heightRatio
-            color: "#2a2a2a"
-            opacity: 0.7
+            color: "#802a2a2a"
             radius: 20 * root.minRatio
             border.color: "#FFD700"
             border.width: 3 * root.minRatio
@@ -85,10 +87,15 @@ Rectangle {
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 8 * root.minRatio
+                spacing: 12 * root.minRatio
+
+                Item {
+                    height: 1
+                    width: 1
+                }
 
                 Text {
-                    text: "Code du lobby"
+                    text: root.isHost ? "Invitez des amis et/ou partagez le code du lobby" : "Code du lobby"
                     font.pixelSize: 28 * root.minRatio
                     color: "#aaaaaa"
                     Layout.alignment: Qt.AlignHCenter
@@ -96,7 +103,7 @@ Rectangle {
 
                 Text {
                     text: root.lobbyCode
-                    font.pixelSize: 64 * root.minRatio
+                    font.pixelSize: 56 * root.minRatio
                     font.bold: true
                     color: "#FFD700"
                     font.family: "Courier"
@@ -110,6 +117,11 @@ Rectangle {
                     color: root.isHost ? "#FFD700" : "#888888"
                     Layout.alignment: Qt.AlignHCenter
                 }
+
+                Item {
+                    height: 1
+                    width: 1
+                }
             }
         }
 
@@ -117,8 +129,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 530 * root.heightRatio
-            color: "#2a2a2a"
-            opacity: 0.7
+            color: "#802a2a2a"
             radius: 20 * root.minRatio
             border.color: "#FFD700"
             border.width: 3 * root.minRatio
@@ -136,85 +147,178 @@ Rectangle {
                     color: "#FFD700"
                 }
 
-                // Liste verticale des joueurs
-                Column {
-                    id: playerColumn
+                // Liste verticale des joueurs avec drag & drop
+                Item {
+                    id: playerListContainer
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    spacing: 12 * root.minRatio
+
+                    property real rowHeight: 90 * root.minRatio
+                    property real rowSpacing: 12 * root.minRatio
+                    property int playerCount: localPlayersModel.count
 
                     Repeater {
-                        model: networkManager.lobbyPlayers
+                        id: playerRepeater
+                        model: localPlayersModel
 
-                        Rectangle {
+                        delegate: Item {
+                            id: delegateRoot
                             width: lobbyLayout.width
-                            height: 90 * root.minRatio
-                            color: "#3a4a3a"
-                            radius: 15 * root.minRatio
-                            border.color: "#4CAF50"
-                            border.width: 3 * root.minRatio
+                            height: playerListContainer.rowHeight
+                            z: root.draggedIndex === index ? 10 : 1
 
-                            RowLayout {
+                            property real defaultY: index * (playerListContainer.rowHeight + playerListContainer.rowSpacing)
+                            y: root.draggedIndex === index ? y : defaultY
+                            Behavior on y {
+                                enabled: root.draggedIndex !== index
+                                NumberAnimation { duration: 200; easing.type: Easing.OutQuad }
+                            }
+
+                            // Couleurs d'équipe : indices 0,1 = Équipe 1 (vert), 2,3 = Équipe 2 (rouge)
+                            property bool isTeam1: index < 2
+                            property bool showTeams: playerListContainer.playerCount >= 3
+
+                            opacity: root.draggedIndex === index ? 0.7 : 1.0
+
+                            Rectangle {
                                 anchors.fill: parent
-                                anchors.margins: 15 * root.minRatio
-                                spacing: 15 * root.minRatio
+                                color: delegateRoot.showTeams ? (delegateRoot.isTeam1 ? "#3a4a3a" : "#4a3a3a") : "#3a4a3a"
+                                radius: 15 * root.minRatio
+                                border.color: delegateRoot.showTeams ? (delegateRoot.isTeam1 ? "#4CAF50" : "#F44336") : "#4CAF50"
+                                border.width: 3 * root.minRatio
 
-                                // Avatar avec cercle
-                                Rectangle {
-                                    Layout.preferredWidth: 60 * root.minRatio
-                                    Layout.preferredHeight: 60 * root.minRatio
-                                    radius: 30 * root.minRatio
-                                    color: "#444444"
-                                    border.color: "#FFD700"
-                                    border.width: 2 * root.minRatio
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 15 * root.minRatio
+                                    spacing: 15 * root.minRatio
 
+                                    // Label équipe
+                                    Text {
+                                        text: delegateRoot.isTeam1 ? "Éq.1" : "Éq.2"
+                                        font.pixelSize: 22 * root.minRatio
+                                        font.bold: true
+                                        color: delegateRoot.isTeam1 ? "#4CAF50" : "#F44336"
+                                        visible: delegateRoot.showTeams
+                                        Layout.preferredWidth: visible ? 70 * root.minRatio : 0
+                                    }
+
+                                    // Avatar avec cercle
+                                    Rectangle {
+                                        Layout.preferredWidth: 60 * root.minRatio
+                                        Layout.preferredHeight: 60 * root.minRatio
+                                        radius: 30 * root.minRatio
+                                        color: "#444444"
+                                        border.color: "#FFD700"
+                                        border.width: 2 * root.minRatio
+
+                                        Image {
+                                            anchors.fill: parent
+                                            anchors.margins: 8 * root.minRatio
+                                            source: "qrc:/resources/avatar/" + model.avatar
+                                            fillMode: Image.PreserveAspectFit
+                                        }
+                                    }
+
+                                    // Nom du joueur
+                                    Text {
+                                        text: model.name
+                                        font.pixelSize: 32 * root.minRatio
+                                        font.bold: true
+                                        color: "white"
+                                        Layout.fillWidth: true
+                                    }
+
+                                    // Badge hôte
+                                    Text {
+                                        text: "\uD83D\uDC51"
+                                        font.pixelSize: 32 * root.minRatio
+                                        visible: model.isHost
+                                        Layout.preferredWidth: visible ? 35 * root.minRatio : 0
+                                    }
+
+                                    // Indicateur ready
+                                    Rectangle {
+                                        Layout.preferredWidth: 16 * root.minRatio
+                                        Layout.preferredHeight: 16 * root.minRatio
+                                        radius: 8 * root.minRatio
+                                        color: model.ready ? "#4CAF50" : "#FF5252"
+
+                                        SequentialAnimation on scale {
+                                            running: model.ready
+                                            loops: Animation.Infinite
+                                            NumberAnimation { to: 1.3; duration: 600 }
+                                            NumberAnimation { to: 1.0; duration: 600 }
+                                        }
+                                    }
+
+                                    // Texte statut
+                                    Text {
+                                        text: model.ready ? "Prêt \u2713" : "En attente..."
+                                        font.pixelSize: 32 * root.minRatio
+                                        font.bold: model.ready
+                                        color: model.ready ? "#4CAF50" : "#FFA726"
+                                        Layout.preferredWidth: 200 * root.minRatio
+                                    }
+
+                                    // Drag handle (hôte uniquement, 3+ joueurs)
                                     Image {
-                                        anchors.fill: parent
-                                        anchors.margins: 8 * root.minRatio
-                                        source: "qrc:/resources/avatar/" + modelData.avatar
-                                        fillMode: Image.PreserveAspectFit
+                                        source: "qrc:/resources/drag-handle-vertical-1-svgrepo-com.svg"
+                                        Layout.preferredWidth: 40 * root.minRatio
+                                        Layout.preferredHeight: 40 * root.minRatio
+                                        sourceSize: Qt.size(width, height)
+                                        visible: root.isHost && playerListContainer.playerCount >= 3
+                                        opacity: 0.6
+
+                                        MouseArea {
+                                            id: dragArea
+                                            anchors.fill: parent
+                                            anchors.margins: -10 * root.minRatio  // zone de touch plus large
+                                            enabled: root.isHost && playerListContainer.playerCount >= 3
+                                            cursorShape: enabled ? Qt.SizeVerCursor : Qt.ArrowCursor
+
+                                            property real startMouseY: 0
+                                            property real startDelegateY: 0
+
+                                            onPressed: function(mouse) {
+                                                var mapped = mapToItem(playerListContainer, 0, mouse.y)
+                                                dragArea.startMouseY = mapped.y
+                                                dragArea.startDelegateY = delegateRoot.y
+                                                root.draggedIndex = index
+                                            }
+
+                                            onPositionChanged: function(mouse) {
+                                                if (root.draggedIndex !== index) return
+                                                var mapped = mapToItem(playerListContainer, 0, mouse.y)
+                                                var deltaY = mapped.y - dragArea.startMouseY
+                                                delegateRoot.y = dragArea.startDelegateY + deltaY
+
+                                                // Déterminer le slot cible
+                                                var centerY = delegateRoot.y + playerListContainer.rowHeight / 2
+                                                var targetIdx = Math.round(centerY / (playerListContainer.rowHeight + playerListContainer.rowSpacing))
+                                                targetIdx = Math.max(0, Math.min(targetIdx, localPlayersModel.count - 1))
+
+                                                if (targetIdx !== index) {
+                                                    localPlayersModel.move(index, targetIdx, 1)
+                                                    root.draggedIndex = targetIdx
+                                                    // Recalculer le startDelegateY pour que le drag continue fluide
+                                                    dragArea.startDelegateY = targetIdx * (playerListContainer.rowHeight + playerListContainer.rowSpacing) + deltaY - (mapped.y - dragArea.startMouseY)
+                                                }
+                                            }
+
+                                            onReleased: {
+                                                // Snap à la position grille
+                                                delegateRoot.y = delegateRoot.defaultY
+                                                root.draggedIndex = -1
+
+                                                // Envoyer le nouvel ordre au serveur
+                                                var newOrder = []
+                                                for (var i = 0; i < localPlayersModel.count; i++) {
+                                                    newOrder.push(localPlayersModel.get(i).name)
+                                                }
+                                                networkManager.reorderLobbyPlayers(newOrder)
+                                            }
+                                        }
                                     }
-                                }
-
-                                // Nom du joueur
-                                Text {
-                                    text: modelData.name
-                                    font.pixelSize: 32 * root.minRatio
-                                    font.bold: true
-                                    color: "white"
-                                    Layout.fillWidth: true
-                                }
-
-                                // Badge hôte
-                                Text {
-                                    text: "👑"
-                                    font.pixelSize: 32 * root.minRatio
-                                    visible: modelData.isHost
-                                    Layout.preferredWidth: 35 * root.minRatio
-                                }
-
-                                // Indicateur ready
-                                Rectangle {
-                                    Layout.preferredWidth: 16 * root.minRatio
-                                    Layout.preferredHeight: 16 * root.minRatio
-                                    radius: 8 * root.minRatio
-                                    color: modelData.ready ? "#4CAF50" : "#FF5252"
-
-                                    SequentialAnimation on scale {
-                                        running: modelData.ready
-                                        loops: Animation.Infinite
-                                        NumberAnimation { to: 1.3; duration: 600 }
-                                        NumberAnimation { to: 1.0; duration: 600 }
-                                    }
-                                }
-
-                                // Texte statut
-                                Text {
-                                    text: modelData.ready ? "Prêt ✓" : "En attente..."
-                                    font.pixelSize: 32 * root.minRatio
-                                    font.bold: modelData.ready
-                                    color: modelData.ready ? "#4CAF50" : "#FFA726"
-                                    Layout.preferredWidth: 200 * root.minRatio
                                 }
                             }
                         }
@@ -260,7 +364,7 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 120 * root.heightRatio
-            spacing: 40 * root.minRatio
+            spacing: root.isHost ? 150 * root.minRatio : 600 * root.minRatio
 
             // Bouton Prêt / Annuler
             Button {
@@ -412,6 +516,8 @@ Rectangle {
     Connections {
         target: networkManager
         function onLobbyPlayersChanged() {
+            if (root.draggedIndex !== -1) return  // Ne pas sync pendant un drag
+            syncLocalModel()
         }
 
         function onLobbyError(errorMessage) {
@@ -525,7 +631,7 @@ Rectangle {
         Rectangle {
             id: popupRect
             anchors.centerIn: parent
-            width: parent.width * 0.6
+            width: parent.width * 0.5
             height: parent.height * 0.75
             color: "#1a1a1a"
             radius: 20 * root.minRatio
@@ -754,6 +860,20 @@ Rectangle {
         }
     }
 
+    function syncLocalModel() {
+        localPlayersModel.clear()
+        for (var i = 0; i < networkManager.lobbyPlayers.length; i++) {
+            var p = networkManager.lobbyPlayers[i]
+            localPlayersModel.append({
+                name: p.name,
+                avatar: p.avatar,
+                ready: p.ready,
+                isHost: p.isHost
+            })
+        }
+    }
+
     Component.onCompleted: {
+        syncLocalModel()
     }
 }

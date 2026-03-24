@@ -110,6 +110,8 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleLobbyReady(sender, obj);
     } else if (type == "startLobbyGame") {
         handleStartLobbyGame(sender);
+    } else if (type == "reorderLobbyPlayers") {
+        handleReorderLobbyPlayers(sender, obj);
     } else if (type == "leaveLobby") {
         handleLeaveLobby(sender);
     } else if (type == "updateAvatar") {
@@ -2603,6 +2605,54 @@ void GameServer::handleStartLobbyGame(QWebSocket *socket) {
         // Le lobby est conservé pour pouvoir être restauré si le matchmaking est annulé
         startLobbyGameWith2Players(lobby);
     }
+}
+
+void GameServer::handleReorderLobbyPlayers(QWebSocket *socket, const QJsonObject &obj) {
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (connectionId.isEmpty()) return;
+
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn) return;
+
+    // Trouver le lobby du joueur
+    QString lobbyCode;
+    for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ++it) {
+        if (it.value() && it.value()->playerNames.contains(conn->playerName)) {
+            lobbyCode = it.key();
+            break;
+        }
+    }
+    if (lobbyCode.isEmpty()) return;
+
+    PrivateLobby* lobby = m_privateLobbies[lobbyCode];
+
+    // Seul l'hôte peut réorganiser
+    if (lobby->hostPlayerName != conn->playerName) return;
+
+    QJsonArray orderArray = obj["order"].toArray();
+    if (orderArray.size() != lobby->playerNames.size()) return;
+
+    // Reconstruire les listes parallèles dans le nouvel ordre
+    QList<QString> newNames;
+    QList<QString> newAvatars;
+    QList<bool> newReady;
+
+    for (int i = 0; i < orderArray.size(); i++) {
+        QString name = orderArray[i].toString();
+        int oldIndex = lobby->playerNames.indexOf(name);
+        if (oldIndex < 0) return;  // nom invalide, abandon
+        newNames.append(lobby->playerNames[oldIndex]);
+        newAvatars.append(lobby->playerAvatars[oldIndex]);
+        newReady.append(lobby->readyStatus[oldIndex]);
+    }
+
+    lobby->playerNames = newNames;
+    lobby->playerAvatars = newAvatars;
+    lobby->readyStatus = newReady;
+
+    qDebug() << "Lobby" << lobbyCode << "joueurs réordonnés par l'hôte:" << newNames;
+
+    sendLobbyUpdate(lobbyCode);
 }
 
 void GameServer::handleLeaveLobby(QWebSocket *socket) {
