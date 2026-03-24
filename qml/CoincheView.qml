@@ -817,6 +817,7 @@ Rectangle {
                             text: "D"
                             font.pixelSize: parent.width * 0.6
                             font.bold: true
+                            font.family: systemFontFamily
                             color: "#8B7500"
                         }
                     }
@@ -862,7 +863,7 @@ Rectangle {
                                     text: (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex) ?
                                           "Coinche" : rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex)
                                     color: "white"
-                                    font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
+                                    font.pixelSize: text!=="Coinche" ? rootArea.height * 0.035 : rootArea.height * 0.028
                                     font.bold: true
                                 }
                                 Item {
@@ -975,7 +976,7 @@ Rectangle {
                         Text {
                             text: rootArea.getPlayerName(playerSouthRow.actualPlayerIndex)
                             color: gameModel.currentPlayer === playerSouthRow.actualPlayerIndex ? "#ffff66" : "white"
-                            font.pixelSize: rootArea.height * 0.03
+                            font.pixelSize: rootArea.height * 0.027
                             font.bold: true
                             anchors.top: avatarSouth.bottom
                             anchors.topMargin: rootArea.height * 0.005
@@ -1135,7 +1136,7 @@ Rectangle {
                     Text {
                         text: rootArea.getPlayerName(playerNorthColumn.actualPlayerIndex)
                         color: gameModel.currentPlayer === playerNorthColumn.actualPlayerIndex ? "#ffff66" : "white"
-                        font.pixelSize: rootArea.height * 0.03
+                        font.pixelSize: rootArea.height * 0.027
                         font.bold: true
                         anchors.top: northAvatarRect.bottom
                         anchors.topMargin: rootArea.height * 0.005
@@ -1165,6 +1166,7 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: "D"
+                            font.family: systemFontFamily
                             font.pixelSize: parent.width * 0.6
                             font.bold: true
                             color: "#8B7500"
@@ -1205,7 +1207,7 @@ Rectangle {
                                 text: (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex) ?
                                       "Coinche" : rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex)
                                 color: "white"
-                                font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
+                                font.pixelSize: text!=="Coinche" ? rootArea.height * 0.035 : rootArea.height * 0.028
                                 font.bold: true
                             }
                             Item {
@@ -1342,7 +1344,7 @@ Rectangle {
                             text: (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex) ?
                                   "Coinche" : rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex)
                             color: "white"
-                            font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
+                            font.pixelSize: text!=="Coinche" ? rootArea.height * 0.035 : rootArea.height * 0.028
                             font.bold: true
                         }
                         Item {
@@ -1458,7 +1460,7 @@ Rectangle {
                     Text {
                         text: rootArea.getPlayerName(playerWestRow.actualPlayerIndex)
                         color: gameModel.currentPlayer === playerWestRow.actualPlayerIndex ? "#ffff66" : "white"
-                        font.pixelSize: rootArea.height * 0.03
+                        font.pixelSize: rootArea.height * 0.027
                         font.bold: true
                         anchors.top: westAvatarRect.bottom
                         anchors.topMargin: rootArea.height * 0.005
@@ -1483,6 +1485,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: "D"
+                        font.family: systemFontFamily
                         font.pixelSize: parent.width * 0.6
                         font.bold: true
                         color: "#8B7500"
@@ -1580,7 +1583,7 @@ Rectangle {
                             text: (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex) ?
                                   "Coinche" : rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex)
                             color: "white"
-                            font.pixelSize: text!=="Coinche" ? rootArea.height * 0.04 : rootArea.height * 0.032
+                            font.pixelSize: text!=="Coinche" ? rootArea.height * 0.035 : rootArea.height * 0.028
                             font.bold: true
                         }
                         Item {
@@ -1696,7 +1699,7 @@ Rectangle {
                     Text {
                         text: rootArea.getPlayerName(playerEastRow.actualPlayerIndex)
                         color: gameModel.currentPlayer === playerEastRow.actualPlayerIndex ? "#ffff66" : "white"
-                        font.pixelSize: rootArea.height * 0.03
+                        font.pixelSize: rootArea.height * 0.027
                         font.bold: true
                         anchors.top: eastAvatarRect.bottom
                         anchors.topMargin: rootArea.height * 0.005
@@ -1722,6 +1725,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: "D"
                         font.pixelSize: parent.width * 0.6
+                        font.family: systemFontFamily
                         font.bold: true
                         color: "#8B7500"
                     }
@@ -1813,7 +1817,7 @@ Rectangle {
                 Text {
                     text: "Nous"
                     color: "white"
-                    font.family: "Serif"
+                    font.family: "Orbitron"
                     font.italic: true
                     font.weight: Font.DemiBold
                     font.pixelSize: parent.height * 0.2
@@ -1835,7 +1839,7 @@ Rectangle {
                 Text {
                     text: "Eux"
                     color: "white"
-                    font.family: "Serif"
+                    font.family: "Orbitron"
                     font.italic: true
                     font.weight: Font.DemiBold
                     font.pixelSize: parent.height * 0.2
@@ -1910,7 +1914,7 @@ Rectangle {
 
             contentItem: Text {
                 text: parent.text
-                font.pixelSize: rootArea.height * 0.05
+                font.pixelSize: rootArea.height * 0.045
                 font.bold: true
                 color: parent.enabled ? "#CDF7F7" : "#666666"
                 horizontalAlignment: Text.AlignHCenter

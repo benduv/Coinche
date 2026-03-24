@@ -188,7 +188,7 @@ Item {
             text: "NOUVELLE MANCHE"
             font.pixelSize: 73 * ufoAnimation.minRatio
             font.bold: true
-            font.family: "Consolas, Courier New, monospace"
+            font.family: "Orbitron"
             font.letterSpacing: 2 * ufoAnimation.minRatio
             color: "#00ffff"
             opacity: 0.5
@@ -205,7 +205,7 @@ Item {
             text: "NOUVELLE MANCHE"
             font.pixelSize: 70 * ufoAnimation.minRatio
             font.bold: true
-            font.family: "Consolas, Courier New, monospace"
+            font.family: "Orbitron"
             font.letterSpacing: 2 * ufoAnimation.minRatio
             color: "#BFFBFF"
             style: Text.Outline

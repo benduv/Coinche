@@ -106,7 +106,7 @@ Rectangle {
                     font.pixelSize: 56 * root.minRatio
                     font.bold: true
                     color: "#FFD700"
-                    font.family: "Courier"
+                    font.family: "Orbitron"
                     font.letterSpacing: 12
                     Layout.alignment: Qt.AlignHCenter
                 }
@@ -221,7 +221,7 @@ Rectangle {
                                         font.bold: true
                                         color: "white"
                                         //Layout.fillWidth: true
-                                        Layout.preferredWidth: 350 * root.minRatio
+                                        Layout.preferredWidth: 200 * root.minRatio
                                     }
 
                                     // Label équipe
@@ -230,7 +230,8 @@ Rectangle {
                                         font.pixelSize: 28 * root.minRatio
                                         font.bold: true
                                         color: delegateRoot.isTeam1 ? "#4CAF50" : "#F44336"
-                                        visible: delegateRoot.showTeams
+                                        //visible: delegateRoot.showTeams
+                                        opacity: delegateRoot.showTeams ? 1 : 0
                                         //Layout.preferredWidth: visible ? 630 * root.minRatio : 0
                                         Layout.fillWidth: true
                                     }
@@ -376,7 +377,7 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 120 * root.heightRatio
-            spacing: root.isHost ? 150 * root.minRatio : 600 * root.minRatio
+            spacing: 300 * root.minRatio
 
             // Bouton Prêt / Annuler
             Button {
@@ -397,26 +398,28 @@ Rectangle {
                     Behavior on color { ColorAnimation { duration: 200 } }
                 }
 
-                contentItem: Row {
-                    anchors.centerIn: parent
-                    spacing: 10 * root.minRatio
+                contentItem: Item {
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 20 * root.minRatio
 
-                    Image {
-                        source: readyButton.isReady
-                            ? "qrc:/resources/cross-small-svgrepo-com.svg"
-                            : "qrc:/resources/check-svgrepo-com.svg"
-                        width: 50 * root.minRatio
-                        height: 50 * root.minRatio
-                        sourceSize: Qt.size(width, height)
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
+                        Image {
+                            source: readyButton.isReady
+                                ? "qrc:/resources/cross-small-svgrepo-com.svg"
+                                : "qrc:/resources/check-svgrepo-com.svg"
+                            width: 55 * root.minRatio
+                            height: 55 * root.minRatio
+                            sourceSize: Qt.size(width, height)
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
 
-                    Text {
-                        text: readyButton.isReady ? "Annuler" : "Prêt"
-                        font.pixelSize: 32 * root.minRatio
-                        font.bold: true
-                        color: "white"
-                        anchors.verticalCenter: parent.verticalCenter
+                        Text {
+                            text: readyButton.isReady ? "Annuler " : "Prêt  "
+                            font.pixelSize: 42 * root.minRatio
+                            font.bold: true
+                            color: "white"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
                 }
 
@@ -428,50 +431,53 @@ Rectangle {
 
             // Bouton Jouer (visible seulement pour l'hôte)
             Button {
+                id: playButton
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                visible: root.isHost
+                opacity: root.isHost ? 1 : 0
 
-                enabled: networkManager.lobbyPlayers.length === 2 || networkManager.lobbyPlayers.length === 4
+                enabled: root.isHost && (networkManager.lobbyPlayers.length === 2 || networkManager.lobbyPlayers.length === 4)
 
                 background: Rectangle {
-                    color: parent.enabled ?
-                           (parent.down ? "#1565C0" : (parent.hovered ? "#1E88E5" : "#2196F3")) :
+                    color: playButton.enabled ?
+                           (playButton.down ? "#1565C0" : (playButton.hovered ? "#1E88E5" : "#2196F3")) :
                            "#424242"
                     radius: 12 * root.minRatio
-                    border.color: parent.enabled ? "#0D47A1" : "#212121"
+                    border.color: playButton.enabled ? "#0D47A1" : "#212121"
                     border.width: 2 * root.minRatio
 
                     Behavior on color { ColorAnimation { duration: 200 } }
 
                     // Animation de pulsation quand actif
                     SequentialAnimation on scale {
-                        running: parent.enabled
+                        running: playButton.enabled
                         loops: Animation.Infinite
                         NumberAnimation { to: 1.05; duration: 800; easing.type: Easing.InOutQuad }
                         NumberAnimation { to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
                     }
                 }
 
-                contentItem: Row {
-                    anchors.centerIn: parent
-                    spacing: 12 * root.minRatio
+                contentItem: Item {
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 12 * root.minRatio
 
-                    Image {
-                        source: "qrc:/resources/play-alt-svgrepo-com.svg"
-                        width: 42 * root.minRatio
-                        height: 42 * root.minRatio
-                        sourceSize: Qt.size(width, height)
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
+                        Image {
+                            source: "qrc:/resources/play-alt-svgrepo-com.svg"
+                            width: 50 * root.minRatio
+                            height: 50 * root.minRatio
+                            sourceSize: Qt.size(width, height)
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
 
-                    Text {
-                        text: "JOUER"
-                        font.pixelSize: 36 * root.minRatio
-                        font.bold: true
-                        color: parent.parent.parent.enabled ? "white" : "#666666"
-                        anchors.verticalCenter: parent.verticalCenter
-                        font.letterSpacing: 2
+                        Text {
+                            text: "JOUER "
+                            font.pixelSize: 42 * root.minRatio
+                            font.bold: true
+                            color: parent.parent.parent.parent.enabled ? "white" : "#666666"
+                            anchors.verticalCenter: parent.verticalCenter
+                            font.letterSpacing: 2
+                        }
                     }
                 }
 
@@ -482,7 +488,7 @@ Rectangle {
 
             // Bouton Quitter
             Button {
-                Layout.preferredWidth: 260 * root.widthRatio
+                Layout.preferredWidth: 360 * root.widthRatio
                 Layout.fillHeight: true
 
                 background: Rectangle {
@@ -494,24 +500,26 @@ Rectangle {
                     Behavior on color { ColorAnimation { duration: 200 } }
                 }
 
-                contentItem: Row {
-                    anchors.centerIn: parent
-                    spacing: 10 * root.minRatio
+                contentItem: Item {
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 10 * root.minRatio
 
-                    Image {
-                        source: "qrc:/resources/cross-small-svgrepo-com.svg"
-                        width: 50 * root.minRatio
-                        height: 50 * root.minRatio
-                        sourceSize: Qt.size(width, height)
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
+                        Image {
+                            source: "qrc:/resources/cross-small-svgrepo-com.svg"
+                            width: 55 * root.minRatio
+                            height: 55 * root.minRatio
+                            sourceSize: Qt.size(width, height)
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
 
-                    Text {
-                        text: "Quitter"
-                        font.pixelSize: 36 * root.minRatio
-                        font.bold: true
-                        color: "white"
-                        anchors.verticalCenter: parent.verticalCenter
+                        Text {
+                            text: "Quitter  "
+                            font.pixelSize: 42 * root.minRatio
+                            font.bold: true
+                            color: "white"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
                 }
 
@@ -790,21 +798,21 @@ Rectangle {
             // Boutons ancrés en bas de la popup
             Row {
                 id: popupButtons
-                spacing: 30 * root.minRatio
+                spacing: 50 * root.minRatio
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 25 * root.minRatio
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 Rectangle {
-                    width: 200 * root.minRatio
-                    height: 60 * root.minRatio
+                    width: 250 * root.minRatio
+                    height: 80 * root.minRatio
                     radius: 10 * root.minRatio
                     color: inviteFriendsPopup.selectedCount > 0 ? "#006600" : "#333333"
 
                     Text {
                         anchors.centerIn: parent
                         text: "Inviter"
-                        font.pixelSize: 26 * root.minRatio
+                        font.pixelSize: 30 * root.minRatio
                         font.bold: true
                         color: inviteFriendsPopup.selectedCount > 0 ? "white" : "#666666"
                     }
@@ -824,8 +832,8 @@ Rectangle {
                 }
 
                 Rectangle {
-                    width: 200 * root.minRatio
-                    height: 60 * root.minRatio
+                    width: 250 * root.minRatio
+                    height: 80 * root.minRatio
                     radius: 10 * root.minRatio
                     color: "#3a3a3a"
                     border.color: "#FFD700"
@@ -834,7 +842,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: "Annuler "
-                        font.pixelSize: 28 * root.minRatio
+                        font.pixelSize: 30 * root.minRatio
                         font.bold: true
                         color: "#FFD700"
                     }

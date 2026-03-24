@@ -93,7 +93,7 @@ Popup {
             // Titre principal
             Text {
                 text: "Politique de Confidentialité"
-                font.pixelSize: 36 * privacyPolicyPopup.minRatio
+                font.pixelSize: 30 * privacyPolicyPopup.minRatio
                 font.bold: true
                 color: "#FFD700"
                 Layout.alignment: Qt.AlignHCenter
@@ -102,7 +102,7 @@ Popup {
 
             Text {
                 text: "Coinche de l'Espace"
-                font.pixelSize: 30 * privacyPolicyPopup.minRatio
+                font.pixelSize: 28 * privacyPolicyPopup.minRatio
                 font.bold: true
                 color: "#FFD700"
                 Layout.alignment: Qt.AlignHCenter

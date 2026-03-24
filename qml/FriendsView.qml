@@ -64,7 +64,7 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.topMargin: 50 * minRatio
         text: "AMIS"
-        font.pixelSize: 42 * minRatio
+        font.pixelSize: 56 * minRatio
         font.bold: true
         color: "#FFD700"
     }
@@ -77,7 +77,7 @@ Rectangle {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 30 * minRatio
         anchors.horizontalCenter: parent.horizontalCenter
-        width: Math.min(parent.width * 0.9, 700)
+        width: parent.width * 0.9
         contentHeight: mainColumn.height
         clip: true
         flickableDirection: Flickable.VerticalFlick
@@ -100,7 +100,7 @@ Rectangle {
                     anchors.leftMargin: 15
                     anchors.verticalCenter: parent.verticalCenter
                     text: "DEMANDES EN ATTENTE"
-                    font.pixelSize: 20 * minRatio
+                    font.pixelSize: 38 * minRatio
                     font.bold: true
                     color: "#FF9800"
                 }
@@ -203,7 +203,7 @@ Rectangle {
             // Section: Mes amis
             Rectangle {
                 width: parent.width
-                height: 40 * minRatio
+                height: 60 * minRatio
                 color: "#2a2a2a"
                 radius: 5
 
@@ -212,7 +212,7 @@ Rectangle {
                     anchors.leftMargin: 15
                     anchors.verticalCenter: parent.verticalCenter
                     text: "MES AMIS"
-                    font.pixelSize: 20 * minRatio
+                    font.pixelSize: 38 * minRatio
                     font.bold: true
                     color: "#4CAF50"
                 }
@@ -294,6 +294,7 @@ Rectangle {
                             font.bold: true
                             color: "white"
                             anchors.verticalCenter: parent.verticalCenter
+                            width: 300 * minRatio
                         }
 
                         Item {
@@ -317,13 +318,12 @@ Rectangle {
                         anchors.rightMargin: 10 * minRatio
                         anchors.verticalCenter: parent.verticalCenter
                         width: 45 * minRatio
-                        height: 45 * minRatio
-                        radius: width / 2
-                        color: "#cc0000"
+                        height: width
+                        radius: width / 4
+                        color: "#ff3333"
 
                         Image {
                             anchors.fill: parent
-                            //anchors.margins: 1 * minRatio
                             source: "qrc:/resources/cross-small-svgrepo-com.svg"
                             fillMode: Image.PreserveAspectFit
                         }

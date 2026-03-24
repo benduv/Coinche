@@ -215,6 +215,7 @@ Item {
 
             TextField {
                 id: lobbyCodeInput
+                font.family: systemFontFamily
                 Layout.preferredWidth: 400 * root.widthRatio
                 Layout.preferredHeight: 110 * root.heightRatio
                 Layout.alignment: Qt.AlignHCenter

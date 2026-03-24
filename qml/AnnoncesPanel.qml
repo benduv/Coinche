@@ -252,6 +252,7 @@ Rectangle {
             text: "Passer"
             font.pixelSize: h * 0.09
             font.bold: true
+            font.family: "Orbitron"
             Layout.preferredWidth: w * 0.25
             Layout.preferredHeight: h * 0.25
             Layout.alignment: Qt.AlignHCenter

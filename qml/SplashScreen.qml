@@ -17,6 +17,11 @@ Rectangle {
         GradientStop { position: 1.0; color: "#1a1a3e" }  // Bleu nuit
     }
 
+    FontLoader {
+        id: orbitronFont
+        source: "qrc:/resources/fonts/Orbitron.ttf"
+    }
+
     signal loadingComplete()
     signal autoLoginSuccess(string playerName)
 
@@ -86,7 +91,7 @@ Rectangle {
                 id: studioTextShadow
                 text: "NEBULUDIK"
                 font.pixelSize: 72 * splashRoot.minRatio
-                font.family: "Courier New"
+                font.family: orbitronFont.name
                 font.bold: true
                 font.letterSpacing: 8
                 color: "#1a1a3e"
@@ -100,7 +105,7 @@ Rectangle {
                 id: studioText
                 text: "NEBULUDIK"
                 font.pixelSize: 72 * splashRoot.minRatio
-                font.family: "Courier New"
+                font.family: orbitronFont.name
                 font.bold: true
                 font.letterSpacing: 8
                 color: "white"
@@ -139,7 +144,7 @@ Rectangle {
         Text {
             text: "STUDIO"
             font.pixelSize: 24 * splashRoot.minRatio
-            font.family: "Courier New"
+            font.family: orbitronFont.name
             font.letterSpacing: 4
             color: "#cccccc"
             anchors.horizontalCenter: parent.horizontalCenter
@@ -155,7 +160,7 @@ Rectangle {
             Text {
                 text: "LOADING..."
                 font.pixelSize: 20 * splashRoot.minRatio
-                font.family: "Courier New"
+                font.family: orbitronFont.name
                 font.letterSpacing: 2
                 color: "white"
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -248,7 +253,7 @@ Rectangle {
             Text {
                 text: Math.floor(splashRoot.progress * 100) + "%"
                 font.pixelSize: 24 * splashRoot.minRatio
-                font.family: "Courier New"
+                font.family: orbitronFont.name
                 font.bold: true
                 font.letterSpacing: 2
                 color: "white"
@@ -350,7 +355,7 @@ Rectangle {
     Text {
         text: "© 2026 NEBULUDIK"
         font.pixelSize: 14 * splashRoot.minRatio
-        font.family: "Courier New"
+        font.family: orbitronFont.name
         color: "#006600"
         anchors.right: parent.right
         anchors.bottom: parent.bottom

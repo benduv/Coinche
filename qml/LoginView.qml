@@ -86,7 +86,7 @@ Rectangle {
 
                         contentItem: Text {
                             text: "Créer un compte"
-                            font.pixelSize: 48 * loginRoot.minRatio
+                            font.pixelSize: 46 * loginRoot.minRatio
                             font.bold: true
                             color: "white"
                             horizontalAlignment: Text.AlignHCenter
@@ -116,7 +116,7 @@ Rectangle {
 
                         contentItem: Text {
                             text: "Se connecter"
-                            font.pixelSize: 52 * loginRoot.minRatio
+                            font.pixelSize: 46 * loginRoot.minRatio
                             font.bold: true
                             color: "white"
                             horizontalAlignment: Text.AlignHCenter
@@ -146,7 +146,7 @@ Rectangle {
 
                         contentItem: Text {
                             text: "Jouer en tant qu'invité"
-                            font.pixelSize: 46 * loginRoot.minRatio
+                            font.pixelSize: 36 * loginRoot.minRatio
                             font.bold: true
                             color: "white"
                             horizontalAlignment: Text.AlignHCenter
@@ -289,6 +289,7 @@ Rectangle {
 
                         TextField {
                             id: registerPseudo
+                            font.family: systemFontFamily
                             width: parent.width
                             height: 70 * loginRoot.heightRatio
                             placeholderText: ""
@@ -306,8 +307,10 @@ Rectangle {
                             color: "white"
 
                             Text {
-                                text: registerPseudo.text.length === 0 ? "   Votre pseudonyme" : ""
+                                text: registerPseudo.text.length === 0 ? "Votre pseudonyme" : ""
+                                leftPadding: 16 * loginRoot.minRatio
                                 font.pixelSize: 30 * loginRoot.minRatio
+                                font.family: systemFontFamily
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -330,6 +333,7 @@ Rectangle {
 
                         TextField {
                             id: registerEmail
+                            font.family: systemFontFamily
                             width: parent.width
                             height: 70 * loginRoot.heightRatio
                             placeholderText: ""
@@ -347,8 +351,10 @@ Rectangle {
                             color: "white"
 
                             Text {
-                                text: registerEmail.text.length === 0 ? "   votre@email.com" : ""
+                                text: registerEmail.text.length === 0 ? "votre@email.com" : ""
+                                leftPadding: 16 * loginRoot.minRatio
                                 font.pixelSize: 30 * loginRoot.minRatio
+                                font.family: systemFontFamily
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -377,6 +383,7 @@ Rectangle {
 
                             TextField {
                                 id: registerPassword
+                                font.family: systemFontFamily
                                 width: parent.width
                                 height: parent.height
                                 onTextChanged: if (text.indexOf(' ') >= 0) { text = text.replace(/ /g, ''); registerError.text = "Les espaces ne sont pas autorisés dans le mot de passe" }
@@ -395,8 +402,10 @@ Rectangle {
 
                                 Text {
                                     id: regPwdTxtLogin
-                                    text: registerPassword.text.length === 0 ? "   Votre mot de passe" : ""
+                                    text: registerPassword.text.length === 0 ? "Votre mot de passe" : ""
+                                    leftPadding: 16 * loginRoot.minRatio
                                     font.pixelSize: 30 * loginRoot.minRatio
+                                    font.family: systemFontFamily
                                     color: "#888888"
                                     anchors.fill: parent
                                     anchors.leftMargin: 10 * loginRoot.minRatio
@@ -651,8 +660,8 @@ Rectangle {
                     visible: registerScreenRec.showVerificationStep
 
                     Text {
-                        text: "Vérification de votre email"
-                        font.pixelSize: 42 * loginRoot.minRatio
+                        text: "Vérification de \nvotre email"
+                        font.pixelSize: 48 * loginRoot.minRatio
                         font.bold: true
                         color: "#FFD700"
                         Layout.alignment: Qt.AlignHCenter
@@ -660,7 +669,7 @@ Rectangle {
 
                     Text {
                         text: "Un code de vérification a été envoyé à\n" + registerScreenRec.verificationEmail
-                        font.pixelSize: 28 * loginRoot.minRatio
+                        font.pixelSize: 26 * loginRoot.minRatio
                         color: "white"
                         Layout.alignment: Qt.AlignHCenter
                         horizontalAlignment: Text.AlignHCenter
@@ -670,6 +679,7 @@ Rectangle {
 
                     TextField {
                         id: verificationCodeField
+                        font.family: systemFontFamily
                         Layout.fillWidth: true
                         Layout.preferredHeight: 80 * loginRoot.heightRatio
                         placeholderText: ""
@@ -915,7 +925,7 @@ Rectangle {
 
                     Text {
                         text: "Se connecter"
-                        font.pixelSize: 72 * loginRoot.minRatio
+                        font.pixelSize: 60 * loginRoot.minRatio
                         font.bold: true
                         color: "#FFD700"
                         Layout.alignment: Qt.AlignHCenter
@@ -936,6 +946,7 @@ Rectangle {
 
                         TextField {
                             id: loginEmail
+                            font.family: systemFontFamily
                             width: parent.width
                             height: 70 * loginRoot.heightRatio
                             placeholderText: ""
@@ -952,8 +963,10 @@ Rectangle {
                             color: "white"
 
                             Text {
-                                text: loginEmail.text.length === 0 ? "   votre@email.com" : ""
+                                text: loginEmail.text.length === 0 ? "votre@email.com" : ""
+                                leftPadding: 16 * loginRoot.minRatio
                                 font.pixelSize: 30 * loginRoot.minRatio
+                                font.family: systemFontFamily
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -982,6 +995,7 @@ Rectangle {
 
                             TextField {
                                 id: loginPassword
+                                font.family: systemFontFamily
                                 width: parent.width
                                 height: parent.height
                                 placeholderText: ""
@@ -999,8 +1013,10 @@ Rectangle {
                                 color: "white"
 
                                 Text {
-                                    text: loginPassword.text.length === 0 ? "   Votre mot de passe" : ""
+                                    text: loginPassword.text.length === 0 ? "Votre mot de passe" : ""
+                                    leftPadding: 16 * loginRoot.minRatio
                                     font.pixelSize: 30 * loginRoot.minRatio
+                                    font.family: systemFontFamily
                                     color: "#888888"
                                     anchors.fill: parent
                                     anchors.leftMargin: 10 * loginRoot.minRatio
@@ -1213,10 +1229,11 @@ Rectangle {
                     width: Math.min(parent.width * loginRoot.formWidthRatio, 500 * loginRoot.widthRatio)
 
                     Text {
-                        text: "Jouer en tant qu'invité"
-                        font.pixelSize: 48 * loginRoot.minRatio
+                        text: "Jouer en tant\nqu'invité"
+                        font.pixelSize: 58 * loginRoot.minRatio
                         font.bold: true
                         color: "#FFD700"
+                        horizontalAlignment: Text.AlignHCenter
                         Layout.alignment: Qt.AlignHCenter
                     }
 
@@ -1235,6 +1252,7 @@ Rectangle {
 
                         TextField {
                             id: guestPseudo
+                            font.family: systemFontFamily
                             width: parent.width
                             height: 70 * loginRoot.heightRatio
                             placeholderText: ""
@@ -1254,6 +1272,7 @@ Rectangle {
                             Text {
                                 text: guestPseudo.text.length === 0 ? "   Invité123" : ""
                                 font.pixelSize: 30 * loginRoot.minRatio
+                                font.family: systemFontFamily
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -1350,18 +1369,15 @@ Rectangle {
                         horizontalAlignment: Text.AlignHCenter
                     }
 
-                    Row {
+                    Column {
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.fillWidth: true
-                        spacing: 5 * loginRoot.minRatio
-
-                        Item { Layout.fillWidth: true }
+                        spacing: 2 * loginRoot.minRatio
 
                         Text {
-                            text: "En jouant, vous acceptez notre "
+                            text: "En jouant, vous acceptez notre"
                             font.pixelSize: 20 * loginRoot.minRatio
                             color: "#aaaaaa"
-                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.horizontalCenter: parent.horizontalCenter
                         }
 
                         Text {
@@ -1369,7 +1385,7 @@ Rectangle {
                             font.pixelSize: 20 * loginRoot.minRatio
                             color: "#00aaee"
                             font.underline: true
-                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.horizontalCenter: parent.horizontalCenter
 
                             MouseArea {
                                 anchors.fill: parent
@@ -1379,8 +1395,6 @@ Rectangle {
                                 }
                             }
                         }
-
-                        Item { Layout.fillWidth: true }
                     }
 
                     // Popup pour afficher la politique de confidentialité
@@ -1492,7 +1506,7 @@ Rectangle {
 
                     Text {
                         text: "Mot de passe oublié"
-                        font.pixelSize: 52 * loginRoot.minRatio
+                        font.pixelSize: 42 * loginRoot.minRatio
                         font.bold: true
                         color: "#FFD700"
                         Layout.alignment: Qt.AlignHCenter
@@ -1513,6 +1527,7 @@ Rectangle {
 
                         TextField {
                             id: forgotEmail
+                            font.family: systemFontFamily
                             width: parent.width
                             height: 70 * loginRoot.heightRatio
                             placeholderText: ""
@@ -1529,8 +1544,10 @@ Rectangle {
                             color: "white"
 
                             Text {
-                                text: forgotEmail.text.length === 0 ? "   votre@email.com" : ""
+                                text: forgotEmail.text.length === 0 ? "votre@email.com" : ""
+                                leftPadding: 16 * loginRoot.minRatio
                                 font.pixelSize: 30 * loginRoot.minRatio
+                                font.family: systemFontFamily
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
@@ -1566,7 +1583,7 @@ Rectangle {
 
                         contentItem: Text {
                             text: "Envoyer un nouveau mot de passe"
-                            font.pixelSize: 30 * loginRoot.minRatio
+                            font.pixelSize: 24 * loginRoot.minRatio
                             font.bold: true
                             color: "white"
                             horizontalAlignment: Text.AlignHCenter
@@ -1678,6 +1695,7 @@ Rectangle {
 
                         TextField {
                             id: newPassword
+                            font.family: systemFontFamily
                             anchors.fill: parent
                             anchors.margins: 10 * mainWindow.minRatio
                             font.pixelSize: 36 * mainWindow.minRatio
@@ -1701,6 +1719,7 @@ Rectangle {
 
                         TextField {
                             id: confirmPassword
+                            font.family: systemFontFamily
                             anchors.fill: parent
                             anchors.margins: 10 * mainWindow.minRatio
                             font.pixelSize: 36 * mainWindow.minRatio

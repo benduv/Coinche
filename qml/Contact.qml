@@ -185,6 +185,7 @@ Rectangle {
 
                             TextInput {
                                 id: subjectField
+                                font.family: systemFontFamily
                                 anchors.fill: parent
                                 anchors.margins: 10 * contactRoot.minRatio
                                 font.pixelSize: 22 * contactRoot.minRatio
@@ -243,6 +244,7 @@ Rectangle {
                                     width: messageFlickable.width
                                     height: Math.max(contentHeight, messageFlickable.height)
                                     font.pixelSize: 22 * contactRoot.minRatio
+                                    font.family: systemFontFamily
                                     color: "white"
                                     wrapMode: TextEdit.Wrap
                                     // Combinaison de flags pour éviter le mode extract sur Android

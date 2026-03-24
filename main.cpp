@@ -5,6 +5,8 @@
 #include <QCommandLineParser>
 #include <QRandomGenerator>
 #include <QQuickWindow>
+#include <QFontDatabase>
+#include <QFont>
 #ifdef Q_OS_ANDROID
 #include <QJniObject>
 #include <QCoreApplication>
@@ -104,12 +106,24 @@ int main(int argc, char *argv[])
 
     QQuickStyle::setStyle("Material");
 
+    // Sauvegarder la police système avant de la changer
+    QString systemFontFamily = app.font().family();
+
+    // Police Orbitron globale (identique sur Windows et Android)
+    int fontId = QFontDatabase::addApplicationFont(":/resources/fonts/Orbitron.ttf");
+    if (fontId != -1) {
+        QString family = QFontDatabase::applicationFontFamilies(fontId).at(0);
+        QFont appFont(family);
+        app.setFont(appFont);
+    }
+
     QQmlApplicationEngine engine;
 
     // NetworkManager global
     NetworkManager networkManager;
 
     engine.rootContext()->setContextProperty("networkManager", &networkManager);
+    engine.rootContext()->setContextProperty("systemFontFamily", systemFontFamily);
     engine.rootContext()->setContextProperty("defaultPlayerName", playerName);
     engine.rootContext()->setContextProperty("autoLoginEmail", autoLoginEmail);
     engine.rootContext()->setContextProperty("autoLoginPassword", autoLoginPassword);

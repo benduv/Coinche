@@ -102,7 +102,7 @@ Rectangle {
             // Message
             Text {
                 text: message
-                font.pixelSize: 26 * minRatio
+                font.pixelSize: 22 * minRatio
                 color: "#cccccc"
                 Layout.alignment: Qt.AlignHCenter
                 Layout.fillWidth: true

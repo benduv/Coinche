@@ -317,7 +317,7 @@ Rectangle {
 
                             // Bouton "Fortes à gauche"
                             Rectangle {
-                                width: 230 * settingsRoot.minRatio
+                                width: 240 * settingsRoot.minRatio
                                 height: 60 * settingsRoot.minRatio
                                 radius: 10 * settingsRoot.minRatio
                                 color: settingsRoot.strongCardsLeft ? "#FFD700" : "#3a3a3a"
@@ -348,7 +348,7 @@ Rectangle {
 
                             // Bouton "Fortes à droite"
                             Rectangle {
-                                width: 230 * settingsRoot.minRatio
+                                width: 240 * settingsRoot.minRatio
                                 height: 60 * settingsRoot.minRatio
                                 radius: 10 * settingsRoot.minRatio
                                 color: !settingsRoot.strongCardsLeft ? "#FFD700" : "#3a3a3a"
@@ -420,7 +420,8 @@ Rectangle {
 
                     // Modifier le pseudo
                     Text {
-                        text: "   Pseudo"
+                        text: "Pseudo"
+                        leftPadding: 30 * settingsRoot.minRatio
                         font.pixelSize: 30 * settingsRoot.minRatio
                         color: "#cccccc"
                         topPadding: 10 * settingsRoot.minRatio
@@ -445,6 +446,7 @@ Rectangle {
 
                             TextInput {
                                 id: pseudoInput
+                                font.family: systemFontFamily
                                 anchors.fill: parent
                                 anchors.margins: 10 * settingsRoot.minRatio
                                 text: settingsRoot.playerName
@@ -486,12 +488,12 @@ Rectangle {
                                 pseudoErrorText.visible = false
                                 pseudoSuccessText.visible = false
                                 if (pseudoInput.text.trim() === "") {
-                                    pseudoErrorText.text = "    Le pseudo ne peut pas être vide"
+                                    pseudoErrorText.text = "Le pseudo ne peut pas être vide"
                                     pseudoErrorText.visible = true
                                     return
                                 }
                                 if (pseudoInput.text.trim() === settingsRoot.playerName) {
-                                    pseudoErrorText.text = "    Le nouveau pseudo est identique à l'actuel"
+                                    pseudoErrorText.text = "Le nouveau pseudo est identique à l'actuel"
                                     pseudoErrorText.visible = true
                                     return
                                 }
@@ -508,6 +510,7 @@ Rectangle {
                     Text {
                         id: pseudoErrorText
                         width: parent.width
+                        leftPadding: 30 * settingsRoot.minRatio
                         text: ""
                         font.pixelSize: 24 * settingsRoot.minRatio
                         color: "#ff6666"
@@ -518,7 +521,8 @@ Rectangle {
                     Text {
                         id: pseudoSuccessText
                         width: parent.width
-                        text: "    Pseudo modifié avec succès"
+                        leftPadding: 30 * settingsRoot.minRatio
+                        text: "Pseudo modifié avec succès"
                         font.pixelSize: 24 * settingsRoot.minRatio
                         color: "#66ff66"
                         visible: false
@@ -526,7 +530,8 @@ Rectangle {
 
                     // Modifier l'email
                     Text {
-                        text: "   Email"
+                        text: "Email"
+                        leftPadding: 30 * settingsRoot.minRatio
                         font.pixelSize: 30 * settingsRoot.minRatio
                         color: "#cccccc"
                         topPadding: 10 * settingsRoot.minRatio
@@ -551,6 +556,7 @@ Rectangle {
 
                             TextInput {
                                 id: emailInput
+                                font.family: systemFontFamily
                                 anchors.fill: parent
                                 anchors.margins: 10 * settingsRoot.minRatio
                                 text: settingsRoot.playerEmail
@@ -592,18 +598,18 @@ Rectangle {
                                 emailErrorText.visible = false
                                 emailSuccessText.visible = false
                                 if (emailInput.text.trim() === "") {
-                                    emailErrorText.text = "    L'email ne peut pas être vide"
+                                    emailErrorText.text = "L'email ne peut pas être vide"
                                     emailErrorText.visible = true
                                     return
                                 }
                                 var email = emailInput.text.trim()
                                 if (email.indexOf("@") === -1 || email.indexOf(".") === -1) {
-                                    emailErrorText.text = "    Adresse email invalide"
+                                    emailErrorText.text = "Adresse email invalide"
                                     emailErrorText.visible = true
                                     return
                                 }
                                 if (email === settingsRoot.playerEmail) {
-                                    emailErrorText.text = "    Le nouvel email est identique à l'actuel"
+                                    emailErrorText.text = "Le nouvel email est identique à l'actuel"
                                     emailErrorText.visible = true
                                     return
                                 }
@@ -619,6 +625,7 @@ Rectangle {
 
                     Text {
                         id: emailErrorText
+                        leftPadding: 30 * settingsRoot.minRatio
                         width: parent.width
                         text: ""
                         font.pixelSize: 24 * settingsRoot.minRatio
@@ -630,7 +637,8 @@ Rectangle {
                     Text {
                         id: emailSuccessText
                         width: parent.width
-                        text: "    Email modifié avec succès"
+                        leftPadding: 30 * settingsRoot.minRatio
+                        text: "Email modifié avec succès"
                         font.pixelSize: 24 * settingsRoot.minRatio
                         color: "#66ff66"
                         visible: false
@@ -645,9 +653,7 @@ Rectangle {
 
                     // Anonymiser mon profil
                     Row {
-                        //width: parent.width
                         spacing: 30 * settingsRoot.minRatio
-                        //topPadding: 10 * settingsRoot.minRatio
 
                         Item {
                             height: 40 * settingsRoot.minRatio
@@ -664,7 +670,7 @@ Rectangle {
 
                         Item {
                             height: 40 * settingsRoot.minRatio
-                            width: parent.width * 0.001
+                            width: parent.width * 0.06
                         }
 
                         Image {
@@ -687,7 +693,8 @@ Rectangle {
 
                     Text {
                         width: parent.width
-                        text: "    Les autres joueurs verront \"Anonyme\" comme pseudo et ne verront plus vos statistiques en cliquant sur votre avatar"
+                        leftPadding: 30 * settingsRoot.minRatio
+                        text: "Les autres joueurs verront \"Anonyme\" comme pseudo et ne verront plus vos statistiques en cliquant sur votre avatar"
                         font.pixelSize: 20 * settingsRoot.minRatio
                         color: "#888888"
                         font.italic: true
@@ -783,7 +790,8 @@ Rectangle {
                     }
 
                     Text {
-                        text: "   Une suggestion, un bug ou un avis ? Cliquez ici"
+                        text: "Une suggestion, un bug ou un avis ? Cliquez ici"
+                        leftPadding: 14 * settingsRoot.minRatio
                         font.pixelSize: 26 * settingsRoot.minRatio
                         color: "#cccccc"
                         wrapMode: Text.WordWrap
@@ -823,7 +831,7 @@ Rectangle {
     Popup {
         id: deleteConfirmPopup
         anchors.centerIn: parent
-        width: Math.min(parent.width * 0.8, 500 * settingsRoot.minRatio)
+        width: parent.width * 0.4
         height: deletePopupColumn.height + 60 * settingsRoot.minRatio
         modal: true
         focus: true

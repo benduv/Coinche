@@ -11,6 +11,11 @@ ApplicationWindow {
     height: 768
     title: "Jeu de Coinche"
 
+    FontLoader {
+        id: orbitronFont
+        source: "qrc:/resources/fonts/Orbitron.ttf"
+    }
+
     // Son de démarrage
     MediaPlayer {
         id: startupSound
@@ -660,6 +665,7 @@ ApplicationWindow {
                     Text {
                         text: "COINCHE"
                         font.pixelSize: 66 * mainWindow.minRatio
+                        font.family: orbitronFont.name
                         font.bold: true
                         color: "#FFD700"
                         Layout.alignment: Qt.AlignHCenter
@@ -771,7 +777,8 @@ ApplicationWindow {
 
                                 Text {
                                     text: "Jouer en ligne"
-                                    font.pixelSize: 50 * mainWindow.minRatio
+                                    font.pixelSize: 44 * mainWindow.minRatio
+                                    font.family: orbitronFont.name
                                     font.bold: true
                                     color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
                                     anchors.verticalCenter: parent.verticalCenter
@@ -821,7 +828,8 @@ ApplicationWindow {
 
                                 Text {
                                     text: " Partie privée "
-                                    font.pixelSize: 50 * mainWindow.minRatio
+                                    font.pixelSize: 44 * mainWindow.minRatio
+                                    font.family: orbitronFont.name
                                     font.bold: true
                                     color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
                                     anchors.verticalCenter: parent.verticalCenter
@@ -869,7 +877,8 @@ ApplicationWindow {
 
                                 Text {
                                     text: " Entraînement "
-                                    font.pixelSize: 50 * mainWindow.minRatio
+                                    font.pixelSize: 44 * mainWindow.minRatio
+                                    font.family: orbitronFont.name
                                     font.bold: true
                                     color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
                                     anchors.verticalCenter: parent.verticalCenter
@@ -1159,8 +1168,6 @@ ApplicationWindow {
                     mainWindow.loggedInPlayerName = ""
                     mainWindow.accountType = ""
                     networkManager.clearCredentials()
-                    // Empêcher Settings.onDestruction de remettre en paysage
-                    skipLandscapeRestore = true
                     if (Qt.platform.os === "android") {
                         orientationHelper.setPortrait()
                     }
