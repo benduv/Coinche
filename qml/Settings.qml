@@ -158,15 +158,6 @@ Rectangle {
         contentHeight: settingsColumn.height
         boundsBehavior: Flickable.StopAtBounds
 
-        // Scroll vers un champ quand il obtient le focus
-        function scrollToItem(item) {
-            var targetY = item.mapToItem(settingsColumn, 0, 0).y
-            var scrollTarget = targetY - 20 * settingsRoot.minRatio
-            if (scrollTarget > 0) {
-                settingsScrollView.contentY = Math.min(scrollTarget, settingsScrollView.contentHeight - settingsScrollView.height)
-            }
-        }
-
         Column {
             id: settingsColumn
             width: parent.width
@@ -456,7 +447,6 @@ Rectangle {
                                 clip: true
                                 maximumLength: 12
                                 onTextChanged: if (text.indexOf(' ') >= 0) text = text.replace(/ /g, '')
-                                onActiveFocusChanged: if (activeFocus) settingsScrollView.scrollToItem(pseudoInput.parent)
                             }
                         }
 
@@ -566,7 +556,6 @@ Rectangle {
                                 clip: true
                                 inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
                                 onTextChanged: if (text.indexOf(' ') >= 0) text = text.replace(/ /g, '')
-                                onActiveFocusChanged: if (activeFocus) settingsScrollView.scrollToItem(emailInput.parent)
                             }
                         }
 
@@ -790,7 +779,7 @@ Rectangle {
                     }
 
                     Text {
-                        text: "Une suggestion, un bug ou un avis ? Cliquez ici"
+                        text: "Une suggestion, un bug ou un avis à partager ? Cliquez ci-dessous !"
                         leftPadding: 14 * settingsRoot.minRatio
                         font.pixelSize: 26 * settingsRoot.minRatio
                         color: "#cccccc"
@@ -822,8 +811,215 @@ Rectangle {
                 }
             }
 
+            // ===================== REMERCIEMENTS =====================
+            Column {
+                anchors.centerIn: parent
+                width: parent.width - 40 * settingsRoot.minRatio
+                spacing: 20 * settingsRoot.minRatio
+
+                Row {
+                    spacing: 20 * settingsRoot.minRatio
+
+                    Rectangle {
+                        width: 60 * settingsRoot.minRatio
+                        height: 60 * settingsRoot.minRatio
+                        radius: 10 * settingsRoot.minRatio
+                        color: "#FFD700"
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "♥"
+                            font.pixelSize: 36 * settingsRoot.minRatio
+                            color: "#2a2a2a"
+                        }
+                    }
+
+                    Text {
+                        text: "REMERCIEMENTS"
+                        font.pixelSize: 40 * settingsRoot.minRatio
+                        font.bold: true
+                        color: "#FFD700"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                Button {
+                    width: parent.width * 0.6
+                    height: 80 * settingsRoot.minRatio
+                    anchors.horizontalCenter: parent.horizontalCenter
+
+                    background: Rectangle {
+                        color: parent.down ? "#444444" : (parent.hovered ? "#555555" : "#3a3a3a")
+                        radius: 10 * settingsRoot.minRatio
+                        border.color: "#FFD700"
+                        border.width: 2 * settingsRoot.minRatio
+                    }
+
+                    contentItem: Text {
+                        text: "Crédits"
+                        font.pixelSize: 30 * settingsRoot.minRatio
+                        font.bold: true
+                        color: "#FFD700"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    onClicked: creditsPopup.open()
+                }
+            }
+
             // Espace supplémentaire pour scroller les champs au-dessus du clavier
             Item { height: settingsRoot.height * 0.2; width: 1 }
+        }
+    }
+
+    // Popup Crédits
+    Popup {
+        id: creditsPopup
+        anchors.centerIn: parent
+        width: parent.width * 0.7
+        height: creditsColumn.height + 80 * settingsRoot.minRatio
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            color: "#2a2a2a"
+            radius: 15 * settingsRoot.minRatio
+            border.color: "#FFD700"
+            border.width: 2 * settingsRoot.minRatio
+        }
+
+        Column {
+            id: creditsColumn
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: 30 * settingsRoot.minRatio
+            width: parent.width - 60 * settingsRoot.minRatio
+            spacing: 30 * settingsRoot.minRatio
+
+            Text {
+                text: "Crédits"
+                font.pixelSize: 42 * settingsRoot.minRatio
+                font.bold: true
+                color: "#FFD700"
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            // Qt
+            Column {
+                width: parent.width
+                spacing: 6 * settingsRoot.minRatio
+
+                Text {
+                    text: "Qt 6"
+                    font.pixelSize: 30 * settingsRoot.minRatio
+                    font.bold: true
+                    color: "white"
+                }
+                Text {
+                    text: "Licence : GNU Lesser General Public License v3 (LGPL v3)"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "www.qt.io/licensing"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://www.qt.io/licensing")
+                    }
+                }
+            }
+
+            // OpenSSL
+            Column {
+                width: parent.width
+                spacing: 6 * settingsRoot.minRatio
+
+                Text {
+                    text: "OpenSSL 3"
+                    font.pixelSize: 30 * settingsRoot.minRatio
+                    font.bold: true
+                    color: "white"
+                }
+                Text {
+                    text: "Licence : Apache License 2.0"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "www.openssl.org/source/license.html"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://www.openssl.org/source/license.html")
+                    }
+                }
+            }
+
+            // Orbitron
+            Column {
+                width: parent.width
+                spacing: 6 * settingsRoot.minRatio
+
+                Text {
+                    text: "Police Orbitron"
+                    font.pixelSize: 30 * settingsRoot.minRatio
+                    font.bold: true
+                    color: "white"
+                }
+                Text {
+                    text: "Licence : SIL Open Font License 1.1 (OFL)"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "scripts.sil.org/OFL"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://scripts.sil.org/OFL")
+                    }
+                }
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 160 * settingsRoot.minRatio
+                height: 70 * settingsRoot.minRatio
+
+                background: Rectangle {
+                    color: parent.down ? "#cc0000" : (parent.hovered ? "#ff3333" : "#ff0000")
+                    radius: 8 * settingsRoot.minRatio
+                }
+
+                contentItem: Text {
+                    text: "Fermer"
+                    font.pixelSize: 26 * settingsRoot.minRatio
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: creditsPopup.close()
+            }
         }
     }
 

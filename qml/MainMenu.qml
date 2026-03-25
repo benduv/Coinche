@@ -745,7 +745,7 @@ ApplicationWindow {
 
                     // Bouton Jouer
                     Button {
-                        Layout.preferredWidth: 280 * mainWindow.widthRatio
+                        Layout.preferredWidth: mainWindow.width / 3.35
                         Layout.preferredHeight: 120 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
                         enabled: networkManager.connected
@@ -777,7 +777,7 @@ ApplicationWindow {
 
                                 Text {
                                     text: "Jouer en ligne"
-                                    font.pixelSize: 44 * mainWindow.minRatio
+                                    font.pixelSize: 28 * mainWindow.widthRatio
                                     font.family: orbitronFont.name
                                     font.bold: true
                                     color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
@@ -794,9 +794,9 @@ ApplicationWindow {
                         }
                     }
 
-                    // Bouton Jouer avec des amis
+                    // Bouton Partie Privée
                     Button {
-                        Layout.preferredWidth: 280 * mainWindow.widthRatio
+                        Layout.preferredWidth: mainWindow.width / 3.35
                         Layout.preferredHeight: 120 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
                         enabled: networkManager.connected
@@ -828,7 +828,7 @@ ApplicationWindow {
 
                                 Text {
                                     text: " Partie privée "
-                                    font.pixelSize: 44 * mainWindow.minRatio
+                                    font.pixelSize: 28 * mainWindow.widthRatio
                                     font.family: orbitronFont.name
                                     font.bold: true
                                     color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
@@ -845,7 +845,7 @@ ApplicationWindow {
 
                     // Bouton Mode entraînement
                     Button {
-                        Layout.preferredWidth: 280 * mainWindow.widthRatio
+                        Layout.preferredWidth: mainWindow.width / 3.35
                         Layout.preferredHeight: 120 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
                         enabled: networkManager.connected
@@ -877,7 +877,7 @@ ApplicationWindow {
 
                                 Text {
                                     text: " Entraînement "
-                                    font.pixelSize: 44 * mainWindow.minRatio
+                                    font.pixelSize: 28 * mainWindow.widthRatio
                                     font.family: orbitronFont.name
                                     font.bold: true
                                     color: parent.parent.parent.parent.enabled ? "white" : "#aaaaaa"
@@ -1108,8 +1108,8 @@ ApplicationWindow {
                 Popup {
                     id: avatarSelectorPopup
                     anchors.centerIn: parent
-                    width: Math.min(parent.width, 500 * mainWindow.widthRatio)
-                    height: Math.min(parent.height, 600 * mainWindow.heightRatio)
+                    width: 500 * mainWindow.widthRatio
+                    height: 600 * mainWindow.heightRatio
                     modal: true
                     focus: true
                     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside

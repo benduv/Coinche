@@ -114,15 +114,6 @@ Rectangle {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
 
-        // Scroll vers un champ quand il obtient le focus
-        function scrollToItem(item) {
-            var targetY = item.mapToItem(contentColumn, 0, 0).y
-            var scrollTarget = targetY - 20 * contactRoot.minRatio
-            if (scrollTarget > 0) {
-                mainFlickable.contentY = Math.min(scrollTarget, mainFlickable.contentHeight - mainFlickable.height)
-            }
-        }
-
         Column {
             id: contentColumn
             width: parent.width
@@ -194,7 +185,6 @@ Rectangle {
                                 // Bouton "Suivant" pour passer au champ message
                                 inputMethodHints: Qt.ImhNone
                                 Keys.onReturnPressed: messageArea.forceActiveFocus()
-                                onActiveFocusChanged: if (activeFocus) mainFlickable.scrollToItem(subjectField.parent)
 
                                 Text {
                                     anchors.fill: parent
@@ -268,9 +258,6 @@ Rectangle {
                                         }
                                     }
 
-                                    onActiveFocusChanged: {
-                                        if (activeFocus) mainFlickable.scrollToItem(messageFieldRect)
-                                    }
                                 }
                             }
 

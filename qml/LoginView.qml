@@ -307,7 +307,7 @@ Rectangle {
                             color: "white"
 
                             Text {
-                                text: registerPseudo.text.length === 0 ? "Votre pseudonyme" : ""
+                                text: registerPseudo.displayText.length === 0 ? "Votre pseudonyme" : ""
                                 leftPadding: 16 * loginRoot.minRatio
                                 font.pixelSize: 30 * loginRoot.minRatio
                                 font.family: systemFontFamily
@@ -315,7 +315,7 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
                                 verticalAlignment: Text.AlignVCenter
-                                visible: registerPseudo.text.length === 0
+                                visible: registerPseudo.displayText.length === 0
                             }
                         }
                     }
@@ -351,7 +351,7 @@ Rectangle {
                             color: "white"
 
                             Text {
-                                text: registerEmail.text.length === 0 ? "votre@email.com" : ""
+                                text: registerEmail.displayText.length === 0 ? "votre@email.com" : ""
                                 leftPadding: 16 * loginRoot.minRatio
                                 font.pixelSize: 30 * loginRoot.minRatio
                                 font.family: systemFontFamily
@@ -359,7 +359,7 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
                                 verticalAlignment: Text.AlignVCenter
-                                visible: registerEmail.text.length === 0
+                                visible: registerEmail.displayText.length === 0
                             }
                         }
                     }
@@ -402,7 +402,7 @@ Rectangle {
 
                                 Text {
                                     id: regPwdTxtLogin
-                                    text: registerPassword.text.length === 0 ? "Votre mot de passe" : ""
+                                    text: registerPassword.displayText.length === 0 ? "Votre mot de passe" : ""
                                     leftPadding: 16 * loginRoot.minRatio
                                     font.pixelSize: 30 * loginRoot.minRatio
                                     font.family: systemFontFamily
@@ -410,7 +410,7 @@ Rectangle {
                                     anchors.fill: parent
                                     anchors.leftMargin: 10 * loginRoot.minRatio
                                     verticalAlignment: Text.AlignVCenter
-                                    visible: registerPassword.text.length === 0
+                                    visible: registerPassword.displayText.length === 0
                                 }
                             }
 
@@ -703,7 +703,7 @@ Rectangle {
                             anchors.fill: parent
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
-                            visible: verificationCodeField.text.length === 0
+                            visible: verificationCodeField.displayText.length === 0
                         }
                     }
 
@@ -963,7 +963,7 @@ Rectangle {
                             color: "white"
 
                             Text {
-                                text: loginEmail.text.length === 0 ? "votre@email.com" : ""
+                                text: loginEmail.displayText.length === 0 ? "votre@email.com" : ""
                                 leftPadding: 16 * loginRoot.minRatio
                                 font.pixelSize: 30 * loginRoot.minRatio
                                 font.family: systemFontFamily
@@ -971,7 +971,7 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
                                 verticalAlignment: Text.AlignVCenter
-                                visible: loginEmail.text.length === 0
+                                visible: loginEmail.displayText.length === 0
                             }
                         }
                     }
@@ -1013,7 +1013,7 @@ Rectangle {
                                 color: "white"
 
                                 Text {
-                                    text: loginPassword.text.length === 0 ? "Votre mot de passe" : ""
+                                    text: loginPassword.displayText.length === 0 ? "Votre mot de passe" : ""
                                     leftPadding: 16 * loginRoot.minRatio
                                     font.pixelSize: 30 * loginRoot.minRatio
                                     font.family: systemFontFamily
@@ -1021,7 +1021,7 @@ Rectangle {
                                     anchors.fill: parent
                                     anchors.leftMargin: 10 * loginRoot.minRatio
                                     verticalAlignment: Text.AlignVCenter
-                                    visible: loginPassword.text.length === 0
+                                    visible: loginPassword.displayText.length === 0
                                 }
                             }
 
@@ -1270,14 +1270,14 @@ Rectangle {
                             color: "white"
 
                             Text {
-                                text: guestPseudo.text.length === 0 ? "   Invité123" : ""
+                                text: guestPseudo.displayText.length === 0 ? "   Invité123" : ""
                                 font.pixelSize: 30 * loginRoot.minRatio
                                 font.family: systemFontFamily
                                 color: "#888888"
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
                                 verticalAlignment: Text.AlignVCenter
-                                visible: guestPseudo.text.length === 0
+                                visible: guestPseudo.displayText.length === 0
                             }
                         }
                     }
@@ -1544,7 +1544,7 @@ Rectangle {
                             color: "white"
 
                             Text {
-                                text: forgotEmail.text.length === 0 ? "votre@email.com" : ""
+                                text: forgotEmail.displayText.length === 0 ? "votre@email.com" : ""
                                 leftPadding: 16 * loginRoot.minRatio
                                 font.pixelSize: 30 * loginRoot.minRatio
                                 font.family: systemFontFamily
@@ -1552,7 +1552,7 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.leftMargin: 10 * loginRoot.minRatio
                                 verticalAlignment: Text.AlignVCenter
-                                visible: forgotEmail.text.length === 0
+                                visible: forgotEmail.displayText.length === 0
                             }
                         }
                     }

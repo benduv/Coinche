@@ -163,7 +163,7 @@ Item {
             }
 
             contentItem: Text {
-                text: "Retour"
+                text: "Retour "
                 font.pixelSize: 50 * root.minRatio
                 color: "white"
                 horizontalAlignment: Text.AlignHCenter
@@ -180,8 +180,8 @@ Item {
     Popup {
         id: joinLobbyPopup
         anchors.centerIn: parent
-        width: 700 * root.widthRatio
-        height: 600 * root.heightRatio
+        width: parent.width * 0.4
+        height: parent.height * 0.6
         modal: true
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -213,31 +213,57 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
             }
 
-            TextField {
-                id: lobbyCodeInput
-                font.family: systemFontFamily
+            Item {
                 Layout.preferredWidth: 400 * root.widthRatio
                 Layout.preferredHeight: 110 * root.heightRatio
                 Layout.alignment: Qt.AlignHCenter
-                font.pixelSize: 36 * root.minRatio
-                horizontalAlignment: Text.AlignHCenter
-                placeholderText: "XXXX"
-                maximumLength: 4
 
-                background: Rectangle {
-                    color: "#1a1a1a"
-                    radius: 8 * root.minRatio
-                    border.color: lobbyCodeInput.focus ? "#00BFFF" : "#555555"
-                    border.width: 2 * root.minRatio
-                }
+                TextField {
+                    id: lobbyCodeInput
+                    onTextChanged: joinCodeError.visible = false
+                    anchors.fill: parent
+                    font.family: systemFontFamily
+                    font.pixelSize: 36 * root.minRatio
+                    horizontalAlignment: Text.AlignHCenter
+                    placeholderText: ""
+                    maximumLength: 4
+                    color: "white"
 
-                onAccepted: {
-                    if (text.length === 4) {
+                    background: Rectangle {
+                        color: "#1a1a1a"
+                        radius: 8 * root.minRatio
+                        border.color: lobbyCodeInput.focus ? "#00BFFF" : "#555555"
+                        border.width: 2 * root.minRatio
+                    }
+
+                    onAccepted: {
+                        if (text.length !== 4) {
+                            joinCodeError.visible = true
+                            return
+                        }
                         networkManager.joinPrivateLobby(text.toUpperCase())
                         joinLobbyPopup.close()
                         lobbyCodeInput.text = ""
                     }
                 }
+
+                Text {
+                    text: "XXXX"
+                    font.family: systemFontFamily
+                    font.pixelSize: 36 * root.minRatio
+                    color: "#888888"
+                    anchors.centerIn: parent
+                    visible: lobbyCodeInput.displayText.length === 0
+                }
+            }
+
+            Text {
+                id: joinCodeError
+                text: "Le code doit contenir 4 caractères"
+                font.pixelSize: 28 * root.minRatio
+                color: "#ff4444"
+                Layout.alignment: Qt.AlignHCenter
+                visible: false
             }
 
             Row {
@@ -245,7 +271,7 @@ Item {
                 spacing: 40 * root.minRatio
 
                 Button {
-                    width: 200 * root.widthRatio
+                    width: 210 * root.widthRatio
                     height: 120 * root.heightRatio
 
                     background: Rectangle {
@@ -254,16 +280,18 @@ Item {
                     }
 
                     contentItem: Text {
-                        text: "Rejoindre"
+                        text: "Rejoindre "
                         font.pixelSize: 36 * root.minRatio
                         color: "white"
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
 
-                    enabled: lobbyCodeInput.text.length === 4
-
                     onClicked: {
+                        if (lobbyCodeInput.text.length !== 4) {
+                            joinCodeError.visible = true
+                            return
+                        }
                         networkManager.joinPrivateLobby(lobbyCodeInput.text.toUpperCase())
                         joinLobbyPopup.close()
                         lobbyCodeInput.text = ""
@@ -271,7 +299,7 @@ Item {
                 }
 
                 Button {
-                    width: 200 * root.widthRatio
+                    width: 210 * root.widthRatio
                     height: 120 * root.heightRatio
 
                     background: Rectangle {
