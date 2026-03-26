@@ -272,7 +272,7 @@ Rectangle {
             }
 
             // Bouton demander en ami / déjà ami
-            Button {
+            AppButton {
                 visible: !statsPopup.hideFriendButton
                 width: parent.width / 2.3
                 height: visible ? 100 * minRatio : 0

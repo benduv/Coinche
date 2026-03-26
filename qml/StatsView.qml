@@ -1,9 +1,15 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 
 Rectangle {
     id: statsRoot
+
+    SoundEffect {
+        id: backSound
+        source: "qrc:/resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav"
+    }
     anchors.fill: parent
     color: "transparent"
 
@@ -70,6 +76,7 @@ Rectangle {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
+                if (AudioSettings.effectsEnabled) backSound.play()
                 backToMenu()
             }
             onEntered: {
@@ -178,12 +185,24 @@ Rectangle {
             Item { Layout.preferredHeight: 10 * minRatio }
 
             // Section Victoires
-            Text {
-                text: "🏆 VICTOIRES"
-                font.pixelSize: Math.min(28 * minRatio, 24)
-                font.bold: true
-                color: "#FFD700"
+            Row {
+                spacing: 8 * minRatio
                 Layout.topMargin: 10 * minRatio
+
+                Image {
+                    source: "qrc:/resources/trophy-svgrepo-com.svg"
+                    width: Math.min(28 * minRatio, 24)
+                    height: Math.min(28 * minRatio, 24)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "VICTOIRES"
+                    font.pixelSize: Math.min(28 * minRatio, 24)
+                    font.bold: true
+                    color: "#FFD700"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             // Grid layout pour les cartes de stats
@@ -355,12 +374,24 @@ Rectangle {
             }
 
             // Section Coinches
-            Text {
-                text: "🎯 COINCHES"
-                font.pixelSize: Math.min(28 * minRatio, 24)
-                font.bold: true
-                color: "#ff6666"
+            Row {
+                spacing: 8 * minRatio
                 Layout.topMargin: 10 * minRatio
+
+                Image {
+                    source: "qrc:/resources/target-svgrepo-com.svg"
+                    width: Math.min(28 * minRatio, 24)
+                    height: Math.min(28 * minRatio, 24)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "COINCHES"
+                    font.pixelSize: Math.min(28 * minRatio, 24)
+                    font.bold: true
+                    color: "#ff6666"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             GridLayout {
@@ -485,12 +516,24 @@ Rectangle {
             }
 
             // Section Annonces Coinchées (coinches subies)
-            Text {
-                text: "🛡️ COINCHES SUBIES"
-                font.pixelSize: Math.min(28 * minRatio, 24)
-                font.bold: true
-                color: "#6699ff"
+            Row {
+                spacing: 8 * minRatio
                 Layout.topMargin: 10 * minRatio
+
+                Image {
+                    source: "qrc:/resources/shield-svgrepo-com.svg"
+                    width: Math.min(28 * minRatio, 24)
+                    height: Math.min(28 * minRatio, 24)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "COINCHES SUBIES"
+                    font.pixelSize: Math.min(28 * minRatio, 24)
+                    font.bold: true
+                    color: "#6699ff"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             GridLayout {
@@ -615,12 +658,24 @@ Rectangle {
             }
 
             // Section Surcoinches
-            Text {
-                text: "🔥 SURCOINCHES"
-                font.pixelSize: Math.min(28 * minRatio, 24)
-                font.bold: true
-                color: "#ff9900"
+            Row {
+                spacing: 8 * minRatio
                 Layout.topMargin: 10 * minRatio
+
+                Image {
+                    source: "qrc:/resources/fire-svgrepo-com.svg"
+                    width: Math.min(28 * minRatio, 24)
+                    height: Math.min(28 * minRatio, 24)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "SURCOINCHES"
+                    font.pixelSize: Math.min(28 * minRatio, 24)
+                    font.bold: true
+                    color: "#ff9900"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             GridLayout {
@@ -745,12 +800,24 @@ Rectangle {
             }
 
             // Section Surcoinches Subies
-            Text {
-                text: "🛡️ SURCOINCHES SUBIES"
-                font.pixelSize: Math.min(28 * minRatio, 24)
-                font.bold: true
-                color: "#cc66ff"
+            Row {
+                spacing: 8 * minRatio
                 Layout.topMargin: 10 * minRatio
+
+                Image {
+                    source: "qrc:/resources/shield2-svgrepo-com.svg"
+                    width: Math.min(28 * minRatio, 24)
+                    height: Math.min(28 * minRatio, 24)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "SURCOINCHES SUBIES"
+                    font.pixelSize: Math.min(28 * minRatio, 24)
+                    font.bold: true
+                    color: "#cc66ff"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             GridLayout {
@@ -877,12 +944,24 @@ Rectangle {
             }
 
             // Section Capots
-            Text {
-                text: "💥 CAPOTS"
-                font.pixelSize: Math.min(28 * minRatio, 24)
-                font.bold: true
-                color: "#ff6666"
+            Row {
+                spacing: 8 * minRatio
                 Layout.topMargin: 10 * minRatio
+
+                Image {
+                    source: "qrc:/resources/bolt-svgrepo-com.svg"
+                    width: Math.min(28 * minRatio, 24)
+                    height: Math.min(28 * minRatio, 24)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "CAPOTS"
+                    font.pixelSize: Math.min(28 * minRatio, 24)
+                    font.bold: true
+                    color: "#ff6666"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             GridLayout {
@@ -1051,12 +1130,24 @@ Rectangle {
             }
 
             // Section Générales
-            Text {
-                text: "⭐ GÉNÉRALES"
-                font.pixelSize: Math.min(28 * minRatio, 24)
-                font.bold: true
-                color: "#FF9800"
+            Row {
+                spacing: 8 * minRatio
                 Layout.topMargin: 10 * minRatio
+
+                Image {
+                    source: "qrc:/resources/star-svgrepo-com.svg"
+                    width: Math.min(28 * minRatio, 24)
+                    height: Math.min(28 * minRatio, 24)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "GÉNÉRALES"
+                    font.pixelSize: Math.min(28 * minRatio, 24)
+                    font.bold: true
+                    color: "#FF9800"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             GridLayout {
@@ -1183,7 +1274,7 @@ Rectangle {
             Item { Layout.preferredHeight: 10 * minRatio }
 
             // Bouton Retour avec effet moderne
-            Button {
+            AppButton {
                 Layout.preferredWidth: Math.min(300 * widthRatio, parent.width * 0.8)
                 Layout.preferredHeight: 120 * heightRatio
                 Layout.alignment: Qt.AlignHCenter
@@ -1216,7 +1307,7 @@ Rectangle {
                     }
 
                     Text {
-                        text: "RETOUR AU MENU"
+                        text: "RETOUR AU MENU "
                         font.pixelSize: Math.min(32 * minRatio, 20)
                         font.bold: true
                         color: "white"

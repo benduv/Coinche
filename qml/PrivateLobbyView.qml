@@ -58,7 +58,7 @@ Item {
             spacing: 60 * root.minRatio
 
             // Bouton Hôte
-            Button {
+            AppButton {
                 width: 550 * root.widthRatio
                 height: 400 * root.heightRatio
 
@@ -75,9 +75,10 @@ Item {
                     anchors.centerIn: parent
                     spacing: 15 * root.minRatio
 
-                    Text {
-                        text: "👑"
-                        font.pixelSize: 80 * root.minRatio
+                    Image {
+                        source: "qrc:/resources/crown-svgrepo-com.svg"
+                        width: 80 * root.minRatio
+                        height: 80 * root.minRatio
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
 
@@ -104,7 +105,7 @@ Item {
             }
 
             // Bouton Rejoindre
-            Button {
+            AppButton {
                 width: 550 * root.widthRatio
                 height: 400 * root.heightRatio
 
@@ -121,9 +122,10 @@ Item {
                     anchors.centerIn: parent
                     spacing: 15 * root.minRatio
 
-                    Text {
-                        text: "🎮"
-                        font.pixelSize: 80 * root.minRatio
+                    Image {
+                        source: "qrc:/resources/video-game-svgrepo-com.svg"
+                        width: 80 * root.minRatio
+                        height: 80 * root.minRatio
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
 
@@ -150,7 +152,7 @@ Item {
         }
 
         // Bouton Retour
-        Button {
+        AppButton {
             Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: 40 * root.minRatio
             width: 400 * root.widthRatio
@@ -270,7 +272,7 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 spacing: 40 * root.minRatio
 
-                Button {
+                AppButton {
                     width: 210 * root.widthRatio
                     height: 120 * root.heightRatio
 
@@ -298,7 +300,7 @@ Item {
                     }
                 }
 
-                Button {
+                AppButton {
                     width: 210 * root.widthRatio
                     height: 120 * root.heightRatio
 
@@ -323,6 +325,7 @@ Item {
             }
         }
     }
+
 
     // Écouter les erreurs du serveur
     Connections {
@@ -376,7 +379,7 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            Button {
+            AppButton {
                 Layout.alignment: Qt.AlignHCenter
                 width: 150 * root.widthRatio
                 height: 120 * root.heightRatio

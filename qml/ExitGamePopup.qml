@@ -87,7 +87,7 @@ Rectangle {
                 spacing: popup.width * 0.1
 
                 // Bouton Non
-                Button {
+                AppButton {
                     width: popup.width * 0.35
                     height: popup.height * 0.25
 
@@ -114,7 +114,7 @@ Rectangle {
                 }
 
                 // Bouton Oui
-                Button {
+                AppButton {
                     width: popup.width * 0.35
                     height: popup.height * 0.25
 

@@ -75,9 +75,10 @@ Rectangle {
             spacing: 20 * minRatio
 
             // Icône Robot
-            Text {
-                text: "\u{1F916}"
-                font.pixelSize: 60 * minRatio
+            Image {
+                source: "qrc:/resources/robot-svgrepo-com.svg"
+                Layout.preferredWidth: 60 * minRatio
+                Layout.preferredHeight: 60 * minRatio
                 Layout.alignment: Qt.AlignHCenter
 
                 SequentialAnimation on scale {
@@ -111,7 +112,7 @@ Rectangle {
             }
 
             // Bouton OK
-            Button {
+            AppButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 100 * heightRatio
 

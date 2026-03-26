@@ -111,11 +111,24 @@ Rectangle {
                     Layout.alignment: Qt.AlignHCenter
                 }
 
-                Text {
-                    text: root.isHost ? "👑 Vous êtes l'hôte" : "Partagez ce code !"
-                    font.pixelSize: 32 * root.minRatio
-                    color: root.isHost ? "#FFD700" : "#888888"
+                Row {
                     Layout.alignment: Qt.AlignHCenter
+                    spacing: 8 * root.minRatio
+
+                    Image {
+                        visible: root.isHost
+                        source: "qrc:/resources/crown-svgrepo-com.svg"
+                        width: 32 * root.minRatio
+                        height: 32 * root.minRatio
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: root.isHost ? "Vous êtes l'hôte" : "Partagez ce code !"
+                        font.pixelSize: 32 * root.minRatio
+                        color: root.isHost ? "#FFD700" : "#888888"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
 
                 Item {
@@ -380,7 +393,7 @@ Rectangle {
             spacing: 300 * root.minRatio
 
             // Bouton Prêt / Annuler
-            Button {
+            AppButton {
                 id: readyButton
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -430,7 +443,7 @@ Rectangle {
             }
 
             // Bouton Jouer (visible seulement pour l'hôte)
-            Button {
+            AppButton {
                 id: playButton
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -487,7 +500,7 @@ Rectangle {
             }
 
             // Bouton Quitter
-            Button {
+            AppButton {
                 Layout.preferredWidth: 360 * root.widthRatio
                 Layout.fillHeight: true
 
@@ -598,7 +611,7 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            Button {
+            AppButton {
                 Layout.alignment: Qt.AlignHCenter
                 width: 180 * root.widthRatio
                 height: 120 * root.heightRatio

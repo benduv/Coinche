@@ -232,7 +232,7 @@ Rectangle {
         }
 
         // Bouton Annuler
-        Button {
+        AppButton {
             Layout.preferredWidth: 250 * root.widthRatio
             Layout.preferredHeight: 120 * root.heightRatio
             Layout.alignment: Qt.AlignHCenter

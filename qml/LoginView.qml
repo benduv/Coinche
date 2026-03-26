@@ -2,9 +2,15 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import QtMultimedia
 
 Rectangle {
     id: loginRoot
+
+    SoundEffect {
+        id: backSound
+        source: "qrc:/resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav"
+    }
     anchors.fill: parent
     color: "#0a0a2e"
 
@@ -71,7 +77,7 @@ Rectangle {
                     Item { height: 35 * loginRoot.minRatio }
 
                     // Bouton Créer un compte
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 120 * loginRoot.heightRatio
                         enabled: networkManager.connected
@@ -101,7 +107,7 @@ Rectangle {
                     Item { height: 10 * loginRoot.minRatio }
 
                     // Bouton Se connecter
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 120 * loginRoot.heightRatio
                         enabled: networkManager.connected
@@ -131,7 +137,7 @@ Rectangle {
                     Item { height: 10 * loginRoot.minRatio }
 
                     // Bouton Jouer en tant qu'invité
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 120 * loginRoot.heightRatio
                         enabled: networkManager.connected
@@ -241,6 +247,7 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
+                            if (AudioSettings.effectsEnabled) backSound.play()
                             if (registerScreenRec.showVerificationStep) {
                                 registerScreenRec.showVerificationStep = false
                             } else {
@@ -445,7 +452,7 @@ Rectangle {
                     }
 
                     // Bouton pour ouvrir la sélection d'avatar
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 100 * loginRoot.heightRatio
 
@@ -610,7 +617,7 @@ Rectangle {
                     }
 
                     // Bouton créer
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: loginRoot.isPortrait ? 100 * loginRoot.heightRatio : 90 * loginRoot.heightRatio
 
@@ -719,7 +726,7 @@ Rectangle {
                         opacity: text === "" ? 0 : 1
                     }
 
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: loginRoot.isPortrait ? 100 * loginRoot.heightRatio : 90 * loginRoot.heightRatio
 
@@ -900,6 +907,7 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
+                            if (AudioSettings.effectsEnabled) backSound.play()
                             loginStack.pop()
                         }
                         onEntered: {
@@ -1070,7 +1078,7 @@ Rectangle {
                     }
 
                     // Bouton connexion
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 100 * loginRoot.heightRatio
 
@@ -1104,7 +1112,7 @@ Rectangle {
                     }
 
                     // Bouton "Mot de passe oublié"
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 60 * loginRoot.heightRatio
 
@@ -1208,6 +1216,7 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
+                            if (AudioSettings.effectsEnabled) backSound.play()
                             loginStack.pop()
                         }
                         onEntered: {
@@ -1283,7 +1292,7 @@ Rectangle {
                     }
 
                     // Bouton pour ouvrir la sélection d'avatar
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 100 * loginRoot.heightRatio
 
@@ -1406,7 +1415,7 @@ Rectangle {
                     Item { height: 10 * loginRoot.minRatio }
 
                     // Bouton continuer
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 100 * loginRoot.heightRatio
 
@@ -1481,6 +1490,7 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
+                            if (AudioSettings.effectsEnabled) backSound.play()
                             loginStack.pop()
                         }
                         onEntered: {
@@ -1572,7 +1582,7 @@ Rectangle {
                     }
 
                     // Bouton envoyer
-                    Button {
+                    AppButton {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 100 * loginRoot.heightRatio
 
@@ -1745,7 +1755,7 @@ Rectangle {
                     }
 
                     // Bouton changer
-                    Button {
+                    AppButton {
                         width: parent.width
                         height: loginRoot.isPortrait ? 140 * mainWindow.minRatio : 100 * mainWindow.minRatio
                         anchors.horizontalCenter: parent.horizontalCenter

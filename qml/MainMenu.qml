@@ -232,7 +232,7 @@ ApplicationWindow {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            Button {
+            AppButton {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Mettre à jour"
                 onClicked: {
@@ -744,7 +744,7 @@ ApplicationWindow {
                     }
 
                     // Bouton Jouer
-                    Button {
+                    AppButton {
                         Layout.preferredWidth: mainWindow.width / 3.35
                         Layout.preferredHeight: 120 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
@@ -795,7 +795,7 @@ ApplicationWindow {
                     }
 
                     // Bouton Partie Privée
-                    Button {
+                    AppButton {
                         Layout.preferredWidth: mainWindow.width / 3.35
                         Layout.preferredHeight: 120 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
@@ -844,7 +844,7 @@ ApplicationWindow {
                     }
 
                     // Bouton Mode entraînement
-                    Button {
+                    AppButton {
                         Layout.preferredWidth: mainWindow.width / 3.35
                         Layout.preferredHeight: 120 * mainWindow.heightRatio
                         Layout.alignment: Qt.AlignHCenter
@@ -922,7 +922,7 @@ ApplicationWindow {
                 }
 
                 // Bouton Amis en haut à gauche
-                Button {
+                AppButton {
                     anchors.left: parent.left
                     anchors.top: parent.top
                     anchors.leftMargin: 50 * mainWindow.minRatio
@@ -961,7 +961,7 @@ ApplicationWindow {
                     height: 120 * mainWindow.minRatio
                     z: 101
 
-                    Button {
+                    AppButton {
                         id: statsButton
                         anchors.fill: parent
                         enabled: mainWindow.accountType !== "guest" && networkManager.connected
@@ -1045,7 +1045,7 @@ ApplicationWindow {
                 }
 
                 // Bouton Règles en haut à droite
-                Button {
+                AppButton {
                     anchors.right: parent.right
                     anchors.top: parent.top
                     anchors.rightMargin: 50 * mainWindow.minRatio
@@ -1075,7 +1075,7 @@ ApplicationWindow {
                 }
 
                 // Bouton Réglages en bas à droite
-                Button {
+                AppButton {
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     anchors.rightMargin: 50 * mainWindow.minRatio

@@ -166,7 +166,7 @@ Rectangle {
                 spacing: w * 0.02
 
                 // Fleche gauche
-                Button {
+                AppButton {
                     width: w * 0.15
                     height: h * 0.25
                     enabled: parent.parent.currentBidIndex > 0
@@ -215,7 +215,7 @@ Rectangle {
                 }
 
                 // Fleche droite
-                Button {
+                AppButton {
                     width: w * 0.15
                     height: h * 0.25
                     enabled: parent.parent.currentBidIndex + 3 < parent.parent.allBids.length
@@ -248,7 +248,7 @@ Rectangle {
         }
 
         // ========= Bouton "Passer" =========
-        Button {
+        AppButton {
             text: "Passer"
             font.pixelSize: h * 0.09
             font.bold: true
@@ -337,7 +337,7 @@ Rectangle {
                     onClicked: { bidTimer.stop(); gameModel.makeBid(suitSelector.selectedBidValue, 6); suitSelector.close() }
                 }
                 // Bouton Tout Atout
-                Button {
+                AppButton {
                     width: suitSelector.height * 0.6
                     height: suitSelector.height * 0.6
 
@@ -366,7 +366,7 @@ Rectangle {
                 }
 
                 // Bouton Sans Atout
-                Button {
+                AppButton {
                     width: suitSelector.height * 0.6
                     height: suitSelector.height * 0.6
 
@@ -404,7 +404,7 @@ Rectangle {
     }
 
     // ========= Composants =========
-    component BidButton: Button {
+    component BidButton: AppButton {
         property int bidValue
 
         background: Rectangle {
@@ -427,7 +427,7 @@ Rectangle {
         }
     }
 
-    component SuitButton: Button {
+    component SuitButton: AppButton {
         property color suitColor
         property int suitValue
         property string suitIcon: ""

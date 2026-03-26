@@ -1,8 +1,14 @@
 import QtQuick
 import QtQuick.Controls
+import QtMultimedia
 
 Rectangle {
     id: friendsRoot
+
+    SoundEffect {
+        id: backSound
+        source: "qrc:/resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav"
+    }
     anchors.fill: parent
     color: "transparent"
 
@@ -51,7 +57,10 @@ Rectangle {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: backToMenu()
+            onClicked: {
+                if (AudioSettings.effectsEnabled) backSound.play()
+                backToMenu()
+            }
             onEntered: parent.scale = 1.1
             onExited: parent.scale = 1.0
         }

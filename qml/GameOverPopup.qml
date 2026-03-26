@@ -296,7 +296,7 @@ Rectangle {
             Item { height: 1 * minRatio }
 
             // Bouton Retour au menu amélioré
-            Button {
+            AppButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 140 * heightRatio
                 Layout.maximumHeight: 140 * heightRatio
@@ -330,7 +330,7 @@ Rectangle {
                     }
 
                     Text {
-                        text: "RETOUR AU MENU"
+                        text: "RETOUR AU MENU "
                         font.pixelSize: 40 * minRatio
                         font.bold: true
                         color: "white"

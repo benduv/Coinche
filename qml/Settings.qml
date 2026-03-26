@@ -1,9 +1,15 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 
 Rectangle {
     id: settingsRoot
+
+    SoundEffect {
+        id: backSound
+        source: "qrc:/resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav"
+    }
     anchors.fill: parent
     color: "transparent"
 
@@ -138,6 +144,7 @@ Rectangle {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: {
+                if (AudioSettings.effectsEnabled) backSound.play()
                 settingsRoot.backToMenu()
             }
         }
@@ -188,11 +195,23 @@ Rectangle {
                     width: parent.width - 40 * settingsRoot.minRatio
                     spacing: 20 * settingsRoot.minRatio
 
-                    Text {
-                        text: "🔊 AUDIO"
-                        font.pixelSize: 40 * settingsRoot.minRatio
-                        font.bold: true
-                        color: "#FFD700"
+                    Row {
+                        spacing: 10 * settingsRoot.minRatio
+
+                        Image {
+                            source: "qrc:/resources/speaker-high-volume-svgrepo-com.svg"
+                            width: 40 * settingsRoot.minRatio
+                            height: 40 * settingsRoot.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        Text {
+                            text: "AUDIO"
+                            font.pixelSize: 40 * settingsRoot.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
 
                     // Musique ON/OFF
@@ -277,11 +296,23 @@ Rectangle {
                     width: parent.width - 40 * settingsRoot.minRatio
                     spacing: 20 * settingsRoot.minRatio
 
-                    Text {
-                        text: "🎨 AFFICHAGE"
-                        font.pixelSize: 40 * settingsRoot.minRatio
-                        font.bold: true
-                        color: "#FFD700"
+                    Row {
+                        spacing: 10 * settingsRoot.minRatio
+
+                        Image {
+                            source: "qrc:/resources/artist-palette-svgrepo-com.svg"
+                            width: 40 * settingsRoot.minRatio
+                            height: 40 * settingsRoot.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        Text {
+                            text: "AFFICHAGE"
+                            font.pixelSize: 40 * settingsRoot.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
 
                     // Tri des cartes
@@ -389,11 +420,23 @@ Rectangle {
                     width: parent.width - 40 * settingsRoot.minRatio
                     spacing: 20 * settingsRoot.minRatio
 
-                    Text {
-                        text: "👤 COMPTE"
-                        font.pixelSize: 40 * settingsRoot.minRatio
-                        font.bold: true
-                        color: "#FFD700"
+                    Row {
+                        spacing: 10 * settingsRoot.minRatio
+
+                        Image {
+                            source: "qrc:/resources/bust-in-silhouette-svgrepo-com.svg"
+                            width: 40 * settingsRoot.minRatio
+                            height: 40 * settingsRoot.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        Text {
+                            text: "COMPTE"
+                            font.pixelSize: 40 * settingsRoot.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
 
                     Text {
@@ -455,7 +498,7 @@ Rectangle {
                             width: parent.width * 0.001
                         }
 
-                        Button {
+                        AppButton {
                             id: pseudoButton
                             width: 160 * settingsRoot.minRatio
                             height: 80 * settingsRoot.minRatio
@@ -564,7 +607,7 @@ Rectangle {
                             width: parent.width * 0.001
                         }
 
-                        Button {
+                        AppButton {
                             id: emailButton
                             width: 160 * settingsRoot.minRatio
                             height: 80 * settingsRoot.minRatio
@@ -708,7 +751,7 @@ Rectangle {
                     }
 
                     // Bouton Supprimer mon compte
-                    Button {
+                    AppButton {
                         width: parent.width
                         height: 100 * settingsRoot.minRatio
 
@@ -787,21 +830,23 @@ Rectangle {
                         width: parent.width
                     }
 
-                    Button {
+                    AppButton {
                         width: parent.width * 0.6
                         height: 80 * settingsRoot.minRatio
                         anchors.horizontalCenter: parent.horizontalCenter
 
                         background: Rectangle {
-                            color: parent.down ? "#ccaa00" : (parent.hovered ? "#e6c200" : "#FFD700")
+                            color: parent.down ? "#444444" : (parent.hovered ? "#555555" : "#3a3a3a")
                             radius: 10 * settingsRoot.minRatio
+                            border.color: "#FFD700"
+                            border.width: 2 * settingsRoot.minRatio
                         }
 
                         contentItem: Text {
                             text: "Contacter Nebuludik"
                             font.pixelSize: 30 * settingsRoot.minRatio
                             font.bold: true
-                            color: "#2a2a2a"
+                            color: "#FFD700"
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -812,60 +857,71 @@ Rectangle {
             }
 
             // ===================== REMERCIEMENTS =====================
-            Column {
-                anchors.centerIn: parent
-                width: parent.width - 40 * settingsRoot.minRatio
-                spacing: 20 * settingsRoot.minRatio
+            Rectangle {
+                width: parent.width
+                height: creditsSection.height + 40 * settingsRoot.minRatio
+                color: "#992a2a2a"
+                radius: 10 * settingsRoot.minRatio
+                border.color: "#FFD700"
+                border.width: 2 * settingsRoot.minRatio
 
-                Row {
+                Column {
+                    id: creditsSection
+                    anchors.centerIn: parent
+                    width: parent.width - 40 * settingsRoot.minRatio
                     spacing: 20 * settingsRoot.minRatio
 
-                    Rectangle {
-                        width: 60 * settingsRoot.minRatio
-                        height: 60 * settingsRoot.minRatio
-                        radius: 10 * settingsRoot.minRatio
-                        color: "#FFD700"
-                        anchors.verticalCenter: parent.verticalCenter
+                    Row {
+                        spacing: 20 * settingsRoot.minRatio
+
+                        Rectangle {
+                            width: 60 * settingsRoot.minRatio
+                            height: 60 * settingsRoot.minRatio
+                            radius: 10 * settingsRoot.minRatio
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Image {
+                                anchors.centerIn: parent
+                                width: parent.width * 0.65
+                                height: parent.height * 0.65
+                                source: "qrc:/resources/heart-svgrepo-com.svg"
+                                fillMode: Image.PreserveAspectFit
+                            }
+                        }
 
                         Text {
-                            anchors.centerIn: parent
-                            text: "♥"
-                            font.pixelSize: 36 * settingsRoot.minRatio
-                            color: "#2a2a2a"
+                            text: "REMERCIEMENTS"
+                            font.pixelSize: 40 * settingsRoot.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
                         }
                     }
 
-                    Text {
-                        text: "REMERCIEMENTS"
-                        font.pixelSize: 40 * settingsRoot.minRatio
-                        font.bold: true
-                        color: "#FFD700"
-                        anchors.verticalCenter: parent.verticalCenter
+                    AppButton {
+                        width: parent.width * 0.6
+                        height: 80 * settingsRoot.minRatio
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        background: Rectangle {
+                            color: parent.down ? "#444444" : (parent.hovered ? "#555555" : "#3a3a3a")
+                            radius: 10 * settingsRoot.minRatio
+                            border.color: "#FFD700"
+                            border.width: 2 * settingsRoot.minRatio
+                        }
+
+                        contentItem: Text {
+                            text: "Crédits"
+                            font.pixelSize: 30 * settingsRoot.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: creditsPopup.open()
                     }
-                }
-
-                Button {
-                    width: parent.width * 0.6
-                    height: 80 * settingsRoot.minRatio
-                    anchors.horizontalCenter: parent.horizontalCenter
-
-                    background: Rectangle {
-                        color: parent.down ? "#444444" : (parent.hovered ? "#555555" : "#3a3a3a")
-                        radius: 10 * settingsRoot.minRatio
-                        border.color: "#FFD700"
-                        border.width: 2 * settingsRoot.minRatio
-                    }
-
-                    contentItem: Text {
-                        text: "Crédits"
-                        font.pixelSize: 30 * settingsRoot.minRatio
-                        font.bold: true
-                        color: "#FFD700"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    onClicked: creditsPopup.open()
                 }
             }
 
@@ -879,7 +935,7 @@ Rectangle {
         id: creditsPopup
         anchors.centerIn: parent
         width: parent.width * 0.7
-        height: creditsColumn.height + 80 * settingsRoot.minRatio
+        height: parent.height * 0.8
         modal: true
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -891,13 +947,24 @@ Rectangle {
             border.width: 2 * settingsRoot.minRatio
         }
 
-        Column {
-            id: creditsColumn
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: 30 * settingsRoot.minRatio
-            width: parent.width - 60 * settingsRoot.minRatio
-            spacing: 30 * settingsRoot.minRatio
+        Item {
+            anchors.fill: parent
+
+            ScrollView {
+                id: creditsScrollView
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: creditsCloseButton.top
+                anchors.bottomMargin: 10 * settingsRoot.minRatio
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                Column {
+                    id: creditsColumn
+                    width: creditsScrollView.width - 20 * settingsRoot.minRatio
+                    topPadding: 30 * settingsRoot.minRatio
+                    spacing: 30 * settingsRoot.minRatio
 
             Text {
                 text: "Crédits"
@@ -969,6 +1036,262 @@ Rectangle {
                 }
             }
 
+            // SVG-cards
+            Column {
+                width: parent.width
+                spacing: 6 * settingsRoot.minRatio
+
+                Text {
+                    text: "SVG-cards 1.1"
+                    font.pixelSize: 30 * settingsRoot.minRatio
+                    font.bold: true
+                    color: "white"
+                }
+                Text {
+                    text: "Copyright (c) 2004 David Bellot"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "Licence : GNU Lesser General Public License v2.1 (LGPL v2.1)"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "sourceforge.net/projects/svg-cards"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://sourceforge.net/projects/svg-cards/files/")
+                    }
+                }
+            }
+
+            // Avataaars
+            Column {
+                width: parent.width
+                spacing: 6 * settingsRoot.minRatio
+
+                Text {
+                    text: "Avataaars"
+                    font.pixelSize: 30 * settingsRoot.minRatio
+                    font.bold: true
+                    color: "white"
+                }
+                Text {
+                    text: "Copyright (c) 2017 Fang-Pen Lin"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "Licence : MIT License"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "github.com/fangpenlin/avataaars-generator"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://github.com/fangpenlin/avataaars-generator")
+                    }
+                }
+            }
+
+            // Sons Freesound
+            Column {
+                width: parent.width
+                spacing: 6 * settingsRoot.minRatio
+
+                Text {
+                    text: "Sons (Freesound)"
+                    font.pixelSize: 30 * settingsRoot.minRatio
+                    font.bold: true
+                    color: "white"
+                }
+                Text {
+                    text: "Licence : Creative Commons Attribution 4.0 (CC BY 4.0)"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "rocket.wav by Sergenious"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://freesound.org/s/55847/")
+                    }
+                }
+                Text {
+                    text: "Explosion 1 by Parasonya"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://freesound.org/s/405571/")
+                    }
+                }
+                Text {
+                    text: "card3 by elliottliu"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://freesound.org/s/827603/")
+                    }
+                }
+            }
+
+            // Icônes SVG
+            Column {
+                width: parent.width
+                spacing: 6 * settingsRoot.minRatio
+
+                Text {
+                    text: "Icônes SVG (SVG Repo)"
+                    font.pixelSize: 30 * settingsRoot.minRatio
+                    font.bold: true
+                    color: "white"
+                }
+                Text {
+                    text: "Back square button by Iconsax — MIT License"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "github.com/lusaxweb/iconsax"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://github.com/lusaxweb/iconsax")
+                    }
+                }
+                Text {
+                    text: "Settings 377 by Carbon Design — Apache License"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "github.com/carbon-design-system/carbon"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://github.com/carbon-design-system/carbon")
+                    }
+                }
+                Text {
+                    text: "Question 61 by Iconscout — Apache License"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "github.com/Iconscout/unicons"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://github.com/Iconscout/unicons")
+                    }
+                }
+                Text {
+                    text: "Bot 6 by Boxicons — CC Attribution License (CC BY 4.0)"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "github.com/box-icons/boxicons"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://github.com/box-icons/boxicons")
+                    }
+                }
+                Text {
+                    text: "www.svgrepo.com"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://www.svgrepo.com")
+                    }
+                }
+            }
+
+            // Google Fonts Material Symbols
+            Column {
+                width: parent.width
+                spacing: 6 * settingsRoot.minRatio
+
+                Text {
+                    text: "Google Fonts Material Symbols"
+                    font.pixelSize: 30 * settingsRoot.minRatio
+                    font.bold: true
+                    color: "white"
+                }
+                Text {
+                    text: "Licence : Apache License 2.0"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#cccccc"
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                }
+                Text {
+                    text: "fonts.google.com/icons"
+                    font.pixelSize: 24 * settingsRoot.minRatio
+                    color: "#00aaee"
+                    font.underline: true
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Qt.openUrlExternally("https://fonts.google.com/icons")
+                    }
+                }
+            }
+
             // Orbitron
             Column {
                 width: parent.width
@@ -1000,8 +1323,14 @@ Rectangle {
                 }
             }
 
-            Button {
+                } // fin Column creditsColumn
+            } // fin ScrollView
+
+            AppButton {
+                id: creditsCloseButton
                 anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 15 * settingsRoot.minRatio
                 width: 160 * settingsRoot.minRatio
                 height: 70 * settingsRoot.minRatio
 
@@ -1020,7 +1349,7 @@ Rectangle {
 
                 onClicked: creditsPopup.close()
             }
-        }
+        } // fin Item
     }
 
     // Popup de confirmation de suppression
@@ -1089,7 +1418,7 @@ Rectangle {
                 spacing: 20 * settingsRoot.minRatio
 
                 // Bouton Annuler
-                Button {
+                AppButton {
                     width: 170 * settingsRoot.minRatio
                     height: 100 * settingsRoot.minRatio
 
@@ -1114,7 +1443,7 @@ Rectangle {
                 }
 
                 // Bouton Confirmer
-                Button {
+                AppButton {
                     width: 170 * settingsRoot.minRatio
                     height: 100 * settingsRoot.minRatio
 

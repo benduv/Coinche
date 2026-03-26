@@ -1,8 +1,14 @@
 import QtQuick
 import QtQuick.Controls
+import QtMultimedia
 
 Rectangle {
     id: rulesRoot
+
+    SoundEffect {
+        id: backSound
+        source: "qrc:/resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav"
+    }
     anchors.fill: parent
     color: "transparent"
 
@@ -50,6 +56,7 @@ Rectangle {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             onClicked: {
+                if (AudioSettings.effectsEnabled) backSound.play()
                 rulesRoot.backToMenu()
             }
         }

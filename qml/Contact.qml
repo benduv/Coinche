@@ -1,9 +1,15 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 
 Rectangle {
     id: contactRoot
+
+    SoundEffect {
+        id: backSound
+        source: "qrc:/resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav"
+    }
     anchors.fill: parent
     color: "transparent"
 
@@ -78,6 +84,7 @@ Rectangle {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
+                if (AudioSettings.effectsEnabled) backSound.play()
                 backToMenu()
             }
             onEntered: {
@@ -293,7 +300,7 @@ Rectangle {
                     }
 
                     // Bouton Envoyer
-                    Button {
+                    AppButton {
                         id: sendButton
                         width: parent.width
                         height: contactRoot.isPortrait ? 80 * contactRoot.heightRatio : 75 * contactRoot.heightRatio
@@ -403,7 +410,7 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            Button {
+            AppButton {
                 width: parent.width * 0.6
                 height: 75 * contactRoot.heightRatio
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -484,7 +491,7 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            Button {
+            AppButton {
                 width: parent.width * 0.6
                 height: 75 * contactRoot.heightRatio
                 anchors.horizontalCenter: parent.horizontalCenter

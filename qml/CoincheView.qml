@@ -9,7 +9,7 @@ Rectangle {
     id: rootArea
     anchors.fill: parent
 
-    Rectangle { // Solution du pauvre pour mettre en noire la bar du haut de l'ecran (selfie)
+    Rectangle { // Solution du pauvre pour mettre en noire la barre du haut de l'ecran (selfie)
         anchors.left: parent.right
         anchors.verticalCenter: parent.verticalCenter
         width: parent.width / 5
@@ -45,7 +45,7 @@ Rectangle {
     // Son quand un pli est remporté
     MediaPlayer {
         id: pliWonSound
-        source: "qrc:/resources/sons/701848__perduuus__card-step-2.wav"
+        source: "qrc:/resources/sons/jofae-swing-whoosh-110410.mp3"
         audioOutput: AudioOutput {}
     }
 
@@ -1774,11 +1774,11 @@ Rectangle {
         // =====================
         Rectangle {
             id: scorePanel
-            width: parent.width * 0.2
+            width: parent.width * 0.21
             height: parent.height * 0.2
             anchors.top: parent.top
             anchors.right: parent.right
-            anchors.margins: parent.width * 0.007
+            anchors.margins: parent.width * 0.01
             color: "#1a1a1a"
             opacity: 0.85
             radius: 8
@@ -1795,21 +1795,21 @@ Rectangle {
                 Text {
                     text: ""
                     color: "white"
-                    font.pixelSize: parent.height * 0.2
+                    font.pixelSize: parent.height * 0.18
                     font.bold: true
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
                     text: "Manche"
                     color: "white"
-                    font.pixelSize: parent.height * 0.2
+                    font.pixelSize: parent.height * 0.19
                     font.bold: true
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
                     text: "Total"
                     color: "white"
-                    font.pixelSize: parent.height * 0.2
+                    font.pixelSize: parent.height * 0.19
                     font.bold: true
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
@@ -1820,19 +1820,19 @@ Rectangle {
                     font.family: "Orbitron"
                     font.italic: true
                     font.weight: Font.DemiBold
-                    font.pixelSize: parent.height * 0.2
+                    font.pixelSize: parent.height * 0.18
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
                     text: (gameModel.myPosition % 2 === 0) ? gameModel.scoreTeam1 : gameModel.scoreTeam2
                     color: "white"
-                    font.pixelSize: parent.height * 0.2
+                    font.pixelSize: parent.height * 0.18
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
                     text: (gameModel.myPosition % 2 === 0) ? gameModel.scoreTotalTeam1 : gameModel.scoreTotalTeam2
                     color: "white"
-                    font.pixelSize: parent.height * 0.2
+                    font.pixelSize: parent.height * 0.18
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
 
@@ -1842,19 +1842,19 @@ Rectangle {
                     font.family: "Orbitron"
                     font.italic: true
                     font.weight: Font.DemiBold
-                    font.pixelSize: parent.height * 0.2
+                    font.pixelSize: parent.height * 0.18
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
                     text: (gameModel.myPosition % 2 === 0) ? gameModel.scoreTeam2 : gameModel.scoreTeam1
                     color: "white"
-                    font.pixelSize: parent.height * 0.2
+                    font.pixelSize: parent.height * 0.18
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
                 Text {
                     text: (gameModel.myPosition % 2 === 0) ? gameModel.scoreTotalTeam2 : gameModel.scoreTotalTeam1
                     color: "white"
-                    font.pixelSize: parent.height * 0.2
+                    font.pixelSize: parent.height * 0.18
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 }
             }
@@ -1863,7 +1863,7 @@ Rectangle {
         // =====================
         // BOUTON COINCHE
         // =====================
-        Button {
+        AppButton {
             id: coincheButton
             text: "COINCHE !"
 
@@ -2410,7 +2410,7 @@ Rectangle {
             z: 500
 
             // Bouton Exit
-            Button {
+            AppButton {
                 id: exitButton
                 width: rootArea.height * 0.10
                 height: rootArea.height * 0.12
@@ -2570,13 +2570,13 @@ Rectangle {
         }
 
         // Bouton emoji (bas-gauche)
-        Button {
+        AppButton {
             id: emojiButton
             anchors.bottom: parent.bottom
             anchors.left: parent.left
-            anchors.bottomMargin: parent.height * 0.02
+            anchors.bottomMargin: parent.height * 0.06
             anchors.leftMargin: parent.width * 0.01
-            width: rootArea.height * 0.1
+            width: rootArea.height * 0.08
             height: rootArea.height * 0.1
             padding: 0
             z: 500
@@ -2796,7 +2796,7 @@ Rectangle {
                 anchors.margins: parent.height * 0.1
                 spacing: parent.height * 0.08
 
-                Button {
+                AppButton {
                     id: surcoincheButton
                     text: "SURCOINCHE ?"
                     Layout.preferredWidth: parent.width * 0.9

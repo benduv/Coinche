@@ -20,6 +20,8 @@
         <file>qml/qmldir</file>
         <file>qml/PlayerStatsPopup.qml</file>
         <file>qml/Rules.qml</file>
+        <file>qml/AppButton.qml</file>
+        <file>qml/AppBackButton.qml</file>
         <file>qml/Contact.qml</file>
         <file>qml/FriendsView.qml</file>
         <file>qml/FriendRequestToast.qml</file>
@@ -100,7 +102,20 @@
         <file>resources/world-wide-signal-svgrepo-com.svg</file>
         <file>resources/friend-svgrepo-com.svg</file>
         <file>resources/private-svgrepo-com.svg</file>
+        <file>resources/artist-palette-svgrepo-com.svg</file>
+        <file>resources/bolt-svgrepo-com.svg</file>
+        <file>resources/star-svgrepo-com.svg</file>
+        <file>resources/target-svgrepo-com.svg</file>
+        <file>resources/shield-svgrepo-com.svg</file>
+        <file>resources/shield2-svgrepo-com.svg</file>
+        <file>resources/fire-svgrepo-com.svg</file>
+        <file>resources/trophy-svgrepo-com.svg</file>
+        <file>resources/video-game-svgrepo-com.svg</file>
+        <file>resources/speaker-high-volume-svgrepo-com.svg</file>
+        <file>resources/robot-svgrepo-com.svg</file>
+        <file>resources/bust-in-silhouette-svgrepo-com.svg</file>
         <file>resources/bot-svgrepo-com.svg</file>
+        <file>resources/crown-svgrepo-com.svg</file>
         <file>resources/drag-handle-vertical-1-svgrepo-com.svg</file>
         <file>resources/fonts/Orbitron.ttf</file>
         <file>resources/switchon-svgrepo-com.svg</file>
@@ -138,7 +153,7 @@
         <file>resources/sons/watr-double-overhead-11517.mp3</file>
         <file>resources/sons/lofi-boy-night-waves-lofi-relax-instrumental-278248.mp3</file>
         <file>resources/sons/card-sounds-35956.mp3</file>
-        <file>resources/sons/701848__perduuus__card-step-2.wav</file>
+        <file>resources/sons/jofae-swing-whoosh-110410.mp3</file>
         <file>resources/sons/827603__elliottliu__card3.wav</file>
         <file>resources/sons/727968__nomentero__ufo-flying-retro.wav</file>
         <file>resources/sons/342299__kruud__clock-128-bpm-half-speed.wav</file>
@@ -146,5 +161,7 @@
         <file>resources/sons/55847__sergenious__rocket.wav</file>
         <file>resources/sons/405571__parasonya__explosion-1.flac</file>
         <file>resources/sons/511485__mlaudio__cartoon_wink_magic_sparkle.wav</file>
+        <file>resources/sons/146721__leszek_szary__menu-click.wav</file>
+        <file>resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav</file>
     </qresource>
 </RCC>
