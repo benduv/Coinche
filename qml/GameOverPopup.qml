@@ -89,9 +89,11 @@ Rectangle {
             spacing: 10 * minRatio
 
             // Icône (Trophée si gagné, Larme si perdu)
-            Text {
-                text: iWon ? "🏆" : "😢"
-                font.pixelSize: 60 * minRatio
+            Image {
+                visible: iWon
+                source: "qrc:/resources/trophy-svgrepo-com.svg"
+                Layout.preferredWidth: 60 * minRatio
+                Layout.preferredHeight: 60 * minRatio
                 Layout.alignment: Qt.AlignHCenter
 
                 SequentialAnimation on scale {
@@ -100,6 +102,14 @@ Rectangle {
                     NumberAnimation { from: 1.0; to: 1.2; duration: 800; easing.type: Easing.InOutQuad }
                     NumberAnimation { from: 1.2; to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
                 }
+            }
+
+            Image {
+                visible: !iWon
+                source: "qrc:/resources/loudly-crying-face-svgrepo-com.svg"
+                Layout.preferredWidth: 60 * minRatio
+                Layout.preferredHeight: 60 * minRatio
+                Layout.alignment: Qt.AlignHCenter
             }
 
             // Titre
@@ -151,15 +161,32 @@ Rectangle {
                     anchors.centerIn: parent
                     spacing: 8 * minRatio
 
-                    Text {
-                        text: iWon ? "🎉 VOTRE ÉQUIPE A GAGNÉ ! 🎉" : "VOTRE ÉQUIPE A PERDU"
-                        font.pixelSize: 28 * minRatio
-                        font.bold: true
-                        color: iWon ? "#00ff00" : "#ff6666"
+                    RowLayout {
                         Layout.alignment: Qt.AlignHCenter
+                        spacing: 8 * minRatio
 
-                        style: Text.Outline
-                        styleColor: "#000000"
+                        Image {
+                            visible: iWon
+                            source: "qrc:/resources/confetti-svgrepo-com.svg"
+                            Layout.preferredWidth: 28 * minRatio
+                            Layout.preferredHeight: 28 * minRatio
+                        }
+
+                        Text {
+                            text: iWon ? "VOTRE ÉQUIPE A GAGNÉ !" : "VOTRE ÉQUIPE A PERDU"
+                            font.pixelSize: 28 * minRatio
+                            font.bold: true
+                            color: iWon ? "#00ff00" : "#ff6666"
+                            style: Text.Outline
+                            styleColor: "#000000"
+                        }
+
+                        Image {
+                            visible: iWon
+                            source: "qrc:/resources/confetti-svgrepo-com.svg"
+                            Layout.preferredWidth: 28 * minRatio
+                            Layout.preferredHeight: 28 * minRatio
+                        }
                     }
 
                     /*Text {
@@ -185,12 +212,22 @@ Rectangle {
                     anchors.margins: 15 * minRatio
                     spacing: 5 * minRatio
 
-                    Text {
-                        text: "📊 SCORES FINAUX"
-                        font.pixelSize: 24 * minRatio
-                        font.bold: true
-                        color: "#FFD700"
+                    RowLayout {
                         Layout.alignment: Qt.AlignHCenter
+                        spacing: 8 * minRatio
+
+                        Image {
+                            source: "qrc:/resources/increase-stats-svgrepo-com.svg"
+                            Layout.preferredWidth: 24 * minRatio
+                            Layout.preferredHeight: 24 * minRatio
+                        }
+
+                        Text {
+                            text: "SCORES FINAUX"
+                            font.pixelSize: 24 * minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                        }
                     }
 
                     RowLayout {
@@ -324,9 +361,10 @@ Rectangle {
 
                     Item { Layout.fillWidth: true }
 
-                    Text {
-                        text: "🏠"
-                        font.pixelSize: 40 * minRatio
+                    Image {
+                        source: "qrc:/resources/home-fireplace-svgrepo-com.svg"
+                        Layout.preferredWidth: 40 * minRatio
+                        Layout.preferredHeight: 40 * minRatio
                     }
 
                     Text {

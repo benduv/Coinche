@@ -932,9 +932,9 @@ Rectangle {
                                     anchors.bottom: parent.bottom
                                     radius: parent.radius
                                     color: {
-                                        if (gameModel.playTimeRemaining <= 3) return "#B0FF3333"
-                                        if (gameModel.playTimeRemaining <= 7) return "#B0FFAA00"
-                                        return "#B000CC00"
+                                        if (gameModel.playTimeRemaining <= 3) return "#60FF3333"
+                                        if (gameModel.playTimeRemaining <= 7) return "#60FFAA00"
+                                        return "#6000CC00"
                                     }
 
                                     Behavior on height {
@@ -1092,9 +1092,9 @@ Rectangle {
                                 anchors.bottom: parent.bottom
                                 radius: parent.radius
                                 color: {
-                                    if (gameModel.playTimeRemaining <= 3) return "#B0FF3333"
-                                    if (gameModel.playTimeRemaining <= 7) return "#B0FFAA00"
-                                    return "#B000CC00"
+                                    if (gameModel.playTimeRemaining <= 3) return "#60FF3333"
+                                    if (gameModel.playTimeRemaining <= 7) return "#60FFAA00"
+                                    return "#6000CC00"
                                 }
 
                                 Behavior on height {
@@ -1416,9 +1416,9 @@ Rectangle {
                                 anchors.bottom: parent.bottom
                                 radius: parent.radius
                                 color: {
-                                    if (gameModel.playTimeRemaining <= 3) return "#B0FF3333"
-                                    if (gameModel.playTimeRemaining <= 7) return "#B0FFAA00"
-                                    return "#B000CC00"
+                                    if (gameModel.playTimeRemaining <= 3) return "#60FF3333"
+                                    if (gameModel.playTimeRemaining <= 7) return "#60FFAA00"
+                                    return "#6000CC00"
                                 }
 
                                 Behavior on height {
@@ -1655,9 +1655,9 @@ Rectangle {
                                 anchors.bottom: parent.bottom
                                 radius: parent.radius
                                 color: {
-                                    if (gameModel.playTimeRemaining <= 3) return "#B0FF3333"
-                                    if (gameModel.playTimeRemaining <= 7) return "#B0FFAA00"
-                                    return "#B000CC00"
+                                    if (gameModel.playTimeRemaining <= 3) return "#60FF3333"
+                                    if (gameModel.playTimeRemaining <= 7) return "#60FFAA00"
+                                    return "#6000CC00"
                                 }
 
                                 Behavior on height {
@@ -1863,7 +1863,7 @@ Rectangle {
         // =====================
         // BOUTON COINCHE
         // =====================
-        AppButton {
+        Button {
             id: coincheButton
             text: "COINCHE !"
 

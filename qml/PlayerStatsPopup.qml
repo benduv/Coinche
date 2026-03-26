@@ -123,10 +123,10 @@ Rectangle {
                     anchors.centerIn: parent
                     spacing: 30 * minRatio
 
-                    Text {
-                        text: "📊"
-                        font.pixelSize: 64 * minRatio
-                        color: "#FFD700"
+                    Image {
+                        source: "qrc:/resources/increase-stats-svgrepo-com.svg"
+                        width: 64 * minRatio
+                        height: 64 * minRatio
                     }
 
                     Text {

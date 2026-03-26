@@ -151,16 +151,22 @@ Rectangle {
             spacing: 20 * minRatio
 
             // Titre
-            Text {
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter
-                text: "📊 STATISTIQUES DE JEU"
-                font.pixelSize: Math.min(42 * minRatio, 36)
+                spacing: 10 * minRatio
+
+                Text {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+                text: "STATISTIQUES DE JEU"
+                font.pixelSize: 42 * minRatio
                 font.bold: true
                 color: "#FFD700"
                 style: Text.Outline
                 styleColor: "#000000"
                 horizontalAlignment: Text.AlignHCenter
+                }
             }
 
             // Nom du joueur
@@ -1301,13 +1307,14 @@ Rectangle {
 
                     Item { Layout.fillWidth: true }
 
-                    Text {
-                        text: "🏠"
-                        font.pixelSize: Math.min(32 * minRatio, 24)
+                    Image {
+                        source: "qrc:/resources/home-fireplace-svgrepo-com.svg"
+                        Layout.preferredWidth: Math.min(32 * minRatio, 24)
+                        Layout.preferredHeight: Math.min(32 * minRatio, 24)
                     }
 
                     Text {
-                        text: "RETOUR AU MENU "
+                        text: " RETOUR AU MENU  "
                         font.pixelSize: Math.min(32 * minRatio, 20)
                         font.bold: true
                         color: "white"

@@ -958,6 +958,7 @@ Rectangle {
                 anchors.bottom: creditsCloseButton.top
                 anchors.bottomMargin: 10 * settingsRoot.minRatio
                 clip: true
+                contentWidth: availableWidth
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                 Column {

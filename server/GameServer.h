@@ -1749,11 +1749,13 @@ private:
         if (isPartnerWinning(playerIndex, idxPlayerWinning)) {
             qDebug() << "Bot" << playerIndex << "- partenaire gagne";
 
-            // Vérifier si le partenaire a joué à l'atout (première carte du pli)
+            // Vérifier si le partenaire a joué à l'atout (dans le pli, pas seulement en première position)
             bool partnerPlayedTrump = false;
-            if (!room->currentPli.empty()) {
-                Carte* firstCard = room->currentPli[0].second;
-                partnerPlayedTrump = (firstCard->getCouleur() == room->couleurAtout);
+            for (const auto& pair : room->currentPli) {
+                if ((pair.first + 2) % 4 == playerIndex && pair.second->getCouleur() == room->couleurAtout) {
+                    partnerPlayedTrump = true;
+                    break;
+                }
             }
 
             // Compter les atouts tombés pour savoir si on doit encore jouer atout
@@ -1869,6 +1871,27 @@ private:
 
         // Déterminer si on est en défense
         bool isAttackingTeam = (playerIndex % 2) == (room->lastBidderIndex % 2);
+
+        // Si le partenaire a joué à l'atout dans ce pli (même s'il n'a pas commencé) et qu'un adversaire
+        // a pris avec un atout plus fort, jouer le Valet pour récupérer le pli
+        if (isAttackingTeam) {
+            bool partnerPlayedTrumpHere = false;
+            for (const auto& pair : room->currentPli) {
+                if ((pair.first + 2) % 4 == playerIndex && pair.second->getCouleur() == room->couleurAtout) {
+                    partnerPlayedTrumpHere = true;
+                    break;
+                }
+            }
+            if (partnerPlayedTrumpHere) {
+                for (int idx : playableIndices) {
+                    Carte* carte = main[idx];
+                    if (carte->getCouleur() == room->couleurAtout && carte->getChiffre() == Carte::VALET) {
+                        qDebug() << "Bot" << playerIndex << "- Partenaire a joué atout mais adversaire prend, je joue le Valet";
+                        return idx;
+                    }
+                }
+            }
+        }
 
         // Pour l'équipe qui défend: jouer une carte maître hors atout si:
         // - Aucun atout dans le pli
