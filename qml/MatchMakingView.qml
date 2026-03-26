@@ -143,7 +143,7 @@ Rectangle {
             Text {
                 anchors.centerIn: parent
                 text: "Joueurs manquant remplacés par des bots: " + networkManager.matchmakingCountdown + " seconde" + (networkManager.matchmakingCountdown > 1 ? "s" : "") + "..."
-                font.pixelSize: 30 * root.minRatio
+                font.pixelSize: 32 * root.minRatio
                 font.bold: true
                 color: "#ffcc00"
             }

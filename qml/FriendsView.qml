@@ -382,11 +382,11 @@ Rectangle {
 
             Column {
                 anchors.centerIn: parent
-                spacing: 25 * minRatio
+                spacing: 30 * minRatio
 
                 Text {
                     text: "Supprimer " + deleteFriendPopup.friendToDelete + " de vos amis ?"
-                    font.pixelSize: 20 * minRatio
+                    font.pixelSize: 28 * minRatio
                     font.bold: true
                     color: "white"
                     horizontalAlignment: Text.AlignHCenter
@@ -394,19 +394,19 @@ Rectangle {
                 }
 
                 Row {
-                    spacing: 30 * minRatio
+                    spacing: 50 * minRatio
                     anchors.horizontalCenter: parent.horizontalCenter
 
                     Rectangle {
-                        width: 100 * minRatio
-                        height: 45 * minRatio
+                        width: 120 * minRatio
+                        height: 50 * minRatio
                         radius: 10
                         color: "#cc0000"
 
                         Text {
                             anchors.centerIn: parent
                             text: "Oui"
-                            font.pixelSize: 18 * minRatio
+                            font.pixelSize: 22 * minRatio
                             font.bold: true
                             color: "white"
                         }
@@ -422,8 +422,8 @@ Rectangle {
                     }
 
                     Rectangle {
-                        width: 100 * minRatio
-                        height: 45 * minRatio
+                        width: 120 * minRatio
+                        height: 50 * minRatio
                         radius: 10
                         color: "#3a3a3a"
                         border.color: "#FFD700"
@@ -432,7 +432,7 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: "Non"
-                            font.pixelSize: 18 * minRatio
+                            font.pixelSize: 22 * minRatio
                             font.bold: true
                             color: "#FFD700"
                         }
