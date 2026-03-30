@@ -3482,6 +3482,19 @@ void GameServer::finishManche(int roomId) {
     } else {
         scoreMsg["capotTeam"] = 0;
     }
+    // Ajouter les données recap pour l'animation nouvelle manche
+    scoreMsg["lastBidderIndex"] = room->lastBidderIndex;
+    scoreMsg["bidValue"] = valeurContrat;
+    bool attackerPoints = team1HasBid ? pointsRealisesTeam1 : pointsRealisesTeam2;
+    bool contractSuccess;
+    if (isCapotAnnonce) {
+        contractSuccess = capotReussi;
+    } else if (isGeneraleAnnonce) {
+        contractSuccess = generaleReussie;
+    } else {
+        contractSuccess = (attackerPoints >= valeurContrat);
+    }
+    scoreMsg["contractSuccess"] = contractSuccess;
     broadcastToRoom(roomId, scoreMsg);
 
     // Vérifier si une équipe a atteint 1000 points

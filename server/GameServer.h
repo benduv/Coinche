@@ -497,8 +497,8 @@ private:
         newMancheMsg["type"] = "newMancheAnimation";
         broadcastToRoom(roomId, newMancheMsg);
 
-        // Attendre 3 secondes pour l'animation avant de distribuer les cartes
-        QTimer::singleShot(3000, this, [this, roomId]() {
+        // Attendre 7.5 secondes pour l'animation (recap + nouvelle manche) avant de distribuer les cartes
+        QTimer::singleShot(7500, this, [this, roomId]() {
             doStartNewManche(roomId);
         });
     }

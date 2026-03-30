@@ -574,8 +574,9 @@ signals:
     void rehumanizeSuccess();
     void pendingBotReplacementChanged();
 
-    // Signal pour l'animation de nouvelle manche
-    void newMancheAnimation();
+    // Signal pour l'animation de nouvelle manche (avec données recap)
+    void newMancheAnimation(int lastBidderIndex, int bidValue, bool contractSuccess,
+                            int scoreMancheTeam1, int scoreMancheTeam2);
 
     // Signal pour version client obsolète
     void versionError(QString message);
@@ -812,6 +813,13 @@ private slots:
             int scoreMancheTeam2 = obj["scoreMancheTeam2"].toInt();
             int capotTeam = obj["capotTeam"].toInt(0);
 
+            // Stocker les données recap pour l'animation nouvelle manche
+            m_mancheLastBidderIndex = obj["lastBidderIndex"].toInt(-1);
+            m_mancheBidValue = obj["bidValue"].toInt(0);
+            m_mancheContractSuccess = obj["contractSuccess"].toBool(true);
+            m_mancheScoreTeam1 = scoreMancheTeam1;
+            m_mancheScoreTeam2 = scoreMancheTeam2;
+
             // qDebug() << "NetworkManager - Manche terminee!";
             // qDebug() << "  Scores de manche finaux: Team1 =" << scoreMancheTeam1 << ", Team2 =" << scoreMancheTeam2;
             // qDebug() << "  Scores totaux: Team1 =" << scoreTotalTeam1 << ", Team2 =" << scoreTotalTeam2;
@@ -846,7 +854,8 @@ private slots:
         }
         else if (type == "newMancheAnimation") {
             // qDebug() << "NetworkManager - Animation nouvelle manche!";
-            emit newMancheAnimation();
+            emit newMancheAnimation(m_mancheLastBidderIndex, m_mancheBidValue,
+                                    m_mancheContractSuccess, m_mancheScoreTeam1, m_mancheScoreTeam2);
         }
         else if (type == "newManche") {
             int playerPosition = obj["playerPosition"].toInt();
@@ -1347,6 +1356,13 @@ private:
     // Heartbeat pour détecter les connexions mortes
     QTimer* m_heartbeatTimer;
     qint64 m_lastPongReceived;
+
+    // Données recap pour l'animation nouvelle manche
+    int m_mancheLastBidderIndex = -1;
+    int m_mancheBidValue = 0;
+    bool m_mancheContractSuccess = true;
+    int m_mancheScoreTeam1 = 0;
+    int m_mancheScoreTeam2 = 0;
 };
 
 #endif // NETWORKMANAGER_H
