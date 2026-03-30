@@ -17,14 +17,14 @@ Item {
     property int lastBidderIndex: -1
     property int bidValue: 0
     property bool contractSuccess: true
-    property int scoreMancheTeam1: 0
-    property int scoreMancheTeam2: 0
+    property int pointsRealisesTeam1: 0
+    property int pointsRealisesTeam2: 0
 
     // Données calculées pour l'affichage (perspective du joueur local)
     property bool myTeamAttacked: (networkManager.myPosition % 2) === (lastBidderIndex % 2)
     property bool myTeamIsTeam1: (networkManager.myPosition % 2) === 0
-    property int myTeamScore: myTeamIsTeam1 ? scoreMancheTeam1 : scoreMancheTeam2
-    property int otherTeamScore: myTeamIsTeam1 ? scoreMancheTeam2 : scoreMancheTeam1
+    property int myTeamScore: myTeamIsTeam1 ? pointsRealisesTeam1 : pointsRealisesTeam2
+    property int otherTeamScore: myTeamIsTeam1 ? pointsRealisesTeam2 : pointsRealisesTeam1
 
     property string recapTitle: {
         if (myTeamAttacked) {

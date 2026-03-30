@@ -3495,6 +3495,8 @@ void GameServer::finishManche(int roomId) {
         contractSuccess = (attackerPoints >= valeurContrat);
     }
     scoreMsg["contractSuccess"] = contractSuccess;
+    scoreMsg["pointsRealisesTeam1"] = pointsRealisesTeam1;
+    scoreMsg["pointsRealisesTeam2"] = pointsRealisesTeam2;
     broadcastToRoom(roomId, scoreMsg);
 
     // Vérifier si une équipe a atteint 1000 points
