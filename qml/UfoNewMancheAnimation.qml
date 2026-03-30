@@ -64,8 +64,10 @@ Item {
         ufoImage.opacity = 1
         beam.opacity = 0
         beam.beamHeight = 0
-        recapContainer.opacity = 0
-        recapContainer.scale = 0.8
+        scoresSection.opacity = 0
+        scoresSection.scale = 0.8
+        titleSection.opacity = 0
+        titleSection.scale = 0.8
         newMancheTextContainer.opacity = 0
         newMancheTextContainer.scale = 0.5
         if(AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
@@ -193,49 +195,88 @@ Item {
         y: ufoImage.y + ufoImage.height + 20 * ufoAnimation.minRatio
         width: parent.width * 0.7
         height: recapColumn.height
-        opacity: 0
-        scale: 0.8
         z: 20
-        transformOrigin: Item.Center
         visible: ufoAnimation.lastBidderIndex >= 0
 
         Column {
             id: recapColumn
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 12 * ufoAnimation.minRatio
+            spacing: 20 * ufoAnimation.minRatio
 
-            // Titre : "Contrat rempli!" / "Vous chutez!" etc.
-            Text {
+            // Phase 1 : Scores des deux équipes
+            Item {
+                id: scoresSection
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: ufoAnimation.recapTitle
-                font.pixelSize: 52 * ufoAnimation.minRatio
-                font.bold: true
-                font.family: "Orbitron"
-                color: ufoAnimation.recapTitleColor
-                style: Text.Outline
-                styleColor: Qt.darker(ufoAnimation.recapTitleColor, 2.0)
+                width: recapContainer.width
+                height: scoresColumn.height
+                opacity: 0
+                scale: 0.8
+                transformOrigin: Item.Center
+
+                Column {
+                    id: scoresColumn
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 10 * ufoAnimation.minRatio
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Votre équipe : " + ufoAnimation.myTeamScore + " pts"
+                        font.pixelSize: 38 * ufoAnimation.minRatio
+                        font.bold: true
+                        font.family: "Orbitron"
+                        color: "#FFFFFF"
+                        style: Text.Outline
+                        styleColor: "#004466"
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Leur équipe : " + ufoAnimation.otherTeamScore + " pts"
+                        font.pixelSize: 38 * ufoAnimation.minRatio
+                        font.bold: true
+                        font.family: "Orbitron"
+                        color: "#FFFFFF"
+                        style: Text.Outline
+                        styleColor: "#004466"
+                    }
+                }
             }
 
-            // Points
-            Text {
+            // Phase 2 : Résultat du contrat
+            Item {
+                id: titleSection
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: ufoAnimation.recapPoints
-                font.pixelSize: 38 * ufoAnimation.minRatio
-                font.bold: true
-                font.family: "Orbitron"
-                color: "#FFFFFF"
-                style: Text.Outline
-                styleColor: "#004466"
-            }
+                width: recapContainer.width
+                height: titleColumn.height
+                opacity: 0
+                scale: 0.8
+                transformOrigin: Item.Center
 
-            // Contrat annoncé
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Contrat : " + ufoAnimation.bidValue + " pts"
-                font.pixelSize: 26 * ufoAnimation.minRatio
-                font.family: "Orbitron"
-                color: "#88DDFF"
-                visible: ufoAnimation.bidValue > 0
+                Column {
+                    id: titleColumn
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 8 * ufoAnimation.minRatio
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: ufoAnimation.recapTitle
+                        font.pixelSize: 52 * ufoAnimation.minRatio
+                        font.bold: true
+                        font.family: "Orbitron"
+                        color: ufoAnimation.recapTitleColor
+                        style: Text.Outline
+                        styleColor: Qt.darker(ufoAnimation.recapTitleColor, 2.0)
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Contrat : " + ufoAnimation.bidValue + " pts"
+                        font.pixelSize: 26 * ufoAnimation.minRatio
+                        font.family: "Orbitron"
+                        color: "#88DDFF"
+                        visible: ufoAnimation.bidValue > 0
+                    }
+                }
             }
         }
     }
@@ -312,17 +353,26 @@ Item {
         }
     }
 
-    // Animation 3: Le recap apparaît dans le halo
+    // Animation 3: Le recap apparaît dans le halo (2 phases)
     SequentialAnimation {
         id: recapAppearAnimation
+        // Phase 1 : scores des équipes
         ParallelAnimation {
-            NumberAnimation { target: recapContainer; property: "opacity"; from: 0; to: 1; duration: 400; easing.type: Easing.OutQuad }
-            NumberAnimation { target: recapContainer; property: "scale"; from: 0.8; to: 1.0; duration: 500; easing.type: Easing.OutBack }
+            NumberAnimation { target: scoresSection; property: "opacity"; from: 0; to: 1; duration: 400; easing.type: Easing.OutQuad }
+            NumberAnimation { target: scoresSection; property: "scale"; from: 0.8; to: 1.0; duration: 500; easing.type: Easing.OutBack }
         }
-        // Pause pour lire le recap
-        PauseAnimation { duration: 3200 }
-        // Fade out recap
-        NumberAnimation { target: recapContainer; property: "opacity"; to: 0; duration: 300 }
+        PauseAnimation { duration: 1200 }
+        // Phase 2 : résultat du contrat
+        ParallelAnimation {
+            NumberAnimation { target: titleSection; property: "opacity"; from: 0; to: 1; duration: 400; easing.type: Easing.OutQuad }
+            NumberAnimation { target: titleSection; property: "scale"; from: 0.8; to: 1.0; duration: 500; easing.type: Easing.OutBack }
+        }
+        PauseAnimation { duration: 1500 }
+        // Fade out
+        ParallelAnimation {
+            NumberAnimation { target: scoresSection; property: "opacity"; to: 0; duration: 300 }
+            NumberAnimation { target: titleSection; property: "opacity"; to: 0; duration: 300 }
+        }
         ScriptAction { script: newMancheAppearAnimation.start() }
     }
 

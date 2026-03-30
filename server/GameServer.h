@@ -498,8 +498,10 @@ private:
         newMancheMsg["lastBidderIndex"] = room->lastBidderIndex;
         broadcastToRoom(roomId, newMancheMsg);
 
-        // Attendre 7.5 secondes pour l'animation (recap + nouvelle manche) avant de distribuer les cartes
-        QTimer::singleShot(7500, this, [this, roomId]() {
+        // Attendre pour l'animation avant de distribuer les cartes
+        // 3.5s si tout le monde a passé (pas de recap), 7.5s sinon (recap + nouvelle manche)
+        int animDelay = (room->lastBidderIndex < 0) ? 3500 : 7500;
+        QTimer::singleShot(animDelay, this, [this, roomId]() {
             doStartNewManche(roomId);
         });
     }
