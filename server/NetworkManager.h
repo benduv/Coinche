@@ -157,7 +157,7 @@ public:
     }
 
     // Version du client — incrémenter à chaque mise à jour qui casse la compatibilité serveur
-    static constexpr int CLIENT_VERSION = 5;
+    static constexpr int CLIENT_VERSION = 6;
 
     Q_INVOKABLE void registerPlayer(const QString &playerName, const QString &avatar = "avataaars1.svg") {
         QJsonObject msg;
