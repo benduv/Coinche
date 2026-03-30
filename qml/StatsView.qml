@@ -1281,7 +1281,7 @@ Rectangle {
 
             // Bouton Retour avec effet moderne
             AppButton {
-                Layout.preferredWidth: Math.min(300 * widthRatio, parent.width * 0.8)
+                Layout.preferredWidth: 300 * widthRatio
                 Layout.preferredHeight: 120 * heightRatio
                 Layout.alignment: Qt.AlignHCenter
 
@@ -1303,26 +1303,26 @@ Rectangle {
                 }
 
                 contentItem: RowLayout {
-                    spacing: 10 * minRatio
+                    spacing: 5 * minRatio
 
-                    Item { Layout.fillWidth: true }
+                    Item {}
 
                     Image {
                         source: "qrc:/resources/home-fireplace-svgrepo-com.svg"
-                        Layout.preferredWidth: Math.min(32 * minRatio, 24)
-                        Layout.preferredHeight: Math.min(32 * minRatio, 24)
+                        Layout.preferredWidth: 32 * minRatio
+                        Layout.preferredHeight: 32 * minRatio
                     }
 
                     Text {
-                        text: " RETOUR AU MENU  "
-                        font.pixelSize: Math.min(32 * minRatio, 20)
+                        text: " RETOUR AU MENU "
+                        font.pixelSize: 30 * minRatio
                         font.bold: true
                         color: "white"
                         style: Text.Outline
                         styleColor: "#000000"
                     }
 
-                    Item { Layout.fillWidth: true }
+                    Item {}
                 }
 
                 onClicked: {

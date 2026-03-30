@@ -44,7 +44,10 @@ public:
         , m_matchmakingCountdown(0)
         , m_myPosition(-1)
         , m_gameModel(nullptr)
-        , m_playerAvatar("avataaars1.svg")
+        , m_playerAvatar([]() {
+            QSettings s("Nebuludik", "CoincheDelEspace");
+            return s.value("avatar/selected", "avataaars1.svg").toString();
+        }())
         , m_heartbeatTimer(new QTimer(this))
         , m_wasInGame(false)
         , m_lastPongReceived(0)
@@ -406,6 +409,10 @@ public:
         // qDebug() << "Mise à jour de l'avatar:" << avatar;
         m_playerAvatar = avatar;
         emit playerAvatarChanged();
+
+        // Sauvegarder localement
+        QSettings settings("Nebuludik", "CoincheDelEspace");
+        settings.setValue("avatar/selected", avatar);
 
         // Envoyer la mise à jour au serveur
         QJsonObject msg;
@@ -949,6 +956,9 @@ private slots:
             if (avatar.isEmpty()) avatar = "avataaars1.svg";
             m_playerPseudo = playerName;
             m_playerAvatar = avatar;
+            // Sauvegarder l'avatar de création de compte comme préférence locale initiale
+            QSettings regSettings("Nebuludik", "CoincheDelEspace");
+            regSettings.setValue("avatar/selected", avatar);
             // qDebug() << "NetworkManager - Compte cree avec succès:" << playerName << "Avatar:" << avatar;
             emit playerAvatarChanged();
             emit playerPseudoChanged();
@@ -978,6 +988,17 @@ private slots:
             bool usingTempPassword = obj["usingTempPassword"].toBool(false);
             if (avatar.isEmpty()) avatar = "avataaars1.svg";
             m_playerPseudo = playerName;
+            // Préférer l'avatar sauvegardé localement (sélection dans le MainMenu)
+            QSettings avatarSettings("Nebuludik", "CoincheDelEspace");
+            QString localAvatar = avatarSettings.value("avatar/selected", "").toString();
+            if (!localAvatar.isEmpty() && localAvatar != avatar) {
+                // L'utilisateur a changé son avatar localement, synchro avec le serveur
+                avatar = localAvatar;
+                QJsonObject updateMsg;
+                updateMsg["type"] = "updateAvatar";
+                updateMsg["avatar"] = avatar;
+                sendMessage(updateMsg);
+            }
             m_playerAvatar = avatar;
             if (!connectionId.isEmpty()) {
                 m_playerId = connectionId;
