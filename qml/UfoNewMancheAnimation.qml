@@ -104,8 +104,8 @@ Item {
     AnimatedImage {
         id: ufoImage
         source: "qrc:/resources/animations/UFO_404.gif"
-        width: 500 * ufoAnimation.minRatio
-        height: 500 * ufoAnimation.minRatio
+        width: 400 * ufoAnimation.minRatio
+        height: 400 * ufoAnimation.minRatio
         fillMode: Image.PreserveAspectFit
         anchors.horizontalCenter: parent.horizontalCenter
         y: -height
@@ -117,11 +117,11 @@ Item {
     Item {
         id: beam
         property real beamHeight: 0
-        property real topWidth: 80 * ufoAnimation.minRatio
+        property real topWidth: 70 * ufoAnimation.minRatio
         property real bottomWidth: 350 * ufoAnimation.minRatio
 
         x: ufoImage.x + ufoImage.width / 2 - bottomWidth / 2
-        y: ufoImage.y + ufoImage.height - 200 * ufoAnimation.minRatio
+        y: ufoImage.y + ufoImage.height - 150 * ufoAnimation.minRatio
         width: bottomWidth
         height: beamHeight
         opacity: 0
@@ -197,7 +197,7 @@ Item {
     Item {
         id: recapContainer
         anchors.horizontalCenter: parent.horizontalCenter
-        y: ufoImage.y + ufoImage.height + 20 * ufoAnimation.minRatio
+        y: ufoImage.y + ufoImage.height + 80 * ufoAnimation.minRatio
         width: parent.width * 0.7
         height: recapColumn.height
         z: 20
@@ -283,15 +283,6 @@ Item {
                         style: Text.Outline
                         styleColor: Qt.darker(ufoAnimation.recapTitleColor, 2.0)
                     }
-
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: "Contrat : " + ufoAnimation.bidValue + " pts"
-                        font.pixelSize: 26 * ufoAnimation.minRatio
-                        font.family: "Orbitron"
-                        color: "#88DDFF"
-                        visible: ufoAnimation.bidValue > 0
-                    }
                 }
             }
         }
@@ -301,7 +292,7 @@ Item {
     Item {
         id: newMancheTextContainer
         x: parent.width / 2 - width / 2
-        y: ufoImage.y + ufoImage.height + 80 * ufoAnimation.minRatio
+        y: ufoImage.y + ufoImage.height + 140 * ufoAnimation.minRatio
         width: newMancheText.width
         height: newMancheText.height
         opacity: 0
