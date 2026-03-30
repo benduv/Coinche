@@ -19,27 +19,32 @@ Item {
     property bool contractSuccess: true
     property int pointsRealisesTeam1: 0
     property int pointsRealisesTeam2: 0
+    property int scoreMancheTeam1: 0
+    property int scoreMancheTeam2: 0
 
     // Données calculées pour l'affichage (perspective du joueur local)
     property bool myTeamAttacked: (networkManager.myPosition % 2) === (lastBidderIndex % 2)
     property bool myTeamIsTeam1: (networkManager.myPosition % 2) === 0
-    property int myTeamScore: myTeamIsTeam1 ? pointsRealisesTeam1 : pointsRealisesTeam2
-    property int otherTeamScore: myTeamIsTeam1 ? pointsRealisesTeam2 : pointsRealisesTeam1
+    property int myTeamPoints: myTeamIsTeam1 ? pointsRealisesTeam1 : pointsRealisesTeam2
+    property int otherTeamPoints: myTeamIsTeam1 ? pointsRealisesTeam2 : pointsRealisesTeam1
+    property int myTeamMancheScore: myTeamIsTeam1 ? scoreMancheTeam1 : scoreMancheTeam2
+    property int otherTeamMancheScore: myTeamIsTeam1 ? scoreMancheTeam2 : scoreMancheTeam1
+
+    property string recapPoints: {
+        if (myTeamAttacked) {
+            if (contractSuccess) return "Vous marquez " + myTeamMancheScore + " pts"
+            else return "Ils marquent " + otherTeamMancheScore + " pts"
+        } else {
+            if (contractSuccess) return "Ils marquent " + otherTeamMancheScore + " pts"
+            else return "Vous marquez " + myTeamMancheScore + " pts"
+        }
+    }
 
     property string recapTitle: {
         if (myTeamAttacked) {
             return contractSuccess ? "Contrat rempli !" : "Vous chutez !"
         } else {
             return contractSuccess ? "Ils remplissent !" : "Ils chutent !"
-        }
-    }
-    property string recapPoints: {
-        if (myTeamAttacked) {
-            if (contractSuccess) return "Vous marquez " + myTeamScore + " pts"
-            else return "Ils marquent " + otherTeamScore + " pts"
-        } else {
-            if (contractSuccess) return "Ils marquent " + otherTeamScore + " pts"
-            else return "Vous marquez " + myTeamScore + " pts"
         }
     }
     property color recapTitleColor: {
@@ -220,7 +225,7 @@ Item {
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "Votre équipe : " + ufoAnimation.myTeamScore + " pts"
+                        text: "Votre équipe : " + ufoAnimation.myTeamPoints + " pts"
                         font.pixelSize: 38 * ufoAnimation.minRatio
                         font.bold: true
                         font.family: "Orbitron"
@@ -231,7 +236,7 @@ Item {
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "Leur équipe : " + ufoAnimation.otherTeamScore + " pts"
+                        text: "Leur équipe : " + ufoAnimation.otherTeamPoints + " pts"
                         font.pixelSize: 38 * ufoAnimation.minRatio
                         font.bold: true
                         font.family: "Orbitron"
@@ -261,6 +266,17 @@ Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: ufoAnimation.recapTitle
                         font.pixelSize: 52 * ufoAnimation.minRatio
+                        font.bold: true
+                        font.family: "Orbitron"
+                        color: ufoAnimation.recapTitleColor
+                        style: Text.Outline
+                        styleColor: Qt.darker(ufoAnimation.recapTitleColor, 2.0)
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: ufoAnimation.recapPoints
+                        font.pixelSize: 32 * ufoAnimation.minRatio
                         font.bold: true
                         font.family: "Orbitron"
                         color: ufoAnimation.recapTitleColor

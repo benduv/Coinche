@@ -237,12 +237,14 @@ Rectangle {
             rootArea.showBotReplacementPopup = false
         }
 
-        function onNewMancheAnimation(lastBidderIndex, bidValue, contractSuccess, pointsTeam1, pointsTeam2) {
+        function onNewMancheAnimation(lastBidderIndex, bidValue, contractSuccess, pointsTeam1, pointsTeam2, scoreMancheTeam1, scoreMancheTeam2) {
             ufoNewMancheAnimation.lastBidderIndex = lastBidderIndex
             ufoNewMancheAnimation.bidValue = bidValue
             ufoNewMancheAnimation.contractSuccess = contractSuccess
             ufoNewMancheAnimation.pointsRealisesTeam1 = pointsTeam1
             ufoNewMancheAnimation.pointsRealisesTeam2 = pointsTeam2
+            ufoNewMancheAnimation.scoreMancheTeam1 = scoreMancheTeam1
+            ufoNewMancheAnimation.scoreMancheTeam2 = scoreMancheTeam2
             ufoNewMancheAnimation.start()
         }
     }
