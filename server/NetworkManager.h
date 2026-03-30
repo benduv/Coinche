@@ -854,7 +854,8 @@ private slots:
         }
         else if (type == "newMancheAnimation") {
             // qDebug() << "NetworkManager - Animation nouvelle manche!";
-            emit newMancheAnimation(m_mancheLastBidderIndex, m_mancheBidValue,
+            int animLastBidderIndex = obj.contains("lastBidderIndex") ? obj["lastBidderIndex"].toInt(-1) : m_mancheLastBidderIndex;
+            emit newMancheAnimation(animLastBidderIndex, m_mancheBidValue,
                                     m_mancheContractSuccess, m_mancheScoreTeam1, m_mancheScoreTeam2);
         }
         else if (type == "newManche") {

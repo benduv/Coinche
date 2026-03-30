@@ -197,6 +197,7 @@ Item {
         scale: 0.8
         z: 20
         transformOrigin: Item.Center
+        visible: ufoAnimation.lastBidderIndex >= 0
 
         Column {
             id: recapColumn
@@ -301,7 +302,14 @@ Item {
             NumberAnimation { target: beam; property: "beamHeight"; from: 0; to: 250 * ufoAnimation.minRatio; duration: 500; easing.type: Easing.OutQuad }
         }
         PauseAnimation { duration: 100 }
-        ScriptAction { script: recapAppearAnimation.start() }
+        ScriptAction {
+            script: {
+                if (ufoAnimation.lastBidderIndex >= 0)
+                    recapAppearAnimation.start()
+                else
+                    newMancheAppearAnimation.start()
+            }
+        }
     }
 
     // Animation 3: Le recap apparaît dans le halo

@@ -3485,7 +3485,7 @@ void GameServer::finishManche(int roomId) {
     // Ajouter les données recap pour l'animation nouvelle manche
     scoreMsg["lastBidderIndex"] = room->lastBidderIndex;
     scoreMsg["bidValue"] = valeurContrat;
-    bool attackerPoints = team1HasBid ? pointsRealisesTeam1 : pointsRealisesTeam2;
+    int attackerPoints = team1HasBid ? pointsRealisesTeam1 : pointsRealisesTeam2;
     bool contractSuccess;
     if (isCapotAnnonce) {
         contractSuccess = capotReussi;

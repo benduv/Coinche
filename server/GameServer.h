@@ -495,6 +495,7 @@ private:
         // Envoyer le message d'animation "Nouvelle Manche" à tous les joueurs
         QJsonObject newMancheMsg;
         newMancheMsg["type"] = "newMancheAnimation";
+        newMancheMsg["lastBidderIndex"] = room->lastBidderIndex;
         broadcastToRoom(roomId, newMancheMsg);
 
         // Attendre 7.5 secondes pour l'animation (recap + nouvelle manche) avant de distribuer les cartes
