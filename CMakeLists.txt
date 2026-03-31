@@ -157,6 +157,14 @@ if(ANDROID)
     # Support des appareils avec taille de page mémoire de 16 ko (Android 15+)
     target_link_options(coinche PRIVATE "-Wl,-z,max-page-size=16384")
 
+    # Générer les symboles natifs pour Google Play (crash analysis / ANR)
+    # Produit un fichier *-native-debug-symbols.zip à uploader sur la Play Console
+    set_target_properties(coinche PROPERTIES
+        QT_ANDROID_GENERATE_SYMBOLS TRUE
+    )
+    target_compile_options(coinche PRIVATE -g1)
+    target_link_options(coinche PRIVATE -Wl,--build-id)
+
     # Supprimer les libs FFmpeg après chaque build (incompatibles Android 16)
     # Le backend Android natif est utilisé à la place (QT_MEDIA_BACKEND=android)
     set(FFMPEG_LIBS_TO_REMOVE

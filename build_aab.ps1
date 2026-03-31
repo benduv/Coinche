@@ -81,3 +81,48 @@ if (Test-Path $aabFile) {
     Write-Host "Pour verifier les architectures dans l'AAB:" -ForegroundColor Yellow
     Write-Host "  bundletool build-apks --bundle=`"$fullPath`" --output=test.apks" -ForegroundColor Gray
 }
+
+# Generer le fichier native-debug-symbols.zip pour Google Play
+Write-Host ""
+Write-Host "=== Generation des symboles natifs pour Google Play ===" -ForegroundColor Cyan
+
+$arm64So  = "build\Android_Qt_6_9_3_Clang_arm64_v8a-arm64-v8a_Release\libcoinche_arm64-v8a.so"
+$armv7So  = "build\Android_Qt_6_9_3_Clang_armeabi_v7a-armeabi-v7_Release\libcoinche_armeabi-v7a.so"
+$symbolsZip = "build\coinche-native-debug-symbols.zip"
+$tmpDir = "build\symbols_tmp"
+
+# Nettoyer le dossier temporaire
+if (Test-Path $tmpDir) { Remove-Item -Recurse -Force $tmpDir }
+
+$hasSymbols = $false
+
+if (Test-Path $arm64So) {
+    New-Item -ItemType Directory -Force "$tmpDir\lib\arm64-v8a" | Out-Null
+    Copy-Item $arm64So "$tmpDir\lib\arm64-v8a\libcoinche_arm64-v8a.so"
+    Write-Host "  arm64-v8a: OK" -ForegroundColor Green
+    $hasSymbols = $true
+} else {
+    Write-Host "  arm64-v8a: introuvable ($arm64So)" -ForegroundColor Yellow
+}
+
+if (Test-Path $armv7So) {
+    New-Item -ItemType Directory -Force "$tmpDir\lib\armeabi-v7a" | Out-Null
+    Copy-Item $armv7So "$tmpDir\lib\armeabi-v7a\libcoinche_armeabi-v7a.so"
+    Write-Host "  armeabi-v7a: OK" -ForegroundColor Green
+    $hasSymbols = $true
+} else {
+    Write-Host "  armeabi-v7a: introuvable ($armv7So)" -ForegroundColor Yellow
+}
+
+if ($hasSymbols) {
+    if (Test-Path $symbolsZip) { Remove-Item -Force $symbolsZip }
+    Compress-Archive -Path "$tmpDir\lib" -DestinationPath $symbolsZip
+    Remove-Item -Recurse -Force $tmpDir
+    $zipPath = Resolve-Path $symbolsZip
+    $zipSize = [Math]::Round((Get-Item $symbolsZip).Length / 1MB, 1)
+    Write-Host ""
+    Write-Host "Symbols ZIP ($($zipSize) MB): $zipPath" -ForegroundColor Cyan
+    Write-Host "A uploader sur la Play Console : Version > Modifier > Symboles de debogage natifs" -ForegroundColor Gray
+} else {
+    Write-Host "Aucun .so trouve, zip non genere." -ForegroundColor Red
+}
