@@ -663,8 +663,8 @@ ApplicationWindow {
                     z: 1
 
                     Text {
-                        text: "COINCHE"
-                        font.pixelSize: 66 * mainWindow.minRatio
+                        text: "Coinche de l'Espace"
+                        font.pixelSize: 56 * mainWindow.minRatio
                         font.family: orbitronFont.name
                         font.bold: true
                         color: "#FFD700"

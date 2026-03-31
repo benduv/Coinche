@@ -94,11 +94,11 @@ Item {
     }
 
     // Fond semi-transparent
-    Rectangle {
+    /*Rectangle {
         anchors.fill: parent
         color: "#000000"
         opacity: 0.3
-    }
+    }*/
 
     // UFO (GIF animé)
     AnimatedImage {

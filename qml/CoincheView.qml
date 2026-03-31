@@ -251,10 +251,14 @@ Rectangle {
 
     // Fonction pour calculer la position visuelle d'un joueur
     // Retourne l'index visuel (0=sud, 1=ouest, 2=nord, 3=est)
+    // En mode horaire, les positions 1 (gauche) et 3 (droite) sont échangées
     function getVisualPosition(actualPlayerIndex) {
         if (!gameModel) return 0
         var myPos = gameModel.myPosition
         var relativePos = (actualPlayerIndex - myPos + 4) % 4
+        if (DisplaySettings.antiClockwisePlay && (relativePos === 1 || relativePos === 3)) {
+            return relativePos === 1 ? 3 : 1
+        }
         return relativePos
     }
 
@@ -262,7 +266,11 @@ Rectangle {
     function getActualPlayerIndex(visualPosition) {
         if (!gameModel) return 0
         var myPos = gameModel.myPosition
-        return (visualPosition + myPos) % 4
+        var adjustedVisual = visualPosition
+        if (DisplaySettings.antiClockwisePlay && (visualPosition === 1 || visualPosition === 3)) {
+            adjustedVisual = visualPosition === 1 ? 3 : 1
+        }
+        return (adjustedVisual + myPos) % 4
     }
 
     // Obtenir le nom d'un joueur par son index reel

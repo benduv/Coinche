@@ -161,6 +161,22 @@ int main(int argc, char *argv[])
                 window->showFullScreen();
                 qDebug() << "Mode plein écran activé";
 #endif
+#ifdef Q_OS_ANDROID
+                // Empêcher la mise en veille de l'écran pendant l'utilisation de l'app
+                QJniObject androidActivity = QJniObject::callStaticObjectMethod(
+                    "org/qtproject/qt/android/QtNative",
+                    "activity",
+                    "()Landroid/app/Activity;");
+                if (androidActivity.isValid()) {
+                    QJniObject androidWindow = androidActivity.callObjectMethod(
+                        "getWindow", "()Landroid/view/Window;");
+                    if (androidWindow.isValid()) {
+                        const int FLAG_KEEP_SCREEN_ON = 0x00000080;
+                        androidWindow.callMethod<void>("addFlags", "(I)V", FLAG_KEEP_SCREEN_ON);
+                        qDebug() << "FLAG_KEEP_SCREEN_ON activé";
+                    }
+                }
+#endif
             }
         }
     }
