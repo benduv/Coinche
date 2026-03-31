@@ -884,7 +884,7 @@ Rectangle {
                                         visible: !parent.isSvg
                                         text: parent.bidIcon
                                         color: "#D4AF37"
-                                        font.pixelSize: rootArea.height * 0.04
+                                        font.pixelSize: rootArea.height * 0.035
                                         font.bold: true
                                         anchors.centerIn: parent
                                     }
@@ -1228,7 +1228,7 @@ Rectangle {
                                     visible: !parent.isSvg
                                     text: parent.bidIcon
                                     color: "#D4AF37"
-                                    font.pixelSize: rootArea.height * 0.04
+                                    font.pixelSize: rootArea.height * 0.035
                                     font.bold: true
                                     anchors.centerIn: parent
                                 }
@@ -1365,7 +1365,7 @@ Rectangle {
                                 visible: !parent.isSvg
                                 text: parent.bidIcon
                                 color: "#D4AF37"
-                                font.pixelSize: rootArea.height * 0.04
+                                font.pixelSize: rootArea.height * 0.035
                                 font.bold: true
                                 anchors.centerIn: parent
                             }
@@ -1604,7 +1604,7 @@ Rectangle {
                                 visible: !parent.isSvg
                                 text: parent.bidIcon
                                 color: "#D4AF37"
-                                font.pixelSize: rootArea.height * 0.04
+                                font.pixelSize: rootArea.height * 0.035
                                 font.bold: true
                                 anchors.centerIn: parent
                             }
