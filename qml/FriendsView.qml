@@ -231,7 +231,7 @@ Rectangle {
             Text {
                 visible: friendsModel.count === 0
                 text: "Aucun ami pour le moment"
-                font.pixelSize: 18 * minRatio
+                font.pixelSize: 22 * minRatio
                 color: "#888888"
                 anchors.horizontalCenter: parent.horizontalCenter
             }
