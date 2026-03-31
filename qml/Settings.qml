@@ -97,6 +97,9 @@ Rectangle {
     // Propriété pour le tri des cartes
     property bool strongCardsLeft: DisplaySettings.strongCardsLeft
 
+    // Propriété pour le sens de jeu
+    property bool antiClockwisePlay: DisplaySettings.antiClockwisePlay
+
     // Watcher pour mettre à jour les paramètres globaux (seulement après initialisation)
     onMusicEnabledChanged: {
         if (initialized) {
@@ -113,6 +116,12 @@ Rectangle {
     onStrongCardsLeftChanged: {
         if (initialized) {
             DisplaySettings.saveStrongCardsLeft(strongCardsLeft)
+        }
+    }
+
+    onAntiClockwisePlayChanged: {
+        if (initialized) {
+            DisplaySettings.saveAntiClockwisePlay(antiClockwisePlay)
         }
     }
 
@@ -397,6 +406,93 @@ Rectangle {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: settingsRoot.strongCardsLeft = false
+                                }
+                            }
+                        }
+                    }
+
+                    // Sens de jeu
+                    Row {
+                        spacing: 60 * settingsRoot.minRatio
+
+                        Item {
+                            height: 80 * settingsRoot.minRatio
+                            width: parent.parent.width * 0.001
+                        }
+
+                        Text {
+                            text: "Sens de jeu :"
+                            font.pixelSize: 30 * settingsRoot.minRatio
+                            color: "white"
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width * 0.28
+                        }
+
+                        // Segmented control
+                        Row {
+                            spacing: 0
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            // Bouton "Horaire"
+                            Rectangle {
+                                width: 240 * settingsRoot.minRatio
+                                height: 60 * settingsRoot.minRatio
+                                radius: 10 * settingsRoot.minRatio
+                                color: !settingsRoot.antiClockwisePlay ? "#FFD700" : "#3a3a3a"
+                                border.color: !settingsRoot.antiClockwisePlay ? "#FFD700" : "#3a3a3a"
+                                border.width: 2 * settingsRoot.minRatio
+
+                                Rectangle {
+                                    anchors.right: parent.right
+                                    width: parent.radius
+                                    height: parent.height
+                                    color: parent.color
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Horaire"
+                                    font.pixelSize: 24 * settingsRoot.minRatio
+                                    font.bold: !settingsRoot.antiClockwisePlay
+                                    color: !settingsRoot.antiClockwisePlay ? "#2a2a2a" : "#aaaaaa"
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: settingsRoot.antiClockwisePlay = false
+                                }
+                            }
+
+                            // Bouton "Antihoraire"
+                            Rectangle {
+                                width: 240 * settingsRoot.minRatio
+                                height: 60 * settingsRoot.minRatio
+                                radius: 10 * settingsRoot.minRatio
+                                color: settingsRoot.antiClockwisePlay ? "#FFD700" : "#3a3a3a"
+                                border.color: settingsRoot.antiClockwisePlay ? "#FFD700" : "#3a3a3a"
+                                border.width: 2 * settingsRoot.minRatio
+
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    width: parent.radius
+                                    height: parent.height
+                                    color: parent.color
+                                    border.width: 0
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Antihoraire"
+                                    font.pixelSize: 24 * settingsRoot.minRatio
+                                    font.bold: settingsRoot.antiClockwisePlay
+                                    color: settingsRoot.antiClockwisePlay ? "#2a2a2a" : "#aaaaaa"
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: settingsRoot.antiClockwisePlay = true
                                 }
                             }
                         }

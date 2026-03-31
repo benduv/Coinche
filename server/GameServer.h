@@ -199,7 +199,7 @@ class GameServer : public QObject {
 
 public:
     // Version minimale du client acceptée par le serveur
-    static constexpr int MIN_CLIENT_VERSION = 6;
+    static constexpr int MIN_CLIENT_VERSION = 7;
 
     // Constante de délai pour l'affichage du panneau d'annonces
     static constexpr int BID_PANEL_DISPLAY_DELAY_MS = 3000;  // Délai pour laisser le temps au client de recevoir les cartes et d'afficher le panneau
@@ -495,10 +495,13 @@ private:
         // Envoyer le message d'animation "Nouvelle Manche" à tous les joueurs
         QJsonObject newMancheMsg;
         newMancheMsg["type"] = "newMancheAnimation";
+        newMancheMsg["lastBidderIndex"] = room->lastBidderIndex;
         broadcastToRoom(roomId, newMancheMsg);
 
-        // Attendre 3 secondes pour l'animation avant de distribuer les cartes
-        QTimer::singleShot(3000, this, [this, roomId]() {
+        // Attendre pour l'animation avant de distribuer les cartes
+        // 3.5s si tout le monde a passé (pas de recap), 7.5s sinon (recap + nouvelle manche)
+        int animDelay = (room->lastBidderIndex < 0) ? 3500 : 7500;
+        QTimer::singleShot(animDelay, this, [this, roomId]() {
             doStartNewManche(roomId);
         });
     }

@@ -55,7 +55,7 @@ Rectangle {
 
         Text {
             text: toast.fromPseudo + " vous invite à rejoindre sa partie privée"
-            font.pixelSize: 40 * toast.minRatio
+            font.pixelSize: 32 * toast.minRatio
             font.bold: true
             color: "black"
             anchors.verticalCenter: parent.verticalCenter

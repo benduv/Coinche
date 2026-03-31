@@ -237,17 +237,28 @@ Rectangle {
             rootArea.showBotReplacementPopup = false
         }
 
-        function onNewMancheAnimation() {
+        function onNewMancheAnimation(lastBidderIndex, bidValue, contractSuccess, pointsTeam1, pointsTeam2, scoreMancheTeam1, scoreMancheTeam2) {
+            ufoNewMancheAnimation.lastBidderIndex = lastBidderIndex
+            ufoNewMancheAnimation.bidValue = bidValue
+            ufoNewMancheAnimation.contractSuccess = contractSuccess
+            ufoNewMancheAnimation.pointsRealisesTeam1 = pointsTeam1
+            ufoNewMancheAnimation.pointsRealisesTeam2 = pointsTeam2
+            ufoNewMancheAnimation.scoreMancheTeam1 = scoreMancheTeam1
+            ufoNewMancheAnimation.scoreMancheTeam2 = scoreMancheTeam2
             ufoNewMancheAnimation.start()
         }
     }
 
     // Fonction pour calculer la position visuelle d'un joueur
     // Retourne l'index visuel (0=sud, 1=ouest, 2=nord, 3=est)
+    // En mode horaire, les positions 1 (gauche) et 3 (droite) sont échangées
     function getVisualPosition(actualPlayerIndex) {
         if (!gameModel) return 0
         var myPos = gameModel.myPosition
         var relativePos = (actualPlayerIndex - myPos + 4) % 4
+        if (DisplaySettings.antiClockwisePlay && (relativePos === 1 || relativePos === 3)) {
+            return relativePos === 1 ? 3 : 1
+        }
         return relativePos
     }
 
@@ -255,7 +266,11 @@ Rectangle {
     function getActualPlayerIndex(visualPosition) {
         if (!gameModel) return 0
         var myPos = gameModel.myPosition
-        return (visualPosition + myPos) % 4
+        var adjustedVisual = visualPosition
+        if (DisplaySettings.antiClockwisePlay && (visualPosition === 1 || visualPosition === 3)) {
+            adjustedVisual = visualPosition === 1 ? 3 : 1
+        }
+        return (adjustedVisual + myPos) % 4
     }
 
     // Obtenir le nom d'un joueur par son index reel
@@ -877,7 +892,7 @@ Rectangle {
                                         visible: !parent.isSvg
                                         text: parent.bidIcon
                                         color: "#D4AF37"
-                                        font.pixelSize: rootArea.height * 0.04
+                                        font.pixelSize: rootArea.height * 0.035
                                         font.bold: true
                                         anchors.centerIn: parent
                                     }
@@ -1221,7 +1236,7 @@ Rectangle {
                                     visible: !parent.isSvg
                                     text: parent.bidIcon
                                     color: "#D4AF37"
-                                    font.pixelSize: rootArea.height * 0.04
+                                    font.pixelSize: rootArea.height * 0.035
                                     font.bold: true
                                     anchors.centerIn: parent
                                 }
@@ -1358,7 +1373,7 @@ Rectangle {
                                 visible: !parent.isSvg
                                 text: parent.bidIcon
                                 color: "#D4AF37"
-                                font.pixelSize: rootArea.height * 0.04
+                                font.pixelSize: rootArea.height * 0.035
                                 font.bold: true
                                 anchors.centerIn: parent
                             }
@@ -1597,7 +1612,7 @@ Rectangle {
                                 visible: !parent.isSvg
                                 text: parent.bidIcon
                                 color: "#D4AF37"
-                                font.pixelSize: rootArea.height * 0.04
+                                font.pixelSize: rootArea.height * 0.035
                                 font.bold: true
                                 anchors.centerIn: parent
                             }

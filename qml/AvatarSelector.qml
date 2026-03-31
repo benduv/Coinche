@@ -100,14 +100,6 @@ Rectangle {
                                 root.selectedAvatar = modelData
                                 root.avatarSelected(modelData)
                             }
-
-                            onEntered: {
-                                parent.scale = 1.1
-                            }
-
-                            onExited: {
-                                parent.scale = 1.0
-                            }
                         }
 
                         Behavior on scale {
