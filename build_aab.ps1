@@ -32,12 +32,30 @@ if (-not (Test-Path $armv7Libs)) {
 Copy-Item -Recurse "$armv7Libs\*" $targetLibs -Force
 Write-Host "Bibliotheques armeabi-v7a copiees" -ForegroundColor Green
 
+# Remplacer libcoinche par la version RelWithDebInfo (contient les symboles DWARF)
+# Gradle avec debugSymbolLevel 'FULL' va extraire les symboles puis stripper le .so
+Write-Host "Remplacement de libcoinche par la version RelWithDebInfo..." -ForegroundColor Green
+$arm64RelDbg = "build\Qt_6_11_0_pour_Android_arm64_v8a-RelWithDebInfo\libcoinche_arm64-v8a.so"
+$armv7RelDbg = "build\Qt_6_11_0_pour_Android_armeabi_v7a-RelWithDebInfo\libcoinche_armeabi-v7a.so"
+if (Test-Path $arm64RelDbg) {
+    Copy-Item $arm64RelDbg "$combinedBuild\libs\arm64-v8a\libcoinche_arm64-v8a.so" -Force
+    Write-Host "  arm64-v8a: OK" -ForegroundColor Green
+} else {
+    Write-Host "  arm64-v8a: introuvable, symboles manquants" -ForegroundColor Yellow
+}
+if (Test-Path $armv7RelDbg) {
+    Copy-Item $armv7RelDbg "$combinedBuild\libs\armeabi-v7a\libcoinche_armeabi-v7a.so" -Force
+    Write-Host "  armeabi-v7a: OK" -ForegroundColor Green
+} else {
+    Write-Host "  armeabi-v7a: introuvable, symboles manquants" -ForegroundColor Yellow
+}
+
 # Modifier build.gradle pour forcer les deux architectures et targetSdk 36
 Write-Host "Configuration de build.gradle pour multi-architecture..." -ForegroundColor Green
 $buildGradle = "$combinedBuild\build.gradle"
 (Get-Content $buildGradle) `
     -replace 'abiFilters qtTargetAbiList\.split\(","\)', 'abiFilters "arm64-v8a", "armeabi-v7a"' `
-    -replace 'versionCode 1', 'versionCode 9' `
+    -replace 'versionCode 1', 'versionCode 12' `
     -replace "versionName '1.0.0'", "versionName '0.2.2'" |
     Set-Content $buildGradle
 
@@ -83,8 +101,8 @@ if (Test-Path $aabFile) {
 Write-Host ""
 Write-Host "=== Generation des symboles natifs pour Google Play ===" -ForegroundColor Cyan
 
-$arm64So  = "build\Android_Qt_6_11_0_Clang_arm64_v8a-arm64-v8a_Release\libcoinche_arm64-v8a.so"
-$armv7So  = "build\Android_Qt_6_11_0_Clang_armeabi_v7a-armeabi-v7_Release\libcoinche_armeabi-v7a.so"
+$arm64So  = "build\Qt_6_11_0_pour_Android_arm64_v8a-RelWithDebInfo\libcoinche_arm64-v8a.so"
+$armv7So  = "build\Qt_6_11_0_pour_Android_armeabi_v7a-RelWithDebInfo\libcoinche_armeabi-v7a.so"
 $symbolsZip = "build\coinche-native-debug-symbols.zip"
 $tmpDir = "build\symbols_tmp"
 
@@ -94,8 +112,8 @@ if (Test-Path $tmpDir) { Remove-Item -Recurse -Force $tmpDir }
 $hasSymbols = $false
 
 if (Test-Path $arm64So) {
-    New-Item -ItemType Directory -Force "$tmpDir\lib\arm64-v8a" | Out-Null
-    Copy-Item $arm64So "$tmpDir\lib\arm64-v8a\libcoinche_arm64-v8a.so"
+    New-Item -ItemType Directory -Force "$tmpDir\arm64-v8a" | Out-Null
+    Copy-Item $arm64So "$tmpDir\arm64-v8a\libcoinche_arm64-v8a.so"
     Write-Host "  arm64-v8a: OK" -ForegroundColor Green
     $hasSymbols = $true
 } else {
@@ -103,8 +121,8 @@ if (Test-Path $arm64So) {
 }
 
 if (Test-Path $armv7So) {
-    New-Item -ItemType Directory -Force "$tmpDir\lib\armeabi-v7a" | Out-Null
-    Copy-Item $armv7So "$tmpDir\lib\armeabi-v7a\libcoinche_armeabi-v7a.so"
+    New-Item -ItemType Directory -Force "$tmpDir\armeabi-v7a" | Out-Null
+    Copy-Item $armv7So "$tmpDir\armeabi-v7a\libcoinche_armeabi-v7a.so"
     Write-Host "  armeabi-v7a: OK" -ForegroundColor Green
     $hasSymbols = $true
 } else {
@@ -113,7 +131,7 @@ if (Test-Path $armv7So) {
 
 if ($hasSymbols) {
     if (Test-Path $symbolsZip) { Remove-Item -Force $symbolsZip }
-    Compress-Archive -Path "$tmpDir\lib" -DestinationPath $symbolsZip
+    Compress-Archive -Path "$tmpDir\*" -DestinationPath $symbolsZip
     Remove-Item -Recurse -Force $tmpDir
     $zipPath = Resolve-Path $symbolsZip
     $zipSize = [Math]::Round((Get-Item $symbolsZip).Length / 1MB, 1)

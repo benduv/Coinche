@@ -34,8 +34,11 @@ public:
 
         // Calculer les dimensions de la fenêtre (moitié de l'écran)
         int windowWidth = screenWidth / 1.75;
-        //int windowWidth = screenWidth / 2;
         int windowHeight = screenHeight / 2;
+
+        // ========== Mode test tablette paysage (10") ==========
+        //int windowWidth = 1280;
+        //int windowHeight = 800;
 
         // ========== Mode production : Fenêtre centrée ==========
         // Centrer la fenêtre sur l'écran

@@ -29,7 +29,7 @@ target_link_libraries(
 )
 
 include(GoogleTest)
-gtest_discover_tests(coinche_tests)
+gtest_discover_tests(coinche_tests DISCOVERY_MODE PRE_TEST)
 
 # ========================================
 # Tests fonctionnels CAPOT et GENERALE
@@ -54,7 +54,7 @@ target_link_libraries(test_capot_generale PRIVATE
 
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
-gtest_discover_tests(test_capot_generale)
+gtest_discover_tests(test_capot_generale DISCOVERY_MODE PRE_TEST)
 
 # ========================================
 # Tests fonctionnels COINCHE et SURCOINCHE
@@ -79,7 +79,7 @@ target_link_libraries(test_coinche PRIVATE
 
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
-gtest_discover_tests(test_coinche)
+gtest_discover_tests(test_coinche DISCOVERY_MODE PRE_TEST)
 
 # ========================================
 # Tests unitaires ScoreCalculator
@@ -100,7 +100,7 @@ target_link_libraries(test_scorecalculator PRIVATE
 )
 
 include(GoogleTest)
-gtest_discover_tests(test_scorecalculator)
+gtest_discover_tests(test_scorecalculator DISCOVERY_MODE PRE_TEST)
 
 # ========================================
 # Tests unitaires GameServer
@@ -125,7 +125,7 @@ target_link_libraries(test_gameserver PRIVATE
 
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
-gtest_discover_tests(test_gameserver)
+gtest_discover_tests(test_gameserver DISCOVERY_MODE PRE_TEST)
 
 # ========================================
 # Tests unitaires DatabaseManager
@@ -149,7 +149,7 @@ target_link_libraries(test_databasemanager PRIVATE
 
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
-gtest_discover_tests(test_databasemanager)
+gtest_discover_tests(test_databasemanager DISCOVERY_MODE PRE_TEST)
 
 # ========================================
 # Tests unitaires NetworkManager
@@ -170,7 +170,7 @@ target_link_libraries(test_networkmanager PRIVATE
 
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
-gtest_discover_tests(test_networkmanager)
+gtest_discover_tests(test_networkmanager DISCOVERY_MODE PRE_TEST)
 
 # ========================================
 # Tests d'intégration NetworkManager
@@ -197,7 +197,7 @@ target_link_libraries(test_networkmanager_integration PRIVATE
 
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
-gtest_discover_tests(test_networkmanager_integration)
+gtest_discover_tests(test_networkmanager_integration DISCOVERY_MODE PRE_TEST)
 
 # ========================================
 # Tests d'intégration GameServer
@@ -227,7 +227,7 @@ target_link_libraries(test_gameserver_integration PRIVATE
 
 # Découvrir automatiquement les tests Google Test
 include(GoogleTest)
-gtest_discover_tests(test_gameserver_integration)
+gtest_discover_tests(test_gameserver_integration DISCOVERY_MODE PRE_TEST)
 
 # ========================================
 # Tests unitaires système d'amis (DatabaseManager)
@@ -250,7 +250,7 @@ target_link_libraries(test_friends PRIVATE
 )
 
 include(GoogleTest)
-gtest_discover_tests(test_friends)
+gtest_discover_tests(test_friends DISCOVERY_MODE PRE_TEST)
 
 # ========================================
 # Tests d'intégration système d'amis (WebSocket)
@@ -279,4 +279,4 @@ target_link_libraries(test_friends_integration PRIVATE
 )
 
 include(GoogleTest)
-gtest_discover_tests(test_friends_integration)
+gtest_discover_tests(test_friends_integration DISCOVERY_MODE PRE_TEST)
