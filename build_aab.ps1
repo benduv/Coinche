@@ -2,8 +2,8 @@
 # A partir de deux builds Qt Creator existants
 
 # Chemins des builds existants
-$arm64Build = "build\Android_Qt_6_9_3_Clang_arm64_v8a-arm64-v8a_Release\android-build-coinche"
-$armv7Build = "build\Android_Qt_6_9_3_Clang_armeabi_v7a-armeabi-v7_Release\android-build-coinche"
+$arm64Build = "build\Qt_6_11_0_pour_Android_arm64_v8a-Release\android-build-coinche"
+$armv7Build = "build\Qt_6_11_0_pour_Android_armeabi_v7a-Release\android-build-coinche"
 
 # Dossier de build combine
 $combinedBuild = "build\Android_Combined_Release\android-build-coinche"
@@ -83,8 +83,8 @@ if (Test-Path $aabFile) {
 Write-Host ""
 Write-Host "=== Generation des symboles natifs pour Google Play ===" -ForegroundColor Cyan
 
-$arm64So  = "build\Android_Qt_6_9_3_Clang_arm64_v8a-arm64-v8a_Release\libcoinche_arm64-v8a.so"
-$armv7So  = "build\Android_Qt_6_9_3_Clang_armeabi_v7a-armeabi-v7_Release\libcoinche_armeabi-v7a.so"
+$arm64So  = "build\Android_Qt_6_11_0_Clang_arm64_v8a-arm64-v8a_Release\libcoinche_arm64-v8a.so"
+$armv7So  = "build\Android_Qt_6_11_0_Clang_armeabi_v7a-armeabi-v7_Release\libcoinche_armeabi-v7a.so"
 $symbolsZip = "build\coinche-native-debug-symbols.zip"
 $tmpDir = "build\symbols_tmp"
 
