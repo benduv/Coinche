@@ -2477,6 +2477,11 @@ private:
             }
         }
 
+        // Démarrer le timer matchmaking pour compléter avec des bots si personne ne rejoint
+        m_countdownTimer->stop();
+        m_matchmakingTimer->start();
+        qDebug() << "startLobbyGameWith2Players - Timer matchmaking démarré (bots si personne ne rejoint)";
+
         // Vérifier si on peut créer une partie
         tryCreateGame();
     }
