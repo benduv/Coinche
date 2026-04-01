@@ -2739,6 +2739,37 @@ void GameServer::createGameWithBots() {
         connectionIds.append(m_matchmakingQueue.dequeue());
     }
 
+    // Si une paire de partenaires est présente, les placer aux positions 0 et 2
+    QString partner1, partner2;
+    for (const QString &id : connectionIds) {
+        PlayerConnection* conn = m_connections.value(id);
+        if (conn && !conn->lobbyPartnerId.isEmpty() && connectionIds.contains(conn->lobbyPartnerId)) {
+            partner1 = id;
+            partner2 = conn->lobbyPartnerId;
+            break;
+        }
+    }
+    if (!partner1.isEmpty()) {
+        QList<QString> ordered;
+        ordered.append(partner1);  // position 0
+        ordered.append("");        // position 1 → bot
+        ordered.append(partner2);  // position 2 (partenaire)
+        ordered.append("");        // position 3 → bot
+        // Réinitialiser les marqueurs de partenariat et supprimer le lobby
+        QString lobbyCode = m_connections[partner1]->lobbyCode;
+        m_connections[partner1]->lobbyPartnerId = "";
+        m_connections[partner1]->lobbyCode = "";
+        m_connections[partner2]->lobbyPartnerId = "";
+        m_connections[partner2]->lobbyCode = "";
+        if (!lobbyCode.isEmpty() && m_privateLobbies.contains(lobbyCode)) {
+            delete m_privateLobbies[lobbyCode];
+            m_privateLobbies.remove(lobbyCode);
+        }
+        connectionIds = ordered;
+        humanPlayers = 2;  // toujours 2 humains mais aux positions 0 et 2
+        qDebug() << "createGameWithBots - partenaires aux positions 0 et 2";
+    }
+
     // Créer la room
     int roomId = m_nextRoomId++;
     GameRoom* room = new GameRoom();
@@ -2748,58 +2779,40 @@ void GameServer::createGameWithBots() {
     // Enregistrer la création de GameRoom dans les statistiques quotidiennes
     m_dbManager->recordGameRoomCreated();
 
-    // Ajouter les joueurs humains
-    for (int i = 0; i < humanPlayers; i++) {
-        PlayerConnection* conn = m_connections[connectionIds[i]];
-        conn->gameRoomId = roomId;
-        conn->playerIndex = i;
-
-        room->connectionIds.append(connectionIds[i]);
-        room->originalConnectionIds.append(connectionIds[i]);
-        room->playerNames.append(conn->playerName);
-        room->playerAvatars.append(conn->avatar);
-        m_playerNameToRoomId[conn->playerName] = roomId;
-
-        std::vector<Carte*> emptyHand;
-        auto player = std::make_unique<Player>(
-            conn->playerName.toStdString(),
-            emptyHand,
-            i
-        );
-        room->players.push_back(std::move(player));
-        room->isBot.push_back(false);
-    }
-
-    // Ajouter les bots
-    for (int i = humanPlayers; i < 4; i++) {
-        // Générer un nom de bot aléatoire (Bot + nombre entre 100 et 999)
-        int botNumber = 100 + QRandomGenerator::global()->bounded(900);
-        QString botName = QString("Bot%1").arg(botNumber);
-
-        // Vérifier que le nom n'est pas déjà pris
-        while (m_playerNameToRoomId.contains(botName)) {
-            botNumber = 100 + QRandomGenerator::global()->bounded(900);
-            botName = QString("Bot%1").arg(botNumber);
+    // Ajouter les 4 joueurs : humains aux positions définies, bots aux positions vides
+    for (int i = 0; i < 4; i++) {
+        bool isHuman = (i < connectionIds.size() && !connectionIds[i].isEmpty());
+        if (isHuman) {
+            PlayerConnection* conn = m_connections[connectionIds[i]];
+            conn->gameRoomId = roomId;
+            conn->playerIndex = i;
+            room->connectionIds.append(connectionIds[i]);
+            room->originalConnectionIds.append(connectionIds[i]);
+            room->playerNames.append(conn->playerName);
+            room->playerAvatars.append(conn->avatar);
+            m_playerNameToRoomId[conn->playerName] = roomId;
+            std::vector<Carte*> emptyHand;
+            auto player = std::make_unique<Player>(conn->playerName.toStdString(), emptyHand, i);
+            room->players.push_back(std::move(player));
+            room->isBot.push_back(false);
+        } else {
+            int botNumber = 100 + QRandomGenerator::global()->bounded(900);
+            QString botName = QString("Bot%1").arg(botNumber);
+            while (m_playerNameToRoomId.contains(botName)) {
+                botNumber = 100 + QRandomGenerator::global()->bounded(900);
+                botName = QString("Bot%1").arg(botNumber);
+            }
+            QString botAvatar = getRandomBotAvatar();
+            qDebug() << "Ajout du bot:" << botName << "avec avatar:" << botAvatar << "à la position" << i;
+            room->connectionIds.append("");
+            room->originalConnectionIds.append("");
+            room->playerNames.append(botName);
+            room->playerAvatars.append(botAvatar);
+            std::vector<Carte*> emptyHand;
+            auto player = std::make_unique<Player>(botName.toStdString(), emptyHand, i);
+            room->players.push_back(std::move(player));
+            room->isBot.push_back(true);
         }
-
-        // Avatar aléatoire pour le bot
-        QString botAvatar = getRandomBotAvatar();
-
-        qDebug() << "Ajout du bot:" << botName << "avec avatar:" << botAvatar << "à la position" << i;
-
-        room->connectionIds.append("");  // Pas de connexion pour les bots
-        room->originalConnectionIds.append("");
-        room->playerNames.append(botName);
-        room->playerAvatars.append(botAvatar);
-
-        std::vector<Carte*> emptyHand;
-        auto player = std::make_unique<Player>(
-            botName.toStdString(),
-            emptyHand,
-            i
-        );
-        room->players.push_back(std::move(player));
-        room->isBot.push_back(true);  // Marquer comme bot
     }
 
     // Distribuer les cartes
