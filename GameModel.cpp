@@ -507,27 +507,28 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         // Animation de distribution 3-2-3 pour une nouvelle partie
         m_distributionGeneration++;
         int gen = m_distributionGeneration;
-        // Phase 1 : 3 cartes (apres 250ms)
-        QTimer::singleShot(250, this, [this, myNewCartes, gen]() {
-            if (gen != m_distributionGeneration) return;  // Invalidée par resync
+        // Phase 1 : 3 cartes (après 100ms)
+        // Timing QML : 4 paquets × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS par phase
+        QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
+            if (gen != m_distributionGeneration) return;
             distributeCards(0, 3, myNewCartes);
 
-            // Phase 2 : 2 cartes (après 1000ms supplémentaires)
-            QTimer::singleShot(1000, this, [this, myNewCartes, gen]() {
+            // Phase 2 : 2 cartes (après fin de phase 1)
+            QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
                 if (gen != m_distributionGeneration) return;
                 m_distributionPhase = 2;
                 emit distributionPhaseChanged();
                 distributeCards(3, 5, myNewCartes);
 
-                // Phase 3 : 3 cartes (après 1000ms supplémentaires)
-                QTimer::singleShot(1000 , this, [this, myNewCartes, gen]() {
+                // Phase 3 : 3 cartes (après fin de phase 2)
+                QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
                     if (gen != m_distributionGeneration) return;
                     m_distributionPhase = 3;
                     emit distributionPhaseChanged();
                     distributeCards(5, 8, myNewCartes);
 
-                    // Fin de distribution (après 1000ms supplémentaires)
-                    QTimer::singleShot(1000, this, [this, gen]() {
+                    // Fin de distribution
+                    QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, gen]() {
                         if (gen != m_distributionGeneration) return;
                         m_distributionPhase = 0;
                         emit distributionPhaseChanged();
@@ -1414,40 +1415,35 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         }
 
         // Animation de distribution 3-2-3
-        // Phase 1 : 3 cartes (apres 250ms)
         m_distributionGeneration++;
         int gen = m_distributionGeneration;
-    QTimer::singleShot(250, this, [this, myNewCartes, gen]() {
-        if (gen != m_distributionGeneration) return;  // Invalidée par resync
-        m_distributionPhase = 1;
-        emit distributionPhaseChanged();
-        distributeCards(0, 3, myNewCartes);
-
-        // Phase 2 : 2 cartes (après 1000ms supplémentaires)
-        QTimer::singleShot(1000, this, [this, myNewCartes, gen]() {
+        // Phase 1 : distributionPhase déjà à 1
+        // Timing QML : 4 paquets × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS par phase
+        QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
             if (gen != m_distributionGeneration) return;
-            m_distributionPhase = 2;
-            emit distributionPhaseChanged();
-            distributeCards(3, 5, myNewCartes);
+            distributeCards(0, 3, myNewCartes);
 
-            // Phase 3 : 3 cartes (après 1000ms supplémentaires)
-            QTimer::singleShot(1000 , this, [this, myNewCartes, gen]() {
+            QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
                 if (gen != m_distributionGeneration) return;
-                m_distributionPhase = 3;
+                m_distributionPhase = 2;
                 emit distributionPhaseChanged();
-                distributeCards(5, 8, myNewCartes);
+                distributeCards(3, 5, myNewCartes);
 
-                // Fin de distribution (après 1000ms supplémentaires)
-                QTimer::singleShot(1000, this, [this, gen]() {
+                QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
                     if (gen != m_distributionGeneration) return;
-                    m_distributionPhase = 0;
+                    m_distributionPhase = 3;
                     emit distributionPhaseChanged();
-                    emit gameInitialized();
+                    distributeCards(5, 8, myNewCartes);
+
+                    QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, gen]() {
+                        if (gen != m_distributionGeneration) return;
+                        m_distributionPhase = 0;
+                        emit distributionPhaseChanged();
+                        emit gameInitialized();
+                    });
                 });
             });
         });
-    });
-
     }
 }
 
@@ -1458,11 +1454,13 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
 
     int gen = m_distributionGeneration;  // Capturer la génération courante
 
-    // Distribuer les cartes une par une avec un délai
+    // Distribuer les cartes une par une avec un délai synchronisé à l'animation QML
+    // L'animation QML envoie un paquet par joueur toutes les 320ms, chaque vol dure 500ms
+    // Les cartes doivent apparaître en main quand le paquet arrive (index * 320 + 500)
     int numCards = endIdx - startIdx;
     for (int cardOffset = 0; cardOffset < numCards; cardOffset++) {
         int cardIndex = startIdx + cardOffset;
-        int delay = cardOffset * 250;  // 250ms entre chaque carte
+        int delay = cardOffset * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS;
 
         // Distribuer au joueur local (avec délai)
         QTimer::singleShot(delay, this, [this, localPlayer, cardIndex, myCards, gen]() {
@@ -1496,7 +1494,7 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
     }
 
     // Trier les cartes APRÈS la dernière carte de cette phase
-    int sortDelay = numCards * 250;  // Après toutes les cartes de cette phase
+    int sortDelay = (numCards - 1) * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + 100;
     QTimer::singleShot(sortDelay, this, [this, localPlayer, gen]() {
         if (gen != m_distributionGeneration) return;  // Distribution invalidée par resync
         localPlayer->sortHand(m_strongCardsLeft);
@@ -1526,29 +1524,27 @@ void GameModel::receiveCardsDealt(const QJsonArray& cards)
     // Lancer l'animation de distribution 3-2-3
     m_distributionGeneration++;
     int gen = m_distributionGeneration;
-    // Phase 1 : 3 cartes (apres 250ms)
-    QTimer::singleShot(250, this, [this, myNewCartes, gen]() {
+    // Phase 1 : 3 cartes (après 100ms)
+    // Timing QML : 4 paquets × 320ms + 500ms de vol = ~1780ms par phase
+    QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
         if (gen != m_distributionGeneration) return;
         m_distributionPhase = 1;
         emit distributionPhaseChanged();
         distributeCards(0, 3, myNewCartes, false);  // false = pas de cartes fantômes (lobby mode)
 
-        // Phase 2 : 2 cartes (après 1000ms supplémentaires)
-        QTimer::singleShot(1000, this, [this, myNewCartes, gen]() {
+        QTimer::singleShot(1100, this, [this, myNewCartes, gen]() {
             if (gen != m_distributionGeneration) return;
             m_distributionPhase = 2;
             emit distributionPhaseChanged();
-            distributeCards(3, 5, myNewCartes, false);  // false = pas de cartes fantômes (lobby mode)
+            distributeCards(3, 5, myNewCartes, false);
 
-            // Phase 3 : 3 cartes (après 1000ms supplémentaires)
-            QTimer::singleShot(1000 , this, [this, myNewCartes, gen]() {
+            QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
                 if (gen != m_distributionGeneration) return;
                 m_distributionPhase = 3;
                 emit distributionPhaseChanged();
-                distributeCards(5, 8, myNewCartes, false);  // false = pas de cartes fantômes (lobby mode)
+                distributeCards(5, 8, myNewCartes, false);
 
-                // Fin de distribution (après 1000ms supplémentaires)
-                QTimer::singleShot(1000, this, [this, gen]() {
+                QTimer::singleShot(1100, this, [this, gen]() {
                     if (gen != m_distributionGeneration) return;
                     m_distributionPhase = 0;
                     emit distributionPhaseChanged();

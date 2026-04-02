@@ -50,10 +50,9 @@ Rectangle {
     }
 
     // Son distribution
-    MediaPlayer {
+    SoundEffect {
         id: dealingSound
         source: "qrc:/resources/sons/827603__elliottliu__card3.wav"
-        audioOutput: AudioOutput {}
     }
 
     MediaPlayer {
@@ -2971,11 +2970,8 @@ Rectangle {
         id: distributionAnimation
         model: {
             if (gameModel.distributionPhase === 0) return 0
-            // Nombre total de cartes = (cartes par joueur) * 4 joueurs
-            if (gameModel.distributionPhase === 1) return 12  // 3 cartes * 4 joueurs
-            if (gameModel.distributionPhase === 2) return 8   // 2 cartes * 4 joueurs
-            if (gameModel.distributionPhase === 3) return 12  // 3 cartes * 4 joueurs
-            return 0
+            // 4 paquets par phase (un par joueur), chaque item affiche 2 ou 3 cartes visuelles
+            return 4
         }
 
         // Une carte animée par itération
@@ -2991,14 +2987,10 @@ Rectangle {
             property int targetPlayer: (gameModel.dealerPosition + 1 + (index % 4)) % 4
 
             // Décalage dans le temps pour cette carte
-            property int cardDelay: index * 300  // 300ms entre chaque carte
+            property int cardDelay: index * gameModel.dealCardIntervalMs
 
             // Position de départ selon le dealer
             Component.onCompleted: {
-                if(AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
-                    //dealingSound.stop()
-                    dealingSound.play()
-                }
                 opacity = 0
                 // Positionner selon le dealer: 0=Sud(bas), 1=Ouest(gauche), 2=Nord(haut), 3=Est(droite)
                 if (gameModel.dealerPosition === 0) {
@@ -3063,7 +3055,7 @@ Rectangle {
                     property: "x"
                     from: flyingCard.startX
                     to: flyingCard.targetX
-                    duration: 500
+                    duration: gameModel.dealFlightDurationMs
                     easing.type: Easing.OutCubic
                 }
                 NumberAnimation {
@@ -3071,7 +3063,7 @@ Rectangle {
                     property: "y"
                     from: flyingCard.startY
                     to: flyingCard.targetY
-                    duration: 500
+                    duration: gameModel.dealFlightDurationMs
                     easing.type: Easing.OutCubic
                 }
                 NumberAnimation {
@@ -3079,7 +3071,7 @@ Rectangle {
                     property: "opacity"
                     from: 1
                     to: 0
-                    duration: 500
+                    duration: gameModel.dealFlightDurationMs
                     easing.type: Easing.InQuad
                 }
             }
@@ -3090,6 +3082,9 @@ Rectangle {
                 running: gameModel.distributionPhase > 0
                 repeat: false
                 onTriggered: {
+                    if (AudioSettings.effectsEnabled && Qt.application.state === Qt.ApplicationActive) {
+                        dealingSound.play()
+                    }
                     // Convertir la position absolue du dealer en position relative par rapport au joueur local
                     var dealerVisualPosition = rootArea.getVisualPosition(gameModel.dealerPosition)
 

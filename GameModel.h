@@ -26,6 +26,13 @@ struct CarteDuPliSauvegardee {
 
 class GameModel : public QObject {
     Q_OBJECT
+
+public:
+    // Constantes de timing pour l'animation de distribution (ms)
+    static constexpr int DEAL_CARD_INTERVAL_MS = 920;   // Délai entre chaque paquet distribué
+    static constexpr int DEAL_FLIGHT_DURATION_MS = 500;  // Durée du vol d'un paquet
+    // Durée totale d'une phase = 3 × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS
+    static constexpr int DEAL_PHASE_DURATION_MS = 3 * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS;
     Q_PROPERTY(HandModel* player0Hand READ player0Hand CONSTANT)
     Q_PROPERTY(HandModel* player1Hand READ player1Hand CONSTANT)
     Q_PROPERTY(HandModel* player2Hand READ player2Hand CONSTANT)
@@ -59,6 +66,8 @@ class GameModel : public QObject {
     Q_PROPERTY(bool showCapotAnimation READ showCapotAnimation NOTIFY showCapotAnimationChanged)
     Q_PROPERTY(QList<QVariant> lastPliCards READ lastPliCards NOTIFY lastPliCardsChanged)
     Q_PROPERTY(int distributionPhase READ distributionPhase NOTIFY distributionPhaseChanged)
+    Q_PROPERTY(int dealCardIntervalMs READ dealCardIntervalMs CONSTANT)
+    Q_PROPERTY(int dealFlightDurationMs READ dealFlightDurationMs CONSTANT)
     Q_PROPERTY(QList<QVariant> playerBids READ playerBids NOTIFY playerBidsChanged)
     Q_PROPERTY(int playTimeRemaining READ playTimeRemaining NOTIFY playTimeRemainingChanged)
     Q_PROPERTY(int maxPlayTime READ maxPlayTime CONSTANT)
@@ -104,6 +113,8 @@ public:
     bool showCapotAnimation() const;
     QList<QVariant> lastPliCards() const;
     int distributionPhase() const;
+    int dealCardIntervalMs() const { return DEAL_CARD_INTERVAL_MS; }
+    int dealFlightDurationMs() const { return DEAL_FLIGHT_DURATION_MS; }
     QList<QVariant> playerBids() const;
     int playTimeRemaining() const;
     int maxPlayTime() const;
