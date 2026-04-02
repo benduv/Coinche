@@ -952,6 +952,84 @@ Rectangle {
                 }
             }
 
+            // ===================== À PROPOS =====================
+            Rectangle {
+                width: parent.width
+                height: aboutColumn.height + 40 * settingsRoot.minRatio
+                color: "#992a2a2a"
+                radius: 10 * settingsRoot.minRatio
+                border.color: "#FFD700"
+                border.width: 2 * settingsRoot.minRatio
+
+                Column {
+                    id: aboutColumn
+                    anchors.centerIn: parent
+                    width: parent.width - 40 * settingsRoot.minRatio
+                    spacing: 20 * settingsRoot.minRatio
+
+                    Row {
+                        spacing: 20 * settingsRoot.minRatio
+
+                        Rectangle {
+                            width: 60 * settingsRoot.minRatio
+                            height: 60 * settingsRoot.minRatio
+                            radius: 10 * settingsRoot.minRatio
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Image {
+                                anchors.centerIn: parent
+                                width: parent.width * 0.7
+                                height: parent.height * 0.7
+                                source: "qrc:/resources/question-svgrepo-com.svg"
+                                fillMode: Image.PreserveAspectFit
+                            }
+                        }
+
+                        Text {
+                            text: "À PROPOS"
+                            font.pixelSize: 40 * settingsRoot.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    Text {
+                        text: "Coinche de l'Espace est une application indépendante, créée par Nebuludik, sans publicité, par passion de la Coinche. Merci pour votre soutien !"
+                        leftPadding: 14 * settingsRoot.minRatio
+                        font.pixelSize: 26 * settingsRoot.minRatio
+                        color: "#cccccc"
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                    }
+
+                    AppButton {
+                        width: parent.width * 0.6
+                        height: 80 * settingsRoot.minRatio
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        background: Rectangle {
+                            color: parent.down ? "#444444" : (parent.hovered ? "#555555" : "#3a3a3a")
+                            radius: 10 * settingsRoot.minRatio
+                            border.color: "#FFD700"
+                            border.width: 2 * settingsRoot.minRatio
+                        }
+
+                        contentItem: Text {
+                            text: "Visiter le site web"
+                            font.pixelSize: 30 * settingsRoot.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: Qt.openUrlExternally("https://nebuludik.fr/")
+                    }
+                }
+            }
+
             // ===================== REMERCIEMENTS =====================
             Rectangle {
                 width: parent.width

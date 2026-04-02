@@ -138,7 +138,7 @@ Rectangle {
             // Description
             Text {
                 width: parent.width
-                text: "Une suggestion, un bug à signaler ou autre ? N'hésitez pas à remplir ce formulaire ou via email à contact@nebuludik.fr"
+                text: "Vous avez une suggestion, un bug à signaler ou une autre remarque ? N'hésitez pas à remplir ce formulaire ou bien envoyez directement un email à contact@nebuludik.fr"
                 font.pixelSize: 26 * contactRoot.minRatio
                 color: "white"
                 wrapMode: Text.WordWrap
