@@ -2411,7 +2411,7 @@ Rectangle {
             Text {
                 anchors.centerIn: parent
                 text: "Bonne partie !"
-                font.pixelSize: rootArea.height * 0.045
+                font.pixelSize: rootArea.height * 0.09
                 font.bold: true
                 color: "#CDF7F7"
 

@@ -32,8 +32,8 @@ public:
     static constexpr int GOOD_GAME_DELAY_MS = 4000;      // Délai "Bonne partie !" avant la première distribution
     static constexpr int DEAL_CARD_INTERVAL_MS = 920;   // Délai entre chaque paquet distribué
     static constexpr int DEAL_FLIGHT_DURATION_MS = 500;  // Durée du vol d'un paquet
-    // Durée totale d'une phase = 3 × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + pause inter-phase
-    static constexpr int DEAL_PHASE_DURATION_MS = 4 * DEAL_CARD_INTERVAL_MS; //+ DEAL_FLIGHT_DURATION_MS + DEAL_CARD_INTERVAL_MS;
+    // Durée totale d'une phase = 4 × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + pause inter-phase
+    static constexpr int DEAL_PHASE_DURATION_MS = 4 * DEAL_CARD_INTERVAL_MS; //+ DEAL_FLIGHT_DURATION_MS;
     Q_PROPERTY(HandModel* player0Hand READ player0Hand CONSTANT)
     Q_PROPERTY(HandModel* player1Hand READ player1Hand CONSTANT)
     Q_PROPERTY(HandModel* player2Hand READ player2Hand CONSTANT)
