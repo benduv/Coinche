@@ -53,6 +53,50 @@ void HandModel::refresh() {
     emit countChanged();
 }
 
+// Tri animé avec beginMoveRows/endMoveRows
+void HandModel::sortAndAnimate(std::function<void()> sortFunction) {
+    if (!m_player) return;
+
+    // 1. Snapshot de l'ancien ordre (getMain() retourne par valeur = copie)
+    std::vector<Carte*> oldOrder = m_player->getMain();
+
+    // 2. Tri en place dans Player
+    sortFunction();
+
+    // 3. Nouvel ordre
+    std::vector<Carte*> newOrder = m_player->getMain();
+
+    if (oldOrder.size() != newOrder.size() || oldOrder.size() <= 1) {
+        // Tailles différentes ou 0-1 carte : fallback sur reset
+        beginResetModel();
+        endResetModel();
+        emit countChanged();
+        return;
+    }
+
+    // 4. Appliquer les moves un par un (selection sort sur working copy)
+    std::vector<Carte*> working = oldOrder;
+    for (int destIdx = 0; destIdx < (int)newOrder.size(); destIdx++) {
+        int srcIdx = -1;
+        for (int j = destIdx; j < (int)working.size(); j++) {
+            if (working[j] == newOrder[destIdx]) {
+                srcIdx = j;
+                break;
+            }
+        }
+        if (srcIdx == destIdx || srcIdx < 0) continue;
+
+        // Qt API : destination = row BEFORE which the item is inserted
+        int dest = (destIdx > srcIdx) ? destIdx + 1 : destIdx;
+        beginMoveRows(QModelIndex(), srcIdx, srcIdx, QModelIndex(), dest);
+        Carte* card = working[srcIdx];
+        working.erase(working.begin() + srcIdx);
+        working.insert(working.begin() + destIdx, card);
+        endMoveRows();
+    }
+    emit countChanged();
+}
+
 // Nombre de cartes dans la main
 int HandModel::rowCount(const QModelIndex &parent) const {
     if (parent.isValid() || !m_player)

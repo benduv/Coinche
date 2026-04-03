@@ -348,16 +348,14 @@ void GameModel::setStrongCardsLeft(bool value)
         bool isToutAtout = (lastBidSuit == 7 || m_lastBidCouleur == static_cast<Carte::Couleur>(7));
         bool isSansAtout = (lastBidSuit == 8 || m_lastBidCouleur == static_cast<Carte::Couleur>(8));
 
-        if (isToutAtout) {
-            localPlayer->sortHandToutAtout(m_strongCardsLeft);
-        } else if (isSansAtout) {
-            localPlayer->sortHandSansAtout(m_strongCardsLeft);
-        } else {
-            localPlayer->sortHand(m_strongCardsLeft);
-        }
-
         HandModel* hand = getHandModelByPosition(m_myPosition);
-        if (hand) hand->refresh();
+        if (hand) {
+            hand->sortAndAnimate([&]() {
+                if (isToutAtout) localPlayer->sortHandToutAtout(m_strongCardsLeft);
+                else if (isSansAtout) localPlayer->sortHandSansAtout(m_strongCardsLeft);
+                else localPlayer->sortHand(m_strongCardsLeft);
+            });
+        }
     }
 }
 
@@ -702,9 +700,12 @@ void GameModel::updateGameState(const QJsonObject& state)
                         for (Carte* carte : localPlayer->getMain()) {
                             carte->setAtout(carte->getCouleur() == m_lastBidCouleur);
                         }
-                        localPlayer->sortHand(m_strongCardsLeft);
                         HandModel* hand = getHandModelByPosition(m_myPosition);
-                        if (hand) hand->refresh();
+                        if (hand) {
+                            hand->sortAndAnimate([&]() {
+                                localPlayer->sortHand(m_strongCardsLeft);
+                            });
+                        }
                     }
                 }
 
@@ -776,24 +777,25 @@ void GameModel::updateGameState(const QJsonObject& state)
             if (localPlayer) {
                 // Marquer les cartes d'atout avant le tri
                 if (isToutAtout) {
-                    // Mode Tout Atout: toutes les cartes sont des atouts
                     localPlayer->setAllCardsAsAtout();
-                    localPlayer->sortHandToutAtout(m_strongCardsLeft);
                 } else if (isSansAtout) {
-                    // Mode Sans Atout: aucune carte n'est atout
                     for (Carte* carte : localPlayer->getMain()) {
                         carte->setAtout(false);
                     }
-                    localPlayer->sortHandSansAtout(m_strongCardsLeft);
                 } else {
-                    // Mode normal: seules les cartes de la couleur d'atout
                     for (Carte* carte : localPlayer->getMain()) {
                         carte->setAtout(carte->getCouleur() == m_lastBidCouleur);
                     }
-                    localPlayer->sortHand(m_strongCardsLeft);
                 }
+
                 HandModel* hand = getHandModelByPosition(m_myPosition);
-                if (hand) hand->refresh();
+                if (hand) {
+                    hand->sortAndAnimate([&]() {
+                        if (isToutAtout) localPlayer->sortHandToutAtout(m_strongCardsLeft);
+                        else if (isSansAtout) localPlayer->sortHandSansAtout(m_strongCardsLeft);
+                        else localPlayer->sortHand(m_strongCardsLeft);
+                    });
+                }
             }
         }
     }
@@ -1476,7 +1478,7 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
         int delay = relativePos * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS;
 
         if (playerPos == m_myPosition) {
-            // Joueur local : ajouter les vraies cartes
+            // Joueur local : ajouter les vraies cartes puis trier immédiatement
             for (int cardOffset = 0; cardOffset < numCards; cardOffset++) {
                 int cardIndex = startIdx + cardOffset;
                 QTimer::singleShot(delay, this, [this, localPlayer, cardIndex, myCards, gen]() {
@@ -1484,7 +1486,13 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
                     if (cardIndex < static_cast<int>(myCards.size())) {
                         localPlayer->addCardToHand(myCards[cardIndex]);
                         HandModel* hand = getHandModelByPosition(m_myPosition);
-                        if (hand) hand->refresh();
+                        if (hand) {
+                            // Refresh pour ajouter la carte, puis tri animé
+                            hand->refresh();
+                            hand->sortAndAnimate([&]() {
+                                localPlayer->sortHand(m_strongCardsLeft);
+                            });
+                        }
                     }
                 });
             }
@@ -1505,14 +1513,6 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
         }
     }
 
-    // Trier les cartes APRÈS que le dernier joueur a reçu ses cartes
-    int sortDelay = 3 * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + 100;
-    QTimer::singleShot(sortDelay, this, [this, localPlayer, gen]() {
-        if (gen != m_distributionGeneration) return;  // Distribution invalidée par resync
-        localPlayer->sortHand(m_strongCardsLeft);
-        HandModel* hand = getHandModelByPosition(m_myPosition);
-        if (hand) hand->refresh();
-    });
 }
 
 void GameModel::receiveCardsDealt(const QJsonArray& cards)

@@ -3,9 +3,9 @@
 
 #include <QObject>
 #include <QAbstractListModel>
+#include <functional>
 #include "Player.h"
 #include "Carte.h"
-// #include "Deck.h"
 #include <iostream>
 
 // Modèle pour une main de cartes
@@ -35,8 +35,11 @@ public:
     // Définir la couleur d'atout
     void setAtoutCouleur(Carte::Couleur atoutCouleur);
 
-    // Rafraîchir les données
+    // Rafraîchir les données (reset complet — pour mains adverses et resets)
     void refresh();
+
+    // Tri animé : capture l'ancien ordre, exécute sortFunction, émet des moveRows
+    void sortAndAnimate(std::function<void()> sortFunction);
 
     // Nombre de cartes dans la main
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;

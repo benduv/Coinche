@@ -1004,33 +1004,52 @@ Rectangle {
                 }
             }
 
-            // Cartes centrees
-            Row {
+            // Cartes centrees (ListView pour animation de tri)
+            ListView {
                 id: playerSouth
+                orientation: ListView.Horizontal
+                interactive: false
+                clip: false
+
+                property real southCardRatio: 0.65  // mis à jour par le delegate
+                property real cardHeight: rootArea.height * 0.35
+                property real cardWidth: cardHeight * southCardRatio
+                property real overlap: rootArea.height * 0.102
+
+                width: count > 0 ? cardWidth + (count - 1) * (cardWidth - overlap) : 0
+                height: cardHeight
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: - rootArea.height * 0.102
-                Repeater {
-                    model: {
-                        switch (playerSouthRow.actualPlayerIndex) {
-                            case 0: return gameModel.player0Hand
-                            case 1: return gameModel.player1Hand
-                            case 2: return gameModel.player2Hand
-                            case 3: return gameModel.player3Hand
-                        }
+
+                model: {
+                    switch (playerSouthRow.actualPlayerIndex) {
+                        case 0: return gameModel.player0Hand
+                        case 1: return gameModel.player1Hand
+                        case 2: return gameModel.player2Hand
+                        case 3: return gameModel.player3Hand
                     }
+                }
+
+                delegate: Item {
+                    width: playerSouth.cardWidth - playerSouth.overlap
+                    height: playerSouth.cardHeight
+                    z: index
+
                     Card {
-                        width: {
-                            var desiredHeight = rootArea.height * 0.35
-                            return desiredHeight * cardRatio
-                        }
-                        height: rootArea.height * 0.35
+                        width: playerSouth.cardWidth
+                        height: playerSouth.cardHeight
                         value: model.value
                         suit: model.suit
                         faceUp: model.faceUp
                         isAtout: model.isAtout
                         isPlayable: gameModel.biddingPhase || gameModel.currentPlayer !== playerSouthRow.actualPlayerIndex || model.isPlayable
                         enabled: !gameModel.biddingPhase && gameModel.currentPlayer === playerSouthRow.actualPlayerIndex
+
+                        onCardRatioChanged: {
+                            if (cardRatio > 0 && cardRatio !== 1.0) {
+                                playerSouth.southCardRatio = cardRatio
+                            }
+                        }
 
                         MouseArea {
                             anchors.fill: parent
@@ -1039,6 +1058,14 @@ Rectangle {
                             onClicked: gameModel.playCard(index)
                         }
                     }
+                }
+
+                // Animation de tri (cartes qui glissent)
+                move: Transition {
+                    NumberAnimation { properties: "x"; duration: 400; easing.type: Easing.InOutQuad }
+                }
+                displaced: Transition {
+                    NumberAnimation { properties: "x"; duration: 400; easing.type: Easing.InOutQuad }
                 }
             }
         }

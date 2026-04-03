@@ -974,10 +974,25 @@ ApplicationWindow {
                     z: 101
 
                     background: Rectangle {
-                        color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
+                        id: btnBgFriends
+                        property bool isDown: parent.down
                         radius: 10 * mainWindow.minRatio
                         border.color: "#FFD700"
                         border.width: 3 * mainWindow.minRatio
+                        clip: true
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: btnBgFriends.isDown ? "#0088cc" : "#0099dd" }
+                            GradientStop { position: 1.0; color: btnBgFriends.isDown ? "#004477" : "#0077bb" }
+                        }
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: parent.height * 0.42
+                            color: "white"
+                            opacity: 0.13
+                            radius: 10 * mainWindow.minRatio
+                        }
                     }
 
                     contentItem: Image {
@@ -1010,12 +1025,26 @@ ApplicationWindow {
                         opacity: (mainWindow.accountType !== "guest" && networkManager.connected) ? 1.0 : 0.4
 
                         background: Rectangle {
-                            color: parent.enabled ?
-                                   (parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")) :
-                                   "#555555"
+                            id: btnBgStats
+                            property bool isEnabled: parent.enabled
+                            property bool isDown: parent.down
                             radius: 10 * mainWindow.minRatio
                             border.color: (mainWindow.accountType !== "guest" && networkManager.connected) ? "#FFD700" : "#888888"
                             border.width: 3 * mainWindow.minRatio
+                            clip: true
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: btnBgStats.isEnabled ? (btnBgStats.isDown ? "#0088cc" : "#0099dd") : "#666666" }
+                                GradientStop { position: 1.0; color: btnBgStats.isEnabled ? (btnBgStats.isDown ? "#004477" : "#0077bb") : "#444444" }
+                            }
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: parent.height * 0.42
+                                color: "white"
+                                opacity: 0.13
+                                radius: 10 * mainWindow.minRatio
+                            }
                         }
 
                         contentItem: Image {
@@ -1097,10 +1126,25 @@ ApplicationWindow {
                     z: 101
 
                     background: Rectangle {
-                        color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
+                        id: btnBgRules
+                        property bool isDown: parent.down
                         radius: 10 * mainWindow.minRatio
                         border.color: "#FFD700"
                         border.width: 3 * mainWindow.minRatio
+                        clip: true
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: btnBgRules.isDown ? "#0088cc" : "#0099dd" }
+                            GradientStop { position: 1.0; color: btnBgRules.isDown ? "#004477" : "#0077bb" }
+                        }
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: parent.height * 0.42
+                            color: "white"
+                            opacity: 0.13
+                            radius: 10 * mainWindow.minRatio
+                        }
                     }
 
                     contentItem: Image {
@@ -1127,10 +1171,25 @@ ApplicationWindow {
                     z: 101
 
                     background: Rectangle {
-                        color: parent.down ? "#0088cc" : (parent.hovered ? "#0099dd" : "#0077bb")
+                        id: btnBgSettings
+                        property bool isDown: parent.down
                         radius: 10 * mainWindow.minRatio
                         border.color: "#FFD700"
                         border.width: 3 * mainWindow.minRatio
+                        clip: true
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: btnBgSettings.isDown ? "#0088cc" : "#0099dd" }
+                            GradientStop { position: 1.0; color: btnBgSettings.isDown ? "#004477" : "#0077bb" }
+                        }
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: parent.height * 0.42
+                            color: "white"
+                            opacity: 0.13
+                            radius: 10 * mainWindow.minRatio
+                        }
                     }
 
                     contentItem: Image {

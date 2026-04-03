@@ -3257,11 +3257,15 @@ void GameServer::finishManche(int roomId) {
         multiplicateur = 2;
     }
 
+    // Belote bonus pour vérification du contrat (cohérent avec ScoreCalculator)
+    int beloteTeam1 = room->beloteTeam1 ? 20 : 0;
+    int beloteTeam2 = room->beloteTeam2 ? 20 : 0;
+
     // Gestion des stats (ignorées en mode entraînement)
     if (!room->isTraining && (room->coinched || room->surcoinched)) {
         if (team1HasBid) {
-            // Team1 a annoncé, vérifie si elle réussit
-            bool contractReussi = (pointsRealisesTeam1 >= valeurContrat);
+            // Team1 a annoncé, vérifie si elle réussit (belote compte pour le contrat)
+            bool contractReussi = ((pointsRealisesTeam1 + beloteTeam1) >= valeurContrat);
 
             if (contractReussi) {
                 // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
@@ -3328,8 +3332,8 @@ void GameServer::finishManche(int roomId) {
                 }
             }
         } else {
-            // Team2 a annoncé, vérifie si elle réussit
-            bool contractReussi = (pointsRealisesTeam2 >= valeurContrat);
+            // Team2 a annoncé, vérifie si elle réussit (belote compte pour le contrat)
+            bool contractReussi = ((pointsRealisesTeam2 + beloteTeam2) >= valeurContrat);
 
             if (contractReussi) {
                 // Mettre à jour les stats de surcoinche réussie (le contrat a réussi)
@@ -3499,13 +3503,14 @@ void GameServer::finishManche(int roomId) {
     scoreMsg["lastBidderIndex"] = room->lastBidderIndex;
     scoreMsg["bidValue"] = valeurContrat;
     int attackerPoints = team1HasBid ? pointsRealisesTeam1 : pointsRealisesTeam2;
+    int attackerBelote = team1HasBid ? beloteTeam1 : beloteTeam2;
     bool contractSuccess;
     if (isCapotAnnonce) {
         contractSuccess = capotReussi;
     } else if (isGeneraleAnnonce) {
         contractSuccess = generaleReussie;
     } else {
-        contractSuccess = (attackerPoints >= valeurContrat);
+        contractSuccess = ((attackerPoints + attackerBelote) >= valeurContrat);
     }
     scoreMsg["contractSuccess"] = contractSuccess;
     scoreMsg["pointsRealisesTeam1"] = pointsRealisesTeam1;
