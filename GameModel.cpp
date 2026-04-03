@@ -329,6 +329,11 @@ bool GameModel::strongCardsLeft() const
     return m_strongCardsLeft;
 }
 
+bool GameModel::showGoodGameAnimation() const
+{
+    return m_showGoodGameAnimation;
+}
+
 void GameModel::setStrongCardsLeft(bool value)
 {
     if (m_strongCardsLeft == value)
@@ -446,11 +451,6 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         }
     }
 
-    // Marquer la distribution comme en cours AVANT de changer biddingPhase
-    // pour eviter que l'AnnoncesPanel s'affiche brievement
-    m_distributionPhase = 1;
-    emit distributionPhaseChanged();
-
     m_biddingPhase = true;
     m_biddingPlayer = 0; // Supposons que le joueur 0 commence la partie
     m_currentPlayer = m_biddingPlayer;
@@ -462,6 +462,9 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
 
     // Lors d'une reconnexion, ajouter toutes les cartes d'un coup sans animation
     if (isReconnection) {
+        // Marquer la distribution comme en cours pour eviter que l'AnnoncesPanel s'affiche brievement
+        m_distributionPhase = 1;
+        emit distributionPhaseChanged();
         // Ajouter toutes les cartes instantanément au joueur local
         Player* localPlayer = getPlayerByPosition(myPosition);
         if (localPlayer) {
@@ -504,13 +507,21 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         emit distributionPhaseChanged();
         emit gameInitialized();
     } else {
-        // Animation de distribution 3-2-3 pour une nouvelle partie
+        // Animation "Bonne partie !" avant la première distribution
+        m_showGoodGameAnimation = true;
+        emit showGoodGameAnimationChanged();
+
+        // Animation de distribution 3-2-3 pour une nouvelle partie (après délai "Bonne partie !")
         m_distributionGeneration++;
         int gen = m_distributionGeneration;
-        // Phase 1 : 3 cartes (après 100ms)
-        // Timing QML : 4 paquets × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS par phase
-        QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
+        // Phase 1 : 3 cartes (après le délai "Bonne partie !")
+        QTimer::singleShot(GOOD_GAME_DELAY_MS, this, [this, myNewCartes, gen]() {
             if (gen != m_distributionGeneration) return;
+            // Masquer l'animation "Bonne partie !" et lancer la phase 1
+            m_showGoodGameAnimation = false;
+            emit showGoodGameAnimationChanged();
+            m_distributionPhase = 1;
+            emit distributionPhaseChanged();
             distributeCards(0, 3, myNewCartes);
 
             // Phase 2 : 2 cartes (après fin de phase 1)
@@ -1417,9 +1428,8 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         // Animation de distribution 3-2-3
         m_distributionGeneration++;
         int gen = m_distributionGeneration;
-        // Phase 1 : distributionPhase déjà à 1
-        // Timing QML : 4 paquets × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS par phase
-        QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
+        // Phase 1 : distributionPhase déjà à 1 — lancer immédiatement
+        QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
             if (gen != m_distributionGeneration) return;
             distributeCards(0, 3, myNewCartes);
 
@@ -1454,37 +1464,39 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
 
     int gen = m_distributionGeneration;  // Capturer la génération courante
 
-    // Distribuer les cartes une par une avec un délai synchronisé à l'animation QML
-    // L'animation QML envoie un paquet par joueur toutes les 320ms, chaque vol dure 500ms
-    // Les cartes doivent apparaître en main quand le paquet arrive (index * 320 + 500)
+    // Distribuer les cartes en synchronisation avec l'animation QML round-robin
+    // QML : targetPlayer = (dealerPosition + 1 + index) % 4, index 0..3
+    // Chaque joueur reçoit sa carte quand le paquet animé arrive chez lui
     int numCards = endIdx - startIdx;
-    for (int cardOffset = 0; cardOffset < numCards; cardOffset++) {
-        int cardIndex = startIdx + cardOffset;
-        int delay = 100; //cardOffset * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS;
 
-        // Distribuer au joueur local (avec délai)
-        QTimer::singleShot(delay, this, [this, localPlayer, cardIndex, myCards, gen]() {
-            if (gen != m_distributionGeneration) return;  // Distribution invalidée par resync
-            if (cardIndex < static_cast<int>(myCards.size())) {
-                localPlayer->addCardToHand(myCards[cardIndex]);
+    for (int playerPos = 0; playerPos < 4; playerPos++) {
+        // Calculer la position relative dans le round-robin (quel index dans le Repeater)
+        int relativePos = (playerPos - m_firstPlayerIndex + 4) % 4;
+        // firstPlayerIndex = dealerPosition + 1, donc relativePos correspond à l'index QML
+        int delay = relativePos * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS;
 
-                HandModel* hand = getHandModelByPosition(m_myPosition);
-                if (hand) hand->refresh();
+        if (playerPos == m_myPosition) {
+            // Joueur local : ajouter les vraies cartes
+            for (int cardOffset = 0; cardOffset < numCards; cardOffset++) {
+                int cardIndex = startIdx + cardOffset;
+                QTimer::singleShot(delay, this, [this, localPlayer, cardIndex, myCards, gen]() {
+                    if (gen != m_distributionGeneration) return;
+                    if (cardIndex < static_cast<int>(myCards.size())) {
+                        localPlayer->addCardToHand(myCards[cardIndex]);
+                        HandModel* hand = getHandModelByPosition(m_myPosition);
+                        if (hand) hand->refresh();
+                    }
+                });
             }
-        });
-
-        // Distribuer cartes fantômes aux autres joueurs (avec même délai) - seulement si demandé
-        if (includePhantomCards) {
-            for (int playerPos = 0; playerPos < 4; playerPos++) {
-                if (playerPos == m_myPosition) continue;
-
+        } else if (includePhantomCards) {
+            // Adversaires : ajouter les cartes fantômes
+            for (int cardOffset = 0; cardOffset < numCards; cardOffset++) {
                 QTimer::singleShot(delay, this, [this, playerPos, gen]() {
-                    if (gen != m_distributionGeneration) return;  // Distribution invalidée par resync
+                    if (gen != m_distributionGeneration) return;
                     Player* player = getPlayerByPosition(playerPos);
                     if (player) {
                         Carte* phantomCard = new Carte(Carte::COEUR, Carte::SEPT);
                         player->addCardToHand(phantomCard);
-
                         HandModel* hand = getHandModelByPosition(playerPos);
                         if (hand) hand->refresh();
                     }
@@ -1493,8 +1505,8 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
         }
     }
 
-    // Trier les cartes APRÈS la dernière carte de cette phase
-    int sortDelay = (numCards - 1) * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + 100;
+    // Trier les cartes APRÈS que le dernier joueur a reçu ses cartes
+    int sortDelay = 3 * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + 100;
     QTimer::singleShot(sortDelay, this, [this, localPlayer, gen]() {
         if (gen != m_distributionGeneration) return;  // Distribution invalidée par resync
         localPlayer->sortHand(m_strongCardsLeft);
@@ -1524,9 +1536,8 @@ void GameModel::receiveCardsDealt(const QJsonArray& cards)
     // Lancer l'animation de distribution 3-2-3
     m_distributionGeneration++;
     int gen = m_distributionGeneration;
-    // Phase 1 : 3 cartes (après 100ms)
-    // Timing QML : 4 paquets × 320ms + 500ms de vol = ~1780ms par phase
-    QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
+    // Phase 1 : lancer immédiatement (l'animation QML démarre dès distributionPhase=1)
+    QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
         if (gen != m_distributionGeneration) return;
         m_distributionPhase = 1;
         emit distributionPhaseChanged();

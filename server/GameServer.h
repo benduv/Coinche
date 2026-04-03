@@ -201,8 +201,14 @@ public:
     // Version minimale du client acceptée par le serveur
     static constexpr int MIN_CLIENT_VERSION = 7;
 
-    // Constante de délai pour l'affichage du panneau d'annonces
-    static constexpr int BID_PANEL_DISPLAY_DELAY_MS = 3000;  // Délai pour laisser le temps au client de recevoir les cartes et d'afficher le panneau
+    // Constantes de timing (doivent correspondre à GameModel.h côté client)
+    static constexpr int GOOD_GAME_DELAY_MS = 5000;        // Délai "Bonne partie !" avant la première distribution
+    static constexpr int DEAL_CARD_INTERVAL_MS = 920;      // Délai entre chaque paquet distribué
+    static constexpr int DEAL_PHASE_DURATION_MS = 4 * DEAL_CARD_INTERVAL_MS;  // Durée d'une phase de distribution
+    static constexpr int TOTAL_DEAL_DURATION_MS = 3 * DEAL_PHASE_DURATION_MS + 500;  // Durée totale des 3 phases + marge
+    static constexpr int FIRST_GAME_BOT_DELAY_MS = GOOD_GAME_DELAY_MS + TOTAL_DEAL_DURATION_MS;  // Délai avant annonce bot en début de partie
+    static constexpr int NEW_MANCHE_BOT_DELAY_MS = TOTAL_DEAL_DURATION_MS;  // Délai avant annonce bot en nouvelle manche
+    static constexpr int BID_PANEL_DISPLAY_DELAY_MS = TOTAL_DEAL_DURATION_MS;  // Délai pour laisser le temps au client de recevoir les cartes
 
     // Constructeur avec support SSL optionnel
     // Si certPath et keyPath sont fournis, le serveur démarre en mode sécurisé (WSS)

@@ -546,6 +546,7 @@ Rectangle {
                      !gameModel.showCoincheAnimation &&      // Masquer si animation Coinche
                      !gameModel.showSurcoincheAnimation &&   // Masquer si animation Surcoinche
                      !gameModel.surcoincheAvailable &&       // Masquer si bouton Surcoinche visible
+                     !gameModel.showGoodGameAnimation &&     // Attendre fin de "Bonne partie !"
                      !ufoNewMancheAnimation.visible // Masquer si animation Nouvelle Manche visible
         }
 
@@ -2393,6 +2394,39 @@ Rectangle {
                 Behavior on scale {
                     NumberAnimation {
                         duration: 600
+                        easing.type: Easing.OutBack
+                    }
+                }
+            }
+        }
+
+        // ---- Animation "Bonne partie !" ----
+        Item {
+            anchors.centerIn: parent
+            width: playArea.width * 0.7
+            height: playArea.height * 0.3
+            visible: gameModel.showGoodGameAnimation
+            z: 200
+
+            Text {
+                anchors.centerIn: parent
+                text: "Bonne partie !"
+                font.pixelSize: rootArea.height * 0.045
+                font.bold: true
+                color: "#CDF7F7"
+
+                opacity: gameModel.showGoodGameAnimation ? 1.0 : 0.0
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 600
+                        easing.type: Easing.InOutQuad
+                    }
+                }
+
+                scale: gameModel.showGoodGameAnimation ? 1.0 : 0.3
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 800
                         easing.type: Easing.OutBack
                     }
                 }

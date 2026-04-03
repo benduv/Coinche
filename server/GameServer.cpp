@@ -1843,8 +1843,9 @@ void GameServer::tryCreateGame() {
         qDebug() << "Notifications gameFound envoyees à" << connectionIds.size() << "joueurs";
 
         // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
+        // (attendre la fin de l'animation "Bonne partie !" + distribution)
         if (room->isBot[room->currentPlayerIndex]) {
-            QTimer::singleShot(3000, this, [this, roomId]() {
+            QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (room && room->gameState == "bidding") {
                     playBotBid(roomId, room->currentPlayerIndex);
@@ -1852,9 +1853,8 @@ void GameServer::tryCreateGame() {
             });
         } else {
             // Joueur humain : démarrer le timer de timeout pour les enchères
-            // IMPORTANT: Retarder pour laisser le temps au client de
-            // recevoir les cartes et d'afficher le panneau d'annonces
-            QTimer::singleShot(BID_PANEL_DISPLAY_DELAY_MS, this, [this, roomId]() {
+            // (attendre la fin de l'animation "Bonne partie !" + distribution)
+            QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (room && room->gameState == "bidding") {
                     startBidTimeout(roomId, room->currentPlayerIndex);
@@ -2842,8 +2842,9 @@ void GameServer::createGameWithBots() {
     notifyGameStart(roomId, connectionIds);
 
     // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
+    // (attendre la fin de l'animation "Bonne partie !" + distribution)
     if (room->isBot[room->currentPlayerIndex]) {
-        QTimer::singleShot(3000, this, [this, roomId]() {
+        QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
             GameRoom* room = m_gameRooms.value(roomId);
             if (room && room->gameState == "bidding") {
                 playBotBid(roomId, room->currentPlayerIndex);
@@ -2851,9 +2852,8 @@ void GameServer::createGameWithBots() {
         });
     } else {
         // Joueur humain : démarrer le timer de timeout pour les enchères
-        // IMPORTANT: Retarder pour laisser le temps au client de
-        // recevoir les cartes et d'afficher le panneau d'annonces
-        QTimer::singleShot(BID_PANEL_DISPLAY_DELAY_MS, this, [this, roomId]() {
+        // (attendre la fin de l'animation "Bonne partie !" + distribution)
+        QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
             GameRoom* room = m_gameRooms.value(roomId);
             if (room && room->gameState == "bidding") {
                 startBidTimeout(roomId, room->currentPlayerIndex);
@@ -2936,14 +2936,14 @@ void GameServer::handleJoinTraining(QWebSocket *socket) {
     QList<QString> humanConnections = {connectionId};
     notifyGameStart(roomId, humanConnections);
 
-    // Démarrer les enchères
+    // Démarrer les enchères (attendre la fin de l'animation "Bonne partie !" + distribution)
     if (room->isBot[room->currentPlayerIndex]) {
-        QTimer::singleShot(3000, this, [this, roomId]() {
+        QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
             GameRoom* r = m_gameRooms.value(roomId);
             if (r && r->gameState == "bidding") playBotBid(roomId, r->currentPlayerIndex);
         });
     } else {
-        QTimer::singleShot(BID_PANEL_DISPLAY_DELAY_MS, this, [this, roomId]() {
+        QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
             GameRoom* r = m_gameRooms.value(roomId);
             if (r && r->gameState == "bidding") startBidTimeout(roomId, r->currentPlayerIndex);
         });
@@ -3691,9 +3691,10 @@ void GameServer::doStartNewManche(int roomId) {
     notifyNewManche(roomId);
 
     // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
+    // (attendre la fin de la distribution de la nouvelle manche)
     if (room->isBot[room->currentPlayerIndex]) {
         int firstBidder = room->currentPlayerIndex;
-        QTimer::singleShot(3000, this, [this, roomId, firstBidder]() {
+        QTimer::singleShot(NEW_MANCHE_BOT_DELAY_MS, this, [this, roomId, firstBidder]() {
             GameRoom* room = m_gameRooms.value(roomId);
             if (!room || room->gameState != "bidding") return;
 
@@ -3707,9 +3708,8 @@ void GameServer::doStartNewManche(int roomId) {
         });
     } else {
         // Joueur humain : démarrer le timer de timeout pour les enchères
-        // IMPORTANT: Retarder au début d'une nouvelle manche pour laisser
-        // le temps au client de voir l'animation, recevoir les cartes et afficher le panneau
-        QTimer::singleShot(BID_PANEL_DISPLAY_DELAY_MS, this, [this, roomId]() {
+        // (attendre la fin de la distribution de la nouvelle manche)
+        QTimer::singleShot(NEW_MANCHE_BOT_DELAY_MS, this, [this, roomId]() {
             GameRoom* room = m_gameRooms.value(roomId);
             if (room && room->gameState == "bidding") {
                 startBidTimeout(roomId, room->currentPlayerIndex);

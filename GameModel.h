@@ -29,6 +29,7 @@ class GameModel : public QObject {
 
 public:
     // Constantes de timing pour l'animation de distribution (ms)
+    static constexpr int GOOD_GAME_DELAY_MS = 4000;      // Délai "Bonne partie !" avant la première distribution
     static constexpr int DEAL_CARD_INTERVAL_MS = 920;   // Délai entre chaque paquet distribué
     static constexpr int DEAL_FLIGHT_DURATION_MS = 500;  // Durée du vol d'un paquet
     // Durée totale d'une phase = 3 × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + pause inter-phase
@@ -74,6 +75,7 @@ public:
     Q_PROPERTY(int dealerPosition READ dealerPosition NOTIFY dealerPositionChanged)
     Q_PROPERTY(int pliWinnerId READ pliWinnerId NOTIFY pliWinnerIdChanged)
     Q_PROPERTY(bool strongCardsLeft READ strongCardsLeft NOTIFY strongCardsLeftChanged)
+    Q_PROPERTY(bool showGoodGameAnimation READ showGoodGameAnimation NOTIFY showGoodGameAnimationChanged)
 
 public:
     explicit GameModel(QObject *parent = nullptr);
@@ -121,6 +123,7 @@ public:
     int dealerPosition() const;
     int pliWinnerId() const;
     bool strongCardsLeft() const;
+    bool showGoodGameAnimation() const;
     Q_INVOKABLE void setStrongCardsLeft(bool value);
     Q_INVOKABLE void showPendingBid();
     Q_INVOKABLE QString getPlayerName(int position) const;
@@ -179,6 +182,7 @@ signals:
     void dealerPositionChanged();
     void pliWinnerIdChanged();
     void strongCardsLeftChanged();
+    void showGoodGameAnimationChanged();
     void gameInitialized();
     void gameOver(int winner, int scoreTeam1, int scoreTeam2);
     void emojiReactionReceived(int playerIndex, int emojiId);
@@ -235,6 +239,7 @@ private:
     int m_pliWinnerId;  // ID du gagnant du pli en cours de nettoyage (-1 si aucun)
 
     bool m_strongCardsLeft = false;  // Préférence de tri: true = fortes à gauche
+    bool m_showGoodGameAnimation = false;  // Animation "Bonne partie !" en début de partie
 
     // Annonce en attente (affichage retardé pour synchroniser avec l'animation comète)
     QVariantMap m_pendingBid;
