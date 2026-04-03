@@ -509,7 +509,7 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         int gen = m_distributionGeneration;
         // Phase 1 : 3 cartes (après 100ms)
         // Timing QML : 4 paquets × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS par phase
-        QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
+        QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
             if (gen != m_distributionGeneration) return;
             distributeCards(0, 3, myNewCartes);
 
@@ -1419,7 +1419,7 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         int gen = m_distributionGeneration;
         // Phase 1 : distributionPhase déjà à 1
         // Timing QML : 4 paquets × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS par phase
-        QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
+        QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
             if (gen != m_distributionGeneration) return;
             distributeCards(0, 3, myNewCartes);
 
@@ -1460,7 +1460,7 @@ void GameModel::distributeCards(int startIdx, int endIdx, const std::vector<Cart
     int numCards = endIdx - startIdx;
     for (int cardOffset = 0; cardOffset < numCards; cardOffset++) {
         int cardIndex = startIdx + cardOffset;
-        int delay = cardOffset * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS;
+        int delay = 100; //cardOffset * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS;
 
         // Distribuer au joueur local (avec délai)
         QTimer::singleShot(delay, this, [this, localPlayer, cardIndex, myCards, gen]() {
@@ -1526,13 +1526,13 @@ void GameModel::receiveCardsDealt(const QJsonArray& cards)
     int gen = m_distributionGeneration;
     // Phase 1 : 3 cartes (après 100ms)
     // Timing QML : 4 paquets × 320ms + 500ms de vol = ~1780ms par phase
-    QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
+    QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
         if (gen != m_distributionGeneration) return;
         m_distributionPhase = 1;
         emit distributionPhaseChanged();
         distributeCards(0, 3, myNewCartes, false);  // false = pas de cartes fantômes (lobby mode)
 
-        QTimer::singleShot(1100, this, [this, myNewCartes, gen]() {
+        QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
             if (gen != m_distributionGeneration) return;
             m_distributionPhase = 2;
             emit distributionPhaseChanged();
@@ -1544,7 +1544,7 @@ void GameModel::receiveCardsDealt(const QJsonArray& cards)
                 emit distributionPhaseChanged();
                 distributeCards(5, 8, myNewCartes, false);
 
-                QTimer::singleShot(1100, this, [this, gen]() {
+                QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, gen]() {
                     if (gen != m_distributionGeneration) return;
                     m_distributionPhase = 0;
                     emit distributionPhaseChanged();

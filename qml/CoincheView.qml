@@ -3008,36 +3008,29 @@ Rectangle {
                 }
             }
 
-            Card {
-                id: firstCard
+            // Dos de cartes légers (pas de composant Card complet)
+            Image {
+                id: firstCardBack
                 anchors.fill: parent
-                faceUp: false  // Toujours face cachée pendant l'animation
-                value: 0
-                suit: 3
-                isPlayable: false
+                source: "qrc:/resources/cards/cards2/back.svg"
+                fillMode: Image.PreserveAspectFit
             }
-
-            Card {
-                id: secondCard
-                width: firstCard.width
-                height: firstCard.height
-                anchors.left: firstCard.right
+            Image {
+                id: secondCardBack
+                width: firstCardBack.width
+                height: firstCardBack.height
+                anchors.left: firstCardBack.right
                 anchors.leftMargin: -rootArea.width * 0.02
-                faceUp: false  // Toujours face cachée pendant l'animation
-                value: 0
-                suit: 3
-                isPlayable: false
+                source: "qrc:/resources/cards/cards2/back.svg"
+                fillMode: Image.PreserveAspectFit
             }
-
-            Card {
-                width: secondCard.width
-                height: secondCard.height
-                anchors.left: secondCard.right
+            Image {
+                width: firstCardBack.width
+                height: firstCardBack.height
+                anchors.left: secondCardBack.right
                 anchors.leftMargin: -rootArea.width * 0.02
-                faceUp: false  // Toujours face cachée pendant l'animation
-                value: 0
-                suit: 3
-                isPlayable: false
+                source: "qrc:/resources/cards/cards2/back.svg"
+                fillMode: Image.PreserveAspectFit
                 visible: gameModel.distributionPhase !== 2
             }
 
