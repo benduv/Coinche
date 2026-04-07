@@ -30,7 +30,7 @@ class GameModel : public QObject {
 public:
     // Constantes de timing pour l'animation de distribution (ms)
     static constexpr int GOOD_GAME_DELAY_MS = 4000;      // Délai "Bonne partie !" avant la première distribution
-    static constexpr int DEAL_CARD_INTERVAL_MS = 920;   // Délai entre chaque paquet distribué
+    static constexpr int DEAL_CARD_INTERVAL_MS = 720;   // Délai entre chaque paquet distribué
     static constexpr int DEAL_FLIGHT_DURATION_MS = 500;  // Durée du vol d'un paquet
     // Durée totale d'une phase = 4 × DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + pause inter-phase
     static constexpr int DEAL_PHASE_DURATION_MS = 4 * DEAL_CARD_INTERVAL_MS; //+ DEAL_FLIGHT_DURATION_MS;

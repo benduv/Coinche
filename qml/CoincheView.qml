@@ -2551,13 +2551,10 @@ Rectangle {
                     }
                 }
 
-                // Fonction pour obtenir la position relative du joueur
-                // par rapport à ma position (gameModel.myPosition)
+                // Fonction pour obtenir la position visuelle du joueur
+                // (utilise getVisualPosition pour respecter le sens horaire/antihoraire)
                 function getRelativePosition(playerId) {
-                    var myPos = gameModel.myPosition
-                    var offset = (playerId - myPos + 4) % 4
-                    // offset 0 = sud (moi), 1 = ouest, 2 = nord, 3 = est
-                    return offset
+                    return getVisualPosition(playerId)
                 }
 
                 Repeater {
