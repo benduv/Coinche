@@ -334,6 +334,56 @@ bool GameModel::showGoodGameAnimation() const
     return m_showGoodGameAnimation;
 }
 
+bool GameModel::isBeloteMode() const
+{
+    return m_isBeloteMode;
+}
+
+int GameModel::beloteBidRound() const
+{
+    return m_beloteBidRound;
+}
+
+int GameModel::retourneeSuit() const
+{
+    return m_retourneeSuit;
+}
+
+int GameModel::retourneeValue() const
+{
+    return m_retourneeValue;
+}
+
+void GameModel::setIsBeloteMode(bool value)
+{
+    if (m_isBeloteMode == value)
+        return;
+    m_isBeloteMode = value;
+    emit isBeloteModeChanged();
+}
+
+void GameModel::setRetournee(int suit, int value)
+{
+    if (m_retourneeSuit != suit) {
+        m_retourneeSuit = suit;
+        emit retourneeSuitChanged();
+    }
+    if (m_retourneeValue != value) {
+        m_retourneeValue = value;
+        emit retourneeValueChanged();
+    }
+}
+
+void GameModel::prendreBid(int suit)
+{
+    emit bidMadeLocally(20, suit);
+}
+
+void GameModel::passBeloteBid()
+{
+    emit bidMadeLocally(0, 0);
+}
+
 void GameModel::setStrongCardsLeft(bool value)
 {
     if (m_strongCardsLeft == value)
@@ -1402,6 +1452,24 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         emit lastBidChanged();
         emit lastBidderIndexChanged();
 
+        // Belote : mettre à jour les champs spécifiques
+        if (newMancheData.contains("gameMode")) {
+            bool newBelote = (newMancheData["gameMode"].toString() == "belote");
+            if (m_isBeloteMode != newBelote) {
+                m_isBeloteMode = newBelote;
+                emit isBeloteModeChanged();
+            }
+        }
+        m_beloteBidRound = newMancheData.value("beloteBidRound").toInt(1);
+        emit beloteBidRoundChanged();
+        if (newMancheData.contains("retournee")) {
+            QJsonObject retObj = newMancheData["retournee"].toObject();
+            int newSuit  = retObj["suit"].toInt(-1);
+            int newValue = retObj["value"].toInt(-1);
+            if (m_retourneeSuit != newSuit)  { m_retourneeSuit  = newSuit;  emit retourneeSuitChanged(); }
+            if (m_retourneeValue != newValue) { m_retourneeValue = newValue; emit retourneeValueChanged(); }
+        }
+
         // Vider les mains d'abord
         for (int i = 0; i < 4; i++) {
             Player* player = getPlayerByPosition(i);
@@ -1427,25 +1495,22 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             myNewCartes.push_back(carte);
         }
 
-        // Animation de distribution 3-2-3
+        // Animation de distribution : 3-2-3 pour Coinche, 2-3 pour Belote
         m_distributionGeneration++;
         int gen = m_distributionGeneration;
-        // Phase 1 : distributionPhase déjà à 1 — lancer immédiatement
-        QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
-            if (gen != m_distributionGeneration) return;
-            distributeCards(0, 3, myNewCartes);
+        bool beloteMode = m_isBeloteMode;
 
-            QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
+        if (beloteMode) {
+            // Phase 1 : 2 cartes (indices 0-1)
+            QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
                 if (gen != m_distributionGeneration) return;
-                m_distributionPhase = 2;
-                emit distributionPhaseChanged();
-                distributeCards(3, 5, myNewCartes);
+                distributeCards(0, 2, myNewCartes, false);
 
                 QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
                     if (gen != m_distributionGeneration) return;
-                    m_distributionPhase = 3;
+                    m_distributionPhase = 2;
                     emit distributionPhaseChanged();
-                    distributeCards(5, 8, myNewCartes);
+                    distributeCards(2, 5, myNewCartes, false);
 
                     QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, gen]() {
                         if (gen != m_distributionGeneration) return;
@@ -1455,7 +1520,79 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
                     });
                 });
             });
-        });
+        } else {
+            // Phase 1 : distributionPhase déjà à 1 — lancer immédiatement
+            QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
+                if (gen != m_distributionGeneration) return;
+                distributeCards(0, 3, myNewCartes);
+
+                QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
+                    if (gen != m_distributionGeneration) return;
+                    m_distributionPhase = 2;
+                    emit distributionPhaseChanged();
+                    distributeCards(3, 5, myNewCartes);
+
+                    QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
+                        if (gen != m_distributionGeneration) return;
+                        m_distributionPhase = 3;
+                        emit distributionPhaseChanged();
+                        distributeCards(5, 8, myNewCartes);
+
+                        QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, gen]() {
+                            if (gen != m_distributionGeneration) return;
+                            m_distributionPhase = 0;
+                            emit distributionPhaseChanged();
+                            emit gameInitialized();
+                        });
+                    });
+                });
+            });
+        }
+    } else if (action == "beloteBidRoundChanged") {
+        QJsonObject d = data.toJsonObject();
+        int newRound = d["beloteBidRound"].toInt(2);
+        if (m_beloteBidRound != newRound) {
+            m_beloteBidRound = newRound;
+            emit beloteBidRoundChanged();
+        }
+        // Mettre à jour le joueur dont c'est le tour d'annoncer
+        if (d.contains("biddingPlayer")) {
+            int bp = d["biddingPlayer"].toInt();
+            if (m_biddingPlayer != bp) {
+                m_biddingPlayer = bp;
+                emit biddingPlayerChanged();
+            }
+        }
+    } else if (action == "beloteHandComplete") {
+        // Le preneur a été déterminé ; le serveur envoie les cartes complètes de notre main
+        QJsonObject d = data.toJsonObject();
+        QJsonArray cards = d["cards"].toArray();
+        Player* localPlayer = getPlayerByPosition(m_myPosition);
+        if (localPlayer && !cards.isEmpty()) {
+            localPlayer->clearHand();
+            for (const QJsonValue& val : cards) {
+                QJsonObject cardObj = val.toObject();
+                Carte* carte = new Carte(
+                    static_cast<Carte::Couleur>(cardObj["suit"].toInt()),
+                    static_cast<Carte::Chiffre>(cardObj["value"].toInt())
+                );
+                localPlayer->addCardToHand(carte);
+            }
+            // Appliquer l'atout si présent
+            if (d.contains("atout")) {
+                int atoutInt = d["atout"].toInt(-1);
+                if (atoutInt >= 0) {
+                    Carte::Couleur atout = static_cast<Carte::Couleur>(atoutInt);
+                    HandModel* hand = getHandModelByPosition(m_myPosition);
+                    if (hand) hand->setAtoutCouleur(atout);
+                    localPlayer->sortHand(m_strongCardsLeft);
+                }
+            }
+            refreshHand(m_myPosition);
+        }
+        // Terminer la phase de distribution
+        m_distributionPhase = 0;
+        emit distributionPhaseChanged();
     }
 }
 

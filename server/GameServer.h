@@ -36,6 +36,7 @@ struct PlayerConnection {
     QString lobbyCode;         // Code du lobby d'origine (pour restauration après annulation matchmaking)
     bool isAnonymous = false;  // RGPD - droit à l'opposition
     qint64 lastEmojiTimestamp = 0;  // Rate limit emojis (ms since epoch)
+    QString preferredGameMode = "coinche";  // "coinche" ou "belote"
 };
 
 // Vérification email en attente (inscription en 2 étapes)
@@ -63,6 +64,13 @@ struct GameRoom {
     std::vector<std::unique_ptr<Player>> players;  // Les 4 joueurs
     std::vector<bool> isBot;  // true si le joueur à cet index est un bot
     bool isTraining = false;  // true si partie d'entraînement (stats non enregistrées)
+    bool isBeloteMode = false;  // true = règles Belote, false = règles Coinche
+
+    // Belote : état des enchères Prendre/Passer
+    Carte* retournee = nullptr;       // Carte retournée face visible au centre (non retirée du deck)
+    int beloteBidRound = 1;           // 1 = Prendre/Passer (couleur retournée), 2 = choisir autre couleur
+    int beloteBidPassCount = 0;       // Nombre de joueurs ayant passé dans le tour actuel
+
     Deck deck;
 
     // État de la partie
@@ -412,8 +420,8 @@ private:
     void handleRemoveFriend(QWebSocket *socket, const QJsonObject &data);
     void handleInviteToLobby(QWebSocket *socket, const QJsonObject &data);
 
-    void handleJoinMatchmaking(QWebSocket *socket);
-    void handleJoinTraining(QWebSocket *socket);
+    void handleJoinMatchmaking(QWebSocket *socket, const QJsonObject &data = QJsonObject());
+    void handleJoinTraining(QWebSocket *socket, const QJsonObject &data = QJsonObject());
 
     void handleLeaveMatchmaking(QWebSocket *socket);
 
@@ -540,6 +548,16 @@ private:
             msg["playerPosition"] = i;
             msg["biddingPlayer"] = room->biddingPlayer;
             msg["currentPlayer"] = room->currentPlayerIndex;
+            msg["gameMode"] = room->isBeloteMode ? QString("belote") : QString("coinche");
+
+            // Retournée (Belote uniquement)
+            if (room->isBeloteMode && room->retournee) {
+                QJsonObject retObj;
+                retObj["value"] = static_cast<int>(room->retournee->getChiffre());
+                retObj["suit"] = static_cast<int>(room->retournee->getCouleur());
+                msg["retournee"] = retObj;
+                msg["beloteBidRound"] = room->beloteBidRound;
+            }
 
             // Envoi les nouvelles cartes du joueur
             QJsonArray myCards;
@@ -560,6 +578,12 @@ private:
     }
 
     void handleMakeBid(QWebSocket *socket, const QJsonObject &data);
+
+    // Belote : gestion des enchères Prendre/Passer
+    void doStartBeloteBidding(int roomId);
+    void handleBeloteBid(int roomId, int playerIndex, int bidValue, int suit);
+    void completeBeloteDistribution(int roomId, int takerIndex);
+    void playBotBeloteBid(int roomId, int playerIndex);
 
     void handleForfeit(QWebSocket *socket);
 
@@ -2552,7 +2576,9 @@ private:
 
     QWebSocketServer *m_server;
     QMap<QString, PlayerConnection*> m_connections; // connectionId → PlayerConnection
-    QQueue<QString> m_matchmakingQueue;
+    QQueue<QString> m_matchmakingQueue;           // File Coinche (rétrocompatibilité)
+    QQueue<QString> m_matchmakingQueueCoinche;    // File matchmaking Coinche
+    QQueue<QString> m_matchmakingQueueBelote;     // File matchmaking Belote
     QMap<int, GameRoom*> m_gameRooms;
     QMap<QString, int> m_playerNameToRoomId;  // playerName → roomId pour reconnexion
     QMap<QString, PrivateLobby*> m_privateLobbies;  // code → PrivateLobby

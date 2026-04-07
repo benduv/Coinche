@@ -126,6 +126,31 @@ void Deck::cutDeck()
     m_deck.insert(m_deck.end(), topPart.begin(), topPart.end());
 }
 
+void Deck::distributeBelote(std::vector<Carte*> &main1, std::vector<Carte*> &main2, std::vector<Carte*> &main3, std::vector<Carte*> &main4, Carte*& retournee)
+{
+    int cardIndex = 0;
+
+    // Premier tour : 2 cartes par joueur
+    for (int i = 0; i < 2; i++) {
+        main1.push_back(m_deck[cardIndex++]);
+        main2.push_back(m_deck[cardIndex++]);
+        main3.push_back(m_deck[cardIndex++]);
+        main4.push_back(m_deck[cardIndex++]);
+    }
+
+    // Deuxième tour : 3 cartes par joueur
+    for (int i = 0; i < 3; i++) {
+        main1.push_back(m_deck[cardIndex++]);
+        main2.push_back(m_deck[cardIndex++]);
+        main3.push_back(m_deck[cardIndex++]);
+        main4.push_back(m_deck[cardIndex++]);
+    }
+
+    // La 21ème carte est retournée face visible (indice 20)
+    retournee = m_deck[cardIndex]; // cardIndex == 20
+    // Les 11 cartes restantes (indices 21-31) restent pour la distribution complémentaire
+}
+
 void Deck::distribute323(std::vector<Carte*> &main1, std::vector<Carte*> &main2, std::vector<Carte*> &main3, std::vector<Carte*> &main4)
 {
     int cardIndex = 0;

@@ -76,6 +76,10 @@ public:
     Q_PROPERTY(int pliWinnerId READ pliWinnerId NOTIFY pliWinnerIdChanged)
     Q_PROPERTY(bool strongCardsLeft READ strongCardsLeft NOTIFY strongCardsLeftChanged)
     Q_PROPERTY(bool showGoodGameAnimation READ showGoodGameAnimation NOTIFY showGoodGameAnimationChanged)
+    Q_PROPERTY(bool isBeloteMode READ isBeloteMode NOTIFY isBeloteModeChanged)
+    Q_PROPERTY(int beloteBidRound READ beloteBidRound NOTIFY beloteBidRoundChanged)
+    Q_PROPERTY(int retourneeSuit READ retourneeSuit NOTIFY retourneeSuitChanged)
+    Q_PROPERTY(int retourneeValue READ retourneeValue NOTIFY retourneeValueChanged)
 
 public:
     explicit GameModel(QObject *parent = nullptr);
@@ -124,6 +128,10 @@ public:
     int pliWinnerId() const;
     bool strongCardsLeft() const;
     bool showGoodGameAnimation() const;
+    bool isBeloteMode() const;
+    int beloteBidRound() const;
+    int retourneeSuit() const;
+    int retourneeValue() const;
     Q_INVOKABLE void setStrongCardsLeft(bool value);
     Q_INVOKABLE void showPendingBid();
     Q_INVOKABLE QString getPlayerName(int position) const;
@@ -140,6 +148,14 @@ public:
     Q_INVOKABLE void coincheBid();
     Q_INVOKABLE void surcoincheBid();
     Q_INVOKABLE void forfeit();
+
+    // Actions Belote : Prendre / Passer
+    Q_INVOKABLE void prendreBid(int suit);    // Émet bidMadeLocally(20, suit)
+    Q_INVOKABLE void passBeloteBid();         // Émet bidMadeLocally(0, 0)
+
+    // Setters appelés depuis NetworkManager
+    void setIsBeloteMode(bool value);
+    void setRetournee(int suit, int value);
 
     // Recevoir les mises à jour du serveur
     Q_INVOKABLE void updateGameState(const QJsonObject& state);
@@ -183,6 +199,10 @@ signals:
     void pliWinnerIdChanged();
     void strongCardsLeftChanged();
     void showGoodGameAnimationChanged();
+    void isBeloteModeChanged();
+    void beloteBidRoundChanged();
+    void retourneeSuitChanged();
+    void retourneeValueChanged();
     void gameInitialized();
     void gameOver(int winner, int scoreTeam1, int scoreTeam2);
     void emojiReactionReceived(int playerIndex, int emojiId);
@@ -240,6 +260,12 @@ private:
 
     bool m_strongCardsLeft = false;  // Préférence de tri: true = fortes à gauche
     bool m_showGoodGameAnimation = false;  // Animation "Bonne partie !" en début de partie
+
+    // Belote
+    bool m_isBeloteMode = false;
+    int m_beloteBidRound = 1;       // 1 = Prendre/Passer, 2 = choisir autre couleur
+    int m_retourneeSuit = -1;       // Couleur de la retournée (Carte::Couleur, -1 = aucune)
+    int m_retourneeValue = -1;      // Valeur de la retournée (Carte::Chiffre, -1 = aucune)
 
     // Annonce en attente (affichage retardé pour synchroniser avec l'animation comète)
     QVariantMap m_pendingBid;

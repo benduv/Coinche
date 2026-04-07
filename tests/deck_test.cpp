@@ -324,3 +324,46 @@ TEST_F(DeckTest, ValeurTotaleAvecAtout) {
     // Total: 90 + 62 = 152
     EXPECT_EQ(valeurTotale, 152) << "La valeur totale avec une couleur atout devrait être 152 points";
 }
+
+// ========================================
+// Tests distributeBelote
+// ========================================
+
+TEST_F(DeckTest, DistributeBeloteDonne5CartesParJoueur) {
+    deck->shuffleDeck();
+    std::vector<Carte*> main1, main2, main3, main4;
+    Carte* retournee = nullptr;
+    deck->distributeBelote(main1, main2, main3, main4, retournee);
+
+    EXPECT_EQ(main1.size(), 5) << "Joueur 1 devrait avoir 5 cartes";
+    EXPECT_EQ(main2.size(), 5) << "Joueur 2 devrait avoir 5 cartes";
+    EXPECT_EQ(main3.size(), 5) << "Joueur 3 devrait avoir 5 cartes";
+    EXPECT_EQ(main4.size(), 5) << "Joueur 4 devrait avoir 5 cartes";
+    EXPECT_NE(retournee, nullptr) << "La retournée ne doit pas être nulle";
+}
+
+TEST_F(DeckTest, DistributeBelote21CartesDistribuees11Restantes) {
+    deck->shuffleDeck();
+    std::vector<Carte*> main1, main2, main3, main4;
+    Carte* retournee = nullptr;
+    deck->distributeBelote(main1, main2, main3, main4, retournee);
+
+    int cartesDistribuees = (int)(main1.size() + main2.size() + main3.size() + main4.size()) + 1; // +1 pour la retournée
+    EXPECT_EQ(cartesDistribuees, 21) << "21 cartes doivent être distribuées (5×4 + 1 retournée)";
+    EXPECT_EQ(deck->size(), 32) << "Le deck interne garde ses 32 cartes (pointeurs partagés)";
+}
+
+TEST_F(DeckTest, DistributeBeloteCartesUniques) {
+    deck->shuffleDeck();
+    std::vector<Carte*> main1, main2, main3, main4;
+    Carte* retournee = nullptr;
+    deck->distributeBelote(main1, main2, main3, main4, retournee);
+
+    std::set<Carte*, CarteCompare> toutesLesCartes;
+    for (Carte* c : main1) { EXPECT_TRUE(toutesLesCartes.insert(c).second) << "Doublon dans main1"; }
+    for (Carte* c : main2) { EXPECT_TRUE(toutesLesCartes.insert(c).second) << "Doublon dans main2"; }
+    for (Carte* c : main3) { EXPECT_TRUE(toutesLesCartes.insert(c).second) << "Doublon dans main3"; }
+    for (Carte* c : main4) { EXPECT_TRUE(toutesLesCartes.insert(c).second) << "Doublon dans main4"; }
+    EXPECT_TRUE(toutesLesCartes.insert(retournee).second) << "La retournée est un doublon";
+    EXPECT_EQ(toutesLesCartes.size(), 21) << "Toutes les 21 cartes doivent être uniques";
+}

@@ -35,6 +35,8 @@
         <file>qml/UfoNewMancheAnimation.qml</file>
         <file>qml/BidWave.qml</file>
         <file>qml/BidCometAnimation.qml</file>
+        <file>qml/BeloteAnnoncesPanel.qml</file>
+        <file>qml/BeloteView.qml</file>
         <file>resources/animations/UFO_404.gif</file>
         <file>resources/animations/Rocket.gif</file>
         <file>resources/animations/Crying_emoji.gif</file>

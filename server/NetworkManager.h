@@ -34,6 +34,7 @@ class NetworkManager : public QObject {
     Q_PROPERTY(bool hasStoredCredentials READ hasStoredCredentials NOTIFY storedCredentialsChanged)
     Q_PROPERTY(bool isTraining READ isTraining NOTIFY isTrainingChanged)
     Q_PROPERTY(QString storedEmail READ storedEmail NOTIFY storedCredentialsChanged)
+    Q_PROPERTY(QString gameMode READ gameMode WRITE setGameMode NOTIFY gameModeChanged)
 
 public:
     explicit NetworkManager(QObject *parent = nullptr)
@@ -85,6 +86,13 @@ public:
     bool isTraining() const { return m_isTraining; }
     QVariantList lobbyPlayers() const { return m_lobbyPlayers; }
     QString pendingBotReplacement() const { return m_pendingBotReplacement; }
+    QString gameMode() const { return m_gameMode; }
+    void setGameMode(const QString& mode) {
+        if (m_gameMode != mode) {
+            m_gameMode = mode;
+            emit gameModeChanged();
+        }
+    }
 
     // Auto-login - vérifier si des credentials sont stockés
     bool hasStoredCredentials() const {
@@ -138,9 +146,15 @@ public:
         // Définir l'avatar du joueur local
         m_gameModel->setPlayerAvatar(position, m_playerAvatar);
 
+        // Propager le mode Belote et la retournée au GameModel
+        m_gameModel->setIsBeloteMode(m_gameMode == "belote");
+        if (m_retourneeSuit >= 0 && m_retourneeValue >= 0) {
+            m_gameModel->setRetournee(m_retourneeSuit, m_retourneeValue);
+        }
+
         // qDebug() << "GameModel cree et initialise - Pseudo:" << m_playerPseudo << "Avatar:" << m_playerAvatar;
 
-        // Émettre signal pour que QML navigue vers CoincheView
+        // Émettre signal pour que QML navigue vers la bonne vue
         emit gameModelReady();
     }
 
@@ -173,6 +187,7 @@ public:
     Q_INVOKABLE void joinMatchmaking() {
         QJsonObject msg;
         msg["type"] = "joinMatchmaking";
+        msg["gameMode"] = m_gameMode;
         sendMessage(msg);
     }
 
@@ -185,6 +200,7 @@ public:
     Q_INVOKABLE void joinTraining() {
         QJsonObject msg;
         msg["type"] = "joinTraining";
+        msg["gameMode"] = m_gameMode;
         sendMessage(msg);
         m_isTraining = true;
         emit isTrainingChanged();
@@ -433,6 +449,7 @@ public:
     Q_INVOKABLE void createPrivateLobby() {
         QJsonObject msg;
         msg["type"] = "createPrivateLobby";
+        msg["gameMode"] = m_gameMode;
         sendMessage(msg);
         // qDebug() << "Demande de creation de lobby prive envoyee";
     }
@@ -441,6 +458,7 @@ public:
         QJsonObject msg;
         msg["type"] = "joinPrivateLobby";
         msg["code"] = code;
+        msg["gameMode"] = m_gameMode;
         sendMessage(msg);
         // qDebug() << "Demande de rejoindre le lobby" << code;
     }
@@ -456,6 +474,7 @@ public:
     Q_INVOKABLE void startLobbyGame() {
         QJsonObject msg;
         msg["type"] = "startLobbyGame";
+        msg["gameMode"] = m_gameMode;
         sendMessage(msg);
         // qDebug() << "Demande de demarrage de la partie depuis le lobby";
     }
@@ -525,6 +544,7 @@ public:
 
 signals:
     void connectedChanged();
+    void gameModeChanged();
     void matchmakingStatusChanged();
     void playersInQueueChanged();
     void matchmakingCountdownChanged();
@@ -719,6 +739,15 @@ private slots:
             m_myPosition = obj["playerPosition"].toInt();
             m_myCards = obj["myCards"].toArray();
             m_opponents = obj["opponents"].toArray();
+
+            // Récupérer le mode de jeu et la retournée (Belote)
+            QString receivedMode = obj["gameMode"].toString("coinche");
+            if (m_gameMode != receivedMode) {
+                m_gameMode = receivedMode;
+                emit gameModeChanged();
+            }
+            m_retourneeValue = obj.contains("retournee") ? obj["retournee"].toObject()["value"].toInt(-1) : -1;
+            m_retourneeSuit  = obj.contains("retournee") ? obj["retournee"].toObject()["suit"].toInt(-1)  : -1;
 
             // qDebug() << "Position:" << m_myPosition;
             // qDebug() << "Nombre de cartes:" << m_myCards.size();
@@ -1357,6 +1386,9 @@ private:
     QString m_serverUrl;
     bool m_wasInGame;
     bool m_isTraining = false;
+    QString m_gameMode = "coinche";  // "coinche" ou "belote"
+    int m_retourneeValue = -1;        // Valeur de la retournée Belote (-1 si inconnue)
+    int m_retourneeSuit  = -1;        // Couleur de la retournée Belote (-1 si inconnue)
 
     // Heartbeat pour détecter les connexions mortes
     QTimer* m_heartbeatTimer;

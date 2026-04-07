@@ -187,6 +187,85 @@ inline ScoreResult calculateMancheScore(
     return result;
 }
 
+/**
+ * Calcule les scores d'une manche selon les règles de la Belote
+ *
+ * @param pointsRealisesTeam1 Points réalisés par l'équipe 1 (sans belote)
+ * @param pointsRealisesTeam2 Points réalisés par l'équipe 2 (sans belote)
+ * @param team1HasBid true si l'équipe 1 a pris (est le preneur)
+ * @param capotByTeam1 true si l'équipe 1 a fait tous les plis
+ * @param capotByTeam2 true si l'équipe 2 a fait tous les plis
+ * @param beloteTeam1 Points de belote de l'équipe 1 (20 si belote, 0 sinon) — toujours comptés
+ * @param beloteTeam2 Points de belote de l'équipe 2 (20 si belote, 0 sinon) — toujours comptés
+ *
+ * Règles Belote :
+ * - Le preneur doit faire >= 81 pts (belote comprise) pour réussir
+ * - Succès : chaque équipe marque ses points réels
+ * - Chute : preneur = 0, défenseur = 160 pts
+ * - Capot par le preneur : 250 pts pour le preneur
+ * - Capot par le défenseur : 250 pts pour le défenseur (contre-capot)
+ * - Belote (Roi+Dame atout) : toujours +20 pts, quel que soit le résultat
+ */
+inline ScoreResult calculateBeloteMancheScore(
+    int pointsRealisesTeam1,
+    int pointsRealisesTeam2,
+    bool team1HasBid,
+    bool capotByTeam1 = false,
+    bool capotByTeam2 = false,
+    int beloteTeam1 = 0,
+    int beloteTeam2 = 0
+) {
+    ScoreResult result;
+    result.scoreTeam1 = 0;
+    result.scoreTeam2 = 0;
+
+    if (team1HasBid) {
+        // Équipe 1 est le preneur
+        if (capotByTeam1) {
+            // Capot par le preneur
+            result.scoreTeam1 = 250;
+            result.scoreTeam2 = 0;
+        } else if (capotByTeam2) {
+            // Contre-capot : le défenseur fait tous les plis
+            result.scoreTeam1 = 0;
+            result.scoreTeam2 = 250;
+        } else if ((pointsRealisesTeam1 + beloteTeam1) >= 81) {
+            // Contrat réussi : chaque équipe marque ses points réels
+            result.scoreTeam1 = pointsRealisesTeam1;
+            result.scoreTeam2 = pointsRealisesTeam2;
+        } else {
+            // Chute : preneur = 0, défenseur = 160
+            result.scoreTeam1 = 0;
+            result.scoreTeam2 = 160;
+        }
+    } else {
+        // Équipe 2 est le preneur
+        if (capotByTeam2) {
+            // Capot par le preneur
+            result.scoreTeam1 = 0;
+            result.scoreTeam2 = 250;
+        } else if (capotByTeam1) {
+            // Contre-capot : le défenseur fait tous les plis
+            result.scoreTeam1 = 250;
+            result.scoreTeam2 = 0;
+        } else if ((pointsRealisesTeam2 + beloteTeam2) >= 81) {
+            // Contrat réussi : chaque équipe marque ses points réels
+            result.scoreTeam1 = pointsRealisesTeam1;
+            result.scoreTeam2 = pointsRealisesTeam2;
+        } else {
+            // Chute : preneur = 0, défenseur = 160
+            result.scoreTeam1 = 160;
+            result.scoreTeam2 = 0;
+        }
+    }
+
+    // La belote (20 pts) est TOUJOURS ajoutée à l'équipe qui la possède, quel que soit le résultat
+    result.scoreTeam1 += beloteTeam1;
+    result.scoreTeam2 += beloteTeam2;
+
+    return result;
+}
+
 } // namespace ScoreCalculator
 
 #endif // SCORECALCULATOR_H

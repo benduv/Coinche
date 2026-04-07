@@ -103,6 +103,27 @@ include(GoogleTest)
 gtest_discover_tests(test_scorecalculator DISCOVERY_MODE PRE_TEST)
 
 # ========================================
+# Tests unitaires Belote ScoreCalculator
+# ========================================
+add_executable(test_belote_score
+    belote_score_test.cpp
+)
+
+target_include_directories(test_belote_score PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_belote_score PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_belote_score DISCOVERY_MODE PRE_TEST)
+
+# ========================================
 # Tests unitaires GameServer
 # ========================================
 add_executable(test_gameserver

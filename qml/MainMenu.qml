@@ -98,6 +98,7 @@ ApplicationWindow {
     property string loggedInPlayerName: ""
     property string accountType: ""
     property bool shouldLoadCoincheView: false
+    property int selectedMode: 0  // 0 = Coinche, 1 = Belote
 
     // Fonction helper pour obtenir le nom du joueur actuel
     // Vérifie d'abord networkManager.playerPseudo, puis fallback sur loggedInPlayerName
@@ -145,7 +146,7 @@ ApplicationWindow {
         }
 
         function onGameModelReady() {
-            // MainMenu gère toujours le chargement de CoincheView
+            // MainMenu gère toujours le chargement de la vue de jeu
             // Vérifier si on n'est pas déjà sur l'écran de chargement
             var currentItem = stackView.currentItem
             var currentItemStr = currentItem ? currentItem.toString() : ""
@@ -662,13 +663,45 @@ ApplicationWindow {
                     spacing: 20 * mainWindow.minRatio
                     z: 1
 
-                    Text {
-                        text: "Coinche de l'Espace"
-                        font.pixelSize: 56 * mainWindow.minRatio
-                        font.family: orbitronFont.name
-                        font.bold: true
-                        color: "#FFD700"
+                    Row {
+                        spacing: 16 * mainWindow.minRatio
                         Layout.alignment: Qt.AlignHCenter
+
+                        Text {
+                            text: "◀"
+                            font.pixelSize: 40 * mainWindow.minRatio
+                            font.family: orbitronFont.name
+                            color: "#FFD700"
+                            opacity: mainWindow.selectedMode > 0 ? 1.0 : 0.3
+                            anchors.verticalCenter: parent.verticalCenter
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: mainWindow.selectedMode > 0
+                                onClicked: mainWindow.selectedMode--
+                            }
+                        }
+
+                        Text {
+                            text: mainWindow.selectedMode === 0 ? "Coinche de l'Espace" : "Belote de l'Espace"
+                            font.pixelSize: 56 * mainWindow.minRatio
+                            font.family: orbitronFont.name
+                            font.bold: true
+                            color: "#FFD700"
+                        }
+
+                        Text {
+                            text: "▶"
+                            font.pixelSize: 40 * mainWindow.minRatio
+                            font.family: orbitronFont.name
+                            color: "#FFD700"
+                            opacity: mainWindow.selectedMode < 1 ? 1.0 : 0.3
+                            anchors.verticalCenter: parent.verticalCenter
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: mainWindow.selectedMode < 1
+                                onClicked: mainWindow.selectedMode++
+                            }
+                        }
                     }
 
                     Text {
@@ -803,6 +836,7 @@ ApplicationWindow {
                         onClicked: {
                             // Utiliser le pseudo sauvegardé dans networkManager s'il existe, sinon loggedInPlayerName
                             var pseudoToUse = networkManager.playerPseudo !== "" ? networkManager.playerPseudo : mainWindow.loggedInPlayerName
+                            networkManager.setGameMode(mainWindow.selectedMode === 0 ? "coinche" : "belote")
                             networkManager.registerPlayer(pseudoToUse, networkManager.playerAvatar)
                             stackView.push("qrc:/qml/MatchMakingView.qml")
                         }
@@ -929,6 +963,7 @@ ApplicationWindow {
                         }
 
                         onClicked: {
+                            networkManager.setGameMode(mainWindow.selectedMode === 0 ? "coinche" : "belote")
                             networkManager.registerPlayer(mainWindow.getPlayerName(), networkManager.playerAvatar)
                             networkManager.joinTraining()
                         }
@@ -1632,15 +1667,14 @@ ApplicationWindow {
                     }
                 }
 
-                // Loader qui ne charge CoincheView que lorsque shouldLoadCoincheView est true
+                // Loader qui charge CoincheView ou BeloteView selon le mode
                 Loader {
                     id: coincheLoader
                     anchors.fill: parent
                     active: mainWindow.shouldLoadCoincheView
-
-                    sourceComponent: Component {
-                        CoincheView {}
-                    }
+                    source: mainWindow.shouldLoadCoincheView
+                        ? (networkManager.gameMode === "belote" ? "qrc:/qml/BeloteView.qml" : "qrc:/qml/CoincheView.qml")
+                        : ""
 
                     onLoaded: {
                         // Arrêter le son du menu principal

@@ -91,9 +91,9 @@ void GameServer::onTextMessageReceived(const QString &message) {
     } else if (type == "getStats") {
         handleGetStats(sender, obj);
     } else if (type == "joinMatchmaking") {
-        handleJoinMatchmaking(sender);
+        handleJoinMatchmaking(sender, obj);
     } else if (type == "joinTraining") {
-        handleJoinTraining(sender);
+        handleJoinTraining(sender, obj);
     } else if (type == "leaveMatchmaking") {
         handleLeaveMatchmaking(sender);
     } else if (type == "playCard") {
@@ -1604,13 +1604,23 @@ void GameServer::handleGetStats(QWebSocket *socket, const QJsonObject &data) {
     sendMessage(socket, response);
 }
 
-void GameServer::handleJoinMatchmaking(QWebSocket *socket) {
+void GameServer::handleJoinMatchmaking(QWebSocket *socket, const QJsonObject &data) {
     QString connectionId = getConnectionIdBySocket(socket);
     if (connectionId.isEmpty()) return;
 
-    if (!m_matchmakingQueue.contains(connectionId)) {
-        m_matchmakingQueue.enqueue(connectionId);
-        qDebug() << "Joueur en attente:" << connectionId
+    // Lire le mode de jeu préféré et le stocker dans la connexion
+    QString gameMode = data.value("gameMode").toString("coinche");
+    if (m_connections.contains(connectionId)) {
+        m_connections[connectionId]->preferredGameMode = gameMode;
+    }
+
+    // Router vers la file Belote ou Coinche selon le mode
+    QQueue<QString>& targetQueue = (gameMode == "belote") ? m_matchmakingQueueBelote : m_matchmakingQueueCoinche;
+
+    if (!m_matchmakingQueue.contains(connectionId) && !targetQueue.contains(connectionId)) {
+        targetQueue.enqueue(connectionId);
+        m_matchmakingQueue.enqueue(connectionId);  // Garder m_matchmakingQueue synchronisée (pour les timers existants)
+        qDebug() << "Joueur en attente [" << gameMode << "]:" << connectionId
                     << "Queue size:" << m_matchmakingQueue.size();
 
         // Notifier TOUS les joueurs en attente du nombre de joueurs
@@ -1810,13 +1820,31 @@ void GameServer::tryCreateGame() {
             room->isBot.push_back(false);  // Initialement, aucun joueur n'est un bot
         }
         
-        // Distribue les cartes
+        // Déterminer le mode de jeu (Belote si tous les joueurs le préfèrent)
+        int beloteVotes = 0;
+        for (const QString& connId : connectionIds) {
+            if (m_connections.contains(connId) && m_connections[connId]->preferredGameMode == "belote")
+                beloteVotes++;
+        }
+        room->isBeloteMode = (beloteVotes >= 4);
+
+        // Distribue les cartes selon le mode
         room->deck.shuffleDeck();
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 8; j++) {
-                Carte* carte = room->deck.drawCard();
-                if (carte) {
-                    room->players[i]->addCardToHand(carte);
+        room->deck.cutDeck();
+        if (room->isBeloteMode) {
+            std::vector<Carte*> main1, main2, main3, main4;
+            Carte* retournee = nullptr;
+            room->deck.distributeBelote(main1, main2, main3, main4, retournee);
+            room->retournee = retournee;
+            for (Carte* c : main1) room->players[0]->addCardToHand(c);
+            for (Carte* c : main2) room->players[1]->addCardToHand(c);
+            for (Carte* c : main3) room->players[2]->addCardToHand(c);
+            for (Carte* c : main4) room->players[3]->addCardToHand(c);
+        } else {
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 8; j++) {
+                    Carte* carte = room->deck.drawCard();
+                    if (carte) room->players[i]->addCardToHand(carte);
                 }
             }
         }
@@ -1833,8 +1861,8 @@ void GameServer::tryCreateGame() {
         room->biddingPlayer = 0;
         room->gameState = "bidding";
 
-        qInfo() << "Partie créée - Room" << roomId << "- Joueurs:"
-                << room->playerNames[0] << "," << room->playerNames[1] << ","
+        qInfo() << "Partie créée - Room" << roomId << "[" << (room->isBeloteMode ? "Belote" : "Coinche") << "]"
+                << "- Joueurs:" << room->playerNames[0] << "," << room->playerNames[1] << ","
                 << room->playerNames[2] << "," << room->playerNames[3];
 
         // Notifie tous les joueurs
@@ -1844,11 +1872,16 @@ void GameServer::tryCreateGame() {
 
         // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
         // (attendre la fin de l'animation "Bonne partie !" + distribution)
+        bool isBelote = room->isBeloteMode;
         if (room->isBot[room->currentPlayerIndex]) {
-            QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
+            QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId, isBelote]() {
                 GameRoom* room = m_gameRooms.value(roomId);
                 if (room && room->gameState == "bidding") {
-                    playBotBid(roomId, room->currentPlayerIndex);
+                    if (isBelote) {
+                        playBotBeloteBid(roomId, room->currentPlayerIndex);
+                    } else {
+                        playBotBid(roomId, room->currentPlayerIndex);
+                    }
                 }
             });
         } else {
@@ -2126,6 +2159,12 @@ void GameServer::handleMakeBid(QWebSocket *socket, const QJsonObject &data) {
     int playerIndex = conn->playerIndex;
     int bidValue = data["bidValue"].toInt();
     int suit = data["suit"].toInt();
+
+    // En mode Belote, déléguer à handleBeloteBid
+    if (room->isBeloteMode) {
+        handleBeloteBid(roomId, playerIndex, bidValue, suit);
+        return;
+    }
 
     Player::Annonce annonce = static_cast<Player::Annonce>(bidValue);
 
@@ -2862,14 +2901,16 @@ void GameServer::createGameWithBots() {
     }
 }
 
-void GameServer::handleJoinTraining(QWebSocket *socket) {
+void GameServer::handleJoinTraining(QWebSocket *socket, const QJsonObject &data) {
     QString connectionId = getConnectionIdBySocket(socket);
     if (connectionId.isEmpty()) return;
 
     PlayerConnection* conn = m_connections[connectionId];
     if (!conn) return;
 
-    qDebug() << "Mode entraînement demandé par:" << conn->playerName;
+    QString gameMode = data.value("gameMode").toString("coinche");
+    conn->preferredGameMode = gameMode;
+    qDebug() << "Mode entraînement demandé par:" << conn->playerName << "[" << gameMode << "]";
 
     // Créer une room avec 1 humain + 3 bots
     int roomId = m_nextRoomId++;
@@ -2877,6 +2918,7 @@ void GameServer::handleJoinTraining(QWebSocket *socket) {
     room->roomId = roomId;
     room->gameState = "waiting";
     room->isTraining = true;  // Partie d'entraînement : stats non comptabilisées
+    room->isBeloteMode = (gameMode == "belote");
 
     // Joueur humain à la position 0
     conn->gameRoomId = roomId;
@@ -2911,12 +2953,24 @@ void GameServer::handleJoinTraining(QWebSocket *socket) {
         room->isBot.push_back(true);
     }
 
-    // Distribuer les cartes
+    // Distribuer les cartes selon le mode de jeu
     room->deck.shuffleDeck();
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 8; j++) {
-            Carte* carte = room->deck.drawCard();
-            if (carte) room->players[i]->addCardToHand(carte);
+    room->deck.cutDeck();
+    if (room->isBeloteMode) {
+        std::vector<Carte*> main1, main2, main3, main4;
+        Carte* retournee = nullptr;
+        room->deck.distributeBelote(main1, main2, main3, main4, retournee);
+        room->retournee = retournee;
+        for (Carte* c : main1) room->players[0]->addCardToHand(c);
+        for (Carte* c : main2) room->players[1]->addCardToHand(c);
+        for (Carte* c : main3) room->players[2]->addCardToHand(c);
+        for (Carte* c : main4) room->players[3]->addCardToHand(c);
+    } else {
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 8; j++) {
+                Carte* carte = room->deck.drawCard();
+                if (carte) room->players[i]->addCardToHand(carte);
+            }
         }
     }
 
@@ -2930,17 +2984,23 @@ void GameServer::handleJoinTraining(QWebSocket *socket) {
     room->biddingPlayer = 0;
     room->gameState = "bidding";
 
-    qDebug() << "Partie d'entraînement créée! Room ID:" << roomId;
+    qDebug() << "Partie d'entraînement créée [" << (room->isBeloteMode ? "Belote" : "Coinche") << "]! Room ID:" << roomId;
 
     // Notifier le joueur humain
     QList<QString> humanConnections = {connectionId};
     notifyGameStart(roomId, humanConnections);
 
     // Démarrer les enchères (attendre la fin de l'animation "Bonne partie !" + distribution)
+    bool isBeloteTraining = room->isBeloteMode;
     if (room->isBot[room->currentPlayerIndex]) {
-        QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
+        QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId, isBeloteTraining]() {
             GameRoom* r = m_gameRooms.value(roomId);
-            if (r && r->gameState == "bidding") playBotBid(roomId, r->currentPlayerIndex);
+            if (!r || r->gameState != "bidding") return;
+            if (isBeloteTraining) {
+                playBotBeloteBid(roomId, r->currentPlayerIndex);
+            } else {
+                playBotBid(roomId, r->currentPlayerIndex);
+            }
         });
     } else {
         QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
@@ -2973,6 +3033,15 @@ void GameServer::notifyGameStart(int roomId, const QList<QString> &connectionIds
         msg["type"] = "gameFound";
         msg["roomId"] = roomId;
         msg["playerPosition"] = playerPosition;
+        msg["gameMode"] = room->isBeloteMode ? QString("belote") : QString("coinche");
+
+        // Retournée (Belote uniquement)
+        if (room->isBeloteMode && room->retournee) {
+            QJsonObject retObj;
+            retObj["value"] = static_cast<int>(room->retournee->getChiffre());
+            retObj["suit"] = static_cast<int>(room->retournee->getCouleur());
+            msg["retournee"] = retObj;
+        }
 
         // Envoi les cartes du joueur
         QJsonArray myCards;
@@ -3223,23 +3292,41 @@ void GameServer::finishManche(int roomId) {
                     << (generaleReussie ? "REUSSIE" : "ECHOUEE");
     }
 
-    // Utiliser ScoreCalculator pour calculer les scores
-    auto scoreResult = ScoreCalculator::calculateMancheScore(
-        pointsRealisesTeam1,
-        pointsRealisesTeam2,
-        valeurContrat,
-        team1HasBid,
-        room->coinched,
-        room->surcoinched,
-        isCapotAnnonce,
-        capotReussi,
-        isGeneraleAnnonce,
-        generaleReussie,
-        capotNonAnnonceTeam1,
-        capotNonAnnonceTeam2,
-        room->beloteTeam1 ? 20 : 0,
-        room->beloteTeam2 ? 20 : 0
-    );
+    // Utiliser le bon calculateur selon le mode de jeu
+    ScoreCalculator::ScoreResult scoreResult;
+    if (room->isBeloteMode) {
+        bool capotByTeam1 = (plisTeam1 == 8);
+        bool capotByTeam2 = (plisTeam2 == 8);
+        scoreResult = ScoreCalculator::calculateBeloteMancheScore(
+            pointsRealisesTeam1,
+            pointsRealisesTeam2,
+            team1HasBid,
+            capotByTeam1,
+            capotByTeam2,
+            room->beloteTeam1 ? 20 : 0,
+            room->beloteTeam2 ? 20 : 0
+        );
+        qDebug() << "GameServer - Score Belote calculé:"
+                    << "Team1=" << scoreResult.scoreTeam1
+                    << "Team2=" << scoreResult.scoreTeam2;
+    } else {
+        scoreResult = ScoreCalculator::calculateMancheScore(
+            pointsRealisesTeam1,
+            pointsRealisesTeam2,
+            valeurContrat,
+            team1HasBid,
+            room->coinched,
+            room->surcoinched,
+            isCapotAnnonce,
+            capotReussi,
+            isGeneraleAnnonce,
+            generaleReussie,
+            capotNonAnnonceTeam1,
+            capotNonAnnonceTeam2,
+            room->beloteTeam1 ? 20 : 0,
+            room->beloteTeam2 ? 20 : 0
+        );
+    }
 
     int scoreToAddTeam1 = scoreResult.scoreTeam1;
     int scoreToAddTeam2 = scoreResult.scoreTeam2;
@@ -3505,7 +3592,10 @@ void GameServer::finishManche(int roomId) {
     int attackerPoints = team1HasBid ? pointsRealisesTeam1 : pointsRealisesTeam2;
     int attackerBelote = team1HasBid ? beloteTeam1 : beloteTeam2;
     bool contractSuccess;
-    if (isCapotAnnonce) {
+    if (room->isBeloteMode) {
+        // En Belote : succès si le preneur atteint >= 81 pts (belote incluse)
+        contractSuccess = ((attackerPoints + attackerBelote) >= 81);
+    } else if (isCapotAnnonce) {
         contractSuccess = capotReussi;
     } else if (isGeneraleAnnonce) {
         contractSuccess = generaleReussie;
@@ -3643,9 +3733,18 @@ void GameServer::doStartNewManche(int roomId) {
         qDebug() << "GameServer - Deck coupé";
     }
 
-    // Redistribuer les cartes en 3-2-3 (méthode réaliste)
+    // Redistribuer les cartes selon le mode de jeu
     std::vector<Carte*> main1, main2, main3, main4;
-    room->deck.distribute323(main1, main2, main3, main4);
+    if (room->isBeloteMode) {
+        Carte* retournee = nullptr;
+        room->deck.distributeBelote(main1, main2, main3, main4, retournee);
+        room->retournee = retournee;
+        room->beloteBidRound = 1;
+        room->beloteBidPassCount = 0;
+        qDebug() << "GameServer - Distribution Belote: 5 cartes/joueur + retournée";
+    } else {
+        room->deck.distribute323(main1, main2, main3, main4);
+    }
 
     // Ajouter les cartes aux mains des joueurs
     for (Carte* carte : main1) {
@@ -3697,9 +3796,10 @@ void GameServer::doStartNewManche(int roomId) {
 
     // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
     // (attendre la fin de la distribution de la nouvelle manche)
+    bool isBelote = room->isBeloteMode;
     if (room->isBot[room->currentPlayerIndex]) {
         int firstBidder = room->currentPlayerIndex;
-        QTimer::singleShot(NEW_MANCHE_BOT_DELAY_MS, this, [this, roomId, firstBidder]() {
+        QTimer::singleShot(NEW_MANCHE_BOT_DELAY_MS, this, [this, roomId, firstBidder, isBelote]() {
             GameRoom* room = m_gameRooms.value(roomId);
             if (!room || room->gameState != "bidding") return;
 
@@ -3709,7 +3809,11 @@ void GameServer::doStartNewManche(int roomId) {
                 return;
             }
 
-            playBotBid(roomId, firstBidder);
+            if (isBelote) {
+                playBotBeloteBid(roomId, firstBidder);
+            } else {
+                playBotBid(roomId, firstBidder);
+            }
         });
     } else {
         // Joueur humain : démarrer le timer de timeout pour les enchères
@@ -4227,6 +4331,247 @@ void GameServer::handleInviteToLobby(QWebSocket *socket, const QJsonObject &data
     sendMessage(socket, response);
 }
 
+// ============================================================
+// BELOTE : Enchères Prendre/Passer
+// ============================================================
 
+void GameServer::doStartBeloteBidding(int roomId) {
+    GameRoom* room = m_gameRooms.value(roomId);
+    if (!room) return;
 
+    room->beloteBidRound = 1;
+    room->beloteBidPassCount = 0;
+    room->gameState = "bidding";
+
+    qDebug() << "Belote - Début des enchères, retournée:"
+             << (room->retournee ? static_cast<int>(room->retournee->getChiffre()) : -1)
+             << "couleur:" << (room->retournee ? static_cast<int>(room->retournee->getCouleur()) : -1);
+}
+
+void GameServer::handleBeloteBid(int roomId, int playerIndex, int bidValue, int suit) {
+    GameRoom* room = m_gameRooms.value(roomId);
+    if (!room || !room->isBeloteMode) return;
+
+    // Arrêter le timer d'enchère
+    if (room->bidTimeout) {
+        room->bidTimeout->stop();
+        room->bidTimeoutGeneration++;
+    }
+
+    if (bidValue == 0) {
+        // Passe
+        room->beloteBidPassCount++;
+        qDebug() << "Belote - Joueur" << playerIndex << "passe (tour" << room->beloteBidRound
+                 << ", passes=" << room->beloteBidPassCount << ")";
+
+        QJsonObject msg;
+        msg["type"] = "bidMade";
+        msg["playerIndex"] = playerIndex;
+        msg["bidValue"] = 0;
+        msg["suit"] = 0;
+        broadcastToRoom(roomId, msg);
+
+        if (room->beloteBidPassCount >= 4) {
+            if (room->beloteBidRound == 1) {
+                // Passer au tour 2
+                room->beloteBidRound = 2;
+                room->beloteBidPassCount = 0;
+                // Le même joueur qui a commencé reprend
+                room->currentPlayerIndex = room->firstPlayerIndex;
+                room->biddingPlayer = room->firstPlayerIndex;
+
+                // Notifier les joueurs du changement de tour
+                QJsonObject roundMsg;
+                roundMsg["type"] = "beloteBidRoundChanged";
+                roundMsg["beloteBidRound"] = 2;
+                broadcastToRoom(roomId, roundMsg);
+
+                qDebug() << "Belote - Passage au tour 2 des enchères";
+                // Démarrer le timer pour le prochain joueur
+                QTimer::singleShot(500, this, [this, roomId]() {
+                    GameRoom* r = m_gameRooms.value(roomId);
+                    if (!r || r->gameState != "bidding") return;
+                    if (r->isBot[r->currentPlayerIndex]) {
+                        playBotBeloteBid(roomId, r->currentPlayerIndex);
+                    } else {
+                        startBidTimeout(roomId, r->currentPlayerIndex);
+                    }
+                });
+                return;
+            } else {
+                // Tour 2 : tout le monde a passé → redistribuer, dealer change
+                qDebug() << "Belote - Tout le monde a passé au tour 2 → redistribution";
+                startNewManche(roomId);
+                return;
+            }
+        }
+
+        // Passer au joueur suivant
+        room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
+        room->biddingPlayer = room->currentPlayerIndex;
+
+        QTimer::singleShot(300, this, [this, roomId]() {
+            GameRoom* r = m_gameRooms.value(roomId);
+            if (!r || r->gameState != "bidding") return;
+            if (r->isBot[r->currentPlayerIndex]) {
+                playBotBeloteBid(roomId, r->currentPlayerIndex);
+            } else {
+                startBidTimeout(roomId, r->currentPlayerIndex);
+            }
+        });
+
+    } else {
+        // Prendre (bidValue = couleur choisie)
+        Carte::Couleur couleurPrise = static_cast<Carte::Couleur>(suit);
+
+        // Validation : au tour 2, la couleur ne peut pas être celle de la retournée
+        if (room->beloteBidRound == 2 && room->retournee && couleurPrise == room->retournee->getCouleur()) {
+            qWarning() << "Belote - Joueur" << playerIndex << "essaie de prendre la couleur de la retournée au tour 2 - rejeté";
+            return;
+        }
+
+        room->lastBidderIndex = playerIndex;
+        room->couleurAtout = couleurPrise;
+        room->lastBidCouleur = couleurPrise;
+        room->lastBidSuit = suit;
+
+        qDebug() << "Belote - Joueur" << playerIndex << "prend en" << static_cast<int>(couleurPrise)
+                 << "(tour" << room->beloteBidRound << ")";
+
+        QJsonObject msg;
+        msg["type"] = "bidMade";
+        msg["playerIndex"] = playerIndex;
+        msg["bidValue"] = 20;  // "Prendre"
+        msg["suit"] = suit;
+        broadcastToRoom(roomId, msg);
+
+        // Distribuer les cartes restantes
+        completeBeloteDistribution(roomId, playerIndex);
+    }
+}
+
+void GameServer::completeBeloteDistribution(int roomId, int takerIndex) {
+    GameRoom* room = m_gameRooms.value(roomId);
+    if (!room || !room->retournee) return;
+
+    // Preneur : retournée + 2 cartes (total 8). Autres joueurs : 3 cartes chacun (total 8).
+    std::vector<int> otherPlayers;
+    for (int i = 0; i < 4; i++) {
+        if (i != takerIndex) otherPlayers.push_back(i);
+    }
+
+    // drawCard() prend depuis la FIN du deck (indices 31, 30, 29...)
+    // Après distributeBelote(), deck[21..31] sont les 11 cartes de réserve non distribuées.
+    // drawCard() commence donc par la réserve (indices 31 vers 21).
+
+    // Distribuer au preneur : retournée + 2 cartes du deck
+    room->players[takerIndex]->addCardToHand(room->retournee);
+    Carte* card1 = room->deck.drawCard();  // carte 31
+    Carte* card2 = room->deck.drawCard();  // carte 30
+    if (card1) room->players[takerIndex]->addCardToHand(card1);
+    if (card2) room->players[takerIndex]->addCardToHand(card2);
+
+    // Distribuer 3 cartes à chacun des 3 autres joueurs
+    for (int other : otherPlayers) {
+        for (int k = 0; k < 3; k++) {
+            Carte* card = room->deck.drawCard();
+            if (card) room->players[other]->addCardToHand(card);
+        }
+    }
+
+    qDebug() << "Belote - Distribution complète:";
+    for (int i = 0; i < 4; i++) {
+        qDebug() << "  Joueur" << i << ":" << room->players[i]->getMain().size() << "cartes";
+    }
+
+    // Définir l'atout pour toutes les cartes
+    for (int i = 0; i < 4; i++) {
+        room->players[i]->setAtout(room->couleurAtout);
+    }
+
+    // Détecter la Belote (Roi + Dame d'atout)
+    room->beloteTeam1 = room->players[0]->hasBelotte(room->couleurAtout) ||
+                        room->players[2]->hasBelotte(room->couleurAtout);
+    room->beloteTeam2 = room->players[1]->hasBelotte(room->couleurAtout) ||
+                        room->players[3]->hasBelotte(room->couleurAtout);
+
+    // Notifier les joueurs de la distribution complète et du début du jeu
+    QJsonObject distMsg;
+    distMsg["type"] = "beloteDistributionComplete";
+    distMsg["bidderIndex"] = takerIndex;
+    distMsg["atoutSuit"] = static_cast<int>(room->couleurAtout);
+    broadcastToRoom(roomId, distMsg);
+
+    // Envoyer les nouvelles cartes à chaque joueur
+    for (int i = 0; i < 4; i++) {
+        if (room->isBot[i]) continue;
+        QString connId = room->connectionIds[i];
+        if (connId.isEmpty()) continue;
+        PlayerConnection* conn = m_connections.value(connId);
+        if (!conn) continue;
+
+        QJsonArray cards;
+        for (const Carte* c : room->players[i]->getMain()) {
+            QJsonObject cardObj;
+            cardObj["value"] = static_cast<int>(c->getChiffre());
+            cardObj["suit"] = static_cast<int>(c->getCouleur());
+            cards.append(cardObj);
+        }
+        QJsonObject cardsMsg;
+        cardsMsg["type"] = "beloteHandComplete";
+        cardsMsg["myCards"] = cards;
+        cardsMsg["beloteTeam1"] = room->beloteTeam1;
+        cardsMsg["beloteTeam2"] = room->beloteTeam2;
+        sendMessage(conn->socket, cardsMsg);
+    }
+
+    // Lancer la phase de jeu
+    startPlayingPhase(roomId);
+}
+
+void GameServer::playBotBeloteBid(int roomId, int playerIndex) {
+    GameRoom* room = m_gameRooms.value(roomId);
+    if (!room || !room->isBeloteMode || !room->retournee) return;
+
+    Player* player = room->players[playerIndex].get();
+    Carte::Couleur retourneeCouleur = room->retournee->getCouleur();
+
+    if (room->beloteBidRound == 1) {
+        // Tour 1 : évaluer la main pour la couleur de la retournée
+        int score = evaluateHandForSuit(player, retourneeCouleur);
+        qDebug() << "Bot Belote" << playerIndex << "- Tour 1, score couleur retournée:" << score;
+
+        if (score >= 50) {
+            // Prendre
+            qDebug() << "Bot Belote" << playerIndex << "- Prend en" << static_cast<int>(retourneeCouleur);
+            handleBeloteBid(roomId, playerIndex, 20, static_cast<int>(retourneeCouleur));
+        } else {
+            // Passer
+            qDebug() << "Bot Belote" << playerIndex << "- Passe";
+            handleBeloteBid(roomId, playerIndex, 0, 0);
+        }
+    } else {
+        // Tour 2 : choisir la meilleure couleur différente de la retournée
+        std::array<Carte::Couleur, 4> couleurs = {Carte::COEUR, Carte::TREFLE, Carte::CARREAU, Carte::PIQUE};
+        int bestScore = 40;  // Seuil minimum pour prendre
+        Carte::Couleur bestCouleur = Carte::COULEURINVALIDE;
+
+        for (Carte::Couleur c : couleurs) {
+            if (c == retourneeCouleur) continue;  // Pas la couleur de la retournée
+            int score = evaluateHandForSuit(player, c);
+            if (score > bestScore) {
+                bestScore = score;
+                bestCouleur = c;
+            }
+        }
+
+        if (bestCouleur != Carte::COULEURINVALIDE) {
+            qDebug() << "Bot Belote" << playerIndex << "- Tour 2, prend en" << static_cast<int>(bestCouleur);
+            handleBeloteBid(roomId, playerIndex, 20, static_cast<int>(bestCouleur));
+        } else {
+            qDebug() << "Bot Belote" << playerIndex << "- Tour 2, passe";
+            handleBeloteBid(roomId, playerIndex, 0, 0);
+        }
+    }
+}
 

@@ -547,7 +547,8 @@ Rectangle {
                      !gameModel.showSurcoincheAnimation &&   // Masquer si animation Surcoinche
                      !gameModel.surcoincheAvailable &&       // Masquer si bouton Surcoinche visible
                      !gameModel.showGoodGameAnimation &&     // Attendre fin de "Bonne partie !"
-                     !ufoNewMancheAnimation.visible // Masquer si animation Nouvelle Manche visible
+                     !ufoNewMancheAnimation.visible &&       // Masquer si animation Nouvelle Manche visible
+                     !gameModel.isBeloteMode                 // Masquer en mode Belote (BeloteAnnoncesPanel)
         }
 
         // ---- Zone du pli (cartes jouées) ----
@@ -1924,7 +1925,8 @@ Rectangle {
                      !gameModel.isSurcoinched &&  // Pas déjà surcoinché
                      (gameModel.lastBidderIndex % 2) !== (gameModel.playerIndex % 2) &&
                      !gameModel.showCoincheAnimation &&  // Cacher pendant l'animation Coinche
-                     !gameModel.showSurcoincheAnimation  // Cacher pendant l'animation Surcoinche
+                     !gameModel.showSurcoincheAnimation &&  // Cacher pendant l'animation Surcoinche
+                     !gameModel.isBeloteMode  // Pas disponible en mode Belote
 
             // Enabled seulement si:
             // 1. Il y a eu une annonce (lastBidValue > 0)
@@ -2826,7 +2828,7 @@ Rectangle {
             anchors.centerIn: playArea
             width: playArea.width * 0.4
             height: playArea.height * 0.4
-            visible: gameModel.surcoincheAvailable && !gameModel.showSurcoincheAnimation
+            visible: gameModel.surcoincheAvailable && !gameModel.showSurcoincheAnimation && !gameModel.isBeloteMode
 
             // Couches d'ombre (du plus flou au plus net)
             Rectangle {
