@@ -99,6 +99,7 @@ ApplicationWindow {
     property string accountType: ""
     property bool shouldLoadCoincheView: false
     property int selectedMode: 0  // 0 = Coinche, 1 = Belote
+    property string pendingViewUrl: "qrc:/qml/CoincheView.qml"  // URL de la vue à charger
 
     // Fonction helper pour obtenir le nom du joueur actuel
     // Vérifie d'abord networkManager.playerPseudo, puis fallback sur loggedInPlayerName
@@ -146,6 +147,13 @@ ApplicationWindow {
         }
 
         function onGameModelReady() {
+            // Capturer le mode maintenant, avant tout délai
+            console.log("onGameModelReady - gameMode:", networkManager.gameMode, "isBeloteMode:", gameModel ? gameModel.isBeloteMode : "null")
+            mainWindow.pendingViewUrl = (networkManager.gameMode === "belote")
+                ? "qrc:/qml/BeloteView.qml"
+                : "qrc:/qml/CoincheView.qml"
+            console.log("onGameModelReady - pendingViewUrl:", mainWindow.pendingViewUrl)
+
             // MainMenu gère toujours le chargement de la vue de jeu
             // Vérifier si on n'est pas déjà sur l'écran de chargement
             var currentItem = stackView.currentItem
@@ -699,7 +707,10 @@ ApplicationWindow {
                             MouseArea {
                                 anchors.fill: parent
                                 enabled: mainWindow.selectedMode < 1
-                                onClicked: mainWindow.selectedMode++
+                                onClicked: {
+                                    mainWindow.selectedMode++
+                                    console.error("Selected mode changed: " + mainWindow.selectedMode)
+                                }
                             }
                         }
                     }
@@ -836,7 +847,7 @@ ApplicationWindow {
                         onClicked: {
                             // Utiliser le pseudo sauvegardé dans networkManager s'il existe, sinon loggedInPlayerName
                             var pseudoToUse = networkManager.playerPseudo !== "" ? networkManager.playerPseudo : mainWindow.loggedInPlayerName
-                            networkManager.setGameMode(mainWindow.selectedMode === 0 ? "coinche" : "belote")
+                            networkManager.gameMode = (mainWindow.selectedMode === 0 ? "coinche" : "belote")
                             networkManager.registerPlayer(pseudoToUse, networkManager.playerAvatar)
                             stackView.push("qrc:/qml/MatchMakingView.qml")
                         }
@@ -963,7 +974,7 @@ ApplicationWindow {
                         }
 
                         onClicked: {
-                            networkManager.setGameMode(mainWindow.selectedMode === 0 ? "coinche" : "belote")
+                            networkManager.gameMode = "belote" //(mainWindow.selectedMode === 0 ? "coinche" : "belote")
                             networkManager.registerPlayer(mainWindow.getPlayerName(), networkManager.playerAvatar)
                             networkManager.joinTraining()
                         }
@@ -1672,9 +1683,14 @@ ApplicationWindow {
                     id: coincheLoader
                     anchors.fill: parent
                     active: mainWindow.shouldLoadCoincheView
-                    source: mainWindow.shouldLoadCoincheView
-                        ? (networkManager.gameMode === "belote" ? "qrc:/qml/BeloteView.qml" : "qrc:/qml/CoincheView.qml")
-                        : ""
+
+                    onActiveChanged: {
+                        if (active) {
+                            console.log("Loader actif - pendingViewUrl:", mainWindow.pendingViewUrl)
+                            source = mainWindow.pendingViewUrl
+                            console.log("Loader source set to:", source)
+                        }
+                    }
 
                     onLoaded: {
                         // Arrêter le son du menu principal

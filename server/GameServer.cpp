@@ -2910,6 +2910,7 @@ void GameServer::handleJoinTraining(QWebSocket *socket, const QJsonObject &data)
 
     QString gameMode = data.value("gameMode").toString("coinche");
     conn->preferredGameMode = gameMode;
+    qWarning() << "handleJoinTraining - data keys:" << data.keys() << "gameMode:" << gameMode;
     qDebug() << "Mode entraînement demandé par:" << conn->playerName << "[" << gameMode << "]";
 
     // Créer une room avec 1 humain + 3 bots
@@ -3034,6 +3035,7 @@ void GameServer::notifyGameStart(int roomId, const QList<QString> &connectionIds
         msg["roomId"] = roomId;
         msg["playerPosition"] = playerPosition;
         msg["gameMode"] = room->isBeloteMode ? QString("belote") : QString("coinche");
+        qWarning() << "notifyGameStart - isBeloteMode:" << room->isBeloteMode << "gameMode sent:" << msg["gameMode"].toString();
 
         // Retournée (Belote uniquement)
         if (room->isBeloteMode && room->retournee) {

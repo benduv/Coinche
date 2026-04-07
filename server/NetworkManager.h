@@ -88,7 +88,9 @@ public:
     QString pendingBotReplacement() const { return m_pendingBotReplacement; }
     QString gameMode() const { return m_gameMode; }
     void setGameMode(const QString& mode) {
+        qWarning() << "Changement de mode de jeu:" << mode;
         if (m_gameMode != mode) {
+            qWarning() << "Mode de jeu mis à jour:" << mode;
             m_gameMode = mode;
             emit gameModeChanged();
         }
@@ -742,6 +744,7 @@ private slots:
 
             // Récupérer le mode de jeu et la retournée (Belote)
             QString receivedMode = obj["gameMode"].toString("coinche");
+            qWarning() << "gameFound reçu - gameMode serveur:" << receivedMode << "/ gameMode client avant:" << m_gameMode;
             if (m_gameMode != receivedMode) {
                 m_gameMode = receivedMode;
                 emit gameModeChanged();
@@ -909,7 +912,27 @@ private slots:
                 newMancheData["biddingPlayer"] = biddingPlayer;
                 newMancheData["currentPlayer"] = currentPlayer;
                 newMancheData["myCards"] = myCards;
+                // Champs Belote
+                if (obj.contains("gameMode"))    newMancheData["gameMode"]       = obj["gameMode"];
+                if (obj.contains("beloteBidRound")) newMancheData["beloteBidRound"] = obj["beloteBidRound"];
+                if (obj.contains("retournee"))   newMancheData["retournee"]      = obj["retournee"];
                 m_gameModel->receivePlayerAction(-1, "newManche", newMancheData);
+            }
+        }
+        else if (type == "beloteBidRoundChanged") {
+            if (m_gameModel) {
+                QJsonObject d;
+                if (obj.contains("beloteBidRound")) d["beloteBidRound"] = obj["beloteBidRound"];
+                if (obj.contains("biddingPlayer"))  d["biddingPlayer"]  = obj["biddingPlayer"];
+                m_gameModel->receivePlayerAction(-1, "beloteBidRoundChanged", d);
+            }
+        }
+        else if (type == "beloteHandComplete") {
+            if (m_gameModel) {
+                QJsonObject d;
+                if (obj.contains("cards")) d["cards"] = obj["cards"];
+                if (obj.contains("atout")) d["atout"] = obj["atout"];
+                m_gameModel->receivePlayerAction(-1, "beloteHandComplete", d);
             }
         }
         else if (type == "surcoincheOffer") {
