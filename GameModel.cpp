@@ -1633,44 +1633,45 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             m_distributionPhase = 1;
             emit distributionPhaseChanged();
 
-            int step = 0;
-            for (int cardRound = 0; cardRound < 3; cardRound++) {
-                for (int rel = 0; rel < 4; rel++) {
-                    int playerPos = (m_firstPlayerIndex + rel) % 4;
-                    if (playerPos == takerIndex && cardRound == 2) continue;  // preneur ne reçoit que 2
-                    int delay = step * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS;
-                    step++;
+            // Distribuer un paquet par joueur (round-robin depuis firstPlayerIndex)
+            // Chaque joueur reçoit toutes ses nouvelles cartes en même temps (2 pour le preneur, 3 pour les autres)
+            for (int rel = 0; rel < 4; rel++) {
+                int playerPos = (m_firstPlayerIndex + rel) % 4;
+                int numCards = (playerPos == takerIndex) ? 2 : 3;
+                int delay = rel * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS;
 
-                    if (playerPos == m_myPosition) {
-                        // Index local : si preneur, skip la retournée (index 0)
-                        int localIdx = isTaker ? (1 + cardRound) : cardRound;
-                        QTimer::singleShot(delay, this, [this, gen, localNewCards, localIdx]() {
-                            if (gen != m_distributionGeneration) return;
-                            if (localIdx < static_cast<int>(localNewCards.size())) {
-                                Player* lp = getPlayerByPosition(m_myPosition);
-                                if (lp) {
-                                    lp->addCardToHand(localNewCards[localIdx]);
-                                    HandModel* h = getHandModelByPosition(m_myPosition);
-                                    if (h) { h->refresh(); h->sortAndAnimate([&]() { lp->sortHand(m_strongCardsLeft); }); }
-                                }
+                if (playerPos == m_myPosition) {
+                    // Index local : si preneur, skip la retournée (index 0)
+                    int startIdx = isTaker ? 1 : 0;
+                    QTimer::singleShot(delay, this, [this, gen, localNewCards, startIdx, numCards]() {
+                        if (gen != m_distributionGeneration) return;
+                        Player* lp = getPlayerByPosition(m_myPosition);
+                        if (!lp) return;
+                        for (int k = 0; k < numCards; k++) {
+                            int idx = startIdx + k;
+                            if (idx < static_cast<int>(localNewCards.size())) {
+                                lp->addCardToHand(localNewCards[idx]);
                             }
-                        });
-                    } else {
-                        QTimer::singleShot(delay, this, [this, gen, playerPos]() {
-                            if (gen != m_distributionGeneration) return;
-                            Player* p = getPlayerByPosition(playerPos);
-                            if (p) {
-                                p->addCardToHand(new Carte(Carte::COEUR, Carte::SEPT));
-                                HandModel* h = getHandModelByPosition(playerPos);
-                                if (h) h->refresh();
-                            }
-                        });
-                    }
+                        }
+                        HandModel* h = getHandModelByPosition(m_myPosition);
+                        if (h) { h->refresh(); h->sortAndAnimate([&]() { lp->sortHand(m_strongCardsLeft); }); }
+                    });
+                } else {
+                    QTimer::singleShot(delay, this, [this, gen, playerPos, numCards]() {
+                        if (gen != m_distributionGeneration) return;
+                        Player* p = getPlayerByPosition(playerPos);
+                        if (!p) return;
+                        for (int k = 0; k < numCards; k++) {
+                            p->addCardToHand(new Carte(Carte::COEUR, Carte::SEPT));
+                        }
+                        HandModel* h = getHandModelByPosition(playerPos);
+                        if (h) h->refresh();
+                    });
                 }
             }
 
             // Fin : appliquer atout, sortir des phases
-            int endDelay = step * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + 200;
+            int endDelay = 4 * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + 200;
             QTimer::singleShot(endDelay, this, [this, gen, atoutInt]() {
                 if (gen != m_distributionGeneration) return;
                 if (atoutInt >= 0) {

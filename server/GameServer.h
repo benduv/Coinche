@@ -217,7 +217,7 @@ public:
     static constexpr int FIRST_GAME_BOT_DELAY_MS = GOOD_GAME_DELAY_MS + TOTAL_DEAL_DURATION_MS;  // Délai avant annonce bot en début de partie
     static constexpr int NEW_MANCHE_BOT_DELAY_MS = TOTAL_DEAL_DURATION_MS;  // Délai avant annonce bot en nouvelle manche
     // Durée de l'animation de distribution complète Belote (retournée + 11 paquets round-robin)
-    static constexpr int BELOTE_COMPLETE_DEAL_DURATION_MS = 12 * DEAL_CARD_INTERVAL_MS + 1000;
+    static constexpr int BELOTE_COMPLETE_DEAL_DURATION_MS = 4 * DEAL_CARD_INTERVAL_MS + 500;
     static constexpr int BID_PANEL_DISPLAY_DELAY_MS = TOTAL_DEAL_DURATION_MS;  // Délai pour laisser le temps au client de recevoir les cartes
 
     // Constructeur avec support SSL optionnel
