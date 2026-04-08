@@ -559,34 +559,28 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
         m_showGoodGameAnimation = true;
         emit showGoodGameAnimationChanged();
 
-        // Animation de distribution 3-2-3 pour une nouvelle partie (après délai "Bonne partie !")
+        // Animation de distribution pour une nouvelle partie (après délai "Bonne partie !")
         m_distributionGeneration++;
         int gen = m_distributionGeneration;
-        // Phase 1 : 3 cartes (après le délai "Bonne partie !")
-        QTimer::singleShot(GOOD_GAME_DELAY_MS, this, [this, myNewCartes, gen]() {
-            if (gen != m_distributionGeneration) return;
-            // Masquer l'animation "Bonne partie !" et lancer la phase 1
-            m_showGoodGameAnimation = false;
-            emit showGoodGameAnimationChanged();
-            m_distributionPhase = 1;
-            emit distributionPhaseChanged();
-            distributeCards(0, 3, myNewCartes);
+        bool beloteMode = m_isBeloteMode;
 
-            // Phase 2 : 2 cartes (après fin de phase 1)
-            QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
+        if (beloteMode) {
+            // Belote : 3 cartes puis 2 cartes
+            // QML : distributionPhase≠2 → 3 cartes (3e dos visible), distributionPhase=2 → 2 cartes
+            QTimer::singleShot(GOOD_GAME_DELAY_MS, this, [this, myNewCartes, gen]() {
                 if (gen != m_distributionGeneration) return;
-                m_distributionPhase = 2;
+                m_showGoodGameAnimation = false;
+                emit showGoodGameAnimationChanged();
+                m_distributionPhase = 1;  // 3 cartes
                 emit distributionPhaseChanged();
-                distributeCards(3, 5, myNewCartes);
+                distributeCards(0, 3, myNewCartes, false);
 
-                // Phase 3 : 3 cartes (après fin de phase 2)
                 QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
                     if (gen != m_distributionGeneration) return;
-                    m_distributionPhase = 3;
+                    m_distributionPhase = 2;  // 2 cartes
                     emit distributionPhaseChanged();
-                    distributeCards(5, 8, myNewCartes);
+                    distributeCards(3, 5, myNewCartes, false);
 
-                    // Fin de distribution
                     QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, gen]() {
                         if (gen != m_distributionGeneration) return;
                         m_distributionPhase = 0;
@@ -595,7 +589,38 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
                     });
                 });
             });
-        });
+        } else {
+            // Coinche : 3-2-3
+            QTimer::singleShot(GOOD_GAME_DELAY_MS, this, [this, myNewCartes, gen]() {
+                if (gen != m_distributionGeneration) return;
+                m_showGoodGameAnimation = false;
+                emit showGoodGameAnimationChanged();
+                m_distributionPhase = 1;
+                emit distributionPhaseChanged();
+                distributeCards(0, 3, myNewCartes);
+
+                QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
+                    if (gen != m_distributionGeneration) return;
+                    m_distributionPhase = 2;
+                    emit distributionPhaseChanged();
+                    distributeCards(3, 5, myNewCartes);
+
+                    QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
+                        if (gen != m_distributionGeneration) return;
+                        m_distributionPhase = 3;
+                        emit distributionPhaseChanged();
+                        distributeCards(5, 8, myNewCartes);
+
+                        QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, gen]() {
+                            if (gen != m_distributionGeneration) return;
+                            m_distributionPhase = 0;
+                            emit distributionPhaseChanged();
+                            emit gameInitialized();
+                        });
+                    });
+                });
+            });
+        }
     }
 }
 
@@ -1495,22 +1520,23 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             myNewCartes.push_back(carte);
         }
 
-        // Animation de distribution : 3-2-3 pour Coinche, 2-3 pour Belote
+        // Animation de distribution : 3-2-3 pour Coinche, 3-2 pour Belote
         m_distributionGeneration++;
         int gen = m_distributionGeneration;
         bool beloteMode = m_isBeloteMode;
 
         if (beloteMode) {
-            // Phase 1 : 2 cartes (indices 0-1)
+            // Belote : phase 1 = 3 cartes (distributionPhase=1), phase 2 = 2 cartes (distributionPhase=2)
             QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
                 if (gen != m_distributionGeneration) return;
-                distributeCards(0, 2, myNewCartes, false);
+                // distributionPhase est déjà à 1 → QML affiche 3 dos
+                distributeCards(0, 3, myNewCartes, false);
 
                 QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
                     if (gen != m_distributionGeneration) return;
-                    m_distributionPhase = 2;
+                    m_distributionPhase = 2;  // QML affiche 2 dos
                     emit distributionPhaseChanged();
-                    distributeCards(2, 5, myNewCartes, false);
+                    distributeCards(3, 5, myNewCartes, false);
 
                     QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, gen]() {
                         if (gen != m_distributionGeneration) return;

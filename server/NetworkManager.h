@@ -142,17 +142,18 @@ public:
             forfeitGame();
         });
 
+        // Propager le mode Belote et la retournée AVANT initOnlineGame
+        // (initOnlineGame déclenche l'animation de distribution qui lit isBeloteMode)
+        m_gameModel->setIsBeloteMode(m_gameMode == "belote");
+        if (m_retourneeSuit >= 0 && m_retourneeValue >= 0) {
+            m_gameModel->setRetournee(m_retourneeSuit, m_retourneeValue);
+        }
+
         // Initialiser avec les données en passant le pseudo du joueur et le flag de reconnexion
         m_gameModel->initOnlineGame(position, cards, opps, m_playerPseudo, isReconnection);
 
         // Définir l'avatar du joueur local
         m_gameModel->setPlayerAvatar(position, m_playerAvatar);
-
-        // Propager le mode Belote et la retournée au GameModel
-        m_gameModel->setIsBeloteMode(m_gameMode == "belote");
-        if (m_retourneeSuit >= 0 && m_retourneeValue >= 0) {
-            m_gameModel->setRetournee(m_retourneeSuit, m_retourneeValue);
-        }
 
         // qDebug() << "GameModel cree et initialise - Pseudo:" << m_playerPseudo << "Avatar:" << m_playerAvatar;
 

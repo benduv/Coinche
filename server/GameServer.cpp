@@ -4481,7 +4481,7 @@ void GameServer::completeBeloteDistribution(int roomId, int takerIndex) {
         }
     }
 
-    qDebug() << "Belote - Distribution complète:";
+    qWarning() << "Belote - Distribution complète:";
     for (int i = 0; i < 4; i++) {
         qDebug() << "  Joueur" << i << ":" << room->players[i]->getMain().size() << "cartes";
     }
