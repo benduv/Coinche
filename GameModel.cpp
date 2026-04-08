@@ -1132,8 +1132,17 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         emit currentPliChanged();
     } else if (action == "makeBid") {
         QJsonObject bidData = data.toJsonObject();
-        Player::Annonce annonce = static_cast<Player::Annonce>(bidData["value"].toInt());
+        int rawBidValue = bidData["value"].toInt();
+        Player::Annonce annonce = static_cast<Player::Annonce>(rawBidValue);
         int suit = bidData["suit"].toInt();
+
+        // En mode Belote : bidValue 0 = Passe, bidValue 20 = Prendre
+        if (m_isBeloteMode) {
+            if (rawBidValue == 0) {
+                annonce = Player::PASSE;
+            }
+            // Pour "Prendre" (20), on ne modifie pas l'enum — traité spécifiquement plus bas
+        }
 
         // Stocker l'annonce du joueur pour l'affichage (sauf Coinche/Surcoinche)
         if (playerIndex >= 0 && playerIndex < 4) {

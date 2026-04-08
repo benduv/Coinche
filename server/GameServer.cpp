@@ -4386,11 +4386,21 @@ void GameServer::handleBeloteBid(int roomId, int playerIndex, int bidValue, int 
                 QJsonObject roundMsg;
                 roundMsg["type"] = "beloteBidRoundChanged";
                 roundMsg["beloteBidRound"] = 2;
+                roundMsg["biddingPlayer"] = room->biddingPlayer;
                 broadcastToRoom(roomId, roundMsg);
+
+                // Diffuser aussi un gameState pour que le client mette à jour biddingPlayer
+                QJsonObject stateMsg;
+                stateMsg["type"] = "gameState";
+                stateMsg["currentPlayer"] = room->currentPlayerIndex;
+                stateMsg["biddingPlayer"] = room->biddingPlayer;
+                stateMsg["biddingPhase"] = true;
+                broadcastToRoom(roomId, stateMsg);
+
 
                 qDebug() << "Belote - Passage au tour 2 des enchères";
                 // Démarrer le timer pour le prochain joueur
-                QTimer::singleShot(500, this, [this, roomId]() {
+                QTimer::singleShot(3000, this, [this, roomId]() {
                     GameRoom* r = m_gameRooms.value(roomId);
                     if (!r || r->gameState != "bidding") return;
                     if (r->isBot[r->currentPlayerIndex]) {
@@ -4420,7 +4430,7 @@ void GameServer::handleBeloteBid(int roomId, int playerIndex, int bidValue, int 
         stateMsg["biddingPhase"] = true;
         broadcastToRoom(roomId, stateMsg);
 
-        QTimer::singleShot(300, this, [this, roomId]() {
+        QTimer::singleShot(3000, this, [this, roomId]() {
             GameRoom* r = m_gameRooms.value(roomId);
             if (!r || r->gameState != "bidding") return;
             if (r->isBot[r->currentPlayerIndex]) {
