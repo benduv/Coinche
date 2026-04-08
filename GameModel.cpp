@@ -1616,6 +1616,11 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             }
             refreshHand(m_myPosition);
         }
+        // Sortir de la phase d'enchères (le serveur enchaîne sur startPlayingPhase)
+        if (m_biddingPhase) {
+            m_biddingPhase = false;
+            emit biddingPhaseChanged();
+        }
         // Terminer la phase de distribution
         m_distributionPhase = 0;
         emit distributionPhaseChanged();

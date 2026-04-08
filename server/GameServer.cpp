@@ -4522,6 +4522,8 @@ void GameServer::completeBeloteDistribution(int roomId, int takerIndex) {
         QJsonObject cardsMsg;
         cardsMsg["type"] = "beloteHandComplete";
         cardsMsg["myCards"] = cards;
+        cardsMsg["atoutSuit"] = static_cast<int>(room->couleurAtout);
+        cardsMsg["bidderIndex"] = takerIndex;
         cardsMsg["beloteTeam1"] = room->beloteTeam1;
         cardsMsg["beloteTeam2"] = room->beloteTeam2;
         sendMessage(conn->socket, cardsMsg);

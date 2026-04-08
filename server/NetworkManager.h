@@ -931,8 +931,9 @@ private slots:
         else if (type == "beloteHandComplete") {
             if (m_gameModel) {
                 QJsonObject d;
-                if (obj.contains("cards")) d["cards"] = obj["cards"];
-                if (obj.contains("atout")) d["atout"] = obj["atout"];
+                if (obj.contains("myCards")) d["cards"] = obj["myCards"];
+                if (obj.contains("atoutSuit")) d["atout"] = obj["atoutSuit"];
+                if (obj.contains("bidderIndex")) d["bidderIndex"] = obj["bidderIndex"];
                 m_gameModel->receivePlayerAction(-1, "beloteHandComplete", d);
             }
         }
