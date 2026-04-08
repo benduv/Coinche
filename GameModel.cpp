@@ -573,13 +573,13 @@ void GameModel::initOnlineGame(int myPosition, const QJsonArray& myCards, const 
                 emit showGoodGameAnimationChanged();
                 m_distributionPhase = 1;  // 3 cartes
                 emit distributionPhaseChanged();
-                distributeCards(0, 3, myNewCartes, false);
+                distributeCards(0, 3, myNewCartes);
 
                 QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
                     if (gen != m_distributionGeneration) return;
                     m_distributionPhase = 2;  // 2 cartes
                     emit distributionPhaseChanged();
-                    distributeCards(3, 5, myNewCartes, false);
+                    distributeCards(3, 5, myNewCartes);
 
                     QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, gen]() {
                         if (gen != m_distributionGeneration) return;
@@ -1530,13 +1530,13 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             QTimer::singleShot(100, this, [this, myNewCartes, gen]() {
                 if (gen != m_distributionGeneration) return;
                 // distributionPhase est déjà à 1 → QML affiche 3 dos
-                distributeCards(0, 3, myNewCartes, false);
+                distributeCards(0, 3, myNewCartes);
 
                 QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, myNewCartes, gen]() {
                     if (gen != m_distributionGeneration) return;
                     m_distributionPhase = 2;  // QML affiche 2 dos
                     emit distributionPhaseChanged();
-                    distributeCards(3, 5, myNewCartes, false);
+                    distributeCards(3, 5, myNewCartes);
 
                     QTimer::singleShot(DEAL_PHASE_DURATION_MS, this, [this, gen]() {
                         if (gen != m_distributionGeneration) return;

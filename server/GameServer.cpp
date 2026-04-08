@@ -4412,6 +4412,14 @@ void GameServer::handleBeloteBid(int roomId, int playerIndex, int bidValue, int 
         room->currentPlayerIndex = (room->currentPlayerIndex + 1) % 4;
         room->biddingPlayer = room->currentPlayerIndex;
 
+        // Notifier les clients du changement de joueur (Belote)
+        QJsonObject stateMsg;
+        stateMsg["type"] = "gameState";
+        stateMsg["currentPlayer"] = room->currentPlayerIndex;
+        stateMsg["biddingPlayer"] = room->biddingPlayer;
+        stateMsg["biddingPhase"] = true;
+        broadcastToRoom(roomId, stateMsg);
+
         QTimer::singleShot(300, this, [this, roomId]() {
             GameRoom* r = m_gameRooms.value(roomId);
             if (!r || r->gameState != "bidding") return;
