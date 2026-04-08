@@ -4543,8 +4543,13 @@ void GameServer::completeBeloteDistribution(int roomId, int takerIndex) {
         sendMessage(conn->socket, cardsMsg);
     }
 
-    // Lancer la phase de jeu
-    startPlayingPhase(roomId);
+    // Laisser le temps au client d'animer la distribution complète (retournée + round-robin)
+    // avant de lancer la phase de jeu (sinon les bots joueraient pendant l'animation).
+    QTimer::singleShot(BELOTE_COMPLETE_DEAL_DURATION_MS, this, [this, roomId]() {
+        GameRoom* r = m_gameRooms.value(roomId);
+        if (!r) return;
+        startPlayingPhase(roomId);
+    });
 }
 
 void GameServer::playBotBeloteBid(int roomId, int playerIndex) {
