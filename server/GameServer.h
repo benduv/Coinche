@@ -770,6 +770,12 @@ private:
             return;
         }
 
+        // Mode Belote : déléguer à la logique Belote
+        if (room->isBeloteMode) {
+            playBotBeloteBid(roomId, playerIndex);
+            return;
+        }
+
         // Arrêter le timer de timeout et invalider les anciens callbacks
         if (room->bidTimeout) {
             room->bidTimeout->stop();
