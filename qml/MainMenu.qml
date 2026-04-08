@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 import QtMultimedia
+import QtCore as QtCore
 
 ApplicationWindow {
     id: mainWindow
@@ -92,6 +93,8 @@ ApplicationWindow {
             mainWindow.minimumHeight = mainWindow.height
             mainWindow.maximumHeight = mainWindow.height
         }
+        // Restaurer le dernier mode de jeu sélectionné
+        mainWindow.selectedMode = gameModeSettings.lastSelectedMode
     }
 
     // Variable pour stocker le nom du joueur connecté
@@ -99,6 +102,16 @@ ApplicationWindow {
     property string accountType: ""
     property bool shouldLoadCoincheView: false
     property int selectedMode: 0  // 0 = Coinche, 1 = Belote
+
+    // Persistance du dernier mode de jeu choisi
+    QtCore.Settings {
+        id: gameModeSettings
+        category: "GameMode"
+        property int lastSelectedMode: 0
+    }
+    onSelectedModeChanged: {
+        gameModeSettings.lastSelectedMode = selectedMode
+    }
     property string pendingViewUrl: "qrc:/qml/CoincheView.qml"  // URL de la vue à charger
 
     // Fonction helper pour obtenir le nom du joueur actuel
