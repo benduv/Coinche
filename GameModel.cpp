@@ -1590,40 +1590,102 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
             }
         }
     } else if (action == "beloteHandComplete") {
-        // Le preneur a été déterminé ; le serveur envoie les cartes complètes de notre main
         QJsonObject d = data.toJsonObject();
-        QJsonArray cards = d["cards"].toArray();
-        Player* localPlayer = getPlayerByPosition(m_myPosition);
-        if (localPlayer && !cards.isEmpty()) {
-            localPlayer->clearHand();
-            for (const QJsonValue& val : cards) {
-                QJsonObject cardObj = val.toObject();
-                Carte* carte = new Carte(
-                    static_cast<Carte::Couleur>(cardObj["suit"].toInt()),
-                    static_cast<Carte::Chiffre>(cardObj["value"].toInt())
-                );
-                localPlayer->addCardToHand(carte);
+        QJsonArray newCardsJson = d["newCards"].toArray();
+        bool isTaker = d["isTaker"].toBool();
+        int takerIndex = d["takerIndex"].toInt(-1);
+        int atoutInt = d.contains("atout") ? d["atout"].toInt(-1) : -1;
+
+        // Parser les nouvelles cartes locales (3 pour tous ; pour le preneur : retournée + 2)
+        std::vector<Carte*> localNewCards;
+        for (const QJsonValue& v : newCardsJson) {
+            QJsonObject o = v.toObject();
+            localNewCards.push_back(new Carte(
+                static_cast<Carte::Couleur>(o["suit"].toInt()),
+                static_cast<Carte::Chiffre>(o["value"].toInt())));
+        }
+
+        m_distributionGeneration++;
+        int gen = m_distributionGeneration;
+
+        // Phase A : le preneur récupère la retournée immédiatement
+        if (isTaker && !localNewCards.empty()) {
+            Player* lp = getPlayerByPosition(m_myPosition);
+            if (lp) {
+                lp->addCardToHand(localNewCards[0]);
+                HandModel* h = getHandModelByPosition(m_myPosition);
+                if (h) { h->refresh(); h->sortAndAnimate([&]() { lp->sortHand(m_strongCardsLeft); }); }
             }
-            // Appliquer l'atout si présent
-            if (d.contains("atout")) {
-                int atoutInt = d["atout"].toInt(-1);
+        } else if (takerIndex >= 0 && takerIndex != m_myPosition) {
+            Player* tp = getPlayerByPosition(takerIndex);
+            if (tp) {
+                tp->addCardToHand(new Carte(Carte::COEUR, Carte::SEPT));
+                HandModel* h = getHandModelByPosition(takerIndex);
+                if (h) h->refresh();
+            }
+        }
+        // Masquer la carte retournée centrale
+        setRetournee(-1, -1);
+
+        // Phase B : distribution round-robin (3 cartes) en sautant la 3e pour le preneur
+        QTimer::singleShot(DEAL_FLIGHT_DURATION_MS, this, [this, gen, takerIndex, isTaker, localNewCards, atoutInt]() {
+            if (gen != m_distributionGeneration) return;
+            m_distributionPhase = 1;
+            emit distributionPhaseChanged();
+
+            int step = 0;
+            for (int cardRound = 0; cardRound < 3; cardRound++) {
+                for (int rel = 0; rel < 4; rel++) {
+                    int playerPos = (m_firstPlayerIndex + rel) % 4;
+                    if (playerPos == takerIndex && cardRound == 2) continue;  // preneur ne reçoit que 2
+                    int delay = step * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS;
+                    step++;
+
+                    if (playerPos == m_myPosition) {
+                        // Index local : si preneur, skip la retournée (index 0)
+                        int localIdx = isTaker ? (1 + cardRound) : cardRound;
+                        QTimer::singleShot(delay, this, [this, gen, localNewCards, localIdx]() {
+                            if (gen != m_distributionGeneration) return;
+                            if (localIdx < static_cast<int>(localNewCards.size())) {
+                                Player* lp = getPlayerByPosition(m_myPosition);
+                                if (lp) {
+                                    lp->addCardToHand(localNewCards[localIdx]);
+                                    HandModel* h = getHandModelByPosition(m_myPosition);
+                                    if (h) { h->refresh(); h->sortAndAnimate([&]() { lp->sortHand(m_strongCardsLeft); }); }
+                                }
+                            }
+                        });
+                    } else {
+                        QTimer::singleShot(delay, this, [this, gen, playerPos]() {
+                            if (gen != m_distributionGeneration) return;
+                            Player* p = getPlayerByPosition(playerPos);
+                            if (p) {
+                                p->addCardToHand(new Carte(Carte::COEUR, Carte::SEPT));
+                                HandModel* h = getHandModelByPosition(playerPos);
+                                if (h) h->refresh();
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Fin : appliquer atout, sortir des phases
+            int endDelay = step * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + 200;
+            QTimer::singleShot(endDelay, this, [this, gen, atoutInt]() {
+                if (gen != m_distributionGeneration) return;
                 if (atoutInt >= 0) {
                     Carte::Couleur atout = static_cast<Carte::Couleur>(atoutInt);
                     HandModel* hand = getHandModelByPosition(m_myPosition);
                     if (hand) hand->setAtoutCouleur(atout);
-                    localPlayer->sortHand(m_strongCardsLeft);
+                    Player* lp = getPlayerByPosition(m_myPosition);
+                    if (lp) lp->sortHand(m_strongCardsLeft);
+                    refreshHand(m_myPosition);
                 }
-            }
-            refreshHand(m_myPosition);
-        }
-        // Sortir de la phase d'enchères (le serveur enchaîne sur startPlayingPhase)
-        if (m_biddingPhase) {
-            m_biddingPhase = false;
-            emit biddingPhaseChanged();
-        }
-        // Terminer la phase de distribution
-        m_distributionPhase = 0;
-        emit distributionPhaseChanged();
+                if (m_biddingPhase) { m_biddingPhase = false; emit biddingPhaseChanged(); }
+                m_distributionPhase = 0;
+                emit distributionPhaseChanged();
+            });
+        });
     }
 }
 

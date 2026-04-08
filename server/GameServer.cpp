@@ -4512,16 +4512,22 @@ void GameServer::completeBeloteDistribution(int roomId, int takerIndex) {
         PlayerConnection* conn = m_connections.value(connId);
         if (!conn) continue;
 
-        QJsonArray cards;
-        for (const Carte* c : room->players[i]->getMain()) {
+        // Envoyer uniquement les NOUVELLES cartes ajoutées (3 dernières).
+        // Pour le preneur : [retournée, c1, c2]. Pour les autres : [c1, c2, c3].
+        QJsonArray newCards;
+        const auto& main = room->players[i]->getMain();
+        int startIdx = std::max(0, static_cast<int>(main.size()) - 3);
+        for (int k = startIdx; k < static_cast<int>(main.size()); k++) {
             QJsonObject cardObj;
-            cardObj["value"] = static_cast<int>(c->getChiffre());
-            cardObj["suit"] = static_cast<int>(c->getCouleur());
-            cards.append(cardObj);
+            cardObj["value"] = static_cast<int>(main[k]->getChiffre());
+            cardObj["suit"]  = static_cast<int>(main[k]->getCouleur());
+            newCards.append(cardObj);
         }
         QJsonObject cardsMsg;
         cardsMsg["type"] = "beloteHandComplete";
-        cardsMsg["myCards"] = cards;
+        cardsMsg["newCards"] = newCards;
+        cardsMsg["isTaker"] = (i == takerIndex);
+        cardsMsg["takerIndex"] = takerIndex;
         cardsMsg["atoutSuit"] = static_cast<int>(room->couleurAtout);
         cardsMsg["bidderIndex"] = takerIndex;
         cardsMsg["beloteTeam1"] = room->beloteTeam1;
