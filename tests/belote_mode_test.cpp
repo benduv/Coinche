@@ -319,6 +319,33 @@ TEST_F(BeloteModeTest, DistributeBelote_21CartesDistribuees) {
     EXPECT_EQ(m3.size(), 5);
     EXPECT_EQ(m4.size(), 5);
     EXPECT_NE(ret, nullptr);
+
+    // Le deck ne doit plus contenir que 11 cartes de reserve
+    int remaining = 0;
+    while (room.deck.drawCard() != nullptr) remaining++;
+    EXPECT_EQ(remaining, 11) << "Il doit rester 11 cartes dans le deck apres distributeBelote";
+}
+
+TEST_F(BeloteModeTest, DistributeBelote_ReserveNeContientPasLesCartesDistribuees) {
+    room.deck.shuffleDeck();
+    std::vector<Carte*> m1, m2, m3, m4;
+    Carte* ret = nullptr;
+    room.deck.distributeBelote(m1, m2, m3, m4, ret);
+
+    // Collecter toutes les cartes distribuees
+    std::set<Carte*, CarteCompare2> distributed;
+    for (Carte* c : m1) distributed.insert(c);
+    for (Carte* c : m2) distributed.insert(c);
+    for (Carte* c : m3) distributed.insert(c);
+    for (Carte* c : m4) distributed.insert(c);
+    distributed.insert(ret);
+
+    // Aucune carte de reserve ne doit etre une carte deja distribuee
+    Carte* card;
+    while ((card = room.deck.drawCard()) != nullptr) {
+        bool isDuplicate = (distributed.find(card) != distributed.end());
+        EXPECT_FALSE(isDuplicate) << "La reserve contient une carte deja distribuee";
+    }
 }
 
 TEST_F(BeloteModeTest, DistributionComplete_ToutesCartesUniques) {

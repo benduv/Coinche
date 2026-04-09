@@ -4367,6 +4367,10 @@ void GameServer::doStartBeloteBidding(int roomId) {
 void GameServer::handleBeloteBid(int roomId, int playerIndex, int bidValue, int suit) {
     GameRoom* room = m_gameRooms.value(roomId);
     if (!room || !room->isBeloteMode) return;
+    if (room->gameState != "bidding") {
+        qDebug() << "handleBeloteBid - Ignoré: gameState=" << room->gameState << "(pas en bidding)";
+        return;
+    }
 
     // Arrêter le timer d'enchère
     if (room->bidTimeout) {
@@ -4468,6 +4472,10 @@ void GameServer::handleBeloteBid(int roomId, int playerIndex, int bidValue, int 
         room->couleurAtout = couleurPrise;
         room->lastBidCouleur = couleurPrise;
         room->lastBidSuit = suit;
+
+        // Changer immédiatement le gameState pour empêcher tout timer concurrent
+        // de déclencher un second appel à completeBeloteDistribution
+        room->gameState = "distributing";
 
         qDebug() << "Belote - Joueur" << playerIndex << "prend en" << static_cast<int>(couleurPrise)
                  << "(tour" << room->beloteBidRound << ")";
@@ -4579,6 +4587,10 @@ void GameServer::completeBeloteDistribution(int roomId, int takerIndex) {
 void GameServer::playBotBeloteBid(int roomId, int playerIndex) {
     GameRoom* room = m_gameRooms.value(roomId);
     if (!room || !room->isBeloteMode || !room->retournee) return;
+    if (room->gameState != "bidding") {
+        qDebug() << "playBotBeloteBid - Ignoré: gameState=" << room->gameState;
+        return;
+    }
 
     Player* player = room->players[playerIndex].get();
     Carte::Couleur retourneeCouleur = room->retournee->getCouleur();

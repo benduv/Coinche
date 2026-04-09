@@ -148,7 +148,10 @@ void Deck::distributeBelote(std::vector<Carte*> &main1, std::vector<Carte*> &mai
 
     // La 21ème carte est retournée face visible (indice 20)
     retournee = m_deck[cardIndex]; // cardIndex == 20
-    // Les 11 cartes restantes (indices 21-31) restent pour la distribution complémentaire
+
+    // Retirer les 21 cartes distribuées (indices 0-20) du deck.
+    // Il ne reste que les 11 cartes de réserve (indices 21-31) pour completeBeloteDistribution.
+    m_deck.erase(m_deck.begin(), m_deck.begin() + 21);
 }
 
 void Deck::distribute323(std::vector<Carte*> &main1, std::vector<Carte*> &main2, std::vector<Carte*> &main3, std::vector<Carte*> &main4)

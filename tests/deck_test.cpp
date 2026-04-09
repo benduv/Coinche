@@ -350,7 +350,7 @@ TEST_F(DeckTest, DistributeBelote21CartesDistribuees11Restantes) {
 
     int cartesDistribuees = (int)(main1.size() + main2.size() + main3.size() + main4.size()) + 1; // +1 pour la retournée
     EXPECT_EQ(cartesDistribuees, 21) << "21 cartes doivent être distribuées (5×4 + 1 retournée)";
-    EXPECT_EQ(deck->size(), 32) << "Le deck interne garde ses 32 cartes (pointeurs partagés)";
+    EXPECT_EQ(deck->size(), 11) << "Le deck ne doit contenir que les 11 cartes de réserve";
 }
 
 TEST_F(DeckTest, DistributeBeloteCartesUniques) {
