@@ -2890,7 +2890,7 @@ void GameServer::createGameWithBots() {
 
     // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
     // (attendre la fin de l'animation "Bonne partie !" + distribution)
-    bool isBelote = room->isBeloteMode;
+    isBelote = room->isBeloteMode;
     if (room->isBot[room->currentPlayerIndex]) {
         QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId, isBelote]() {
             GameRoom* room = m_gameRooms.value(roomId);
