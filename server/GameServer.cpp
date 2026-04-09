@@ -2431,8 +2431,13 @@ void GameServer::handleForfeit(QWebSocket *socket) {
     if (room->currentPlayerIndex == playerIndex) {
         if (room->gameState == "bidding") {
             // Phase d'enchères : passer automatiquement
-            QTimer::singleShot(3000, this, [this, roomId, playerIndex]() {
-                playBotBid(roomId, playerIndex);
+            bool isBelote = room->isBeloteMode;
+            QTimer::singleShot(3000, this, [this, roomId, playerIndex, isBelote]() {
+                if (isBelote) {
+                    playBotBeloteBid(roomId, playerIndex);
+                } else {
+                    playBotBid(roomId, playerIndex);
+                }
             });
         } else if (room->gameState == "playing") {
             // Phase de jeu : jouer une carte aléatoire
@@ -2885,11 +2890,16 @@ void GameServer::createGameWithBots() {
 
     // Si le premier joueur à annoncer est un bot, le faire annoncer automatiquement
     // (attendre la fin de l'animation "Bonne partie !" + distribution)
+    bool isBelote = room->isBeloteMode;
     if (room->isBot[room->currentPlayerIndex]) {
-        QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
+        QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId, isBelote]() {
             GameRoom* room = m_gameRooms.value(roomId);
             if (room && room->gameState == "bidding") {
-                playBotBid(roomId, room->currentPlayerIndex);
+                if (isBelote) {
+                    playBotBeloteBid(roomId, room->currentPlayerIndex);
+                } else {
+                    playBotBid(roomId, room->currentPlayerIndex);
+                }
             }
         });
     } else {

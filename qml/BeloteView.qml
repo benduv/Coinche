@@ -24,6 +24,8 @@ Item {
                  gameModel.retourneeSuit >= 0 &&
                  gameModel.retourneeValue >= 0 &&
                  !gameModel.showGoodGameAnimation &&
-                 !(coincheLoader.item && coincheLoader.item.ufoNewMancheAnimationVisible)
+                 !(coincheLoader.item && coincheLoader.item.ufoNewMancheAnimationVisible) &&
+                 !(coincheLoader.item && coincheLoader.item.exitPopupVisible) &&
+                 !(coincheLoader.item && coincheLoader.item.showBotReplacementPopupAlias)
     }
 }

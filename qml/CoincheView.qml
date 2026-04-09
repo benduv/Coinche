@@ -11,6 +11,8 @@ Rectangle {
 
     // Exposé pour BeloteView : visibilité de l'animation "Nouvelle Manche"
     property alias ufoNewMancheAnimationVisible: ufoNewMancheAnimation.visible
+    property alias exitPopupVisible: exitPopup.visible
+    property alias showBotReplacementPopupAlias: rootArea.showBotReplacementPopup
 
     Rectangle { // Solution du pauvre pour mettre en noire la barre du haut de l'ecran (selfie)
         anchors.left: parent.right

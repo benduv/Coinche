@@ -790,11 +790,11 @@ private:
             return;
         }
 
-        /*// Mode Belote : déléguer à la logique Belote
+        // Mode Belote : déléguer à la logique Belote
         if (room->isBeloteMode) {
             playBotBeloteBid(roomId, playerIndex);
             return;
-        }*/
+        }
 
         // Arrêter le timer de timeout et invalider les anciens callbacks
         if (room->bidTimeout) {
@@ -1046,7 +1046,11 @@ private:
             }
 
             // Faire jouer le bot à la place du joueur
-            playBotBid(roomId, currentBidder);
+            if (room->isBeloteMode) {
+                playBotBeloteBid(roomId, currentBidder);
+            } else {
+                playBotBid(roomId, currentBidder);
+            }
         });
 
         room->bidTimeout->start(20250);  // Un peu apres 20 secondes (20 sec dans le front end mais avec 250ms de delais réseau et de traitement pour laisser une petite marge)
