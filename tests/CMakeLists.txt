@@ -301,3 +301,27 @@ target_link_libraries(test_friends_integration PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(test_friends_integration DISCOVERY_MODE PRE_TEST)
+
+# ========================================
+# Tests unitaires mode Belote
+# ========================================
+add_executable(test_belote_mode
+    belote_mode_test.cpp
+)
+
+target_include_directories(test_belote_mode PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_belote_mode PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Network
+    Qt6::WebSockets
+    Qt6::Sql
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_belote_mode DISCOVERY_MODE PRE_TEST)

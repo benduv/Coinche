@@ -433,14 +433,16 @@ private:
     // Slot appelé après 20 secondes d'inactivité - démarre le compte à rebours de 9 secondes
     void onMatchmakingStartCountdown() {
         qDebug() << "MATCHMAKING - Début du compte à rebours de 9 secondes";
-        qDebug() << "Joueurs dans la queue:" << m_matchmakingQueue.size();
+        qDebug() << "Coinche queue:" << m_matchmakingQueueCoinche.size()
+                 << "Belote queue:" << m_matchmakingQueueBelote.size();
 
         // Arrêter le timer principal
         m_matchmakingTimer->stop();
 
-        // S'il y a des joueurs mais pas assez pour une partie complète
-        if (m_matchmakingQueue.size() > 0 && m_matchmakingQueue.size() < 4) {
-            // Démarrer le compte à rebours
+        // S'il y a des joueurs dans au moins une queue mais pas assez pour une partie complète
+        bool hasPartialQueue = (m_matchmakingQueueCoinche.size() > 0 && m_matchmakingQueueCoinche.size() < 4) ||
+                               (m_matchmakingQueueBelote.size() > 0 && m_matchmakingQueueBelote.size() < 4);
+        if (hasPartialQueue) {
             m_countdownSeconds = 9;
             sendCountdownToQueue(m_countdownSeconds);
             m_countdownTimer->start();
@@ -453,20 +455,20 @@ private:
         qDebug() << "MATCHMAKING COUNTDOWN:" << m_countdownSeconds << "secondes";
 
         if (m_countdownSeconds > 0) {
-            // Envoyer le compte à rebours aux joueurs dans la queue
             sendCountdownToQueue(m_countdownSeconds);
         } else {
-            // Fin du compte à rebours - créer la partie avec des bots
             m_countdownTimer->stop();
             qDebug() << "MATCHMAKING - Fin du compte à rebours, création de la partie avec bots";
 
-            if (m_matchmakingQueue.size() > 0 && m_matchmakingQueue.size() < 4) {
+            bool hasPartialQueue = (m_matchmakingQueueCoinche.size() > 0 && m_matchmakingQueueCoinche.size() < 4) ||
+                                   (m_matchmakingQueueBelote.size() > 0 && m_matchmakingQueueBelote.size() < 4);
+            if (hasPartialQueue) {
                 createGameWithBots();
             }
         }
     }
 
-    // Envoie le compte à rebours à tous les joueurs dans la queue
+    // Envoie le compte à rebours à tous les joueurs dans les queues
     void sendCountdownToQueue(int seconds) {
         QJsonObject msg;
         msg["type"] = "matchmakingCountdown";
@@ -475,12 +477,30 @@ private:
                          .arg(seconds)
                          .arg(seconds > 1 ? "s" : "");
 
-        for (const QString& connectionId : m_matchmakingQueue) {
-            if (m_connections.contains(connectionId)) {
-                PlayerConnection* conn = m_connections[connectionId];
-                if (conn && conn->socket) {
-                    sendMessage(conn->socket, msg);
+        auto sendToQueue = [&](const QQueue<QString>& queue) {
+            for (const QString& connectionId : queue) {
+                if (m_connections.contains(connectionId)) {
+                    PlayerConnection* conn = m_connections[connectionId];
+                    if (conn && conn->socket) {
+                        sendMessage(conn->socket, msg);
+                    }
                 }
+            }
+        };
+        sendToQueue(m_matchmakingQueueCoinche);
+        sendToQueue(m_matchmakingQueueBelote);
+    }
+
+    // Notifie les joueurs d'une queue de leur nombre
+    void notifyQueueStatus(const QString& gameMode) {
+        QQueue<QString>& queue = (gameMode == "belote") ? m_matchmakingQueueBelote : m_matchmakingQueueCoinche;
+        QJsonObject response;
+        response["type"] = "matchmakingStatus";
+        response["status"] = "searching";
+        response["playersInQueue"] = queue.size();
+        for (const QString& connId : queue) {
+            if (m_connections.contains(connId)) {
+                sendMessage(m_connections[connId]->socket, response);
             }
         }
     }
@@ -2495,25 +2515,18 @@ private:
 
         qDebug() << "Joueurs marqués comme partenaires:" << player1->playerName << "et" << player2->playerName;
 
-        // Ajouter à la queue de matchmaking
+        // Ajouter à la queue de matchmaking du bon mode
+        QString lobbyGameMode = player1->preferredGameMode.isEmpty() ? "coinche" : player1->preferredGameMode;
+        QQueue<QString>& targetQueue = (lobbyGameMode == "belote") ? m_matchmakingQueueBelote : m_matchmakingQueueCoinche;
         for (const QString &connId : lobbyConnectionIds) {
-            if (!m_matchmakingQueue.contains(connId)) {
-                m_matchmakingQueue.enqueue(connId);
-                qDebug() << "Joueur du lobby ajouté à la queue:" << m_connections[connId]->playerName;
+            if (!targetQueue.contains(connId)) {
+                targetQueue.enqueue(connId);
+                qDebug() << "Joueur du lobby ajouté à la queue [" << lobbyGameMode << "]:" << m_connections[connId]->playerName;
             }
         }
 
-        // Notifier tous les joueurs en queue
-        QJsonObject response;
-        response["type"] = "matchmakingStatus";
-        response["status"] = "searching";
-        response["playersInQueue"] = m_matchmakingQueue.size();
-
-        for (const QString &queuedConnectionId : m_matchmakingQueue) {
-            if (m_connections.contains(queuedConnectionId)) {
-                sendMessage(m_connections[queuedConnectionId]->socket, response);
-            }
-        }
+        // Notifier les joueurs de la queue
+        notifyQueueStatus(lobbyGameMode);
 
         // Démarrer le timer matchmaking pour compléter avec des bots si personne ne rejoint
         m_countdownTimer->stop();
@@ -2584,7 +2597,6 @@ private:
 
     QWebSocketServer *m_server;
     QMap<QString, PlayerConnection*> m_connections; // connectionId → PlayerConnection
-    QQueue<QString> m_matchmakingQueue;           // File Coinche (rétrocompatibilité)
     QQueue<QString> m_matchmakingQueueCoinche;    // File matchmaking Coinche
     QQueue<QString> m_matchmakingQueueBelote;     // File matchmaking Belote
     QMap<int, GameRoom*> m_gameRooms;
