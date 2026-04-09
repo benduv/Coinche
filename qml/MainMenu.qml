@@ -688,17 +688,32 @@ ApplicationWindow {
                         spacing: 16 * mainWindow.minRatio
                         Layout.alignment: Qt.AlignHCenter
 
-                        Text {
-                            text: "◀"
-                            font.pixelSize: 40 * mainWindow.minRatio
-                            font.family: orbitronFont.name
-                            color: "#FFD700"
-                            opacity: mainWindow.selectedMode > 0 ? 1.0 : 0.3
-                            anchors.verticalCenter: parent.verticalCenter
-                            MouseArea {
+                        // Fleche gauche
+                        AppButton {
+                            width: mainWindow.width * 0.04
+                            height: mainWindow.height * 0.1
+                            enabled: mainWindow.selectedMode > 0
+                            z: 101
+
+                            background: Rectangle {
+                                color: parent.enabled
+                                       ? (parent.down ? "#888888" : (parent.hovered ? "#777777" : "#999999"))
+                                       : "#222222"
+                                radius: 3
+                                border.color: parent.enabled ? "#FFD700" : "#333333"
+                                border.width: 2
+                            }
+
+                            contentItem: Image {
+                                source: "qrc:/resources/left-arrowMainMenu-svgrepo-com.svg"
+                                fillMode: Image.PreserveAspectFit
+                                opacity: parent.enabled ? 1.0 : 0.3
                                 anchors.fill: parent
-                                enabled: mainWindow.selectedMode > 0
-                                onClicked: mainWindow.selectedMode--
+                                anchors.margins: parent.width * 0.26                         }
+
+                            onClicked: {
+                                mainWindow.selectedMode--
+                                console.error("Selected mode changed: " + mainWindow.selectedMode)
                             }
                         }
 
@@ -710,7 +725,7 @@ ApplicationWindow {
                             color: "#FFD700"
                         }
 
-                        Text {
+                        /*Text {
                             text: "▶"
                             font.pixelSize: 40 * mainWindow.minRatio
                             font.family: orbitronFont.name
@@ -724,6 +739,34 @@ ApplicationWindow {
                                     mainWindow.selectedMode++
                                     console.error("Selected mode changed: " + mainWindow.selectedMode)
                                 }
+                            }
+                        }*/
+                        // Fleche droite
+                        AppButton {
+                            width: mainWindow.width * 0.04
+                            height: mainWindow.height * 0.1
+                            enabled: mainWindow.selectedMode < 1
+                            z: 101
+
+                            background: Rectangle {
+                                color: parent.enabled
+                                       ? (parent.down ? "#888888" : (parent.hovered ? "#777777" : "#999999"))
+                                       : "#222222"
+                                radius: 3
+                                border.color: parent.enabled ? "#FFD700" : "#333333"
+                                border.width: 2
+                            }
+
+                            contentItem: Image {
+                                source: "qrc:/resources/right-arrowMainMenu-svgrepo-com.svg"
+                                fillMode: Image.PreserveAspectFit
+                                opacity: parent.enabled ? 1.0 : 0.3
+                                anchors.fill: parent
+                                anchors.margins: parent.width * 0.26                          }
+
+                            onClicked: {
+                                mainWindow.selectedMode++
+                                console.error("Selected mode changed: " + mainWindow.selectedMode)
                             }
                         }
                     }
@@ -861,6 +904,7 @@ ApplicationWindow {
                             // Utiliser le pseudo sauvegardé dans networkManager s'il existe, sinon loggedInPlayerName
                             var pseudoToUse = networkManager.playerPseudo !== "" ? networkManager.playerPseudo : mainWindow.loggedInPlayerName
                             networkManager.gameMode = (mainWindow.selectedMode === 0 ? "coinche" : "belote")
+                            console.log("Jouer en ligne onClicked - selectedMode:", mainWindow.selectedMode, "gameMode set to:", networkManager.gameMode)
                             networkManager.registerPlayer(pseudoToUse, networkManager.playerAvatar)
                             stackView.push("qrc:/qml/MatchMakingView.qml")
                         }
@@ -987,7 +1031,8 @@ ApplicationWindow {
                         }
 
                         onClicked: {
-                            networkManager.gameMode = "belote" //(mainWindow.selectedMode === 0 ? "coinche" : "belote")
+                            networkManager.gameMode = (mainWindow.selectedMode === 0 ? "coinche" : "belote")
+                            console.log("Training onClicked - selectedMode:", mainWindow.selectedMode, "gameMode set to:", networkManager.gameMode)
                             networkManager.registerPlayer(mainWindow.getPlayerName(), networkManager.playerAvatar)
                             networkManager.joinTraining()
                         }

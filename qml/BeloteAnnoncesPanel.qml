@@ -138,8 +138,8 @@ Rectangle {
 
             // --- Carte retournée (gauche) ---
             Item {
-                Layout.preferredWidth:  h * 0.50
-                Layout.preferredHeight: h * 0.75
+                Layout.preferredWidth:  h * 0.42
+                Layout.preferredHeight: h * 0.66
                 Layout.alignment: Qt.AlignVCenter
 
                 Card {
@@ -233,14 +233,14 @@ Rectangle {
                             model: root.availableSuits
 
                             AppButton {
-                                width:  h * 0.25
-                                height: h * 0.25
+                                width:  h * 0.32
+                                height: h * 0.32
                                 enabled: root.isMyTurn
 
                                 background: Rectangle {
                                     radius: 8
                                     color: parent.enabled
-                                           ? (parent.down ? "#333333" : (parent.hovered ? "#555555" : "#222222"))
+                                           ? (parent.down ? "#333333" : (parent.hovered ? "#555555" : "lightgrey"))
                                            : "#111111"
                                     border.color: parent.enabled ? modelData.color : "#444444"
                                     border.width: 2
@@ -250,7 +250,7 @@ Rectangle {
                                     source: modelData.icon
                                     fillMode: Image.PreserveAspectFit
                                     anchors.fill: parent
-                                    anchors.margins: parent.width * 0.15
+                                    anchors.margins: parent.width * 0.2
                                 }
                                 onClicked: {
                                     bidTimer.stop()
