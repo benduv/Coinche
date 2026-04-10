@@ -65,8 +65,16 @@ public:
         int annoncesSurcoinchees;
         int annoncesSurcoincheesGagnees;
         int maxWinStreak;
+        // Stats Belote
+        int beloteGamesPlayed;
+        int beloteGamesWon;
+        int beloteMaxWinStreak;
+        int beloteCapots;
     };
     PlayerStats getPlayerStats(const QString &pseudo);
+
+    // Mettre à jour les statistiques de partie Belote
+    bool updateBeloteGameStats(const QString &pseudo, bool won, bool capot);
 
     // Mettre à jour les statistiques de capot
     bool updateCapotStats(const QString &pseudo, bool annonceCapot);

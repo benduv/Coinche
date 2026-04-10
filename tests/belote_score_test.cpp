@@ -14,7 +14,7 @@ static ScoreCalculator::ScoreResult calcBelote(
 }
 
 // ========================================
-// CONTRAT REUSSI (>= 81 pts)
+// CONTRAT REUSSI (> 81 pts)
 // ========================================
 
 TEST(BeloteScore, ContratReussi_Team1) {
@@ -31,36 +31,43 @@ TEST(BeloteScore, ContratReussi_Team2) {
     EXPECT_EQ(r.scoreTeam2, 90);
 }
 
-TEST(BeloteScore, ContratReussiJuste81_Team1) {
-    // Team1 prend, fait exactement 81 pts → réussi
+TEST(BeloteScore, ContratReussiJuste82_Team1) {
+    // Team1 prend, fait exactement 82 pts → réussi (> 81)
+    auto r = calcBelote(82, 80, true);
+    EXPECT_EQ(r.scoreTeam1, 82);
+    EXPECT_EQ(r.scoreTeam2, 80);
+}
+
+TEST(BeloteScore, ContratEchoueJuste81_Team1) {
+    // Team1 prend, fait exactement 81 pts → chute (pas > 81)
     auto r = calcBelote(81, 81, true);
-    EXPECT_EQ(r.scoreTeam1, 81);
-    EXPECT_EQ(r.scoreTeam2, 81);
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 162);
 }
 
 // ========================================
-// CHUTE (< 81 pts)
+// CHUTE (<= 81 pts)
 // ========================================
 
 TEST(BeloteScore, Chute_Team1) {
-    // Team1 prend, fait 60 pts → chute : Team1=0, Team2=160
+    // Team1 prend, fait 60 pts → chute : Team1=0, Team2=162
     auto r = calcBelote(60, 102, true);
     EXPECT_EQ(r.scoreTeam1, 0);
-    EXPECT_EQ(r.scoreTeam2, 160);
+    EXPECT_EQ(r.scoreTeam2, 162);
 }
 
 TEST(BeloteScore, Chute_Team2) {
-    // Team2 prend, fait 70 pts → chute : Team1=160, Team2=0
+    // Team2 prend, fait 70 pts → chute : Team1=162, Team2=0
     auto r = calcBelote(92, 70, false);
-    EXPECT_EQ(r.scoreTeam1, 160);
+    EXPECT_EQ(r.scoreTeam1, 162);
     EXPECT_EQ(r.scoreTeam2, 0);
 }
 
 TEST(BeloteScore, Chute_80pts_Team1) {
-    // Team1 prend, fait 80 pts (juste en dessous de 81) → chute
+    // Team1 prend, fait 80 pts (en dessous de 81) → chute
     auto r = calcBelote(80, 82, true);
     EXPECT_EQ(r.scoreTeam1, 0);
-    EXPECT_EQ(r.scoreTeam2, 160);
+    EXPECT_EQ(r.scoreTeam2, 162);
 }
 
 // ========================================
@@ -118,25 +125,32 @@ TEST(BeloteScore, Belote_ContratReussi_Defenseur) {
 }
 
 TEST(BeloteScore, Belote_ContratReussiGraceABelote) {
-    // Team1 prend 62 pts + belote 20 = 82 >= 81 → réussi
+    // Team1 prend 62 pts + belote 20 = 82 > 81 → réussi
     auto r = calcBelote(62, 100, true, false, false, 20, 0);
     EXPECT_EQ(r.scoreTeam1, 62 + 20); // 82
     EXPECT_EQ(r.scoreTeam2, 100);
 }
 
+TEST(BeloteScore, Belote_ChuteJuste81AvecBelote) {
+    // Team1 prend 61 pts + belote 20 = 81 → chute (pas > 81)
+    auto r = calcBelote(61, 101, true, false, false, 20, 0);
+    EXPECT_EQ(r.scoreTeam1, 20); // chute mais garde belote
+    EXPECT_EQ(r.scoreTeam2, 162);
+}
+
 TEST(BeloteScore, Belote_Chute_PreneurGardeBelote) {
-    // Team1 prend 60 pts + belote 20 = 80 < 81 → chute quand même
-    // Team1 garde sa belote (20), Team2 marque 160
+    // Team1 prend 60 pts + belote 20 = 80 <= 81 → chute quand même
+    // Team1 garde sa belote (20), Team2 marque 162
     auto r = calcBelote(60, 102, true, false, false, 20, 0);
     EXPECT_EQ(r.scoreTeam1, 20); // chute mais garde belote
-    EXPECT_EQ(r.scoreTeam2, 160);
+    EXPECT_EQ(r.scoreTeam2, 162);
 }
 
 TEST(BeloteScore, Belote_Chute_DefenseurABelote) {
     // Team1 prend, chute, Team2 (défenseur) a la belote
     auto r = calcBelote(60, 102, true, false, false, 0, 20);
     EXPECT_EQ(r.scoreTeam1, 0);
-    EXPECT_EQ(r.scoreTeam2, 160 + 20); // 180
+    EXPECT_EQ(r.scoreTeam2, 162 + 20); // 182
 }
 
 TEST(BeloteScore, Belote_Capot_PreneurAvecBelote) {

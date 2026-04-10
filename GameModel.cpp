@@ -1169,7 +1169,7 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
                     case Player::CENTSOIXANTE: bidValue = "160"; break;
                     case Player::CAPOT: bidValue = "Capot"; break;
                     case Player::GENERALE: bidValue = "Generale"; break;
-                    default: bidValue = "?"; break;
+                    default: bidValue = m_isBeloteMode ? "" : "?"; break;
                 }
                 // Symbole de la couleur
                 switch (suit) {
@@ -1617,6 +1617,26 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
         m_distributionGeneration++;
         int gen = m_distributionGeneration;
 
+        // Appliquer l'atout immédiatement sur tous les HandModels et cartes en main
+        // pour que tous les tris suivants (Phase A, B, fin) utilisent les bonnes valeurs
+        if (atoutInt >= 0) {
+            Carte::Couleur atout = static_cast<Carte::Couleur>(atoutInt);
+            m_player0Hand->setAtoutCouleur(atout);
+            m_player1Hand->setAtoutCouleur(atout);
+            m_player2Hand->setAtoutCouleur(atout);
+            m_player3Hand->setAtoutCouleur(atout);
+            Player* lp = getPlayerByPosition(m_myPosition);
+            if (lp) {
+                for (Carte* c : lp->getMain()) {
+                    c->setAtout(c->getCouleur() == atout);
+                }
+            }
+            // Marquer aussi les nouvelles cartes
+            for (Carte* c : localNewCards) {
+                c->setAtout(c->getCouleur() == atout);
+            }
+        }
+
         // Phase A : le preneur récupère la retournée immédiatement
         if (isTaker && !localNewCards.empty()) {
             Player* lp = getPlayerByPosition(m_myPosition);
@@ -1679,18 +1699,13 @@ void GameModel::receivePlayerAction(int playerIndex, const QString& action, cons
                 }
             }
 
-            // Fin : appliquer atout, sortir des phases
+            // Fin : tri final et sortie des phases (atout déjà appliqué au début)
             int endDelay = 4 * DEAL_CARD_INTERVAL_MS + DEAL_FLIGHT_DURATION_MS + 200;
-            QTimer::singleShot(endDelay, this, [this, gen, atoutInt]() {
+            QTimer::singleShot(endDelay, this, [this, gen]() {
                 if (gen != m_distributionGeneration) return;
-                if (atoutInt >= 0) {
-                    Carte::Couleur atout = static_cast<Carte::Couleur>(atoutInt);
-                    HandModel* hand = getHandModelByPosition(m_myPosition);
-                    if (hand) hand->setAtoutCouleur(atout);
-                    Player* lp = getPlayerByPosition(m_myPosition);
-                    if (lp) lp->sortHand(m_strongCardsLeft);
-                    refreshHand(m_myPosition);
-                }
+                Player* lp = getPlayerByPosition(m_myPosition);
+                if (lp) lp->sortHand(m_strongCardsLeft);
+                refreshHand(m_myPosition);
                 if (m_biddingPhase) { m_biddingPhase = false; emit biddingPhaseChanged(); }
                 m_distributionPhase = 0;
                 emit distributionPhaseChanged();

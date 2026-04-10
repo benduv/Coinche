@@ -43,6 +43,16 @@ Rectangle {
     property int tauxGeneraleReussite: 0
     property bool hideFriendButton: false
 
+    // Stats Belote
+    property int beloteGamesPlayed: 0
+    property int beloteGamesWon: 0
+    property int beloteWinRate: 0
+    property int beloteMaxWinStreak: 0
+    property int beloteCapots: 0
+
+    // Sélecteur de mode affiché
+    property int selectedMode: 0  // 0 = Coinche, 1 = Belote
+
     signal closePopup()
     signal addFriend(string playerName)
 
@@ -112,29 +122,77 @@ Rectangle {
             anchors.margins: 40 * minRatio
             spacing: 30 * minRatio
 
-            // Header avec nom du joueur
+            // Header avec nom du joueur + sélecteur Coinche/Belote
             Rectangle {
                 width: parent.width
-                height: 120 * minRatio
+                height: 180 * minRatio
                 color: "#2a2a2a"
                 radius: 20 * minRatio
 
-                Row {
+                Column {
                     anchors.centerIn: parent
-                    spacing: 30 * minRatio
+                    spacing: 16 * minRatio
 
-                    Image {
-                        source: "qrc:/resources/increase-stats-svgrepo-com.svg"
-                        width: 64 * minRatio
-                        height: 64 * minRatio
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 30 * minRatio
+
+                        Image {
+                            source: "qrc:/resources/increase-stats-svgrepo-com.svg"
+                            width: 54 * minRatio
+                            height: 54 * minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        Text {
+                            text: "Statistiques de " + statsPopup.playerName
+                            font.pixelSize: 48 * minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
                     }
 
-                    Text {
-                        text: "Statistiques de " + statsPopup.playerName
-                        font.pixelSize: 56 * minRatio
-                        font.bold: true
-                        color: "#FFD700"
-                        anchors.verticalCenter: parent.verticalCenter
+                    // Sélecteur Coinche / Belote
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 20 * minRatio
+
+                        Image {
+                            source: "qrc:/resources/left-arrowMainMenu-svgrepo-com.svg"
+                            width: 40 * minRatio
+                            height: 40 * minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+                            opacity: statsPopup.selectedMode > 0 ? 1.0 : 0.3
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: if (statsPopup.selectedMode > 0) statsPopup.selectedMode--
+                            }
+                        }
+
+                        Text {
+                            text: statsPopup.selectedMode === 0 ? "Coinche" : "Belote"
+                            font.pixelSize: 40 * minRatio
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 200 * minRatio
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        Image {
+                            source: "qrc:/resources/right-arrowMainMenu-svgrepo-com.svg"
+                            width: 40 * minRatio
+                            height: 40 * minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+                            opacity: statsPopup.selectedMode < 1 ? 1.0 : 0.3
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: if (statsPopup.selectedMode < 1) statsPopup.selectedMode++
+                            }
+                        }
                     }
                 }
             }
@@ -142,131 +200,92 @@ Rectangle {
             // Scrollable content
             ScrollView {
                 width: parent.width
-                height: parent.height - (statsPopup.hideFriendButton ? 130 : 240) * minRatio
+                height: parent.height - (statsPopup.hideFriendButton ? 190 : 300) * minRatio
                 clip: true
 
+                // Vue Coinche
                 Column {
                     width: parent.width
                     spacing: 40 * minRatio
+                    visible: statsPopup.selectedMode === 0
 
-                    // Section: Parties
-                    StatsSection {
-                        title: "🏆 VICTOIRES"
-                        titleColor: "#4CAF50"
-                    }
-
+                    StatsSection { title: "🏆 VICTOIRES"; titleColor: "#4CAF50" }
                     Grid {
-                        columns: 2
-                        columnSpacing: 80 * minRatio
-                        rowSpacing: 20 * minRatio
-                        width: parent.width
-
+                        columns: 2; columnSpacing: 80 * minRatio; rowSpacing: 20 * minRatio; width: parent.width
                         StatItem { label: "Parties jouées"; value: statsPopup.gamesPlayed }
                         StatItem { label: "Victoires"; value: statsPopup.gamesWon }
                         StatItem { label: "Taux de victoire"; value: statsPopup.winRate + " %" }
                         StatItem { label: "Série de victoires"; value: statsPopup.maxWinStreak }
                     }
 
-                    // Section: Coinches
-                    StatsSection {
-                        title: "🎯️ COINCHES"
-                        titleColor: "#FF9800"
-                    }
-
+                    StatsSection { title: "🎯️ COINCHES"; titleColor: "#FF9800" }
                     Grid {
-                        columns: 3
-                        columnSpacing: 20 * minRatio
-                        rowSpacing: 20 * minRatio
-                        width: parent.width
-
+                        columns: 3; columnSpacing: 20 * minRatio; rowSpacing: 20 * minRatio; width: parent.width
                         StatItem { label: "Coinches tentées"; value: statsPopup.coinches }
                         StatItem { label: "Coinches réussies"; value: statsPopup.coinchesReussies }
                         StatItem { label: "Taux coinche"; value: statsPopup.tauxCoincheReussite + " %" }
                     }
 
-                    // Section: Coinches subies
-                    StatsSection {
-                        title: "🛡️ COINCHES SUBIES"
-                        titleColor: "#9C27B0"
-                    }
-
+                    StatsSection { title: "🛡️ COINCHES SUBIES"; titleColor: "#9C27B0" }
                     Grid {
-                        columns: 3
-                        columnSpacing: 20 * minRatio
-                        rowSpacing: 20 * minRatio
-                        width: parent.width
-
+                        columns: 3; columnSpacing: 20 * minRatio; rowSpacing: 20 * minRatio; width: parent.width
                         StatItem { label: "Coinches subies"; value: statsPopup.annoncesCoinchees }
                         StatItem { label: "Victoires"; value: statsPopup.annoncesCoincheeGagnees }
                         StatItem { label: "Taux de victoire"; value: statsPopup.tauxCoincheeReussite + " %" }
                     }
 
-                    // Section: Surcoinches
-                    StatsSection {
-                        title: "🔥️ SURCOINCHES"
-                        titleColor: "#FF9800"
-                    }
-
+                    StatsSection { title: "🔥️ SURCOINCHES"; titleColor: "#FF9800" }
                     Grid {
-                        columns: 3
-                        columnSpacing: 20 * minRatio
-                        rowSpacing: 20 * minRatio
-                        width: parent.width
-
+                        columns: 3; columnSpacing: 20 * minRatio; rowSpacing: 20 * minRatio; width: parent.width
                         StatItem { label: "Surcoinches tentées"; value: statsPopup.surcoinchesTentees }
                         StatItem { label: "Surcoinches réussies"; value: statsPopup.surcoincheReussies }
                         StatItem { label: "Taux surcoinche"; value: statsPopup.tauxSurcoincheReussite + " %" }
                     }
 
-                    // Section: Surcoinches subies
-                    StatsSection {
-                        title: "🛡️ SURCOINCHES SUBIES"
-                        titleColor: "#9C27B0"
-                    }
-
+                    StatsSection { title: "🛡️ SURCOINCHES SUBIES"; titleColor: "#9C27B0" }
                     Grid {
-                        columns: 3
-                        columnSpacing: 20 * minRatio
-                        rowSpacing: 20 * minRatio
-                        width: parent.width
-
+                        columns: 3; columnSpacing: 20 * minRatio; rowSpacing: 20 * minRatio; width: parent.width
                         StatItem { label: "Surcoinches subies"; value: statsPopup.annoncesSurcoinchees }
                         StatItem { label: "Victoires"; value: statsPopup.annoncesSurcoincheesGagnees }
                         StatItem { label: "Taux de victoire"; value: statsPopup.tauxSurcoincheesReussite + " %" }
                     }
 
-                    // Section: Capot
-                    StatsSection {
-                        title: "💥 CAPOTS"
-                        titleColor: "#2196F3"
-                    }
-
+                    StatsSection { title: "💥 CAPOTS"; titleColor: "#2196F3" }
                     Grid {
-                        columns: 3
-                        columnSpacing: 20 * minRatio
-                        rowSpacing: 20 * minRatio
-                        width: parent.width
-
+                        columns: 3; columnSpacing: 20 * minRatio; rowSpacing: 20 * minRatio; width: parent.width
                         StatItem { label: "Capots annoncés"; value: statsPopup.capotsAnnonces }
                         StatItem { label: "Capots réussis"; value: statsPopup.capotsReussis }
                         StatItem { label: "Taux capot"; value: statsPopup.tauxCapotReussite + " %" }
                     }
 
-                    // Section: Générale
-                    StatsSection {
-                        title: "⭐ GÉNÉRALE"
-                        titleColor: "#E91E63"
-                    }
-
+                    StatsSection { title: "⭐ GÉNÉRALE"; titleColor: "#E91E63" }
                     Grid {
-                        columns: 3
-                        columnSpacing: 20 * minRatio
-                        rowSpacing: 20 * minRatio
-                        width: parent.width
-
+                        columns: 3; columnSpacing: 20 * minRatio; rowSpacing: 20 * minRatio; width: parent.width
                         StatItem { label: "Générales tentées"; value: statsPopup.generalesTentees }
                         StatItem { label: "Générales réussies"; value: statsPopup.generalesReussies }
                         StatItem { label: "Taux générale"; value: statsPopup.tauxGeneraleReussite + " %" }
+                    }
+                }
+
+                // Vue Belote
+                Column {
+                    width: parent.width
+                    spacing: 40 * minRatio
+                    visible: statsPopup.selectedMode === 1
+
+                    StatsSection { title: "🏆 VICTOIRES"; titleColor: "#4CAF50" }
+                    Grid {
+                        columns: 2; columnSpacing: 80 * minRatio; rowSpacing: 20 * minRatio; width: parent.width
+                        StatItem { label: "Parties jouées"; value: statsPopup.beloteGamesPlayed }
+                        StatItem { label: "Victoires"; value: statsPopup.beloteGamesWon }
+                        StatItem { label: "Taux de victoire"; value: statsPopup.beloteWinRate + " %" }
+                        StatItem { label: "Série de victoires"; value: statsPopup.beloteMaxWinStreak }
+                    }
+
+                    StatsSection { title: "💥 CAPOTS"; titleColor: "#2196F3" }
+                    Grid {
+                        columns: 1; rowSpacing: 20 * minRatio; width: parent.width
+                        StatItem { label: "Capots réalisés"; value: statsPopup.beloteCapots }
                     }
                 }
             }
@@ -394,6 +413,13 @@ Rectangle {
                     statsPopup.generalesTentees = msg.generaleAttempts || 0
                     statsPopup.generalesReussies = msg.generaleSuccess || 0
                     statsPopup.tauxGeneraleReussite = statsPopup.generalesTentees > 0 ? Math.round((statsPopup.generalesReussies / statsPopup.generalesTentees) * 100) : 0
+
+                    // Stats Belote
+                    statsPopup.beloteGamesPlayed = msg.beloteGamesPlayed || 0
+                    statsPopup.beloteGamesWon = msg.beloteGamesWon || 0
+                    statsPopup.beloteWinRate = statsPopup.beloteGamesPlayed > 0 ? Math.round((statsPopup.beloteGamesWon / statsPopup.beloteGamesPlayed) * 100) : 0
+                    statsPopup.beloteMaxWinStreak = msg.beloteMaxWinStreak || 0
+                    statsPopup.beloteCapots = msg.beloteCapots || 0
                 }
             } catch (e) {
                 console.error("Erreur parsing stats:", e)

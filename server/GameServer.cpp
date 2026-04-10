@@ -1587,6 +1587,10 @@ void GameServer::handleGetStats(QWebSocket *socket, const QJsonObject &data) {
     response["annoncesSurcoinchees"] = stats.annoncesSurcoinchees;
     response["annoncesSurcoincheesGagnees"] = stats.annoncesSurcoincheesGagnees;
     response["maxWinStreak"] = stats.maxWinStreak;
+    response["beloteGamesPlayed"] = stats.beloteGamesPlayed;
+    response["beloteGamesWon"] = stats.beloteGamesWon;
+    response["beloteMaxWinStreak"] = stats.beloteMaxWinStreak;
+    response["beloteCapots"] = stats.beloteCapots;
 
     qDebug() << "Stats envoyees pour:" << pseudo
                 << "- Parties:" << stats.gamesPlayed
@@ -3313,6 +3317,8 @@ void GameServer::finishManche(int roomId) {
     if (room->isBeloteMode) {
         bool capotByTeam1 = (plisTeam1 == 8);
         bool capotByTeam2 = (plisTeam2 == 8);
+        room->lastMancheCapotTeam1 = capotByTeam1;
+        room->lastMancheCapotTeam2 = capotByTeam2;
         scoreResult = ScoreCalculator::calculateBeloteMancheScore(
             pointsRealisesTeam1,
             pointsRealisesTeam2,
@@ -3623,17 +3629,18 @@ void GameServer::finishManche(int roomId) {
     scoreMsg["pointsRealisesTeam2"] = pointsRealisesTeam2;
     broadcastToRoom(roomId, scoreMsg);
 
-    // Vérifier si une équipe a atteint 1000 points
-    bool team1Won = room->scoreTeam1 >= 1000;
-    bool team2Won = room->scoreTeam2 >= 1000;
+    // Vérifier si une équipe a atteint le score de victoire (500 en Belote, 1000 en Coinche)
+    int winningScore = room->isBeloteMode ? 500 : 1000;
+    bool team1Won = room->scoreTeam1 >= winningScore;
+    bool team2Won = room->scoreTeam2 >= winningScore;
 
     if (team1Won || team2Won) {
-        // Une ou les deux équipes ont dépassé 1000 points
+        // Une ou les deux équipes ont dépassé le score de victoire
         int winner = 0;
         if (team1Won && team2Won) {
-            // Les deux équipes ont dépassé 1000, celle avec le plus de points gagne
+            // Les deux équipes ont dépassé le seuil, celle avec le plus de points gagne
             winner = (room->scoreTeam1 > room->scoreTeam2) ? 1 : 2;
-            qInfo() << "Partie terminée - Room" << roomId << "- Les deux équipes > 1000";
+            qInfo() << "Partie terminée - Room" << roomId << "- Les deux équipes >" << winningScore;
             qInfo() << "  Équipe" << winner << "gagne avec"
                     << ((winner == 1) ? room->scoreTeam1 : room->scoreTeam2) << "points";
         } else if (team1Won) {
@@ -3657,10 +3664,20 @@ void GameServer::finishManche(int roomId) {
             bool won = (playerTeam == winner);
 
             // Mettre à jour les stats de partie
-            if (!m_dbManager->updateGameStats(conn->playerName, won)) {
-                qCritical() << "[STATS] ÉCHEC CRITIQUE - Mise à jour stats de partie - joueur:" << conn->playerName << "won:" << won << "room:" << roomId;
+            if (room->isBeloteMode) {
+                // Capot : l'équipe du joueur a fait tous les plis
+                bool capotForPlayer = (playerTeam == 1) ? room->lastMancheCapotTeam1 : room->lastMancheCapotTeam2;
+                if (!m_dbManager->updateBeloteGameStats(conn->playerName, won, capotForPlayer)) {
+                    qCritical() << "[STATS] ÉCHEC - Mise à jour stats Belote - joueur:" << conn->playerName;
+                } else {
+                    qInfo() << "[STATS] Stats Belote mises à jour - joueur:" << conn->playerName << "won:" << won << "capot:" << capotForPlayer;
+                }
             } else {
-                qInfo() << "[STATS] Stats de partie mises à jour - joueur:" << conn->playerName << "won:" << won;
+                if (!m_dbManager->updateGameStats(conn->playerName, won)) {
+                    qCritical() << "[STATS] ÉCHEC CRITIQUE - Mise à jour stats de partie - joueur:" << conn->playerName << "won:" << won << "room:" << roomId;
+                } else {
+                    qInfo() << "[STATS] Stats de partie mises à jour - joueur:" << conn->playerName << "won:" << won;
+                }
             }
         }
 

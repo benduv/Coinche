@@ -199,9 +199,9 @@ inline ScoreResult calculateMancheScore(
  * @param beloteTeam2 Points de belote de l'équipe 2 (20 si belote, 0 sinon) — toujours comptés
  *
  * Règles Belote :
- * - Le preneur doit faire >= 81 pts (belote comprise) pour réussir
+ * - Le preneur doit faire > 81 pts (belote comprise) pour réussir
  * - Succès : chaque équipe marque ses points réels
- * - Chute : preneur = 0, défenseur = 160 pts
+ * - Chute : preneur = 0, défenseur = 162 pts
  * - Capot par le preneur : 250 pts pour le preneur
  * - Capot par le défenseur : 250 pts pour le défenseur (contre-capot)
  * - Belote (Roi+Dame atout) : toujours +20 pts, quel que soit le résultat
@@ -229,14 +229,14 @@ inline ScoreResult calculateBeloteMancheScore(
             // Contre-capot : le défenseur fait tous les plis
             result.scoreTeam1 = 0;
             result.scoreTeam2 = 250;
-        } else if ((pointsRealisesTeam1 + beloteTeam1) >= 81) {
+        } else if ((pointsRealisesTeam1 + beloteTeam1) > 81) {
             // Contrat réussi : chaque équipe marque ses points réels
             result.scoreTeam1 = pointsRealisesTeam1;
             result.scoreTeam2 = pointsRealisesTeam2;
         } else {
-            // Chute : preneur = 0, défenseur = 160
+            // Chute : preneur = 0, défenseur = 162
             result.scoreTeam1 = 0;
-            result.scoreTeam2 = 160;
+            result.scoreTeam2 = 162;
         }
     } else {
         // Équipe 2 est le preneur
@@ -248,13 +248,13 @@ inline ScoreResult calculateBeloteMancheScore(
             // Contre-capot : le défenseur fait tous les plis
             result.scoreTeam1 = 250;
             result.scoreTeam2 = 0;
-        } else if ((pointsRealisesTeam2 + beloteTeam2) >= 81) {
+        } else if ((pointsRealisesTeam2 + beloteTeam2) > 81) {
             // Contrat réussi : chaque équipe marque ses points réels
             result.scoreTeam1 = pointsRealisesTeam1;
             result.scoreTeam2 = pointsRealisesTeam2;
         } else {
-            // Chute : preneur = 0, défenseur = 160
-            result.scoreTeam1 = 160;
+            // Chute : preneur = 0, défenseur = 162
+            result.scoreTeam1 = 162;
             result.scoreTeam2 = 0;
         }
     }

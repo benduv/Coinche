@@ -127,6 +127,10 @@ struct GameRoom {
     bool beloteTeam1 = false;
     bool beloteTeam2 = false;
 
+    // Capot lors de la dernière manche (mis à jour dans finishManche)
+    bool lastMancheCapotTeam1 = false;
+    bool lastMancheCapotTeam2 = false;
+
     // Suivi des cartes de la belote jouées (pour animations)
     bool beloteRoiJoue = false;   // Roi de l'atout joué
     bool beloteDameJouee = false; // Dame de l'atout jouée

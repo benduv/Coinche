@@ -87,6 +87,23 @@ Rectangle {
             if (suits[i].value !== gameModel.retourneeSuit)
                 result.push(suits[i])
         }
+        // Alterner rouge/noir/rouge ou noir/rouge/noir
+        // Retournée rouge (Coeur=3, Carreau=5) → il reste 2 noirs + 1 rouge → noir/rouge/noir
+        // Retournée noire (Trèfle=4, Pique=6) → il reste 2 rouges + 1 noir → rouge/noir/rouge
+        if (result.length === 3) {
+            var reds = []
+            var blacks = []
+            for (var j = 0; j < result.length; j++) {
+                if (result[j].color === "#E60000")
+                    reds.push(result[j])
+                else
+                    blacks.push(result[j])
+            }
+            if (reds.length === 2 && blacks.length === 1)
+                result = [reds[0], blacks[0], reds[1]]
+            else if (blacks.length === 2 && reds.length === 1)
+                result = [blacks[0], reds[0], blacks[1]]
+        }
         return result
     }
 

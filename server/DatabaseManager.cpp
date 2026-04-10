@@ -323,6 +323,30 @@ bool DatabaseManager::createTables()
         }
     }
 
+    // Migration : colonnes stats Belote
+    bool hasBeloteGamesPlayed = false, hasBeloteGamesWon = false;
+    bool hasBeloteMaxWinStreak = false, hasBeloteCapots = false;
+    bool hasBeloteCurrentWinStreak = false;
+    query.exec("PRAGMA table_info(stats)");
+    while (query.next()) {
+        QString col = query.value(1).toString();
+        if (col == "belote_games_played")    hasBeloteGamesPlayed = true;
+        if (col == "belote_games_won")       hasBeloteGamesWon = true;
+        if (col == "belote_max_win_streak")  hasBeloteMaxWinStreak = true;
+        if (col == "belote_capots")          hasBeloteCapots = true;
+        if (col == "belote_current_win_streak") hasBeloteCurrentWinStreak = true;
+    }
+    if (!hasBeloteGamesPlayed)
+        query.exec("ALTER TABLE stats ADD COLUMN belote_games_played INTEGER DEFAULT 0");
+    if (!hasBeloteGamesWon)
+        query.exec("ALTER TABLE stats ADD COLUMN belote_games_won INTEGER DEFAULT 0");
+    if (!hasBeloteMaxWinStreak)
+        query.exec("ALTER TABLE stats ADD COLUMN belote_max_win_streak INTEGER DEFAULT 0");
+    if (!hasBeloteCapots)
+        query.exec("ALTER TABLE stats ADD COLUMN belote_capots INTEGER DEFAULT 0");
+    if (!hasBeloteCurrentWinStreak)
+        query.exec("ALTER TABLE stats ADD COLUMN belote_current_win_streak INTEGER DEFAULT 0");
+
     // Table des statistiques quotidiennes
     QString createDailyStatsTable = R"(
         CREATE TABLE IF NOT EXISTS daily_stats (
@@ -809,7 +833,7 @@ DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseu
     }
 
     QSqlQuery query(m_db);
-    query.prepare("SELECT games_played, games_won, coinche_attempts, coinche_success, capot_realises, capot_annonces_realises, capot_annonces_tentes, generale_attempts, generale_success, annonces_coinchees, annonces_coinchees_gagnees, surcoinche_attempts, surcoinche_success, annonces_surcoinchees, annonces_surcoinchees_gagnees, max_win_streak FROM stats WHERE user_id = :user_id");
+    query.prepare("SELECT games_played, games_won, coinche_attempts, coinche_success, capot_realises, capot_annonces_realises, capot_annonces_tentes, generale_attempts, generale_success, annonces_coinchees, annonces_coinchees_gagnees, surcoinche_attempts, surcoinche_success, annonces_surcoinchees, annonces_surcoinchees_gagnees, max_win_streak, belote_games_played, belote_games_won, belote_max_win_streak, belote_capots FROM stats WHERE user_id = :user_id");
     query.bindValue(":user_id", userId);
 
     if (!query.exec()) {
@@ -834,6 +858,10 @@ DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseu
         stats.annoncesSurcoinchees = query.value(13).toInt();
         stats.annoncesSurcoincheesGagnees = query.value(14).toInt();
         stats.maxWinStreak = query.value(15).toInt();
+        stats.beloteGamesPlayed = query.value(16).toInt();
+        stats.beloteGamesWon = query.value(17).toInt();
+        stats.beloteMaxWinStreak = query.value(18).toInt();
+        stats.beloteCapots = query.value(19).toInt();
 
         if (stats.gamesPlayed > 0) {
             stats.winRatio = (double)stats.gamesWon / (double)stats.gamesPlayed;
@@ -841,6 +869,42 @@ DatabaseManager::PlayerStats DatabaseManager::getPlayerStats(const QString &pseu
     }
 
     return stats;
+}
+
+bool DatabaseManager::updateBeloteGameStats(const QString &pseudo, bool won, bool capot)
+{
+    int userId = getUserIdByPseudo(pseudo);
+    if (userId == -1) {
+        qWarning() << "Utilisateur non trouve pour mise a jour stats Belote:" << pseudo;
+        return false;
+    }
+
+    QSqlQuery query(m_db);
+    if (won) {
+        query.prepare(
+            "UPDATE stats SET "
+            "belote_games_played = belote_games_played + 1, "
+            "belote_games_won = belote_games_won + 1, "
+            "belote_current_win_streak = belote_current_win_streak + 1, "
+            "belote_max_win_streak = MAX(belote_max_win_streak, belote_current_win_streak + 1), "
+            "belote_capots = belote_capots + :capot "
+            "WHERE user_id = :user_id");
+    } else {
+        query.prepare(
+            "UPDATE stats SET "
+            "belote_games_played = belote_games_played + 1, "
+            "belote_current_win_streak = 0, "
+            "belote_capots = belote_capots + :capot "
+            "WHERE user_id = :user_id");
+    }
+    query.bindValue(":capot", capot ? 1 : 0);
+    query.bindValue(":user_id", userId);
+
+    if (!query.exec()) {
+        qCritical() << "Erreur mise a jour stats Belote:" << query.lastError().text();
+        return false;
+    }
+    return true;
 }
 
 bool DatabaseManager::updateCapotStats(const QString &pseudo, bool annonceCapot)
