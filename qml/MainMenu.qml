@@ -681,99 +681,87 @@ ApplicationWindow {
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: 20 * mainWindow.minRatio
+                    spacing: 17 * mainWindow.minRatio
                     z: 1
 
                     Row {
-                        spacing: 16 * mainWindow.minRatio
+                        spacing: 20 * mainWindow.minRatio
                         Layout.alignment: Qt.AlignHCenter
 
+                        SoundEffect {
+                            id: modeSwitchSound
+                            source: "qrc:/resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav"
+                        }
+
                         // Fleche gauche
-                        AppButton {
-                            width: mainWindow.width * 0.04
-                            height: mainWindow.height * 0.1
-                            enabled: mainWindow.selectedMode > 0
-                            z: 101
-
-                            background: Rectangle {
-                                color: parent.enabled
-                                       ? (parent.down ? "#888888" : (parent.hovered ? "#777777" : "#999999"))
-                                       : "#222222"
-                                radius: 3
-                                border.color: parent.enabled ? "#FFD700" : "#333333"
-                                border.width: 2
-                            }
-
-                            contentItem: Image {
-                                source: "qrc:/resources/left-arrowMainMenu-svgrepo-com.svg"
-                                fillMode: Image.PreserveAspectFit
-                                opacity: parent.enabled ? 1.0 : 0.3
-                                anchors.fill: parent
-                                anchors.margins: parent.width * 0.26                         }
-
-                            onClicked: {
-                                mainWindow.selectedMode--
-                                console.error("Selected mode changed: " + mainWindow.selectedMode)
-                            }
-                        }
-
-                        Text {
-                            text: mainWindow.selectedMode === 0 ? "Coinche de l'Espace" : "Belote de l'Espace"
-                            font.pixelSize: 56 * mainWindow.minRatio
-                            font.family: orbitronFont.name
-                            font.bold: true
-                            color: "#FFD700"
-                        }
-
-                        /*Text {
-                            text: "▶"
-                            font.pixelSize: 40 * mainWindow.minRatio
-                            font.family: orbitronFont.name
-                            color: "#FFD700"
-                            opacity: mainWindow.selectedMode < 1 ? 1.0 : 0.3
+                        Image {
+                            source: "qrc:/resources/left-arrowMainMenu-svgrepo-com.svg"
+                            width: 50 * mainWindow.minRatio
+                            height: 50 * mainWindow.minRatio
                             anchors.verticalCenter: parent.verticalCenter
+                            opacity: mainWindow.selectedMode > 0 ? 1.0 : 0.3
                             MouseArea {
                                 anchors.fill: parent
-                                enabled: mainWindow.selectedMode < 1
+                                cursorShape: Qt.PointingHandCursor
                                 onClicked: {
-                                    mainWindow.selectedMode++
-                                    console.error("Selected mode changed: " + mainWindow.selectedMode)
+                                    if (mainWindow.selectedMode > 0) {
+                                        mainWindow.selectedMode--
+                                        if (AudioSettings.effectsEnabled) modeSwitchSound.play()
+                                    }
                                 }
                             }
-                        }*/
-                        // Fleche droite
-                        AppButton {
-                            width: mainWindow.width * 0.04
-                            height: mainWindow.height * 0.1
-                            enabled: mainWindow.selectedMode < 1
-                            z: 101
+                        }
 
-                            background: Rectangle {
-                                color: parent.enabled
-                                       ? (parent.down ? "#888888" : (parent.hovered ? "#777777" : "#999999"))
-                                       : "#222222"
-                                radius: 3
-                                border.color: parent.enabled ? "#FFD700" : "#333333"
-                                border.width: 2
+                        // Texte largeur fixe
+                        Item {
+                            width: 320 * mainWindow.minRatio
+                            height: 110 * mainWindow.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 0
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: mainWindow.selectedMode === 0 ? "Coinche" : "Belote"
+                                    font.pixelSize: 56 * mainWindow.minRatio
+                                    font.family: orbitronFont.name
+                                    font.bold: true
+                                    color: "#FFD700"
+                                }
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: "de l'Espace"
+                                    font.pixelSize: 24 * mainWindow.minRatio
+                                    font.family: orbitronFont.name
+                                    color: "#FFD700"
+                                    opacity: 0.75
+                                }
                             }
+                        }
 
-                            contentItem: Image {
-                                source: "qrc:/resources/right-arrowMainMenu-svgrepo-com.svg"
-                                fillMode: Image.PreserveAspectFit
-                                opacity: parent.enabled ? 1.0 : 0.3
+                        // Fleche droite
+                        Image {
+                            source: "qrc:/resources/right-arrowMainMenu-svgrepo-com.svg"
+                            width: 50 * mainWindow.minRatio
+                            height: 50 * mainWindow.minRatio
+                            anchors.verticalCenter: parent.verticalCenter
+                            opacity: mainWindow.selectedMode < 1 ? 1.0 : 0.3
+                            MouseArea {
                                 anchors.fill: parent
-                                anchors.margins: parent.width * 0.26                          }
-
-                            onClicked: {
-                                mainWindow.selectedMode++
-                                console.error("Selected mode changed: " + mainWindow.selectedMode)
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (mainWindow.selectedMode < 1) {
+                                        mainWindow.selectedMode++
+                                        if (AudioSettings.effectsEnabled) modeSwitchSound.play()
+                                    }
+                                }
                             }
                         }
                     }
 
                     Text {
                         text: "Bienvenue !"
-                        font.pixelSize: 36 * mainWindow.minRatio
+                        font.pixelSize: 30 * mainWindow.minRatio
                         color: "#aaaaaa"
                         Layout.alignment: Qt.AlignHCenter
                     }

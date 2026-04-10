@@ -863,6 +863,7 @@ Rectangle {
                             opacity: {
                                 // Visible si le joueur a fait une annonce OU s'il a coinché
                                 if (rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "" &&
+                                    rootArea.getPlayerBidSymbol(playerSouthRow.actualPlayerIndex) === "" &&
                                     !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex)) return 0
                                 if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) === "Passe") return 0
                                 return 1
@@ -878,6 +879,7 @@ Rectangle {
                                 anchors.centerIn: parent
                                 visible: true  // Toujours visible pour que le composant soit créé
                                 opacity: (rootArea.getPlayerBidValue(playerSouthRow.actualPlayerIndex) !== "" ||
+                                        rootArea.getPlayerBidSymbol(playerSouthRow.actualPlayerIndex) !== "" ||
                                         (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerSouthRow.actualPlayerIndex)) ? 1 : 0
                                 spacing: rootArea.width * 0.005
                                 // Afficher "COINCHE" si ce joueur a coinché, sinon afficher son annonce
@@ -1235,6 +1237,7 @@ Rectangle {
                         opacity: {
                             // Visible si le joueur a fait une annonce OU s'il a coinché
                             if (rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "" &&
+                                rootArea.getPlayerBidSymbol(playerNorthColumn.actualPlayerIndex) === "" &&
                                 !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex)) return 0
                             if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) === "Passe") return 0
                             return 1
@@ -1249,6 +1252,7 @@ Rectangle {
                             anchors.centerIn: parent
                             visible: true  // Toujours visible pour que le composant soit créé
                             opacity: (rootArea.getPlayerBidValue(playerNorthColumn.actualPlayerIndex) !== "" ||
+                                    rootArea.getPlayerBidSymbol(playerNorthColumn.actualPlayerIndex) !== "" ||
                                     (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerNorthColumn.actualPlayerIndex)) ? 1 : 0
                             spacing: rootArea.width * 0.005
                             // Afficher "COINCHE" si ce joueur a coinché, sinon afficher son annonce
@@ -1361,6 +1365,7 @@ Rectangle {
                     opacity: {
                         // Visible si le joueur a fait une annonce OU s'il a coinché
                         if (rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "" &&
+                            rootArea.getPlayerBidSymbol(playerWestRow.actualPlayerIndex) === "" &&
                             !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex)) return 0
                         if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) === "Passe") return 0
                         return 1
@@ -1376,6 +1381,7 @@ Rectangle {
                         anchors.centerIn: parent
                         visible: true  // Toujours visible pour que le composant soit créé
                         opacity: (rootArea.getPlayerBidValue(playerWestRow.actualPlayerIndex) !== "" ||
+                                rootArea.getPlayerBidSymbol(playerWestRow.actualPlayerIndex) !== "" ||
                                 (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerWestRow.actualPlayerIndex)) ? 1 : 0
                         spacing: rootArea.width * 0.005
 
@@ -1610,6 +1616,7 @@ Rectangle {
                     opacity: {
                         // Visible si le joueur a fait une annonce OU s'il a coinché
                         if (rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "" &&
+                            rootArea.getPlayerBidSymbol(playerEastRow.actualPlayerIndex) === "" &&
                             !(gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex)) return 0
                         if (!gameModel.biddingPhase && rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) === "Passe") return 0
                         return 1
@@ -1625,6 +1632,7 @@ Rectangle {
                         anchors.centerIn: parent
                         visible: true  // Toujours visible pour que le composant soit créé
                         opacity: (rootArea.getPlayerBidValue(playerEastRow.actualPlayerIndex) !== "" ||
+                                rootArea.getPlayerBidSymbol(playerEastRow.actualPlayerIndex) !== "" ||
                                 (gameModel.isCoinched && gameModel.coinchedByPlayerIndex === playerEastRow.actualPlayerIndex)) ? 1 : 0
                         spacing: rootArea.width * 0.005
                         // Afficher "COINCHE" si ce joueur a coinché, sinon afficher son annonce

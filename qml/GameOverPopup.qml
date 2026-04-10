@@ -368,7 +368,7 @@ Rectangle {
                     }
 
                     Text {
-                        text: "RETOUR AU MENU "
+                        text: " RETOUR AU MENU "
                         font.pixelSize: 40 * minRatio
                         font.bold: true
                         color: "white"

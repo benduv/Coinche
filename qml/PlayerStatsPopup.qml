@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtMultimedia
 
 Rectangle {
     id: statsPopup
@@ -53,6 +54,11 @@ Rectangle {
     // Sélecteur de mode affiché
     property int selectedMode: 0  // 0 = Coinche, 1 = Belote
 
+    SoundEffect {
+        id: modeSwitchSound
+        source: "qrc:/resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav"
+    }
+
     signal closePopup()
     signal addFriend(string playerName)
 
@@ -87,9 +93,7 @@ Rectangle {
         // Empêcher la fermeture quand on clique dans la popup
         MouseArea {
             anchors.fill: parent
-            onClicked: {
-                // Ne rien faire - bloquer la propagation
-            }
+            onClicked: {}
         }
 
         // Bouton X fermer en haut à droite
@@ -117,97 +121,157 @@ Rectangle {
             }
         }
 
-        Column {
-            anchors.fill: parent
+        // Header : icône + nom du joueur
+        Rectangle {
+            id: popupHeader
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.margins: 40 * minRatio
-            spacing: 30 * minRatio
+            height: 120 * minRatio
+            color: "#2a2a2a"
+            radius: 20 * minRatio
 
-            // Header avec nom du joueur + sélecteur Coinche/Belote
-            Rectangle {
-                width: parent.width
-                height: 180 * minRatio
-                color: "#2a2a2a"
-                radius: 20 * minRatio
+            Row {
+                anchors.centerIn: parent
+                spacing: 30 * minRatio
 
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 16 * minRatio
+                Image {
+                    source: "qrc:/resources/increase-stats-svgrepo-com.svg"
+                    width: 54 * minRatio
+                    height: 54 * minRatio
+                    anchors.verticalCenter: parent.verticalCenter
+                }
 
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 30 * minRatio
+                Text {
+                    text: "Statistiques de " + statsPopup.playerName
+                    font.pixelSize: 48 * minRatio
+                    font.bold: true
+                    color: "#FFD700"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+        }
 
-                        Image {
-                            source: "qrc:/resources/increase-stats-svgrepo-com.svg"
-                            width: 54 * minRatio
-                            height: 54 * minRatio
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
+        // Sélecteur Coinche / Belote
+        Row {
+            id: modeSelector
+            anchors.top: popupHeader.bottom
+            anchors.topMargin: 20 * minRatio
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 20 * minRatio
 
-                        Text {
-                            text: "Statistiques de " + statsPopup.playerName
-                            font.pixelSize: 48 * minRatio
-                            font.bold: true
-                            color: "#FFD700"
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    // Sélecteur Coinche / Belote
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 20 * minRatio
-
-                        Image {
-                            source: "qrc:/resources/left-arrowMainMenu-svgrepo-com.svg"
-                            width: 40 * minRatio
-                            height: 40 * minRatio
-                            anchors.verticalCenter: parent.verticalCenter
-                            opacity: statsPopup.selectedMode > 0 ? 1.0 : 0.3
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: if (statsPopup.selectedMode > 0) statsPopup.selectedMode--
-                            }
-                        }
-
-                        Text {
-                            text: statsPopup.selectedMode === 0 ? "Coinche" : "Belote"
-                            font.pixelSize: 40 * minRatio
-                            font.bold: true
-                            color: "#ffffff"
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 200 * minRatio
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-
-                        Image {
-                            source: "qrc:/resources/right-arrowMainMenu-svgrepo-com.svg"
-                            width: 40 * minRatio
-                            height: 40 * minRatio
-                            anchors.verticalCenter: parent.verticalCenter
-                            opacity: statsPopup.selectedMode < 1 ? 1.0 : 0.3
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: if (statsPopup.selectedMode < 1) statsPopup.selectedMode++
-                            }
+            Image {
+                source: "qrc:/resources/left-arrowMainMenu-svgrepo-com.svg"
+                width: 40 * minRatio
+                height: 40 * minRatio
+                anchors.verticalCenter: parent.verticalCenter
+                opacity: statsPopup.selectedMode > 0 ? 1.0 : 0.3
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (statsPopup.selectedMode > 0) {
+                            statsPopup.selectedMode--
+                            if (AudioSettings.effectsEnabled) modeSwitchSound.play()
                         }
                     }
                 }
             }
 
-            // Scrollable content
-            ScrollView {
+            Item {
+                width: 200 * minRatio
+                height: 44 * minRatio
+                anchors.verticalCenter: parent.verticalCenter
+                Text {
+                    anchors.centerIn: parent
+                    text: statsPopup.selectedMode === 0 ? "Coinche" : "Belote"
+                    font.pixelSize: 40 * minRatio
+                    font.bold: true
+                    color: "#FFD700"
+                    horizontalAlignment: Text.AlignHCenter
+                }
+            }
+
+            Image {
+                source: "qrc:/resources/right-arrowMainMenu-svgrepo-com.svg"
+                width: 40 * minRatio
+                height: 40 * minRatio
+                anchors.verticalCenter: parent.verticalCenter
+                opacity: statsPopup.selectedMode < 1 ? 1.0 : 0.3
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (statsPopup.selectedMode < 1) {
+                            statsPopup.selectedMode++
+                            if (AudioSettings.effectsEnabled) modeSwitchSound.play()
+                        }
+                    }
+                }
+            }
+        }
+
+        // Bouton demander en ami / déjà ami
+        AppButton {
+            id: friendButton
+            visible: !statsPopup.hideFriendButton
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 40 * minRatio
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width * 0.4
+            height: 100 * minRatio
+            enabled: !statsPopup.isFriend
+
+            background: Rectangle {
+                color: statsPopup.isFriend ? "#555555" : (parent.pressed ? "#004400" : "#006600")
+                radius: 20 * minRatio
+                border.color: statsPopup.isFriend ? "#888888" : "#00cc00"
+                border.width: 4 * minRatio
+            }
+
+            contentItem: Text {
+                text: statsPopup.isFriend ? "Déjà ami" : "Demander en ami"
+                font.pixelSize: 40 * minRatio
+                font.bold: true
+                color: statsPopup.isFriend ? "#cccccc" : "#ffffff"
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            onClicked: {
+                if (!statsPopup.isFriend) {
+                    statsPopup.addFriend(statsPopup.playerName)
+                    statsPopup.closePopup()
+                }
+            }
+        }
+
+        // Scrollable content
+        ScrollView {
+            anchors.top: modeSelector.bottom
+            anchors.topMargin: 20 * minRatio
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 40 * minRatio
+            anchors.rightMargin: 40 * minRatio
+            anchors.bottom: statsPopup.hideFriendButton ? parent.bottom : friendButton.top
+            anchors.bottomMargin: statsPopup.hideFriendButton ? 40 * minRatio : 20 * minRatio
+            clip: true
+            contentWidth: availableWidth
+
+            // Un seul enfant direct obligatoire pour ScrollView
+            Column {
                 width: parent.width
-                height: parent.height - (statsPopup.hideFriendButton ? 190 : 300) * minRatio
-                clip: true
+                spacing: 40 * minRatio
 
                 // Vue Coinche
                 Column {
                     width: parent.width
                     spacing: 40 * minRatio
                     visible: statsPopup.selectedMode === 0
+                    // height doit être explicite quand visible=false pour ne pas prendre de place
+                    height: visible ? implicitHeight : 0
 
                     StatsSection { title: "🏆 VICTOIRES"; titleColor: "#4CAF50" }
                     Grid {
@@ -272,6 +336,7 @@ Rectangle {
                     width: parent.width
                     spacing: 40 * minRatio
                     visible: statsPopup.selectedMode === 1
+                    height: visible ? implicitHeight : 0
 
                     StatsSection { title: "🏆 VICTOIRES"; titleColor: "#4CAF50" }
                     Grid {
@@ -286,39 +351,6 @@ Rectangle {
                     Grid {
                         columns: 1; rowSpacing: 20 * minRatio; width: parent.width
                         StatItem { label: "Capots réalisés"; value: statsPopup.beloteCapots }
-                    }
-                }
-            }
-
-            // Bouton demander en ami / déjà ami
-            AppButton {
-                visible: !statsPopup.hideFriendButton
-                width: parent.width / 2.3
-                height: visible ? 100 * minRatio : 0
-                enabled: !statsPopup.isFriend
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottomMargin: 5 * minRatio
-
-                background: Rectangle {
-                    color: statsPopup.isFriend ? "#555555" : (parent.pressed ? "#004400" : "#006600")
-                    radius: 20 * minRatio
-                    border.color: statsPopup.isFriend ? "#888888" : "#00cc00"
-                    border.width: 4 * minRatio
-                }
-
-                contentItem: Text {
-                    text: statsPopup.isFriend ? "Déjà ami" : "Demander en ami"
-                    font.pixelSize: 40 * minRatio
-                    font.bold: true
-                    color: statsPopup.isFriend ? "#cccccc" : "#ffffff"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                onClicked: {
-                    if (!statsPopup.isFriend) {
-                        statsPopup.addFriend(statsPopup.playerName)
-                        statsPopup.closePopup()
                     }
                 }
             }
@@ -355,7 +387,6 @@ Rectangle {
         width: (parent.width - parent.columnSpacing) / 3
 
         Text {
-            id: labelText
             text: label + ":"
             font.pixelSize: 32 * minRatio
             color: "#CCCCCC"
@@ -380,7 +411,6 @@ Rectangle {
                     statsPopup.isFriend = msg.isFriend || false
                     statsPopup.gamesPlayed = msg.gamesPlayed || 0
                     statsPopup.gamesWon = msg.gamesWon || 0
-                    // winRatio est un ratio (0.0 à 1.0), on le convertit en pourcentage
                     statsPopup.winRate = Math.round((msg.winRatio || 0) * 100)
                     statsPopup.maxWinStreak = msg.maxWinStreak || 0
 

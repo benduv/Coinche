@@ -108,6 +108,8 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleJoinPrivateLobby(sender, obj);
     } else if (type == "lobbyReady") {
         handleLobbyReady(sender, obj);
+    } else if (type == "setLobbyGameMode") {
+        handleSetLobbyGameMode(sender, obj);
     } else if (type == "startLobbyGame") {
         handleStartLobbyGame(sender);
     } else if (type == "reorderLobbyPlayers") {
@@ -2595,6 +2597,25 @@ void GameServer::handleLobbyReady(QWebSocket *socket, const QJsonObject &obj) {
         lobby->readyStatus[playerIndex] = ready;
         qDebug() << "Joueur" << conn->playerName << "prêt:" << ready << "dans lobby" << lobbyCode;
         sendLobbyUpdate(lobby->code);
+    }
+}
+
+void GameServer::handleSetLobbyGameMode(QWebSocket *socket, const QJsonObject &obj) {
+    QString connectionId = getConnectionIdBySocket(socket);
+    if (connectionId.isEmpty()) return;
+    PlayerConnection* conn = m_connections[connectionId];
+    if (!conn) return;
+
+    // Trouver le lobby dont ce joueur est l'hôte
+    for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ++it) {
+        PrivateLobby* lobby = it.value();
+        if (lobby && lobby->hostPlayerName == conn->playerName) {
+            QString mode = obj["gameMode"].toString("coinche");
+            if (mode != "coinche" && mode != "belote") mode = "coinche";
+            lobby->gameMode = mode;
+            sendLobbyUpdate(lobby->code);
+            return;
+        }
     }
 }
 

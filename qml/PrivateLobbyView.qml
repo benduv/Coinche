@@ -100,7 +100,7 @@ Item {
 
                 onClicked: {
                     console.log("Creation d'un lobby prive")
-                    networkManager.setGameMode(mainWindow.selectedMode === 0 ? "coinche" : "belote")
+                    networkManager.gameMode = (mainWindow.selectedMode === 0 ? "coinche" : "belote")
                     networkManager.createPrivateLobby()
                 }
             }

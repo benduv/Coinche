@@ -201,6 +201,7 @@ struct PrivateLobby {
     QList<QString> playerNames;  // Noms des joueurs dans le lobby
     QList<QString> playerAvatars;  // Avatars des joueurs
     QList<bool> readyStatus;  // Statut "prêt" de chaque joueur
+    QString gameMode = "coinche";  // Mode de jeu choisi par l'hôte
 };
 
 class GameServer : public QObject {
@@ -2345,6 +2346,7 @@ private:
         QJsonObject update;
         update["type"] = "lobbyUpdate";
         update["players"] = playersArray;
+        update["gameMode"] = lobby->gameMode;
 
         sendLobbyMessage(lobbyCode, update);
     }

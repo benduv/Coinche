@@ -116,12 +116,46 @@ Rectangle {
         spacing: h * 0.025
 
         // ========= Titre =========
-        Text {
-            text: "Phase d'annonces"
-            font.pixelSize: h * 0.10
-            font.bold: true
-            color: "#FFD700"
+        Row {
             Layout.alignment: Qt.AlignHCenter
+            spacing: 0
+
+            Text {
+                text: root.isMyTurn
+                      ? "A vous d'annoncez !"
+                      : (gameModel.getPlayerName(gameModel.biddingPlayer) + " annonce ")
+                font.pixelSize: h * 0.10
+                font.bold: true
+                color: "#FFD700"
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            Text {
+                visible: !root.isMyTurn
+                text: dotsAnim.dots
+                font.pixelSize: h * 0.10
+                font.bold: true
+                color: "#FFD700"
+                verticalAlignment: Text.AlignVCenter
+                width: h * 0.25  // largeur fixe pour 3 points
+            }
+
+            QtObject {
+                id: dotsAnim
+                property string dots: ""
+            }
+
+            Timer {
+                running: !root.isMyTurn && root.visible
+                repeat: true
+                interval: 500
+                onTriggered: {
+                    if (dotsAnim.dots === "") dotsAnim.dots = "."
+                    else if (dotsAnim.dots === ".") dotsAnim.dots = ".."
+                    else if (dotsAnim.dots === "..") dotsAnim.dots = "..."
+                    else dotsAnim.dots = ""
+                }
+            }
         }
 
         // ========= Jauge de temps =========
@@ -258,7 +292,7 @@ Rectangle {
                                     radius: 8
                                     color: parent.enabled
                                            ? (parent.down ? "#333333" : (parent.hovered ? "#555555" : "lightgrey"))
-                                           : "#111111"
+                                           : "#666666"
                                     border.color: parent.enabled ? modelData.color : "#444444"
                                     border.width: 2
                                     opacity: parent.enabled ? 1.0 : 0.4
@@ -268,6 +302,7 @@ Rectangle {
                                     fillMode: Image.PreserveAspectFit
                                     anchors.fill: parent
                                     anchors.margins: parent.width * 0.2
+                                    opacity: parent.enabled ? 1.0 : 0.4
                                 }
                                 onClicked: {
                                     bidTimer.stop()
@@ -280,7 +315,7 @@ Rectangle {
                     AppButton {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: w * 0.28
-                        height: h * 0.18
+                        height: h * 0.22
                         enabled: root.isMyTurn
 
                         background: Rectangle {

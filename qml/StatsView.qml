@@ -25,7 +25,7 @@ Rectangle {
         z: -1
     }
 
-    // Propriétés pour les statistiques
+    // Propriétés pour les statistiques Coinche
     property int gamesPlayed: 0
     property int gamesWon: 0
     property real winRatio: 0.0
@@ -44,6 +44,15 @@ Rectangle {
     property int annoncesSurcoincheesGagnees: 0
     property int maxWinStreak: 0
     property string playerName: ""
+
+    // Propriétés pour les statistiques Belote
+    property int beloteGamesPlayed: 0
+    property int beloteGamesWon: 0
+    property int beloteMaxWinStreak: 0
+    property int beloteCapots: 0
+
+    // Sélecteur de mode affiché
+    property int selectedMode: 0  // 0 = Coinche, 1 = Belote
 
     signal backToMenu()
 
@@ -135,6 +144,12 @@ Rectangle {
                 annoncesSurcoinchees = data.annoncesSurcoinchees || 0
                 annoncesSurcoincheesGagnees = data.annoncesSurcoincheesGagnees || 0
                 maxWinStreak = data.maxWinStreak || 0
+
+                // Stats Belote
+                beloteGamesPlayed = data.beloteGamesPlayed || 0
+                beloteGamesWon = data.beloteGamesWon || 0
+                beloteMaxWinStreak = data.beloteMaxWinStreak || 0
+                beloteCapots = data.beloteCapots || 0
             }
         }
     }
@@ -190,1092 +205,1424 @@ Rectangle {
 
             Item { Layout.preferredHeight: 10 * minRatio }
 
-            // Section Victoires
-            Row {
-                spacing: 8 * minRatio
-                Layout.topMargin: 10 * minRatio
+            // Sélecteur Coinche / Belote
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 20 * minRatio
+
+                SoundEffect {
+                    id: modeSwitchSound
+                    source: "qrc:/resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav"
+                }
 
                 Image {
-                    source: "qrc:/resources/trophy-svgrepo-com.svg"
-                    width: Math.min(28 * minRatio, 24)
-                    height: Math.min(28 * minRatio, 24)
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Text {
-                    text: "VICTOIRES"
-                    font.pixelSize: Math.min(28 * minRatio, 24)
-                    font.bold: true
-                    color: "#FFD700"
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            // Grid layout pour les cartes de stats
-            GridLayout {
-                Layout.fillWidth: true
-                columns: 4  // Forcer 4 colonnes pour que tout tienne sur une ligne
-                columnSpacing: 10 * widthRatio
-                rowSpacing: 15 * heightRatio
-
-                // Carte: Parties
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 160 * heightRatio
-                    Layout.minimumWidth: 180 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#FFD700"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
+                    source: "qrc:/resources/left-arrowMainMenu-svgrepo-com.svg"
+                    Layout.preferredWidth: 40 * minRatio
+                    Layout.preferredHeight: 40 * minRatio
+                    opacity: statsRoot.selectedMode > 0 ? 1.0 : 0.3
+                    MouseArea {
                         anchors.fill: parent
-                        anchors.margins: 15 * minRatio
-                        spacing: 8 * minRatio
-
-                        Text {
-                            text: "Parties jouées"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#FFD700"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Item { Layout.fillHeight: true }
-
-                        Text {
-                            text: gamesPlayed.toString()
-                            font.pixelSize: Math.min(48 * minRatio, 42)
-                            font.bold: true
-                            color: "#FFD700"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (statsRoot.selectedMode > 0) {
+                                statsRoot.selectedMode--
+                                if (AudioSettings.effectsEnabled) modeSwitchSound.play()
+                            }
                         }
                     }
                 }
 
-                // Carte: Victoires
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 160 * heightRatio
-                    Layout.minimumWidth: 180 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#FFD700"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 15 * minRatio
-                        spacing: 8 * minRatio
-
-                        Text {
-                            text: "Victoires"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#FFD700"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Item { Layout.fillHeight: true }
-
-                        Text {
-                            text: gamesWon.toString()
-                            font.pixelSize: Math.min(48 * minRatio, 42)
-                            font.bold: true
-                            color: "#FFD700"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
+                Item {
+                    Layout.preferredWidth: 180 * minRatio
+                    Layout.preferredHeight: 40 * minRatio
+                    Text {
+                        anchors.centerIn: parent
+                        text: statsRoot.selectedMode === 0 ? "Coinche" : "Belote"
+                        font.pixelSize: 32 * minRatio
+                        font.bold: true
+                        color: "#FFD700"
+                        style: Text.Outline
+                        styleColor: "#000000"
+                        horizontalAlignment: Text.AlignHCenter
                     }
                 }
-
-                // Carte: Taux de victoire
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 160 * heightRatio
-                    Layout.minimumWidth: 180 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#FFD700"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 15 * minRatio
-                        spacing: 8 * minRatio
-
-                        Text {
-                            text: "Taux de victoire"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#FFD700"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Item { Layout.fillHeight: true }
-
-                        Text {
-                            text: (winRatio * 100).toFixed(1) + "%"
-                            font.pixelSize: Math.min(48 * minRatio, 42)
-                            font.bold: true
-                            color: "#FFD700"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-
-                // Carte: Série de victoire
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 160 * heightRatio
-                    Layout.minimumWidth: 180 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#FFD700"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 15 * minRatio
-                        spacing: 8 * minRatio
-
-                        Text {
-                            text: "Série de victoire"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#FFD700"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Item { Layout.fillHeight: true }
-
-                        Text {
-                            text: maxWinStreak.toString()
-                            font.pixelSize: Math.min(48 * minRatio, 42)
-                            font.bold: true
-                            color: "#FFD700"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-            }
-
-            // Section Coinches
-            Row {
-                spacing: 8 * minRatio
-                Layout.topMargin: 10 * minRatio
 
                 Image {
-                    source: "qrc:/resources/target-svgrepo-com.svg"
-                    width: Math.min(28 * minRatio, 24)
-                    height: Math.min(28 * minRatio, 24)
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Text {
-                    text: "COINCHES"
-                    font.pixelSize: Math.min(28 * minRatio, 24)
-                    font.bold: true
-                    color: "#ff6666"
-                    anchors.verticalCenter: parent.verticalCenter
+                    source: "qrc:/resources/right-arrowMainMenu-svgrepo-com.svg"
+                    Layout.preferredWidth: 40 * minRatio
+                    Layout.preferredHeight: 40 * minRatio
+                    opacity: statsRoot.selectedMode < 1 ? 1.0 : 0.3
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (statsRoot.selectedMode < 1) {
+                                statsRoot.selectedMode++
+                                if (AudioSettings.effectsEnabled) modeSwitchSound.play()
+                            }
+                        }
+                    }
                 }
             }
 
-            GridLayout {
+            Item { Layout.preferredHeight: 5 * minRatio }
+
+            // ── Mode Coinche ──────────────────────────────────────────────
+            ColumnLayout {
                 Layout.fillWidth: true
-                columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
-                columnSpacing: 15 * widthRatio
-                rowSpacing: 15 * heightRatio
+                visible: statsRoot.selectedMode === 0
+                spacing: 20 * minRatio
 
-                // Carte: Coinches tentées
-                Rectangle {
+                // Section Victoires
+                Row {
+                    spacing: 8 * minRatio
+                    Layout.topMargin: 10 * minRatio
+
+                    Image {
+                        source: "qrc:/resources/trophy-svgrepo-com.svg"
+                        width: Math.min(28 * minRatio, 24)
+                        height: Math.min(28 * minRatio, 24)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "VICTOIRES"
+                        font.pixelSize: Math.min(28 * minRatio, 24)
+                        font.bold: true
+                        color: "#FFD700"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                // Grid layout pour les cartes de stats
+                GridLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#ff6666"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
+                    columns: 4  // Forcer 4 colonnes pour que tout tienne sur une ligne
+                    columnSpacing: 10 * widthRatio
+                    rowSpacing: 15 * heightRatio
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
+                    // Carte: Parties
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 160 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FFD700"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
 
-                        Text {
-                            text: "Tentatives"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 15 * minRatio
+                            spacing: 8 * minRatio
+
+                            Text {
+                                text: "Parties jouées"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Item { Layout.fillHeight: true }
+
+                            Text {
+                                text: gamesPlayed.toString()
+                                font.pixelSize: Math.min(48 * minRatio, 42)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
                         }
+                    }
 
-                        Text {
-                            text: coincheAttempts.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
+                    // Carte: Victoires
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 160 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FFD700"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 15 * minRatio
+                            spacing: 8 * minRatio
+
+                            Text {
+                                text: "Victoires"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Item { Layout.fillHeight: true }
+
+                            Text {
+                                text: gamesWon.toString()
+                                font.pixelSize: Math.min(48 * minRatio, 42)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Taux de victoire
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 160 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FFD700"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 15 * minRatio
+                            spacing: 8 * minRatio
+
+                            Text {
+                                text: "Taux de victoire"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Item { Layout.fillHeight: true }
+
+                            Text {
+                                text: (winRatio * 100).toFixed(1) + "%"
+                                font.pixelSize: Math.min(48 * minRatio, 42)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Série de victoire
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 160 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FFD700"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 15 * minRatio
+                            spacing: 8 * minRatio
+
+                            Text {
+                                text: "Série de victoire"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Item { Layout.fillHeight: true }
+
+                            Text {
+                                text: maxWinStreak.toString()
+                                font.pixelSize: Math.min(48 * minRatio, 42)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
                         }
                     }
                 }
 
-                // Carte: Coinches réussies
-                Rectangle {
+                // Section Coinches
+                Row {
+                    spacing: 8 * minRatio
+                    Layout.topMargin: 10 * minRatio
+
+                    Image {
+                        source: "qrc:/resources/target-svgrepo-com.svg"
+                        width: Math.min(28 * minRatio, 24)
+                        height: Math.min(28 * minRatio, 24)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "COINCHES"
+                        font.pixelSize: Math.min(28 * minRatio, 24)
+                        font.bold: true
+                        color: "#ff6666"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                GridLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#ff6666"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
+                    columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
+                    columnSpacing: 15 * widthRatio
+                    rowSpacing: 15 * heightRatio
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
+                    // Carte: Coinches tentées
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff6666"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
 
-                        Text {
-                            text: "Réussies"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Tentatives"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: coincheAttempts.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
                         }
+                    }
 
-                        Text {
-                            text: coincheSuccess.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
+                    // Carte: Coinches réussies
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff6666"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Réussies"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: coincheSuccess.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Taux de réussite
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff6666"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Taux"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: coincheAttempts > 0 ? ((coincheSuccess / coincheAttempts) * 100).toFixed(1) + "%" : "0%"
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
                         }
                     }
                 }
 
-                // Carte: Taux de réussite
-                Rectangle {
+                // Section Annonces Coinchées (coinches subies)
+                Row {
+                    spacing: 8 * minRatio
+                    Layout.topMargin: 10 * minRatio
+
+                    Image {
+                        source: "qrc:/resources/shield-svgrepo-com.svg"
+                        width: Math.min(28 * minRatio, 24)
+                        height: Math.min(28 * minRatio, 24)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "COINCHES SUBIES"
+                        font.pixelSize: Math.min(28 * minRatio, 24)
+                        font.bold: true
+                        color: "#6699ff"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                GridLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#ff6666"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
+                    columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
+                    columnSpacing: 15 * widthRatio
+                    rowSpacing: 15 * heightRatio
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
+                    // Carte: Annonces coinchées
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#6699ff"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
 
-                        Text {
-                            text: "Taux"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Subies"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#6699ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: annoncesCoinchees.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#6699ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
                         }
+                    }
 
-                        Text {
-                            text: coincheAttempts > 0 ? ((coincheSuccess / coincheAttempts) * 100).toFixed(1) + "%" : "0%"
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
+                    // Carte: Annonces coinchées gagnées
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#6699ff"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Gagnées malgré tout"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#6699ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: annoncesCoincheesgagnees.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#6699ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Taux de victoire malgré coinche
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#6699ff"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Taux de victoire"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#6699ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: annoncesCoinchees > 0 ? ((annoncesCoincheesgagnees / annoncesCoinchees) * 100).toFixed(1) + "%" : "0%"
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#6699ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+                }
+
+                // Section Surcoinches
+                Row {
+                    spacing: 8 * minRatio
+                    Layout.topMargin: 10 * minRatio
+
+                    Image {
+                        source: "qrc:/resources/fire-svgrepo-com.svg"
+                        width: Math.min(28 * minRatio, 24)
+                        height: Math.min(28 * minRatio, 24)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "SURCOINCHES"
+                        font.pixelSize: Math.min(28 * minRatio, 24)
+                        font.bold: true
+                        color: "#ff9900"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
+                    columnSpacing: 15 * widthRatio
+                    rowSpacing: 15 * heightRatio
+
+                    // Carte: Surcoinches tentées
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff9900"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Tentatives"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff9900"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: surcoincheAttempts.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff9900"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Surcoinches réussies
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff9900"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Réussies"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff9900"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: surcoincheSuccess.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff9900"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Taux de réussite
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff9900"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Taux"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff9900"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: surcoincheAttempts > 0 ? ((surcoincheSuccess / surcoincheAttempts) * 100).toFixed(1) + "%" : "0%"
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff9900"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+                }
+
+                // Section Surcoinches Subies
+                Row {
+                    spacing: 8 * minRatio
+                    Layout.topMargin: 10 * minRatio
+
+                    Image {
+                        source: "qrc:/resources/shield2-svgrepo-com.svg"
+                        width: Math.min(28 * minRatio, 24)
+                        height: Math.min(28 * minRatio, 24)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "SURCOINCHES SUBIES"
+                        font.pixelSize: Math.min(28 * minRatio, 24)
+                        font.bold: true
+                        color: "#cc66ff"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
+                    columnSpacing: 15 * widthRatio
+                    rowSpacing: 15 * heightRatio
+
+                    // Carte: Surcoinches subies
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#cc66ff"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Subies"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#cc66ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: annoncesSurcoinchees.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#cc66ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Surcoinches subies réussies
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#cc66ff"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Subies réussies"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#cc66ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                wrapMode: Text.WordWrap
+                                horizontalAlignment: Text.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: annoncesSurcoincheesGagnees.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#cc66ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Taux de réussite subies
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#cc66ff"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Taux de victoire"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#cc66ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: annoncesSurcoinchees > 0 ? ((annoncesSurcoincheesGagnees / annoncesSurcoinchees) * 100).toFixed(1) + "%" : "0%"
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#cc66ff"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+                }
+
+                // Section Capots
+                Row {
+                    spacing: 8 * minRatio
+                    Layout.topMargin: 10 * minRatio
+
+                    Image {
+                        source: "qrc:/resources/bolt-svgrepo-com.svg"
+                        width: Math.min(28 * minRatio, 24)
+                        height: Math.min(28 * minRatio, 24)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "CAPOTS"
+                        font.pixelSize: Math.min(28 * minRatio, 24)
+                        font.bold: true
+                        color: "#ff6666"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: Math.max(1, Math.floor(parent.width / (240 * widthRatio)))
+                    columnSpacing: 15 * widthRatio
+                    rowSpacing: 15 * heightRatio
+
+                    // Carte: Capots réalisés
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff6666"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Réalisés"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: capotRealises.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Capots annoncés tentés
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff6666"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Annoncés tentés"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                wrapMode: Text.WordWrap
+                                horizontalAlignment: Text.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: capotAnnoncesTentes.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Capots annoncés réussis
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff6666"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Annoncés réussis"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                wrapMode: Text.WordWrap
+                                horizontalAlignment: Text.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: capotAnnoncesRealises.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Taux de réussite capot annoncé
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff6666"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Taux annoncés"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                wrapMode: Text.WordWrap
+                                horizontalAlignment: Text.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: capotAnnoncesTentes > 0 ? ((capotAnnoncesRealises / capotAnnoncesTentes) * 100).toFixed(1) + "%" : "0%"
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+                }
+
+                // Section Générales
+                Row {
+                    spacing: 8 * minRatio
+                    Layout.topMargin: 10 * minRatio
+
+                    Image {
+                        source: "qrc:/resources/star-svgrepo-com.svg"
+                        width: Math.min(28 * minRatio, 24)
+                        height: Math.min(28 * minRatio, 24)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "GÉNÉRALES"
+                        font.pixelSize: Math.min(28 * minRatio, 24)
+                        font.bold: true
+                        color: "#FF9800"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
+                    columnSpacing: 15 * widthRatio
+                    rowSpacing: 15 * heightRatio
+
+                    // Carte: Générales tentées
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FF9800"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Tentatives"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FF9800"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: generaleAttempts.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#FF9800"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Générales réussies
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FF9800"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Réussies"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FF9800"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: generaleSuccess.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#FF9800"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Taux de réussite
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 200 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FF9800"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
+
+                            Text {
+                                text: "Taux"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FF9800"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Text {
+                                text: generaleAttempts > 0 ? ((generaleSuccess / generaleAttempts) * 100).toFixed(1) + "%" : "0%"
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#FF9800"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
                         }
                     }
                 }
             }
+            // ── Fin mode Coinche ──────────────────────────────────────────
 
-            // Section Annonces Coinchées (coinches subies)
-            Row {
-                spacing: 8 * minRatio
-                Layout.topMargin: 10 * minRatio
-
-                Image {
-                    source: "qrc:/resources/shield-svgrepo-com.svg"
-                    width: Math.min(28 * minRatio, 24)
-                    height: Math.min(28 * minRatio, 24)
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Text {
-                    text: "COINCHES SUBIES"
-                    font.pixelSize: Math.min(28 * minRatio, 24)
-                    font.bold: true
-                    color: "#6699ff"
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            GridLayout {
+            // ── Mode Belote ───────────────────────────────────────────────
+            ColumnLayout {
                 Layout.fillWidth: true
-                columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
-                columnSpacing: 15 * widthRatio
-                rowSpacing: 15 * heightRatio
+                visible: statsRoot.selectedMode === 1
+                spacing: 20 * minRatio
 
-                // Carte: Annonces coinchées
-                Rectangle {
+                // Section Victoires
+                Row {
+                    spacing: 8 * minRatio
+                    Layout.topMargin: 10 * minRatio
+
+                    Image {
+                        source: "qrc:/resources/trophy-svgrepo-com.svg"
+                        width: Math.min(28 * minRatio, 24)
+                        height: Math.min(28 * minRatio, 24)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "VICTOIRES"
+                        font.pixelSize: Math.min(28 * minRatio, 24)
+                        font.bold: true
+                        color: "#FFD700"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                GridLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#6699ff"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
+                    columns: 4
+                    columnSpacing: 10 * widthRatio
+                    rowSpacing: 15 * heightRatio
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
+                    // Carte: Parties jouées
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 160 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FFD700"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
 
-                        Text {
-                            text: "Subies"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#6699ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 15 * minRatio
+                            spacing: 8 * minRatio
+
+                            Text {
+                                text: "Parties jouées"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Item { Layout.fillHeight: true }
+
+                            Text {
+                                text: beloteGamesPlayed.toString()
+                                font.pixelSize: Math.min(48 * minRatio, 42)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
                         }
+                    }
 
-                        Text {
-                            text: annoncesCoinchees.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#6699ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
+                    // Carte: Victoires
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 160 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FFD700"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 15 * minRatio
+                            spacing: 8 * minRatio
+
+                            Text {
+                                text: "Victoires"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Item { Layout.fillHeight: true }
+
+                            Text {
+                                text: beloteGamesWon.toString()
+                                font.pixelSize: Math.min(48 * minRatio, 42)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Taux de victoire
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 160 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FFD700"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 15 * minRatio
+                            spacing: 8 * minRatio
+
+                            Text {
+                                text: "Taux de victoire"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Item { Layout.fillHeight: true }
+
+                            Text {
+                                text: beloteGamesPlayed > 0 ? ((beloteGamesWon / beloteGamesPlayed) * 100).toFixed(1) + "%" : "0%"
+                                font.pixelSize: Math.min(48 * minRatio, 42)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+                        }
+                    }
+
+                    // Carte: Série de victoire
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 160 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#FFD700"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 15 * minRatio
+                            spacing: 8 * minRatio
+
+                            Text {
+                                text: "Série de victoire"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
+
+                            Item { Layout.fillHeight: true }
+
+                            Text {
+                                text: beloteMaxWinStreak.toString()
+                                font.pixelSize: Math.min(48 * minRatio, 42)
+                                font.bold: true
+                                color: "#FFD700"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
                         }
                     }
                 }
 
-                // Carte: Annonces coinchées gagnées
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#6699ff"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
+                // Section Capots
+                Row {
+                    spacing: 8 * minRatio
+                    Layout.topMargin: 10 * minRatio
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
+                    Image {
+                        source: "qrc:/resources/bolt-svgrepo-com.svg"
+                        width: Math.min(28 * minRatio, 24)
+                        height: Math.min(28 * minRatio, 24)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
 
-                        Text {
-                            text: "Gagnées malgré tout"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#6699ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: annoncesCoincheesgagnees.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#6699ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
+                    Text {
+                        text: "CAPOTS"
+                        font.pixelSize: Math.min(28 * minRatio, 24)
+                        font.bold: true
+                        color: "#ff6666"
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
 
-                // Carte: Taux de victoire malgré coinche
-                Rectangle {
+                GridLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#6699ff"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
+                    columns: Math.max(1, Math.floor(parent.width / (240 * widthRatio)))
+                    columnSpacing: 15 * widthRatio
+                    rowSpacing: 15 * heightRatio
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
+                    // Carte: Capots réalisés
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 140 * heightRatio
+                        Layout.minimumWidth: 180 * widthRatio
+                        color: "#2a2a2a"
+                        radius: 15 * minRatio
+                        border.color: "#ff6666"
+                        border.width: 2 * minRatio
+                        opacity: 0.5
 
-                        Text {
-                            text: "Taux de victoire"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#6699ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12 * minRatio
+                            spacing: 5 * minRatio
 
-                        Text {
-                            text: annoncesCoinchees > 0 ? ((annoncesCoincheesgagnees / annoncesCoinchees) * 100).toFixed(1) + "%" : "0%"
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#6699ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-            }
+                            Text {
+                                text: "Réalisés"
+                                font.pixelSize: Math.min(24 * minRatio, 22)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
 
-            // Section Surcoinches
-            Row {
-                spacing: 8 * minRatio
-                Layout.topMargin: 10 * minRatio
-
-                Image {
-                    source: "qrc:/resources/fire-svgrepo-com.svg"
-                    width: Math.min(28 * minRatio, 24)
-                    height: Math.min(28 * minRatio, 24)
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Text {
-                    text: "SURCOINCHES"
-                    font.pixelSize: Math.min(28 * minRatio, 24)
-                    font.bold: true
-                    color: "#ff9900"
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            GridLayout {
-                Layout.fillWidth: true
-                columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
-                columnSpacing: 15 * widthRatio
-                rowSpacing: 15 * heightRatio
-
-                // Carte: Surcoinches tentées
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#ff9900"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Tentatives"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#ff9900"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: surcoincheAttempts.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#ff9900"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-
-                // Carte: Surcoinches réussies
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#ff9900"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Réussies"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#ff9900"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: surcoincheSuccess.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#ff9900"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-
-                // Carte: Taux de réussite
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#ff9900"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Taux"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#ff9900"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: surcoincheAttempts > 0 ? ((surcoincheSuccess / surcoincheAttempts) * 100).toFixed(1) + "%" : "0%"
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#ff9900"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
+                            Text {
+                                text: beloteCapots.toString()
+                                font.pixelSize: Math.min(42 * minRatio, 36)
+                                font.bold: true
+                                color: "#ff6666"
+                                Layout.alignment: Qt.AlignHCenter
+                                style: Text.Outline
+                                styleColor: "#000000"
+                            }
                         }
                     }
                 }
             }
-
-            // Section Surcoinches Subies
-            Row {
-                spacing: 8 * minRatio
-                Layout.topMargin: 10 * minRatio
-
-                Image {
-                    source: "qrc:/resources/shield2-svgrepo-com.svg"
-                    width: Math.min(28 * minRatio, 24)
-                    height: Math.min(28 * minRatio, 24)
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Text {
-                    text: "SURCOINCHES SUBIES"
-                    font.pixelSize: Math.min(28 * minRatio, 24)
-                    font.bold: true
-                    color: "#cc66ff"
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            GridLayout {
-                Layout.fillWidth: true
-                columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
-                columnSpacing: 15 * widthRatio
-                rowSpacing: 15 * heightRatio
-
-                // Carte: Surcoinches subies
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#cc66ff"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Subies"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#cc66ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: annoncesSurcoinchees.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#cc66ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-
-                // Carte: Surcoinches subies réussies
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#cc66ff"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Subies réussies"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#cc66ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            wrapMode: Text.WordWrap
-                            horizontalAlignment: Text.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: annoncesSurcoincheesGagnees.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#cc66ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-
-                // Carte: Taux de réussite subies
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#cc66ff"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Taux de victoire"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#cc66ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: annoncesSurcoinchees > 0 ? ((annoncesSurcoincheesGagnees / annoncesSurcoinchees) * 100).toFixed(1) + "%" : "0%"
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#cc66ff"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-            }
-
-            // Section Capots
-            Row {
-                spacing: 8 * minRatio
-                Layout.topMargin: 10 * minRatio
-
-                Image {
-                    source: "qrc:/resources/bolt-svgrepo-com.svg"
-                    width: Math.min(28 * minRatio, 24)
-                    height: Math.min(28 * minRatio, 24)
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Text {
-                    text: "CAPOTS"
-                    font.pixelSize: Math.min(28 * minRatio, 24)
-                    font.bold: true
-                    color: "#ff6666"
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            GridLayout {
-                Layout.fillWidth: true
-                columns: Math.max(1, Math.floor(parent.width / (240 * widthRatio)))
-                columnSpacing: 15 * widthRatio
-                rowSpacing: 15 * heightRatio
-
-                // Carte: Capots réalisés
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 180 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#ff6666"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Réalisés"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: capotRealises.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-
-                // Carte: Capots annoncés tentés
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 180 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#ff6666"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Annoncés tentés"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            wrapMode: Text.WordWrap
-                            horizontalAlignment: Text.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: capotAnnoncesTentes.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-
-                // Carte: Capots annoncés réussis
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 180 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#ff6666"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Annoncés réussis"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            wrapMode: Text.WordWrap
-                            horizontalAlignment: Text.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: capotAnnoncesRealises.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-
-                // Carte: Taux de réussite capot annoncé
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 180 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#ff6666"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Taux annoncés"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            wrapMode: Text.WordWrap
-                            horizontalAlignment: Text.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: capotAnnoncesTentes > 0 ? ((capotAnnoncesRealises / capotAnnoncesTentes) * 100).toFixed(1) + "%" : "0%"
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#ff6666"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-            }
-
-            // Section Générales
-            Row {
-                spacing: 8 * minRatio
-                Layout.topMargin: 10 * minRatio
-
-                Image {
-                    source: "qrc:/resources/star-svgrepo-com.svg"
-                    width: Math.min(28 * minRatio, 24)
-                    height: Math.min(28 * minRatio, 24)
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Text {
-                    text: "GÉNÉRALES"
-                    font.pixelSize: Math.min(28 * minRatio, 24)
-                    font.bold: true
-                    color: "#FF9800"
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            GridLayout {
-                Layout.fillWidth: true
-                columns: Math.max(1, Math.floor(parent.width / (250 * widthRatio)))
-                columnSpacing: 15 * widthRatio
-                rowSpacing: 15 * heightRatio
-
-                // Carte: Générales tentées
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#FF9800"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Tentatives"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#FF9800"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: generaleAttempts.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#FF9800"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-
-                // Carte: Générales réussies
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#FF9800"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Réussies"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#FF9800"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: generaleSuccess.toString()
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#FF9800"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-
-                // Carte: Taux de réussite
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140 * heightRatio
-                    Layout.minimumWidth: 200 * widthRatio
-                    color: "#2a2a2a"
-                    radius: 15 * minRatio
-                    border.color: "#FF9800"
-                    border.width: 2 * minRatio
-                    opacity: 0.5
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12 * minRatio
-                        spacing: 5 * minRatio
-
-                        Text {
-                            text: "Taux"
-                            font.pixelSize: Math.min(24 * minRatio, 22)
-                            font.bold: true
-                            color: "#FF9800"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-
-                        Text {
-                            text: generaleAttempts > 0 ? ((generaleSuccess / generaleAttempts) * 100).toFixed(1) + "%" : "0%"
-                            font.pixelSize: Math.min(42 * minRatio, 36)
-                            font.bold: true
-                            color: "#FF9800"
-                            Layout.alignment: Qt.AlignHCenter
-                            style: Text.Outline
-                            styleColor: "#000000"
-                        }
-                    }
-                }
-            }
+            // ── Fin mode Belote ───────────────────────────────────────────
 
             Item { Layout.preferredHeight: 10 * minRatio }
 
