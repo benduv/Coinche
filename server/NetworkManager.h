@@ -35,6 +35,7 @@ class NetworkManager : public QObject {
     Q_PROPERTY(bool isTraining READ isTraining NOTIFY isTrainingChanged)
     Q_PROPERTY(QString storedEmail READ storedEmail NOTIFY storedCredentialsChanged)
     Q_PROPERTY(QString gameMode READ gameMode WRITE setGameMode NOTIFY gameModeChanged)
+    Q_PROPERTY(QString lobbyGameMode READ lobbyGameMode NOTIFY lobbyGameModeChanged)
 
 public:
     explicit NetworkManager(QObject *parent = nullptr)
@@ -87,6 +88,7 @@ public:
     QVariantList lobbyPlayers() const { return m_lobbyPlayers; }
     QString pendingBotReplacement() const { return m_pendingBotReplacement; }
     QString gameMode() const { return m_gameMode; }
+    QString lobbyGameMode() const { return m_lobbyGameMode; }
     void setGameMode(const QString& mode) {
         qWarning() << "Changement de mode de jeu:" << mode;
         if (m_gameMode != mode) {
@@ -500,6 +502,13 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void sendSetLobbyGameMode(const QString &mode) {
+        QJsonObject msg;
+        msg["type"] = "setLobbyGameMode";
+        msg["gameMode"] = mode;
+        sendMessage(msg);
+    }
+
     // Sauvegarder les credentials pour l'auto-login
     Q_INVOKABLE void saveCredentials(const QString &email, const QString &password) {
         QSettings settings("Nebuludik", "CoincheDelEspace");
@@ -589,6 +598,7 @@ signals:
     void lobbyJoined(QString code);
     void lobbyError(QString message);
     void lobbyPlayersChanged();
+    void lobbyGameModeChanged();
     void lobbyGameStarting();
     void lobbyRestored(QString code, bool isHost);
 
@@ -1211,6 +1221,13 @@ private slots:
             m_lobbyPlayers = newList;
             // qDebug() << "NetworkManager - Lobby mis à jour:" << m_lobbyPlayers.length() << "joueurs";
             emit lobbyPlayersChanged();
+
+            // Mettre à jour le mode de jeu du lobby
+            QString newLobbyMode = obj["gameMode"].toString("coinche");
+            if (m_lobbyGameMode != newLobbyMode) {
+                m_lobbyGameMode = newLobbyMode;
+                emit lobbyGameModeChanged();
+            }
         }
         else if (type == "lobbyError") {
             QString errorMsg = obj["message"].toString();
@@ -1408,6 +1425,7 @@ private:
 
     // Lobbies privés
     QVariantList m_lobbyPlayers;
+    QString m_lobbyGameMode = "coinche";  // mode de jeu choisi dans le lobby
 
     // Reconnexion automatique
     QString m_serverUrl;

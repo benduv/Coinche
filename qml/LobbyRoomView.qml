@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtMultimedia
 
 Rectangle {
     id: root
@@ -53,6 +54,81 @@ Rectangle {
             radius: 20 * root.minRatio
             border.color: "#FFD700"
             border.width: 3 * root.minRatio
+
+            SoundEffect {
+                id: lobbyModeSwitchSound
+                source: "qrc:/resources/sons/742832__sadiquecat__woosh-metal-tea-strainer-1.wav"
+            }
+
+            // Sélecteur de mode (top-right)
+            Item {
+                anchors.right: parent.right
+                anchors.rightMargin: 20 * root.minRatio
+                anchors.verticalCenter: parent.verticalCenter
+                width: modeSelectorRow.width
+                height: modeSelectorRow.height
+
+                Row {
+                    id: modeSelectorRow
+                    spacing: 8 * root.minRatio
+
+                    Image {
+                        id: leftModeArrow
+                        source: "qrc:/resources/left-arrowMainMenu-svgrepo-com.svg"
+                        width: 36 * root.minRatio
+                        height: 36 * root.minRatio
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: root.isHost
+                        opacity: networkManager.lobbyGameMode === "coinche" ? 0.3 : 1.0
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: networkManager.lobbyGameMode !== "coinche" ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: {
+                                if (networkManager.lobbyGameMode !== "coinche") {
+                                    lobbyModeSwitchSound.play()
+                                    networkManager.sendSetLobbyGameMode("coinche")
+                                }
+                            }
+                        }
+                    }
+
+                    Item {
+                        width: 130 * root.minRatio
+                        height: 50 * root.minRatio
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: networkManager.lobbyGameMode === "belote" ? "Belote" : "Coinche"
+                            font.pixelSize: 32 * root.minRatio
+                            font.bold: true
+                            color: "#FFD700"
+                        }
+                    }
+
+                    Image {
+                        id: rightModeArrow
+                        source: "qrc:/resources/right-arrowMainMenu-svgrepo-com.svg"
+                        width: 36 * root.minRatio
+                        height: 36 * root.minRatio
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: root.isHost
+                        opacity: networkManager.lobbyGameMode === "belote" ? 0.3 : 1.0
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: networkManager.lobbyGameMode !== "belote" ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: {
+                                if (networkManager.lobbyGameMode !== "belote") {
+                                    lobbyModeSwitchSound.play()
+                                    networkManager.sendSetLobbyGameMode("belote")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             // Bouton inviter des amis (hôte uniquement)
             Rectangle {

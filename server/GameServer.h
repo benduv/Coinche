@@ -2323,6 +2323,7 @@ private:
 
     void handleLobbyReady(QWebSocket *socket, const QJsonObject &obj);
 
+    void handleSetLobbyGameMode(QWebSocket *socket, const QJsonObject &obj);
     void handleStartLobbyGame(QWebSocket *socket);
 
     void handleReorderLobbyPlayers(QWebSocket *socket, const QJsonObject &obj);
@@ -2428,13 +2429,26 @@ private:
             room->isBot.push_back(false);
         }
 
-        // Distribue les cartes
+        // Appliquer le mode de jeu du lobby
+        room->isBeloteMode = (lobby->gameMode == "belote");
+
+        // Distribuer les cartes selon le mode de jeu
         room->deck.shuffleDeck();
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 8; j++) {
-                Carte* carte = room->deck.drawCard();
-                if (carte) {
-                    room->players[i]->addCardToHand(carte);
+        room->deck.cutDeck();
+        if (room->isBeloteMode) {
+            std::vector<Carte*> main1, main2, main3, main4;
+            Carte* retournee = nullptr;
+            room->deck.distributeBelote(main1, main2, main3, main4, retournee);
+            room->retournee = retournee;
+            for (Carte* c : main1) room->players[0]->addCardToHand(c);
+            for (Carte* c : main2) room->players[1]->addCardToHand(c);
+            for (Carte* c : main3) room->players[2]->addCardToHand(c);
+            for (Carte* c : main4) room->players[3]->addCardToHand(c);
+        } else {
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 8; j++) {
+                    Carte* carte = room->deck.drawCard();
+                    if (carte) room->players[i]->addCardToHand(carte);
                 }
             }
         }
@@ -2444,53 +2458,25 @@ private:
         // Init le premier joueur (celui qui commence les enchères)
         room->firstPlayerIndex = 0;
         room->currentPlayerIndex = 0;
+        room->biddingPlayer = 0;
+        room->gameState = "bidding";
+        if (room->isBeloteMode) {
+            room->beloteBidRound = 1;
+            room->beloteBidPassCount = 0;
+        }
 
-        qInfo() << "Partie lobby créée - Room" << roomId << "- Joueurs:"
+        qInfo() << "Partie lobby créée [" << lobby->gameMode << "] - Room" << roomId << "- Joueurs:"
                 << room->playerNames[0] << "," << room->playerNames[1] << ","
                 << room->playerNames[2] << "," << room->playerNames[3];
 
-        // Notifier tous les joueurs
-        for (int i = 0; i < 4; i++) {
-            QJsonArray opponentsArray;
-            for (int j = 0; j < 4; j++) {
-                if (j != i) {
-                    QJsonObject opponent;
-                    opponent["name"] = room->playerNames[j];
-                    opponent["avatar"] = room->playerAvatars[j];
-                    opponent["position"] = j;
-                    opponentsArray.append(opponent);
-                }
-            }
+        // Notifier tous les joueurs via notifyGameStart (gère Belote + Coinche + retournée)
+        notifyGameStart(roomId, orderedIds);
 
-            // Préparer les cartes du joueur
-            QJsonArray myCards;
-            for (Carte* carte : room->players[i]->getMain()) {
-                QJsonObject cardObj;
-                cardObj["suit"] = static_cast<int>(carte->getCouleur());
-                cardObj["value"] = static_cast<int>(carte->getChiffre());
-                myCards.append(cardObj);
-            }
-
-            QJsonObject gameFoundMsg;
-            gameFoundMsg["type"] = "gameFound";
-            gameFoundMsg["playerPosition"] = i;
-            gameFoundMsg["opponents"] = opponentsArray;
-            gameFoundMsg["myCards"] = myCards;  // Ajouter les cartes ici
-
-            sendMessage(m_connections[orderedIds[i]]->socket, gameFoundMsg);
-        }
-
-        // Les cartes sont maintenant incluses dans gameFound, pas besoin de message séparé
-
-        // Phase d'enchères
-        room->gameState = "bidding";
-        QJsonObject biddingMsg;
-        biddingMsg["type"] = "biddingPhase";
-        biddingMsg["currentPlayer"] = room->currentPlayerIndex;
-        broadcastToRoom(roomId, biddingMsg);
-
-        // Démarrer le timer pour le premier joueur à annoncer (toujours humain dans un lobby)
-        startBidTimeout(roomId, room->currentPlayerIndex);
+        // Démarrer le timer après l'animation "Bonne partie!" + distribution
+        QTimer::singleShot(FIRST_GAME_BOT_DELAY_MS, this, [this, roomId]() {
+            GameRoom* r = m_gameRooms.value(roomId);
+            if (r && r->gameState == "bidding") startBidTimeout(roomId, r->currentPlayerIndex);
+        });
     }
 
     void startLobbyGameWith2Players(PrivateLobby* lobby) {
@@ -2522,11 +2508,13 @@ private:
         player2->lobbyPartnerId = lobbyConnectionIds[0];
         player1->lobbyCode = lobby->code;
         player2->lobbyCode = lobby->code;
+        player1->preferredGameMode = lobby->gameMode;
+        player2->preferredGameMode = lobby->gameMode;
 
         qDebug() << "Joueurs marqués comme partenaires:" << player1->playerName << "et" << player2->playerName;
 
         // Ajouter à la queue de matchmaking du bon mode
-        QString lobbyGameMode = player1->preferredGameMode.isEmpty() ? "coinche" : player1->preferredGameMode;
+        QString lobbyGameMode = lobby->gameMode;
         QQueue<QString>& targetQueue = (lobbyGameMode == "belote") ? m_matchmakingQueueBelote : m_matchmakingQueueCoinche;
         for (const QString &connId : lobbyConnectionIds) {
             if (!targetQueue.contains(connId)) {
