@@ -531,6 +531,13 @@ private:
         GameRoom* room = m_gameRooms.value(roomId);
         if (!room) return;
 
+        // Guard contre les appels doubles (race condition bid timeout + message réseau)
+        if (room->gameState == "waitingNewManche") {
+            qDebug() << "startNewManche - Ignoré: déjà en attente de nouvelle manche";
+            return;
+        }
+        room->gameState = "waitingNewManche";
+
         qDebug() << "GameServer - Nouvelle manche: envoi de l'animation aux clients";
 
         // Envoyer le message d'animation "Nouvelle Manche" à tous les joueurs
