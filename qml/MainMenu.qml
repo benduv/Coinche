@@ -302,11 +302,6 @@ ApplicationWindow {
             Loader {
                 anchors.fill: parent
                 source: "qrc:/qml/SplashScreen.qml"
-                Component.onCompleted: {
-                    if (Qt.platform.os === "android") {
-                        orientationHelper.setAllOrientations()
-                    }
-                }
                 onLoaded: {
                     // Auto-login réussi pendant le splash -> aller directement au menu principal
                     item.autoLoginSuccess.connect(function(playerName) {
@@ -696,8 +691,8 @@ ApplicationWindow {
                         // Fleche gauche
                         Image {
                             source: "qrc:/resources/left-arrowMainMenu-svgrepo-com.svg"
-                            width: 50 * mainWindow.minRatio
-                            height: 50 * mainWindow.minRatio
+                            width: 60 * mainWindow.minRatio
+                            height: 60 * mainWindow.minRatio
                             anchors.verticalCenter: parent.verticalCenter
                             opacity: mainWindow.selectedMode > 0 ? 1.0 : 0.3
                             MouseArea {
@@ -742,8 +737,8 @@ ApplicationWindow {
                         // Fleche droite
                         Image {
                             source: "qrc:/resources/right-arrowMainMenu-svgrepo-com.svg"
-                            width: 50 * mainWindow.minRatio
-                            height: 50 * mainWindow.minRatio
+                            width: 60 * mainWindow.minRatio
+                            height: 60 * mainWindow.minRatio
                             anchors.verticalCenter: parent.verticalCenter
                             opacity: mainWindow.selectedMode < 1 ? 1.0 : 0.3
                             MouseArea {

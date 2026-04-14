@@ -15,9 +15,14 @@ Item {
 
     // Panneau d'annonces Belote unifié (tours 1 et 2)
     BeloteAnnoncesPanel {
-        width:  beloteRoot.width  * 0.45
-        height: beloteRoot.height * 0.5
-        anchors.centerIn: parent
+        //width:  beloteRoot.width  * 0.45
+        //height: beloteRoot.height * 0.5
+        //anchors.centerIn: parent
+        anchors.fill: parent
+        anchors.leftMargin: parent.width * 0.2
+        anchors.rightMargin: parent.width * 0.2
+        anchors.topMargin: parent.height * 0.23
+        anchors.bottomMargin: parent.height * 0.26
         visible: gameModel.isBeloteMode &&
                  gameModel.biddingPhase &&
                  gameModel.distributionPhase === 0 &&

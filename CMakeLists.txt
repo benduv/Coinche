@@ -215,4 +215,28 @@ if(NOT ANDROID)
     # Tests - Desktop uniquement
     # ========================================
     add_subdirectory(tests)
+
+    # ========================================
+    # Cible de déploiement Windows (windeployqt)
+    # ========================================
+    # Utilise le windeployqt de la MÊME installation Qt que le build
+    # (via Qt6_DIR = .../lib/cmake/Qt6 → ../../bin/windeployqt)
+    if(WIN32)
+        get_filename_component(QT_BIN_DIR "${Qt6_DIR}/../../../bin" ABSOLUTE)
+        find_program(WINDEPLOYQT_EXE windeployqt HINTS "${QT_BIN_DIR}" NO_DEFAULT_PATH)
+
+        if(WINDEPLOYQT_EXE)
+            add_custom_target(deploy
+                COMMAND "${WINDEPLOYQT_EXE}"
+                    --qmldir "${CMAKE_SOURCE_DIR}/qml"
+                    "$<TARGET_FILE:coinche>"
+                DEPENDS coinche
+                COMMENT "Déploiement Qt (windeployqt depuis ${QT_BIN_DIR})"
+                VERBATIM
+            )
+            message(STATUS "Cible 'deploy' disponible — windeployqt: ${WINDEPLOYQT_EXE}")
+        else()
+            message(WARNING "windeployqt introuvable dans ${QT_BIN_DIR} — cible 'deploy' non créée")
+        endif()
+    endif()
 endif()

@@ -7,6 +7,8 @@
 #include <QQuickWindow>
 #include <QFontDatabase>
 #include <QFont>
+#include <QScreen>
+#include <QTimer>
 #ifdef Q_OS_ANDROID
 #include <QJniObject>
 #include <QCoreApplication>
@@ -147,19 +149,48 @@ int main(int argc, char *argv[])
     });
 
     const QUrl url(QStringLiteral("qrc:/qml/MainMenu.qml"));
+
+#if defined(Q_OS_ANDROID) && !(defined(__arm__) && !defined(__aarch64__))
+    // Verrouiller l'orientation courante pendant le chargement pour éviter le bug
+    // demi-écran si l'utilisateur tourne le téléphone dans la première seconde.
+    // On détecte l'orientation initiale et on la verrouille, puis on déverrouille après 1s.
+    {
+        QSize screenSize = app.primaryScreen()->size();
+        if (screenSize.width() > screenSize.height())
+            orientationHelper.setLandscape();
+        else
+            orientationHelper.setPortrait();
+    }
+    QTimer::singleShot(1000, &app, [&orientationHelper]() {
+        orientationHelper.setAllOrientations();
+    });
+
+    // showFullScreen via objectCreated pour être sûr d'activer le plein écran
+    // dès que la fenêtre QML est construite (pendant engine.load())
+    QQuickWindow *mainQmlWindow = nullptr;
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
+                     &app, [&mainQmlWindow](QObject *obj, const QUrl &) {
+        if (!mainQmlWindow) {
+            QQuickWindow *w = qobject_cast<QQuickWindow*>(obj);
+            if (w) {
+                mainQmlWindow = w;
+                mainQmlWindow->showFullScreen();
+                qDebug() << "Mode plein écran activé";
+            }
+        }
+    }, Qt::DirectConnection);
+#endif
+
     engine.load(url);
 
-    // Mettre en plein écran sur Android (sauf ARMv7 pour éviter les crashes)
+    // Empêcher la mise en veille et FLAG_KEEP_SCREEN_ON (Android uniquement)
     if (!engine.rootObjects().isEmpty()) {
         QObject *rootObject = engine.rootObjects().first();
         if (rootObject) {
             QQuickWindow *window = qobject_cast<QQuickWindow*>(rootObject);
             if (window) {
 #if defined(Q_OS_ANDROID) && !(defined(__arm__) && !defined(__aarch64__))
-                // Tous les Android sauf ARMv7 (32-bit ARM) qui crashe avec showFullScreen
-                // Inclut: ARM64, x86, x86_64 (émulateurs)
-                window->showFullScreen();
-                qDebug() << "Mode plein écran activé";
+                // (showFullScreen déjà appelé via objectCreated ci-dessus)
 #endif
 #ifdef Q_OS_ANDROID
                 // Empêcher la mise en veille de l'écran pendant l'utilisation de l'app

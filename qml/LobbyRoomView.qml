@@ -63,7 +63,7 @@ Rectangle {
             // Sélecteur de mode (top-right)
             Item {
                 anchors.right: parent.right
-                anchors.rightMargin: 20 * root.minRatio
+                anchors.rightMargin: 60 * root.minRatio
                 anchors.verticalCenter: parent.verticalCenter
                 width: modeSelectorRow.width
                 height: modeSelectorRow.height
@@ -75,8 +75,8 @@ Rectangle {
                     Image {
                         id: leftModeArrow
                         source: "qrc:/resources/left-arrowMainMenu-svgrepo-com.svg"
-                        width: 36 * root.minRatio
-                        height: 36 * root.minRatio
+                        width: 60 * root.minRatio
+                        height: 60 * root.minRatio
                         anchors.verticalCenter: parent.verticalCenter
                         visible: root.isHost
                         opacity: networkManager.lobbyGameMode === "coinche" ? 0.3 : 1.0
@@ -94,14 +94,14 @@ Rectangle {
                     }
 
                     Item {
-                        width: 130 * root.minRatio
-                        height: 50 * root.minRatio
+                        width: 280 * root.minRatio
+                        height: 60 * root.minRatio
                         anchors.verticalCenter: parent.verticalCenter
 
                         Text {
                             anchors.centerIn: parent
                             text: networkManager.lobbyGameMode === "belote" ? "Belote" : "Coinche"
-                            font.pixelSize: 32 * root.minRatio
+                            font.pixelSize: 50 * root.minRatio
                             font.bold: true
                             color: "#FFD700"
                         }
@@ -110,8 +110,8 @@ Rectangle {
                     Image {
                         id: rightModeArrow
                         source: "qrc:/resources/right-arrowMainMenu-svgrepo-com.svg"
-                        width: 36 * root.minRatio
-                        height: 36 * root.minRatio
+                        width: 60 * root.minRatio
+                        height: 60 * root.minRatio
                         anchors.verticalCenter: parent.verticalCenter
                         visible: root.isHost
                         opacity: networkManager.lobbyGameMode === "belote" ? 0.3 : 1.0

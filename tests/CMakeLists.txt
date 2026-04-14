@@ -325,3 +325,32 @@ target_link_libraries(test_belote_mode PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(test_belote_mode DISCOVERY_MODE PRE_TEST)
+
+# ========================================
+# Tests d'intégration lobby privé (2 et 4 joueurs)
+# ========================================
+add_executable(test_private_lobby_integration
+    private_lobby_integration_test.cpp
+    ../server/GameServer.cpp
+    ../server/DatabaseManager.cpp
+    ../server/SmtpClient.cpp
+    ../server/StatsReporter.cpp
+)
+
+target_include_directories(test_private_lobby_integration PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_private_lobby_integration PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Network
+    Qt6::WebSockets
+    Qt6::Sql
+    Qt6::Test
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_private_lobby_integration DISCOVERY_MODE PRE_TEST)

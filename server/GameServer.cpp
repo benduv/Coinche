@@ -1762,11 +1762,22 @@ void GameServer::tryCreateGame() {
             }
 
             // Placer les autres joueurs aux positions 1 et 3
+            // (peuvent eux-mêmes être une 2e paire de partenaires → ils jouent bien ensemble)
             int otherIndex = 1;
             for (const QString &playerId : queuedPlayers) {
                 if (playerId != partner1 && playerId != partner2) {
                     connectionIds[otherIndex] = playerId;
-                    otherIndex = 3;  // Passer à la position 3 pour le deuxième joueur
+                    // Nettoyer leurs marqueurs de partenariat aussi
+                    PlayerConnection* conn = m_connections.value(playerId);
+                    if (conn) {
+                        if (!conn->lobbyCode.isEmpty() && m_privateLobbies.contains(conn->lobbyCode)) {
+                            delete m_privateLobbies[conn->lobbyCode];
+                            m_privateLobbies.remove(conn->lobbyCode);
+                        }
+                        conn->lobbyPartnerId = "";
+                        conn->lobbyCode = "";
+                    }
+                    otherIndex = 3;
                 }
             }
 
@@ -2799,6 +2810,7 @@ void GameServer::createGameWithBots() {
         }
 
     // Si une paire de partenaires est présente, les placer aux positions 0 et 2
+    // Les autres humains (non-partenaires) occupent les positions 1 et 3 avant les bots
     QString partner1, partner2;
     for (const QString &id : connectionIds) {
         PlayerConnection* conn = m_connections.value(id);
@@ -2809,11 +2821,19 @@ void GameServer::createGameWithBots() {
         }
     }
     if (!partner1.isEmpty()) {
+        // Collecter les autres humains (ni partner1 ni partner2)
+        QList<QString> others;
+        for (const QString &id : connectionIds) {
+            if (id != partner1 && id != partner2)
+                others.append(id);
+        }
+
         QList<QString> ordered;
-        ordered.append(partner1);  // position 0
-        ordered.append("");        // position 1 → bot
-        ordered.append(partner2);  // position 2 (partenaire)
-        ordered.append("");        // position 3 → bot
+        ordered.append(partner1);                                   // position 0
+        ordered.append(others.size() > 0 ? others[0] : "");        // position 1 → humain ou bot
+        ordered.append(partner2);                                   // position 2 (partenaire)
+        ordered.append(others.size() > 1 ? others[1] : "");        // position 3 → humain ou bot
+
         // Réinitialiser les marqueurs de partenariat et supprimer le lobby
         QString lobbyCode = m_connections[partner1]->lobbyCode;
         m_connections[partner1]->lobbyPartnerId = "";
@@ -2825,8 +2845,9 @@ void GameServer::createGameWithBots() {
             m_privateLobbies.remove(lobbyCode);
         }
         connectionIds = ordered;
-        humanPlayers = 2;  // toujours 2 humains mais aux positions 0 et 2
-        qDebug() << "createGameWithBots - partenaires aux positions 0 et 2";
+        humanPlayers = 2 + others.size();
+        qDebug() << "createGameWithBots - partenaires aux positions 0 et 2,"
+                 << others.size() << "autre(s) humain(s) aux positions 1/3";
     }
 
     // Créer la room
