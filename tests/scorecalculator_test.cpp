@@ -335,3 +335,117 @@ TEST(ScoreCalculator, Belote_CoincheReussiGraceABelote) {
     EXPECT_EQ(r.scoreTeam1, 380);
     EXPECT_EQ(r.scoreTeam2, 0);
 }
+
+// ========================================
+// CAPOT ANNONCE — chemins manquants
+// ========================================
+
+// Capot annoncé réussi par team2 (sans coinche)
+TEST(ScoreCalculator, CapotAnnonce_ReussiTeam2) {
+    auto r = calc(0, 162, 250, false, false, false, true, true);
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 500);
+}
+
+// Capot annoncé échoué par team2 (sans coinche)
+TEST(ScoreCalculator, CapotAnnonce_EchoueTeam2) {
+    auto r = calc(62, 100, 250, false, false, false, true, false);
+    EXPECT_EQ(r.scoreTeam1, 410);
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
+
+// Capot annoncé échoué + surcoinche (team1 annonce)
+// 160 + (250×4) = 1160 pour team2
+TEST(ScoreCalculator, CapotAnnonce_EchoueSurcoinche) {
+    auto r = calc(100, 62, 250, true, true, true, true, false);
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 1160);
+}
+
+// Capot annoncé échoué + coinche (team2 annonce)
+// 160 + (250×2) = 660 pour team1
+TEST(ScoreCalculator, CapotAnnonce_EchoueCoinche_Team2) {
+    auto r = calc(62, 100, 250, false, true, false, true, false);
+    EXPECT_EQ(r.scoreTeam1, 660);
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
+
+// ========================================
+// GENERALE — chemins manquants
+// ========================================
+
+// Générale réussie par team2 (sans coinche)
+TEST(ScoreCalculator, Generale_ReussieTeam2) {
+    auto r = calc(0, 162, 500, false, false, false, false, false, true, true);
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 1000);
+}
+
+// Générale échouée + coinche (team1 annonce)
+// 160 + (500×2) = 1160 pour team2
+TEST(ScoreCalculator, Generale_EchoueeCoinche) {
+    auto r = calc(20, 142, 500, true, true, false, false, false, true, false);
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 1160);
+}
+
+// ========================================
+// CAPOT NON ANNONCE + SURCOINCHE
+// ========================================
+
+// Capot non annoncé + surcoinche: 250 + (90×4) = 610
+TEST(ScoreCalculator, CapotNonAnnonce_Surcoinche) {
+    auto r = calc(162, 0, 90, true, true, true, false, false, false, false, true, false);
+    EXPECT_EQ(r.scoreTeam1, 610);
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
+
+// Capot non annoncé + surcoinche (team2 annonce): 250 + (80×4) = 570
+TEST(ScoreCalculator, CapotNonAnnonce_Surcoinche_Team2) {
+    auto r = calc(0, 162, 80, false, true, true, false, false, false, false, false, true);
+    EXPECT_EQ(r.scoreTeam1, 0);
+    EXPECT_EQ(r.scoreTeam2, 570);
+}
+
+// ========================================
+// SURCOINCHE + BELOTE
+// ========================================
+
+// Surcoinche réussi + belote annonceur: 160 + (100×4) + 20 = 580
+TEST(ScoreCalculator, Belote_SurcoinchReussi_Annonceur) {
+    auto r = calc(130, 32, 100, true, true, true, false, false, false, false, false, false, 20, 0);
+    EXPECT_EQ(r.scoreTeam1, 580);
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
+
+// Surcoinche échoué + belote annonceur: Team1=20, Team2=560
+TEST(ScoreCalculator, Belote_SurcoinchEchoue_Annonceur) {
+    auto r = calc(60, 102, 100, true, true, true, false, false, false, false, false, false, 20, 0);
+    EXPECT_EQ(r.scoreTeam1, 20);
+    EXPECT_EQ(r.scoreTeam2, 560);
+}
+
+// Coinche réussi + belote défenseur: 160 + (100×2) = 360, Team2=20
+TEST(ScoreCalculator, Belote_CoincheReussi_Defenseur) {
+    auto r = calc(130, 32, 100, true, true, false, false, false, false, false, false, false, 0, 20);
+    EXPECT_EQ(r.scoreTeam1, 360);
+    EXPECT_EQ(r.scoreTeam2, 20);
+}
+
+// ========================================
+// SEUIL EXACT DU CONTRAT
+// ========================================
+
+// Contrat normal: points == valeurContrat → réussi (condition >=)
+TEST(ScoreCalculator, ContratNormal_SeuilExact) {
+    auto r = calc(100, 62, 100, true);
+    EXPECT_EQ(r.scoreTeam1, 200); // 100 + 100
+    EXPECT_EQ(r.scoreTeam2, 62);
+}
+
+// Coinche: points == valeurContrat → réussi
+TEST(ScoreCalculator, Coinche_SeuilExact) {
+    auto r = calc(100, 62, 100, true, true);
+    EXPECT_EQ(r.scoreTeam1, 360); // 160 + (100×2)
+    EXPECT_EQ(r.scoreTeam2, 0);
+}

@@ -218,7 +218,7 @@ Rectangle {
                 property string verificationEmail: ""
                 property int resendCooldown: 0
 
-                // Bouton retour en haut à gauche
+                // Bouton retour en haut à gauche (masqué sur l'étape de vérification email)
                 Rectangle {
                     anchors.top: parent.top
                     anchors.left: parent.left
@@ -227,6 +227,7 @@ Rectangle {
                     height: 100 * loginRoot.minRatio
                     color: "transparent"
                     z: 100
+                    visible: !registerScreenRec.showVerificationStep
 
                     Rectangle {
                         anchors.centerIn: parent
@@ -248,11 +249,7 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             if (AudioSettings.effectsEnabled) backSound.play()
-                            if (registerScreenRec.showVerificationStep) {
-                                registerScreenRec.showVerificationStep = false
-                            } else {
-                                loginStack.pop()
-                            }
+                            loginStack.pop()
                         }
                         onEntered: {
                             parent.scale = 1.1

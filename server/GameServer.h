@@ -212,7 +212,7 @@ class GameServer : public QObject {
 
 public:
     // Version minimale du client acceptée par le serveur
-    static constexpr int MIN_CLIENT_VERSION = 7;
+    static constexpr int MIN_CLIENT_VERSION = 8;
 
     // Constantes de timing (doivent correspondre à GameModel.h côté client)
     static constexpr int GOOD_GAME_DELAY_MS = 5000;        // Délai "Bonne partie !" avant la première distribution

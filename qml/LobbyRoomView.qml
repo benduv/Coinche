@@ -32,6 +32,7 @@ Rectangle {
 
     property string lobbyCode: ""
     property bool isHost: false
+    property string accountType: ""
     property int draggedIndex: -1
 
     // Ratios pour le responsive
@@ -139,8 +140,9 @@ Rectangle {
                 width: 120 * root.minRatio
                 height: 120 * root.minRatio
                 radius: 15 * root.minRatio
-                color: "#1976D2"
+                color: root.accountType !== "guest" ? "#1976D2" : "#555555"
                 visible: root.isHost
+                opacity: root.accountType !== "guest" ? 1.0 : 0.4
                 z: 10
 
                 Image {
@@ -155,8 +157,13 @@ Rectangle {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        networkManager.getFriendsList()
-                        inviteFriendsPopup.visible = true
+                        if (root.accountType === "guest") {
+                            lobbyGuestMessageRect.visible = true
+                            lobbyGuestMessageTimer.start()
+                        } else {
+                            networkManager.getFriendsList()
+                            inviteFriendsPopup.visible = true
+                        }
                     }
                 }
             }
@@ -706,6 +713,48 @@ Rectangle {
                 }
 
                 onClicked: errorPopup.close()
+            }
+        }
+    }
+
+    // Message invité (compte requis pour les amis)
+    Rectangle {
+        id: lobbyGuestMessageRect
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 80 * root.minRatio
+        width: root.width * 0.8
+        height: 100 * root.minRatio
+        radius: 10 * root.minRatio
+        color: "#2a2a2a"
+        border.color: "#FFD700"
+        border.width: 2 * root.minRatio
+        visible: false
+        z: 200
+
+        Text {
+            anchors.centerIn: parent
+            text: "Vous devez avoir un compte pour inviter des amis"
+            font.pixelSize: 36 * root.minRatio
+            color: "#FFD700"
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
+            width: parent.width - 20 * root.minRatio
+        }
+
+        NumberAnimation on opacity {
+            running: lobbyGuestMessageRect.visible
+            from: 0
+            to: 1
+            duration: 300
+        }
+
+        Timer {
+            id: lobbyGuestMessageTimer
+            interval: 5000
+            repeat: false
+            onTriggered: {
+                lobbyGuestMessageRect.visible = false
             }
         }
     }

@@ -188,11 +188,11 @@ ApplicationWindow {
         }
 
         function onLobbyCreated(lobbyCode) {
-            stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": true })
+            stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": true, "accountType": mainWindow.accountType })
         }
 
         function onLobbyJoined(lobbyCode) {
-            stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": false })
+            stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": false, "accountType": mainWindow.accountType })
         }
 
         function onLobbyRestored(code, isHost) {
@@ -200,7 +200,7 @@ ApplicationWindow {
             // D'abord, dépiler jusqu'au menu principal (retirer MatchMakingView et LobbyRoomView)
             stackView.pop(null)
             // Puis pousser le LobbyRoomView avec le bon code
-            stackView.push(lobbyRoomViewComponent, { "lobbyCode": code, "isHost": isHost })
+            stackView.push(lobbyRoomViewComponent, { "lobbyCode": code, "isHost": isHost, "accountType": mainWindow.accountType })
         }
 
         function onVersionError(message) {
@@ -1051,7 +1051,7 @@ ApplicationWindow {
                 }
 
                 // Bouton Amis en haut à gauche
-                AppButton {
+                Item {
                     anchors.left: parent.left
                     anchors.top: parent.top
                     anchors.leftMargin: 50 * mainWindow.minRatio
@@ -1060,38 +1060,58 @@ ApplicationWindow {
                     height: 120 * mainWindow.minRatio
                     z: 101
 
-                    background: Rectangle {
-                        id: btnBgFriends
-                        property bool isDown: parent.down
-                        radius: 10 * mainWindow.minRatio
-                        border.color: "#FFD700"
-                        border.width: 3 * mainWindow.minRatio
-                        clip: true
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: btnBgFriends.isDown ? "#0088cc" : "#0099dd" }
-                            GradientStop { position: 1.0; color: btnBgFriends.isDown ? "#004477" : "#0077bb" }
-                        }
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: parent.height * 0.42
-                            color: "white"
-                            opacity: 0.13
-                            radius: 10 * mainWindow.minRatio
-                        }
-                    }
-
-                    contentItem: Image {
-                        source: "qrc:/resources/friend-svgrepo-com.svg"
-                        fillMode: Image.PreserveAspectFit
+                    AppButton {
+                        id: friendsButton
                         anchors.fill: parent
-                        anchors.margins: 15 * mainWindow.minRatio
-                        smooth: true
+                        enabled: mainWindow.accountType !== "guest" && networkManager.connected
+                        opacity: (mainWindow.accountType !== "guest" && networkManager.connected) ? 1.0 : 0.4
+
+                        background: Rectangle {
+                            id: btnBgFriends
+                            property bool isEnabled: parent.enabled
+                            property bool isDown: parent.down
+                            radius: 10 * mainWindow.minRatio
+                            border.color: (mainWindow.accountType !== "guest" && networkManager.connected) ? "#FFD700" : "#888888"
+                            border.width: 3 * mainWindow.minRatio
+                            clip: true
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: btnBgFriends.isEnabled ? (btnBgFriends.isDown ? "#0088cc" : "#0099dd") : "#666666" }
+                                GradientStop { position: 1.0; color: btnBgFriends.isEnabled ? (btnBgFriends.isDown ? "#004477" : "#0077bb") : "#444444" }
+                            }
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: parent.height * 0.42
+                                color: "white"
+                                opacity: 0.13
+                                radius: 10 * mainWindow.minRatio
+                            }
+                        }
+
+                        contentItem: Image {
+                            source: "qrc:/resources/friend-svgrepo-com.svg"
+                            fillMode: Image.PreserveAspectFit
+                            anchors.fill: parent
+                            anchors.margins: 15 * mainWindow.minRatio
+                            smooth: true
+                        }
+
+                        onClicked: {
+                            stackView.push(friendsViewComponent)
+                        }
                     }
 
-                    onClicked: {
-                        stackView.push(friendsViewComponent)
+                    // MouseArea pour capturer les clics quand le bouton est désactivé (invité)
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: mainWindow.accountType === "guest"
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            guestMessageRect.messageText = "Vous devez avoir un compte pour voir vos amis"
+                            guestMessageRect.visible = true
+                            guestMessageTimer.start()
+                        }
                     }
                 }
 
@@ -1153,6 +1173,7 @@ ApplicationWindow {
                         enabled: mainWindow.accountType === "guest"
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
+                            guestMessageRect.messageText = "Vous devez avoir un compte pour voir vos statistiques"
                             guestMessageRect.visible = true
                             guestMessageTimer.start()
                         }
@@ -1174,9 +1195,11 @@ ApplicationWindow {
                     visible: false
                     z: 200
 
+                    property string messageText: ""
+
                     Text {
                         anchors.centerIn: parent
-                        text: "Vous devez avoir un compte pour voir vos statistiques"
+                        text: guestMessageRect.messageText
                         font.pixelSize: 36 * mainWindow.minRatio
                         color: "#FFD700"
                         wrapMode: Text.WordWrap

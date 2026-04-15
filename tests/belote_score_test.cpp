@@ -166,3 +166,48 @@ TEST(BeloteScore, Belote_ContreCapot_DefenseurAvecBelote) {
     EXPECT_EQ(r.scoreTeam1, 0);
     EXPECT_EQ(r.scoreTeam2, 270);
 }
+
+// Capot par le preneur + belote du défenseur
+// Team1 prend et fait capot (250), Team2 (défenseur) a la belote → T1=250, T2=20
+TEST(BeloteScore, Belote_Capot_PreneurCapot_DefenseurBelote) {
+    auto r = calcBelote(162, 0, true, true, false, 0, 20);
+    EXPECT_EQ(r.scoreTeam1, 250);
+    EXPECT_EQ(r.scoreTeam2, 20);
+}
+
+// Contre-capot + belote du preneur
+// Team1 prend, Team2 (défenseur) fait contre-capot (250), Team1 a la belote → T1=20, T2=250
+TEST(BeloteScore, Belote_ContreCapot_PreneurABelote) {
+    auto r = calcBelote(0, 162, true, false, true, 20, 0);
+    EXPECT_EQ(r.scoreTeam1, 20);
+    EXPECT_EQ(r.scoreTeam2, 250);
+}
+
+// ========================================
+// SEUIL EXACT 82 — team2 preneur
+// ========================================
+
+// Team2 prend et fait exactement 82 pts → réussi
+TEST(BeloteScore, ContratReussiJuste82_Team2) {
+    auto r = calcBelote(80, 82, false);
+    EXPECT_EQ(r.scoreTeam1, 80);
+    EXPECT_EQ(r.scoreTeam2, 82);
+}
+
+// Team2 prend et fait exactement 81 pts → chute
+TEST(BeloteScore, ContratEchoueJuste81_Team2) {
+    auto r = calcBelote(81, 81, false);
+    EXPECT_EQ(r.scoreTeam1, 162);
+    EXPECT_EQ(r.scoreTeam2, 0);
+}
+
+// ========================================
+// BELOTE GRACE A LA BELOTE — team2 preneur
+// ========================================
+
+// Team2 prend 62 pts + belote 20 = 82 > 81 → réussi
+TEST(BeloteScore, Belote_ContratReussiGraceABelote_Team2) {
+    auto r = calcBelote(100, 62, false, false, false, 0, 20);
+    EXPECT_EQ(r.scoreTeam1, 100);
+    EXPECT_EQ(r.scoreTeam2, 62 + 20); // 82
+}

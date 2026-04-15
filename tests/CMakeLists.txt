@@ -354,3 +354,84 @@ target_link_libraries(test_private_lobby_integration PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(test_private_lobby_integration DISCOVERY_MODE PRE_TEST)
+
+# ========================================
+# Tests de rejet serveur
+# ========================================
+add_executable(test_server_rejection
+    server_rejection_test.cpp
+    ../server/GameServer.cpp
+    ../server/DatabaseManager.cpp
+    ../server/SmtpClient.cpp
+    ../server/StatsReporter.cpp
+)
+
+target_include_directories(test_server_rejection PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_server_rejection PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Network
+    Qt6::WebSockets
+    Qt6::Sql
+    Qt6::Test
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_server_rejection DISCOVERY_MODE PRE_TEST)
+
+# ========================================
+# Tests unitaires authentification (DatabaseManager)
+# ========================================
+add_executable(test_auth
+    auth_test.cpp
+    ../server/DatabaseManager.cpp
+)
+
+target_include_directories(test_auth PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_auth PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Sql
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_auth DISCOVERY_MODE PRE_TEST)
+
+# ========================================
+# Tests d'intégration enchères Belote
+# ========================================
+add_executable(test_belote_bidding_integration
+    belote_bidding_integration_test.cpp
+    ../server/GameServer.cpp
+    ../server/DatabaseManager.cpp
+    ../server/SmtpClient.cpp
+    ../server/StatsReporter.cpp
+)
+
+target_include_directories(test_belote_bidding_integration PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/server
+)
+
+target_link_libraries(test_belote_bidding_integration PRIVATE
+    gtest_main
+    coinche_common
+    Qt6::Core
+    Qt6::Network
+    Qt6::WebSockets
+    Qt6::Sql
+    Qt6::Test
+)
+
+include(GoogleTest)
+gtest_discover_tests(test_belote_bidding_integration DISCOVERY_MODE PRE_TEST)

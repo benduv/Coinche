@@ -2,7 +2,7 @@
 
 # Script pour compiler et exécuter les tests Coinche
 # Usage: ./run_tests.sh [test_name]
-#   test_name: gameserver, capot, coinche, databasemanager, coinche_tests (carte/deck/player), all (default: all)
+#   test_name: gameserver, capot, coinche, databasemanager, coinche_tests (carte/deck/player), private_lobby_integration, all (default: all)
 
 # Couleurs pour l'affichage
 GREEN='\033[0;32m'
@@ -31,7 +31,7 @@ cd "$BUILD_DIR"
 # Compiler
 echo -e "${BLUE}Compilation...${NC}"
 if [ "$TEST_TYPE" == "all" ]; then
-    cmake --build . --target coinche_tests test_gameserver test_capot_generale test_coinche test_scorecalculator test_databasemanager test_networkmanager test_networkmanager_integration test_gameserver_integration
+    cmake --build . --target coinche_tests test_gameserver test_capot_generale test_coinche test_belote_mode test_scorecalculator test_belote_score test_databasemanager test_networkmanager test_networkmanager_integration test_gameserver_integration test_private_lobby_integration test_friends test_friends_integration test_server_rejection test_auth test_belote_bidding_integration
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erreur de compilation${NC}"
         echo ""
@@ -91,9 +91,17 @@ case $TEST_TYPE in
         echo -e "${BLUE}Exécution des tests COINCHE/SURCOINCHE...${NC}"
         ./test_coinche
         ;;
+    belote_mode)
+        echo -e "${BLUE}Exécution des tests Modes de Belote...${NC}"
+        ./test_belote_mode
+        ;;
     scorecalculator)
         echo -e "${BLUE}Exécution des tests ScoreCalculator...${NC}"
         ./test_scorecalculator
+        ;;
+    belote_score)
+        echo -e "${BLUE}Exécution des tests BeloteScore...${NC}"
+        ./test_belote_score
         ;;
     databasemanager)
         echo -e "${BLUE}Exécution des tests DatabaseManager...${NC}"
@@ -115,6 +123,30 @@ case $TEST_TYPE in
         echo -e "${BLUE}Exécution des tests Carte/Deck/Player...${NC}"
         ./coinche_tests
         ;;
+    private_lobby_integration)
+        echo -e "${BLUE}Exécution des tests d'intégration Lobby Privé...${NC}"
+        ./test_private_lobby_integration
+        ;;
+    friends)
+        echo -e "${BLUE}Exécution des tests Friend...${NC}"
+        ./test_friends
+        ;;
+    friends_integration)
+        echo -e "${BLUE}Exécution des tests d'intégration Friend...${NC}"
+        ./test_friends_integration
+        ;;
+    server_rejection)
+        echo -e "${BLUE}Exécution des tests de rejet serveur...${NC}"
+        ./test_server_rejection
+        ;;
+    auth)
+        echo -e "${BLUE}Exécution des tests d'authentification...${NC}"
+        ./test_auth
+        ;;
+    belote_bidding_integration)
+        echo -e "${BLUE}Exécution des tests d'intégration enchères Belote...${NC}"
+        ./test_belote_bidding_integration
+        ;;
     all)
         echo -e "${BLUE}Exécution de TOUS les tests...${NC}"
         echo ""
@@ -123,15 +155,22 @@ case $TEST_TYPE in
         run_test "test_gameserver" "Tests GameServer"
         run_test "test_capot_generale" "Tests CAPOT/GENERALE"
         run_test "test_coinche" "Tests COINCHE/SURCOINCHE"
+        run_test "test_belote_mode" "Tests Modes de Belote"
         run_test "test_scorecalculator" "Tests ScoreCalculator"
+        run_test "test_belote_score" "Tests BeloteScore"
         run_test "test_databasemanager" "Tests DatabaseManager"
         run_test "test_networkmanager" "Tests NetworkManager"
         run_test "test_networkmanager_integration" "Tests Intégration NetworkManager"
         run_test "test_gameserver_integration" "Tests Intégration GameServer"
+        run_test "test_friends" "Tests Friend"
+        run_test "test_friends_integration" "Tests Intégration Friend"
+        run_test "test_private_lobby_integration" "Tests Intégration Lobby Privé"
+        run_test "test_server_rejection" "Tests Rejet Serveur"
+        run_test "test_auth" "Tests Authentification"
+        run_test "test_belote_bidding_integration" "Tests Intégration Enchères Belote"
         ;;
     *)
         echo -e "${RED}Type de test invalide: $TEST_TYPE${NC}"
-        echo "Usage: ./run_tests.sh [gameserver|capot|coinche|scorecalculator|databasemanager|networkmanager|networkmanager_integration|gameserver_integration|coinche_tests|all]"
         echo ""
         echo "Appuyez sur Entrée pour fermer..."
         read
