@@ -2502,6 +2502,29 @@ void GameServer::handleCreatePrivateLobby(QWebSocket *socket) {
     PlayerConnection* conn = m_connections[connectionId];
     if (!conn) return;
 
+    // Retirer l'hôte de tout lobby existant (nettoyage défensif)
+    for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ) {
+        PrivateLobby* lobby = it.value();
+        if (lobby && lobby->playerNames.contains(conn->playerName)) {
+            int idx = lobby->playerNames.indexOf(conn->playerName);
+            lobby->playerNames.removeAt(idx);
+            lobby->playerAvatars.removeAt(idx);
+            lobby->readyStatus.removeAt(idx);
+            if (lobby->playerNames.isEmpty()) {
+                qDebug() << "Ancien lobby" << it.key() << "supprimé (vide) lors de la création d'un nouveau lobby";
+                delete lobby;
+                it = m_privateLobbies.erase(it);
+            } else {
+                if (lobby->hostPlayerName == conn->playerName)
+                    lobby->hostPlayerName = lobby->playerNames.first();
+                sendLobbyUpdate(lobby->code);
+                ++it;
+            }
+        } else {
+            ++it;
+        }
+    }
+
     // Générer un code unique
     QString code = generateLobbyCode();
 

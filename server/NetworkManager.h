@@ -1191,12 +1191,16 @@ private slots:
         }
         else if (type == "lobbyCreated") {
             QString code = obj["code"].toString();
-            // qDebug() << "NetworkManager - Lobby créé avec le code:" << code;
+            // Vider les données du lobby précédent pour éviter l'affichage d'anciennes données
+            m_lobbyPlayers.clear();
+            emit lobbyPlayersChanged();
             emit lobbyCreated(code);
         }
         else if (type == "lobbyJoined") {
             QString code = obj["code"].toString();
-            // qDebug() << "NetworkManager - Lobby rejoint:" << code;
+            // Vider les données du lobby précédent pour éviter l'affichage d'anciennes données
+            m_lobbyPlayers.clear();
+            emit lobbyPlayersChanged();
             emit lobbyJoined(code);
         }
         else if (type == "lobbyUpdate") {
