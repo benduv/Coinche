@@ -2588,6 +2588,30 @@ void GameServer::handleJoinPrivateLobby(QWebSocket *socket, const QJsonObject &o
         return;
     }
 
+    // Retirer le joueur de tout autre lobby existant (ex: il était hôte d'un autre lobby)
+    for (auto it = m_privateLobbies.begin(); it != m_privateLobbies.end(); ) {
+        if (it.key() == code) { ++it; continue; }  // Ne pas toucher le lobby cible
+        PrivateLobby* other = it.value();
+        if (other && other->playerNames.contains(conn->playerName)) {
+            int idx = other->playerNames.indexOf(conn->playerName);
+            other->playerNames.removeAt(idx);
+            other->playerAvatars.removeAt(idx);
+            other->readyStatus.removeAt(idx);
+            if (other->playerNames.isEmpty()) {
+                qDebug() << "Lobby" << it.key() << "supprimé (vide) car son hôte a rejoint un autre lobby";
+                delete other;
+                it = m_privateLobbies.erase(it);
+            } else {
+                if (other->hostPlayerName == conn->playerName)
+                    other->hostPlayerName = other->playerNames.first();
+                sendLobbyUpdate(other->code);
+                ++it;
+            }
+        } else {
+            ++it;
+        }
+    }
+
     // Ajouter le joueur au lobby
     lobby->playerNames.append(conn->playerName);
     lobby->playerAvatars.append(conn->avatar);
