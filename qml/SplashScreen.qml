@@ -359,6 +359,7 @@ Rectangle {
         color: "#006600"
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.margins: 20 * splashRoot.minRatio
+        anchors.rightMargin: 30 * splashRoot.minRatio
+        anchors.bottomMargin: 20 * splashRoot.minRatio
     }
 }

@@ -188,11 +188,11 @@ ApplicationWindow {
         }
 
         function onLobbyCreated(lobbyCode) {
-            stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": true, "accountType": mainWindow.accountType })
+            stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "accountType": mainWindow.accountType })
         }
 
         function onLobbyJoined(lobbyCode) {
-            stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "isHost": false, "accountType": mainWindow.accountType })
+            stackView.push(lobbyRoomViewComponent, { "lobbyCode": lobbyCode, "accountType": mainWindow.accountType })
         }
 
         function onLobbyRestored(code, isHost) {
@@ -200,7 +200,7 @@ ApplicationWindow {
             // D'abord, dépiler jusqu'au menu principal (retirer MatchMakingView et LobbyRoomView)
             stackView.pop(null)
             // Puis pousser le LobbyRoomView avec le bon code
-            stackView.push(lobbyRoomViewComponent, { "lobbyCode": code, "isHost": isHost, "accountType": mainWindow.accountType })
+            stackView.push(lobbyRoomViewComponent, { "lobbyCode": code, "accountType": mainWindow.accountType })
         }
 
         function onVersionError(message) {
@@ -225,32 +225,32 @@ ApplicationWindow {
 
         background: Rectangle {
             color: "#2a2a2a"
-            radius: 15
+            radius: 15 * minRatio
             border.color: "#ff6666"
             border.width: 2
         }
 
         header: Item {
-            height: 60
+            height: parent.height * 0.2
             Text {
-                text: "⚠️ Mise à jour requise"
+                text: "Mise à jour requise"
                 color: "#ff6666"
-                font.pixelSize: 22
+                font.pixelSize: 54 * minRatio
                 font.bold: true
                 anchors.centerIn: parent
             }
         }
 
         contentItem: Column {
-            spacing: 20
-            padding: 10
+            spacing: 40 * minRatio
+            padding: 10 * minRatio
 
             Text {
                 text: versionErrorDialog.errorMessage
                 color: "white"
-                font.pixelSize: 16
+                font.pixelSize: 40 * minRatio
                 wrapMode: Text.WordWrap
-                width: parent.width - 20
+                width: parent.width - 26 * minRatio
                 horizontalAlignment: Text.AlignHCenter
             }
 
@@ -263,15 +263,15 @@ ApplicationWindow {
 
                 background: Rectangle {
                     color: parent.down ? "#1565C0" : (parent.hovered ? "#2196F3" : "#1976D2")
-                    radius: 8
-                    implicitWidth: 200
-                    implicitHeight: 50
+                    radius: 14 * minRatio
+                    implicitWidth: 260 * minRatio
+                    implicitHeight: 120 * minRatio
                 }
 
                 contentItem: Text {
                     text: parent.text
                     color: "white"
-                    font.pixelSize: 18
+                    font.pixelSize: 46 * minRatio
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter

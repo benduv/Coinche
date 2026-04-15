@@ -31,7 +31,14 @@ Rectangle {
     }
 
     property string lobbyCode: ""
-    property bool isHost: false
+    property bool isHost: {
+        for (var i = 0; i < networkManager.lobbyPlayers.length; i++) {
+            var p = networkManager.lobbyPlayers[i]
+            if (p.name === networkManager.playerPseudo && p.isHost)
+                return true
+        }
+        return false
+    }
     property string accountType: ""
     property int draggedIndex: -1
 
