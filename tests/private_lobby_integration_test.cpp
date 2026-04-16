@@ -926,6 +926,193 @@ TEST_F(PrivateLobbyIntegrationTest, StartLobby_2Players_ModeMismatch_CoincheLobb
 }
 
 // ========================================
+// Nettoyage lobby lors de la création (fix: handleCreatePrivateLobby)
+// ========================================
+
+TEST_F(PrivateLobbyIntegrationTest, CreateLobby_WhileAlreadyInLobbyAsHost_RemovedFromOldLobby) {
+    // Host1 crée lobby A, Guest rejoint.
+    // Host1 crée un second lobby B → doit être retiré de A.
+    MockLobbyClient* host = createRegisteredClient("CleanHost1");
+    MockLobbyClient* guest = createRegisteredClient("CleanGuest1");
+
+    host->sendCreateLobby();
+    ASSERT_TRUE(waitForSignal(host, SIGNAL(lobbyCreated(QString)), 2000));
+    QString oldCode = host->lobbyCode();
+
+    guest->sendJoinLobby(oldCode);
+    ASSERT_TRUE(waitForSignal(guest, SIGNAL(lobbyJoined(QString)), 2000));
+    QTest::qWait(100);
+    QCoreApplication::processEvents();
+    ASSERT_EQ(guest->lobbyPlayerCount(), 2);
+
+    // Host crée un second lobby
+    QSignalSpy guestUpdateSpy(guest, SIGNAL(lobbyUpdated(QJsonObject)));
+    host->sendCreateLobby();
+    ASSERT_TRUE(waitForSignal(host, SIGNAL(lobbyCreated(QString)), 2000));
+
+    // Le guest doit recevoir un lobbyUpdate montrant qu'il est seul dans l'ancien lobby
+    ASSERT_TRUE(waitForSignal(guest, SIGNAL(lobbyUpdated(QJsonObject)), 2000));
+    QTest::qWait(100);
+    QCoreApplication::processEvents();
+
+    EXPECT_EQ(guest->lobbyPlayerCount(), 1)
+        << "Le guest doit être seul dans l'ancien lobby après que l'hôte l'ait quitté";
+    EXPECT_TRUE(guest->isHost())
+        << "Le guest doit être devenu hôte de l'ancien lobby";
+
+    // Le nouveau lobby de host ne contient que lui
+    QTest::qWait(200);
+    QCoreApplication::processEvents();
+    EXPECT_NE(host->lobbyCode(), oldCode) << "Le nouveau lobby doit avoir un code différent";
+    EXPECT_EQ(host->lobbyPlayerCount(), 1) << "Le nouveau lobby ne contient que l'hôte";
+}
+
+TEST_F(PrivateLobbyIntegrationTest, CreateLobby_WhileAloneInLobby_OldLobbyDeleted) {
+    // Host seul dans son lobby. Il recrée un nouveau lobby → l'ancien est supprimé.
+    // On vérifie en tentant de rejoindre l'ancien code (doit retourner lobbyError).
+    MockLobbyClient* host = createRegisteredClient("CleanHost2");
+    MockLobbyClient* probe = createRegisteredClient("CleanProbe2");
+
+    host->sendCreateLobby();
+    ASSERT_TRUE(waitForSignal(host, SIGNAL(lobbyCreated(QString)), 2000));
+    QString oldCode = host->lobbyCode();
+
+    host->sendCreateLobby();
+    ASSERT_TRUE(waitForSignal(host, SIGNAL(lobbyCreated(QString)), 2000));
+    QTest::qWait(200);
+    QCoreApplication::processEvents();
+
+    // L'ancien lobby ne doit plus exister
+    QSignalSpy errorSpy(probe, SIGNAL(lobbyError(QString)));
+    probe->sendJoinLobby(oldCode);
+    ASSERT_TRUE(waitForSignal(probe, SIGNAL(lobbyError(QString)), 2000));
+    EXPECT_EQ(errorSpy.count(), 1) << "L'ancien lobby doit avoir été supprimé";
+}
+
+// ========================================
+// Nettoyage lobby lors d'un join (fix: handleJoinPrivateLobby)
+// ========================================
+
+TEST_F(PrivateLobbyIntegrationTest, JoinLobby_WhenHostOfAnotherLobby_RemovedFromOldLobby) {
+    // PlayerA est hôte du lobby A (seul dedans).
+    // PlayerB est hôte du lobby B (seul dedans).
+    // PlayerA invite PlayerB → PlayerB rejoint lobby A.
+    // PlayerB doit être retiré de lobby B.
+    MockLobbyClient* playerA = createRegisteredClient("CrossA1");
+    MockLobbyClient* playerB = createRegisteredClient("CrossB1");
+
+    playerA->sendCreateLobby();
+    ASSERT_TRUE(waitForSignal(playerA, SIGNAL(lobbyCreated(QString)), 2000));
+
+    playerB->sendCreateLobby();
+    ASSERT_TRUE(waitForSignal(playerB, SIGNAL(lobbyCreated(QString)), 2000));
+    QString lobbyBCode = playerB->lobbyCode();
+
+    // PlayerB rejoint le lobby de A
+    playerB->sendJoinLobby(playerA->lobbyCode());
+    ASSERT_TRUE(waitForSignal(playerB, SIGNAL(lobbyJoined(QString)), 2000));
+    QTest::qWait(200);
+    QCoreApplication::processEvents();
+
+    EXPECT_EQ(playerA->lobbyPlayerCount(), 2) << "Lobby A doit contenir A et B";
+    EXPECT_EQ(playerB->lobbyPlayerCount(), 2) << "PlayerB voit bien 2 joueurs dans lobby A";
+
+    // L'ancien lobby B de PlayerB ne doit plus exister
+    MockLobbyClient* probe = createRegisteredClient("CrossProbe1");
+    QSignalSpy errorSpy(probe, SIGNAL(lobbyError(QString)));
+    probe->sendJoinLobby(lobbyBCode);
+    ASSERT_TRUE(waitForSignal(probe, SIGNAL(lobbyError(QString)), 2000));
+    EXPECT_EQ(errorSpy.count(), 1) << "L'ancien lobby B doit avoir été supprimé";
+}
+
+TEST_F(PrivateLobbyIntegrationTest, JoinLobby_WhenHostOfAnotherLobby_ReadyGoesToCorrectLobby) {
+    // Régression : PlayerB était hôte de lobby B, rejoint lobby A.
+    // Quand PlayerB clique "prêt", le statut doit s'appliquer dans lobby A (pas B).
+    // → PlayerA doit voir PlayerB prêt, et le nombre de joueurs reste 2.
+    MockLobbyClient* playerA = createRegisteredClient("CrossA2");
+    MockLobbyClient* playerB = createRegisteredClient("CrossB2");
+
+    playerA->sendCreateLobby();
+    ASSERT_TRUE(waitForSignal(playerA, SIGNAL(lobbyCreated(QString)), 2000));
+
+    playerB->sendCreateLobby();
+    ASSERT_TRUE(waitForSignal(playerB, SIGNAL(lobbyCreated(QString)), 2000));
+
+    playerB->sendJoinLobby(playerA->lobbyCode());
+    ASSERT_TRUE(waitForSignal(playerB, SIGNAL(lobbyJoined(QString)), 2000));
+    QTest::qWait(200);
+    QCoreApplication::processEvents();
+
+    ASSERT_EQ(playerA->lobbyPlayerCount(), 2);
+
+    // PlayerB clique "prêt"
+    QSignalSpy playerAUpdateSpy(playerA, SIGNAL(lobbyUpdated(QJsonObject)));
+    playerB->sendLobbyReady(true);
+    ASSERT_TRUE(waitForSignal(playerA, SIGNAL(lobbyUpdated(QJsonObject)), 2000));
+    QTest::qWait(100);
+    QCoreApplication::processEvents();
+
+    // PlayerA doit toujours voir 2 joueurs (pas de régression vers lobby B)
+    EXPECT_EQ(playerA->lobbyPlayerCount(), 2)
+        << "PlayerA doit toujours voir 2 joueurs après que PlayerB ait cliqué prêt";
+
+    // PlayerB doit être marqué prêt dans la vue de PlayerA
+    // On vérifie via le dernier lobbyUpdate reçu par PlayerA
+    bool playerBSeenReady = false;
+    for (const QJsonObject& msg : playerA->allMessages()) {
+        if (msg["type"].toString() != "lobbyUpdate") continue;
+        QJsonArray players = msg["players"].toArray();
+        for (const QJsonValue& v : players) {
+            QJsonObject p = v.toObject();
+            if (p["name"].toString() == "CrossB2" && p["ready"].toBool()) {
+                playerBSeenReady = true;
+            }
+        }
+    }
+    EXPECT_TRUE(playerBSeenReady)
+        << "PlayerA doit voir PlayerB comme prêt dans lobby A";
+}
+
+TEST_F(PrivateLobbyIntegrationTest, JoinLobby_WhenHostOfLobbyWithOtherPlayers_OtherPlayerBecomesHost) {
+    // PlayerB est hôte d'un lobby avec PlayerC dedans.
+    // PlayerB rejoint le lobby de PlayerA.
+    // PlayerC doit devenir hôte de l'ancien lobby.
+    MockLobbyClient* playerA = createRegisteredClient("CrossA3");
+    MockLobbyClient* playerB = createRegisteredClient("CrossB3");
+    MockLobbyClient* playerC = createRegisteredClient("CrossC3");
+
+    playerA->sendCreateLobby();
+    ASSERT_TRUE(waitForSignal(playerA, SIGNAL(lobbyCreated(QString)), 2000));
+
+    playerB->sendCreateLobby();
+    ASSERT_TRUE(waitForSignal(playerB, SIGNAL(lobbyCreated(QString)), 2000));
+
+    playerC->sendJoinLobby(playerB->lobbyCode());
+    ASSERT_TRUE(waitForSignal(playerC, SIGNAL(lobbyJoined(QString)), 2000));
+    QTest::qWait(100);
+    QCoreApplication::processEvents();
+    ASSERT_EQ(playerC->lobbyPlayerCount(), 2);
+
+    // Spy avant l'action : le lobbyUpdate de PlayerC peut arriver avant le lobbyJoined de PlayerB
+    QSignalSpy playerCUpdateSpy(playerC, SIGNAL(lobbyUpdated(QJsonObject)));
+
+    playerB->sendJoinLobby(playerA->lobbyCode());
+    ASSERT_TRUE(waitForSignal(playerB, SIGNAL(lobbyJoined(QString)), 2000));
+
+    // Attendre que PlayerC reçoive son lobbyUpdate (peut déjà être dans le spy)
+    if (playerCUpdateSpy.isEmpty()) {
+        ASSERT_TRUE(waitForSignal(playerC, SIGNAL(lobbyUpdated(QJsonObject)), 2000));
+    }
+    QTest::qWait(100);
+    QCoreApplication::processEvents();
+
+    EXPECT_EQ(playerC->lobbyPlayerCount(), 1)
+        << "L'ancien lobby ne doit plus contenir que PlayerC";
+    EXPECT_TRUE(playerC->isHost())
+        << "PlayerC doit être devenu hôte de l'ancien lobby de B";
+}
+
+// ========================================
 // Main
 // ========================================
 int main(int argc, char** argv) {

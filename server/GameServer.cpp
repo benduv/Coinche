@@ -2369,7 +2369,10 @@ void GameServer::handleForfeit(QWebSocket *socket) {
 
     // Incrémenter le compteur de parties jouées (défaite) pour ce joueur
     if (!conn->playerName.isEmpty() && !room->isTraining) {
-        m_dbManager->updateGameStats(conn->playerName, false);  // false = défaite
+        if (room->isBeloteMode)
+            m_dbManager->updateBeloteGameStats(conn->playerName, false, false);
+        else
+            m_dbManager->updateGameStats(conn->playerName, false);
         qDebug() << "Stats mises a jour pour" << conn->playerName << "- Defaite enregistree";
     }
 
@@ -2487,7 +2490,10 @@ void GameServer::handlePlayerDisconnect(const QString &connectionId) {
 
     // Incrémenter le compteur de parties jouées (défaite) pour ce joueur
     if (!conn->playerName.isEmpty() && !room->isTraining) {
-        m_dbManager->updateGameStats(conn->playerName, false);  // false = défaite
+        if (room->isBeloteMode)
+            m_dbManager->updateBeloteGameStats(conn->playerName, false, false);
+        else
+            m_dbManager->updateGameStats(conn->playerName, false);
         qDebug() << "Stats mises a jour pour" << conn->playerName << "- Defaite enregistree (deconnexion)";
 
         // Enregistrer l'abandon dans les statistiques quotidiennes

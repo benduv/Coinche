@@ -614,3 +614,53 @@ TEST_F(DatabaseManagerTest, IsUsingTempPassword_AfterUpdate) {
     EXPECT_FALSE(dbManager->isUsingTempPassword("updatepwd@test.com"))
         << "Le mot de passe temporaire devrait être effacé après mise à jour";
 }
+
+// ========================================
+// Stats Belote (régression forfait)
+// ========================================
+
+TEST_F(DatabaseManagerTest, BeloteStats_ForfeitIncrementsbeloteGamesPlayed_NotGamesPlayed) {
+    // Régression : handleForfeit appelait updateGameStats en mode Belote
+    // au lieu de updateBeloteGameStats → les stats Belote n'étaient pas mises à jour.
+    // Ce test vérifie que updateBeloteGameStats(false) incrémente beloteGamesPlayed,
+    // et que updateGameStats(false) incrémente gamesPlayed (les deux sont bien distincts).
+    QString errorMsg;
+    dbManager->createAccount("beloteForfeitUser", "bforfeit@test.com", "password123", "avatar.svg", errorMsg);
+
+    // Simule un forfait Belote
+    bool ok = dbManager->updateBeloteGameStats("beloteForfeitUser", false, false);
+    ASSERT_TRUE(ok) << "updateBeloteGameStats doit retourner true";
+
+    DatabaseManager::PlayerStats stats = dbManager->getPlayerStats("beloteForfeitUser");
+    EXPECT_EQ(stats.beloteGamesPlayed, 1)  << "beloteGamesPlayed doit être 1 après un forfait Belote";
+    EXPECT_EQ(stats.beloteGamesWon,    0)  << "beloteGamesWon doit rester 0 après une défaite";
+    EXPECT_EQ(stats.gamesPlayed,       0)  << "gamesPlayed (Coinche) ne doit pas être touché";
+}
+
+TEST_F(DatabaseManagerTest, BeloteStats_ForfeitCoinche_DoesNotIncrementBeloteGames) {
+    // Vérifie que updateGameStats (Coinche) n'incrémente pas les stats Belote.
+    QString errorMsg;
+    dbManager->createAccount("coincheForfeitUser", "cforfeit@test.com", "password123", "avatar.svg", errorMsg);
+
+    bool ok = dbManager->updateGameStats("coincheForfeitUser", false);
+    ASSERT_TRUE(ok);
+
+    DatabaseManager::PlayerStats stats = dbManager->getPlayerStats("coincheForfeitUser");
+    EXPECT_EQ(stats.gamesPlayed,       1) << "gamesPlayed doit être 1 après un forfait Coinche";
+    EXPECT_EQ(stats.beloteGamesPlayed, 0) << "beloteGamesPlayed ne doit pas être touché par un forfait Coinche";
+}
+
+TEST_F(DatabaseManagerTest, BeloteStats_WinAndLoss_CountedSeparately) {
+    QString errorMsg;
+    dbManager->createAccount("beloteStatsUser", "bstats@test.com", "password123", "avatar.svg", errorMsg);
+
+    dbManager->updateBeloteGameStats("beloteStatsUser", true,  false); // Victoire
+    dbManager->updateBeloteGameStats("beloteStatsUser", false, false); // Défaite
+    dbManager->updateBeloteGameStats("beloteStatsUser", true,  true);  // Victoire + capot
+
+    DatabaseManager::PlayerStats stats = dbManager->getPlayerStats("beloteStatsUser");
+    EXPECT_EQ(stats.beloteGamesPlayed, 3);
+    EXPECT_EQ(stats.beloteGamesWon,    2);
+    EXPECT_EQ(stats.beloteCapots,      1);
+    EXPECT_EQ(stats.gamesPlayed,       0) << "Les stats Coinche ne doivent pas être affectées";
+}
