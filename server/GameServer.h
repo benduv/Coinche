@@ -476,7 +476,7 @@ private:
             countdownTimer->stop();
             qDebug() << "MATCHMAKING [" << mode << "] - Fin du compte à rebours, création de la partie avec bots";
             if (!queue.isEmpty() && queue.size() < 4) {
-                createGameWithBots();
+                createGameWithBots(mode);
             }
         }
     }
@@ -521,8 +521,8 @@ private:
         return QString("avataaars%1.svg").arg(avatarNumber);
     }
 
-    // Crée une partie en complétant avec des bots
-    void createGameWithBots();
+    // Crée une partie en complétant avec des bots pour le mode donné uniquement
+    void createGameWithBots(const QString& mode);
 
     void notifyGameStart(int roomId, const QList<QString> &connectionIds);
 

@@ -2854,15 +2854,15 @@ void GameServer::handleLeaveLobby(QWebSocket *socket) {
     }
 }
 
-void GameServer::createGameWithBots() {
-    // Créer des parties pour chaque queue non vide
-    for (int mode = 0; mode < 2; mode++) {
-        QQueue<QString>& queue = (mode == 0) ? m_matchmakingQueueCoinche : m_matchmakingQueueBelote;
-        if (queue.isEmpty()) continue;
+void GameServer::createGameWithBots(const QString& mode) {
+    // Traiter uniquement la queue du mode donné
+    {
+        QQueue<QString>& queue = (mode == "belote") ? m_matchmakingQueueBelote : m_matchmakingQueueCoinche;
+        if (queue.isEmpty()) return;
 
         int humanPlayers = queue.size();
         int botsNeeded = 4 - humanPlayers;
-        bool isBelote = (mode == 1);
+        bool isBelote = (mode == "belote");
 
         qDebug() << "Création d'une partie [" << (isBelote ? "Belote" : "Coinche") << "] avec"
                  << humanPlayers << "humain(s) et" << botsNeeded << "bot(s)";
@@ -3022,7 +3022,7 @@ void GameServer::createGameWithBots() {
             }
         });
     }
-    }  // fin du for sur mode
+    }
 }
 
 void GameServer::handleJoinTraining(QWebSocket *socket, const QJsonObject &data) {
