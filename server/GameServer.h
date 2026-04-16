@@ -293,18 +293,27 @@ public:
             qDebug() << "Erreur: impossible de demarrer le serveur";
         }
 
-        // Initialiser le timer de matchmaking avec bots (35 secondes)
-        // Le timer principal attend 30 secondes, puis le countdown démarre pour 9 secondes
-        m_matchmakingTimer = new QTimer(this);
-        m_matchmakingTimer->setInterval(25000);  // 30 secondes avant le début du compte à rebours
+        // Timers de matchmaking indépendants par mode (Coinche et Belote)
+        // Chaque queue a son propre timer principal (25s) et son propre timer de countdown (1s)
         m_lastQueueSize = 0;
-        connect(m_matchmakingTimer, &QTimer::timeout, this, &GameServer::onMatchmakingStartCountdown);
+        m_countdownSecondsCoinche = 0;
+        m_countdownSecondsBelote = 0;
 
-        // Timer de compte à rebours (9 dernières secondes)
-        m_countdownTimer = new QTimer(this);
-        m_countdownTimer->setInterval(1000);  // 1 seconde
-        m_countdownSeconds = 0;
-        connect(m_countdownTimer, &QTimer::timeout, this, &GameServer::onCountdownTick);
+        m_matchmakingTimerCoinche = new QTimer(this);
+        m_matchmakingTimerCoinche->setInterval(25000);
+        connect(m_matchmakingTimerCoinche, &QTimer::timeout, this, [this]() { startCountdownForMode("coinche"); });
+
+        m_countdownTimerCoinche = new QTimer(this);
+        m_countdownTimerCoinche->setInterval(1000);
+        connect(m_countdownTimerCoinche, &QTimer::timeout, this, [this]() { onCountdownTickForMode("coinche"); });
+
+        m_matchmakingTimerBelote = new QTimer(this);
+        m_matchmakingTimerBelote->setInterval(25000);
+        connect(m_matchmakingTimerBelote, &QTimer::timeout, this, [this]() { startCountdownForMode("belote"); });
+
+        m_countdownTimerBelote = new QTimer(this);
+        m_countdownTimerBelote->setInterval(1000);
+        connect(m_countdownTimerBelote, &QTimer::timeout, this, [this]() { onCountdownTickForMode("belote"); });
 
         // Initialiser le StatsReporter (rapports quotidiens)
         m_statsReporter = new StatsReporter(m_dbManager, m_smtpPassword, this);
@@ -435,46 +444,45 @@ private:
     void tryCreateGame();
         
 
-    // Slot appelé après 20 secondes d'inactivité - démarre le compte à rebours de 9 secondes
-    void onMatchmakingStartCountdown() {
-        qDebug() << "MATCHMAKING - Début du compte à rebours de 9 secondes";
-        qDebug() << "Coinche queue:" << m_matchmakingQueueCoinche.size()
-                 << "Belote queue:" << m_matchmakingQueueBelote.size();
+    // Démarre le compte à rebours de 9 secondes pour une queue donnée
+    void startCountdownForMode(const QString& mode) {
+        QTimer* mainTimer = (mode == "belote") ? m_matchmakingTimerBelote : m_matchmakingTimerCoinche;
+        QTimer* countdownTimer = (mode == "belote") ? m_countdownTimerBelote : m_countdownTimerCoinche;
+        int& countdownSeconds = (mode == "belote") ? m_countdownSecondsBelote : m_countdownSecondsCoinche;
+        QQueue<QString>& queue = (mode == "belote") ? m_matchmakingQueueBelote : m_matchmakingQueueCoinche;
 
-        // Arrêter le timer principal
-        m_matchmakingTimer->stop();
+        qDebug() << "MATCHMAKING [" << mode << "] - Début du compte à rebours de 9 secondes, joueurs:" << queue.size();
+        mainTimer->stop();
 
-        // S'il y a des joueurs dans au moins une queue mais pas assez pour une partie complète
-        bool hasPartialQueue = (m_matchmakingQueueCoinche.size() > 0 && m_matchmakingQueueCoinche.size() < 4) ||
-                               (m_matchmakingQueueBelote.size() > 0 && m_matchmakingQueueBelote.size() < 4);
-        if (hasPartialQueue) {
-            m_countdownSeconds = 9;
-            sendCountdownToQueue(m_countdownSeconds);
-            m_countdownTimer->start();
+        if (!queue.isEmpty() && queue.size() < 4) {
+            countdownSeconds = 9;
+            sendCountdownToMode(mode, countdownSeconds);
+            countdownTimer->start();
         }
     }
 
-    // Slot appelé chaque seconde pendant le compte à rebours
-    void onCountdownTick() {
-        m_countdownSeconds--;
-        qDebug() << "MATCHMAKING COUNTDOWN:" << m_countdownSeconds << "secondes";
+    // Appelé chaque seconde pendant le compte à rebours d'un mode donné
+    void onCountdownTickForMode(const QString& mode) {
+        int& countdownSeconds = (mode == "belote") ? m_countdownSecondsBelote : m_countdownSecondsCoinche;
+        QTimer* countdownTimer = (mode == "belote") ? m_countdownTimerBelote : m_countdownTimerCoinche;
+        QQueue<QString>& queue = (mode == "belote") ? m_matchmakingQueueBelote : m_matchmakingQueueCoinche;
 
-        if (m_countdownSeconds > 0) {
-            sendCountdownToQueue(m_countdownSeconds);
+        countdownSeconds--;
+        qDebug() << "MATCHMAKING COUNTDOWN [" << mode << "]:" << countdownSeconds << "secondes";
+
+        if (countdownSeconds > 0) {
+            sendCountdownToMode(mode, countdownSeconds);
         } else {
-            m_countdownTimer->stop();
-            qDebug() << "MATCHMAKING - Fin du compte à rebours, création de la partie avec bots";
-
-            bool hasPartialQueue = (m_matchmakingQueueCoinche.size() > 0 && m_matchmakingQueueCoinche.size() < 4) ||
-                                   (m_matchmakingQueueBelote.size() > 0 && m_matchmakingQueueBelote.size() < 4);
-            if (hasPartialQueue) {
+            countdownTimer->stop();
+            qDebug() << "MATCHMAKING [" << mode << "] - Fin du compte à rebours, création de la partie avec bots";
+            if (!queue.isEmpty() && queue.size() < 4) {
                 createGameWithBots();
             }
         }
     }
 
-    // Envoie le compte à rebours à tous les joueurs dans les queues
-    void sendCountdownToQueue(int seconds) {
+    // Envoie le compte à rebours aux joueurs de la queue du mode donné uniquement
+    void sendCountdownToMode(const QString& mode, int seconds) {
         QJsonObject msg;
         msg["type"] = "matchmakingCountdown";
         msg["seconds"] = seconds;
@@ -482,18 +490,15 @@ private:
                          .arg(seconds)
                          .arg(seconds > 1 ? "s" : "");
 
-        auto sendToQueue = [&](const QQueue<QString>& queue) {
-            for (const QString& connectionId : queue) {
-                if (m_connections.contains(connectionId)) {
-                    PlayerConnection* conn = m_connections[connectionId];
-                    if (conn && conn->socket) {
-                        sendMessage(conn->socket, msg);
-                    }
+        QQueue<QString>& queue = (mode == "belote") ? m_matchmakingQueueBelote : m_matchmakingQueueCoinche;
+        for (const QString& connectionId : queue) {
+            if (m_connections.contains(connectionId)) {
+                PlayerConnection* conn = m_connections[connectionId];
+                if (conn && conn->socket) {
+                    sendMessage(conn->socket, msg);
                 }
             }
-        };
-        sendToQueue(m_matchmakingQueueCoinche);
-        sendToQueue(m_matchmakingQueueBelote);
+        }
     }
 
     // Notifie les joueurs d'une queue de leur nombre
@@ -2533,10 +2538,12 @@ private:
         // Notifier les joueurs de la queue
         notifyQueueStatus(lobbyGameMode);
 
-        // Démarrer le timer matchmaking pour compléter avec des bots si personne ne rejoint
-        m_countdownTimer->stop();
-        m_matchmakingTimer->start();
-        qDebug() << "startLobbyGameWith2Players - Timer matchmaking démarré (bots si personne ne rejoint)";
+        // Démarrer le timer matchmaking du bon mode pour compléter avec des bots si personne ne rejoint
+        QTimer* lobbyCountdownTimer = (lobbyGameMode == "belote") ? m_countdownTimerBelote : m_countdownTimerCoinche;
+        QTimer* lobbyMainTimer = (lobbyGameMode == "belote") ? m_matchmakingTimerBelote : m_matchmakingTimerCoinche;
+        lobbyCountdownTimer->stop();
+        lobbyMainTimer->start();
+        qDebug() << "startLobbyGameWith2Players - Timer matchmaking [" << lobbyGameMode << "] démarré (bots si personne ne rejoint)";
 
         // Vérifier si on peut créer une partie
         tryCreateGame();
@@ -2617,13 +2624,14 @@ private:
     int m_maxSimultaneousConnections = 0;
     int m_maxSimultaneousGames = 0;
 
-    // Timer pour démarrer une partie avec des bots après 30 secondes d'inactivité
-    QTimer *m_matchmakingTimer;
-    int m_lastQueueSize;  // Pour détecter si de nouveaux joueurs arrivent
-
-    // Timer pour le compte à rebours (10 dernières secondes)
-    QTimer *m_countdownTimer;
-    int m_countdownSeconds;
+    // Timers de matchmaking indépendants par mode
+    QTimer *m_matchmakingTimerCoinche;
+    QTimer *m_matchmakingTimerBelote;
+    QTimer *m_countdownTimerCoinche;
+    QTimer *m_countdownTimerBelote;
+    int m_countdownSecondsCoinche;
+    int m_countdownSecondsBelote;
+    int m_lastQueueSize;
 };
 
 #endif // GAMESERVER_H

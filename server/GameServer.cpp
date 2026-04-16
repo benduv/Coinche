@@ -1627,10 +1627,12 @@ void GameServer::handleJoinMatchmaking(QWebSocket *socket, const QJsonObject &da
         // Notifier les joueurs de la même queue du nombre de joueurs
         notifyQueueStatus(gameMode);
 
-        // Redémarrer le timer de matchmaking
-        m_countdownTimer->stop();
-        m_matchmakingTimer->start();
-        qDebug() << "Timer matchmaking démarré/redémarré - 20s + 10s countdown avant création avec bots";
+        // Redémarrer le timer de matchmaking pour ce mode uniquement
+        QTimer* modeCountdownTimer = (gameMode == "belote") ? m_countdownTimerBelote : m_countdownTimerCoinche;
+        QTimer* modeMainTimer = (gameMode == "belote") ? m_matchmakingTimerBelote : m_matchmakingTimerCoinche;
+        modeCountdownTimer->stop();
+        modeMainTimer->start();
+        qDebug() << "Timer matchmaking [" << gameMode << "] démarré/redémarré - 25s + 9s countdown avant création avec bots";
 
         // Essaye de créer une partie si 4 joueurs dans cette queue
         tryCreateGame();
@@ -1706,11 +1708,16 @@ void GameServer::handleLeaveMatchmaking(QWebSocket *socket) {
     response["status"] = "left";
     sendMessage(socket, response);
 
-    // Si les deux queues sont vides, arrêter les timers
-    if (m_matchmakingQueueCoinche.isEmpty() && m_matchmakingQueueBelote.isEmpty()) {
-        m_matchmakingTimer->stop();
-        m_countdownTimer->stop();
-        qDebug() << "Timers matchmaking arrêtés - queues vides";
+    // Arrêter les timers des queues devenues vides
+    if (m_matchmakingQueueCoinche.isEmpty()) {
+        m_matchmakingTimerCoinche->stop();
+        m_countdownTimerCoinche->stop();
+        qDebug() << "Timers matchmaking Coinche arrêtés - queue vide";
+    }
+    if (m_matchmakingQueueBelote.isEmpty()) {
+        m_matchmakingTimerBelote->stop();
+        m_countdownTimerBelote->stop();
+        qDebug() << "Timers matchmaking Belote arrêtés - queue vide";
     }
 
     // Notifier les joueurs restants de la même queue
@@ -1893,10 +1900,14 @@ void GameServer::tryCreateGame() {
         notifyQueueStatus(mode == 0 ? "coinche" : "belote");
     }  // fin du for sur mode
 
-    // Arrêter les timers si les deux queues sont vides
-    if (m_matchmakingQueueCoinche.isEmpty() && m_matchmakingQueueBelote.isEmpty()) {
-        m_matchmakingTimer->stop();
-        m_countdownTimer->stop();
+    // Arrêter les timers des queues devenues vides
+    if (m_matchmakingQueueCoinche.isEmpty()) {
+        m_matchmakingTimerCoinche->stop();
+        m_countdownTimerCoinche->stop();
+    }
+    if (m_matchmakingQueueBelote.isEmpty()) {
+        m_matchmakingTimerBelote->stop();
+        m_countdownTimerBelote->stop();
     }
 }
 
