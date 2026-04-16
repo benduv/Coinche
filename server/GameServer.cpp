@@ -425,6 +425,16 @@ void GameServer::handleReconnection(const QString& connectionId, int roomId, int
     reconnectMsg["roomId"] = roomId;
     reconnectMsg["playerPosition"] = playerIndex;
     reconnectMsg["reconnection"] = true;  // Marquer comme reconnexion
+    reconnectMsg["gameMode"] = room->isBeloteMode ? QString("belote") : QString("coinche");
+
+    // Retournée (Belote uniquement) — indispensable pour afficher le BeloteAnnoncesPanel
+    if (room->isBeloteMode && room->retournee) {
+        QJsonObject retObj;
+        retObj["value"] = static_cast<int>(room->retournee->getChiffre());
+        retObj["suit"]  = static_cast<int>(room->retournee->getCouleur());
+        reconnectMsg["retournee"] = retObj;
+        reconnectMsg["beloteBidRound"] = room->beloteBidRound;
+    }
 
     // Envoyer les cartes actuelles du joueur
     QJsonArray myCards;

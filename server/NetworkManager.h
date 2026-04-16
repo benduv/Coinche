@@ -144,11 +144,16 @@ public:
             forfeitGame();
         });
 
-        // Propager le mode Belote et la retournée AVANT initOnlineGame
+        // Propager le mode Belote, la retournée et le tour d'enchères AVANT initOnlineGame
         // (initOnlineGame déclenche l'animation de distribution qui lit isBeloteMode)
         m_gameModel->setIsBeloteMode(m_gameMode == "belote");
         if (m_retourneeSuit >= 0 && m_retourneeValue >= 0) {
             m_gameModel->setRetournee(m_retourneeSuit, m_retourneeValue);
+        }
+        if (m_gameMode == "belote" && m_beloteBidRoundReconnect > 1) {
+            QJsonObject roundData;
+            roundData["beloteBidRound"] = m_beloteBidRoundReconnect;
+            m_gameModel->receivePlayerAction(-1, "beloteBidRoundChanged", roundData);
         }
 
         // Initialiser avec les données en passant le pseudo du joueur et le flag de reconnexion
@@ -780,8 +785,9 @@ private slots:
                 m_gameMode = receivedMode;
                 emit gameModeChanged();
             }
-            m_retourneeValue = obj.contains("retournee") ? obj["retournee"].toObject()["value"].toInt(-1) : -1;
-            m_retourneeSuit  = obj.contains("retournee") ? obj["retournee"].toObject()["suit"].toInt(-1)  : -1;
+            m_retourneeValue   = obj.contains("retournee")    ? obj["retournee"].toObject()["value"].toInt(-1) : -1;
+            m_retourneeSuit    = obj.contains("retournee")    ? obj["retournee"].toObject()["suit"].toInt(-1)  : -1;
+            m_beloteBidRoundReconnect = obj.contains("beloteBidRound") ? obj["beloteBidRound"].toInt(1) : 1;
 
             // qDebug() << "Position:" << m_myPosition;
             // qDebug() << "Nombre de cartes:" << m_myCards.size();
@@ -806,6 +812,17 @@ private slots:
                 // Mettre à jour les mains des adversaires avec le cardCount correct
                 m_gameModel->resyncOpponents(m_opponents);
                 qInfo() << "Adversaires resynchronises:" << m_opponents.size();
+
+                // Restaurer la retournée et le tour d'enchères Belote
+                m_gameModel->setIsBeloteMode(m_gameMode == "belote");
+                if (m_retourneeSuit >= 0 && m_retourneeValue >= 0) {
+                    m_gameModel->setRetournee(m_retourneeSuit, m_retourneeValue);
+                }
+                if (m_gameMode == "belote" && m_beloteBidRoundReconnect > 1) {
+                    QJsonObject roundData;
+                    roundData["beloteBidRound"] = m_beloteBidRoundReconnect;
+                    m_gameModel->receivePlayerAction(-1, "beloteBidRoundChanged", roundData);
+                }
 
                 // Reprendre les timers (ils seront redémarrés par updateGameState si nécessaire)
                 m_gameModel->resumeTimers();
@@ -1470,6 +1487,7 @@ private:
     QString m_gameMode = "coinche";  // "coinche" ou "belote"
     int m_retourneeValue = -1;        // Valeur de la retournée Belote (-1 si inconnue)
     int m_retourneeSuit  = -1;        // Couleur de la retournée Belote (-1 si inconnue)
+    int m_beloteBidRoundReconnect = 1; // Tour d'enchères Belote à restaurer lors d'une reconnexion
 
     // Heartbeat pour détecter les connexions mortes
     QTimer* m_heartbeatTimer;
