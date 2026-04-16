@@ -101,6 +101,9 @@ Rectangle {
             emailResendCooldownTimer.restart()
         }
         function onEmailChangeCodeFailed(error) {
+            // Format invalide uniquement — on ouvre quand même le panneau
+            // pour ne pas révéler si l'envoi a réussi ou échoué
+            if (settingsRoot.showEmailVerificationStep) return
             emailErrorText.text = error
             emailErrorText.visible = true
         }
@@ -1720,7 +1723,7 @@ Rectangle {
             }
 
             Text {
-                text: "Un code de vérification a été envoyé à\n" + settingsRoot.pendingEmailToVerify
+                text: "Si l'adresse indiquée est valide et disponible, vous recevrez un code de vérification à entrer ici."
                 font.pixelSize: 26 * settingsRoot.minRatio
                 color: "white"
                 Layout.alignment: Qt.AlignHCenter

@@ -1359,10 +1359,14 @@ void GameServer::handleRequestEmailChangeCode(QWebSocket *socket, const QJsonObj
         sendMessage(socket, response);
         return;
     }
+
+    // Si l'email est déjà utilisé, on répond "succès" sans envoyer de code
+    // (prévention d'énumération : on ne révèle pas si l'adresse est enregistrée)
     if (m_dbManager->emailExists(newEmail)) {
+        qInfo() << "[EMAIL_CHANGE_CODE] Email déjà utilisé, succès silencieux pour:" << newEmail;
         QJsonObject response;
-        response["type"] = "requestEmailChangeCodeFailed";
-        response["error"] = "Cette adresse email est déjà utilisée";
+        response["type"] = "requestEmailChangeCodeSuccess";
+        response["newEmail"] = newEmail;
         sendMessage(socket, response);
         return;
     }
@@ -1372,9 +1376,10 @@ void GameServer::handleRequestEmailChangeCode(QWebSocket *socket, const QJsonObj
     if (m_pendingVerifications.contains(newEmail)) {
         PendingVerification *existing = m_pendingVerifications[newEmail];
         if (now - existing->lastResendAt < 60000) {
+            // Cooldown actif : répondre succès silencieux pour ne pas révéler l'état
             QJsonObject response;
-            response["type"] = "requestEmailChangeCodeFailed";
-            response["error"] = "Veuillez patienter avant de renvoyer un code";
+            response["type"] = "requestEmailChangeCodeSuccess";
+            response["newEmail"] = newEmail;
             sendMessage(socket, response);
             return;
         }
@@ -1412,18 +1417,17 @@ void GameServer::handleRequestEmailChangeCode(QWebSocket *socket, const QJsonObj
     ).arg(pseudo, code);
 
     QObject::connect(smtp, &SmtpClient::emailSent, [socket, smtp, newEmail, this](bool success, const QString &error) {
+        // Dans tous les cas on répond "succès" pour ne pas révéler si l'adresse existe
+        // (prévention d'énumération d'emails)
+        QJsonObject response;
+        response["type"] = "requestEmailChangeCodeSuccess";
+        response["newEmail"] = newEmail;
+        sendMessage(socket, response);
         if (success) {
-            QJsonObject response;
-            response["type"] = "requestEmailChangeCodeSuccess";
-            response["newEmail"] = newEmail;
-            sendMessage(socket, response);
             qDebug() << "[EMAIL_CHANGE_CODE] Code envoyé à:" << newEmail;
         } else {
-            QJsonObject response;
-            response["type"] = "requestEmailChangeCodeFailed";
-            response["error"] = "Erreur lors de l'envoi de l'email. Veuillez réessayer.";
-            sendMessage(socket, response);
-            qWarning() << "[EMAIL_CHANGE_CODE] Échec envoi:" << error;
+            qWarning() << "[EMAIL_CHANGE_CODE] Échec envoi (succès silencieux):" << error;
+            // Supprimer le pending — l'utilisateur entrera un code qui ne matchera pas
             if (m_pendingVerifications.contains(newEmail)) {
                 delete m_pendingVerifications[newEmail];
                 m_pendingVerifications.remove(newEmail);
