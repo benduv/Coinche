@@ -421,6 +421,10 @@ private:
 
     void handleChangeEmail(QWebSocket *socket, const QJsonObject &data);
 
+    void handleRequestEmailChangeCode(QWebSocket *socket, const QJsonObject &data);
+
+    void handleVerifyCodeAndChangeEmail(QWebSocket *socket, const QJsonObject &data);
+
     void handleSetAnonymous(QWebSocket *socket, const QJsonObject &data);
 
     void handleReportCrash(QWebSocket *socket, const QJsonObject &data);

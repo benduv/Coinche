@@ -44,6 +44,11 @@ Rectangle {
     property string playerEmail: ""
     property string accountType: ""
 
+    // État du panneau de vérification email
+    property bool showEmailVerificationStep: false
+    property string pendingEmailToVerify: ""
+    property int emailResendCooldown: 0
+
     signal backToMenu()
     signal accountDeleted()
     signal openContact()
@@ -74,6 +79,9 @@ Rectangle {
             pseudoErrorText.visible = true
         }
         function onChangeEmailSuccess(newEmail) {
+            settingsRoot.showEmailVerificationStep = false
+            emailVerifCodeField.text = ""
+            emailVerifError.text = ""
             emailErrorText.visible = false
             emailSuccessText.visible = true
             emailInput.text = newEmail
@@ -83,6 +91,21 @@ Rectangle {
             emailSuccessText.visible = false
             emailErrorText.text = error
             emailErrorText.visible = true
+        }
+        function onEmailChangeCodeSent(newEmail) {
+            settingsRoot.pendingEmailToVerify = newEmail
+            settingsRoot.showEmailVerificationStep = true
+            emailVerifCodeField.text = ""
+            emailVerifError.text = ""
+            settingsRoot.emailResendCooldown = 60
+            emailResendCooldownTimer.restart()
+        }
+        function onEmailChangeCodeFailed(error) {
+            emailErrorText.text = error
+            emailErrorText.visible = true
+        }
+        function onVerifyEmailChangeFailed(error) {
+            emailVerifError.text = error
         }
         function onSetAnonymousFailed(error) {
             anonymousErrorText.text = error
@@ -736,12 +759,20 @@ Rectangle {
                                     emailErrorText.visible = true
                                     return
                                 }
+                                // Vérification plus stricte : au moins un caractère avant @,
+                                // un domaine avec au moins un point après @
+                                var parts = email.split("@")
+                                if (parts.length !== 2 || parts[0].length === 0 || parts[1].indexOf(".") === -1 || parts[1].split(".").pop().length < 2) {
+                                    emailErrorText.text = "Adresse email invalide"
+                                    emailErrorText.visible = true
+                                    return
+                                }
                                 if (email === settingsRoot.playerEmail) {
                                     emailErrorText.text = "Le nouvel email est identique à l'actuel"
                                     emailErrorText.visible = true
                                     return
                                 }
-                                networkManager.changeEmail(settingsRoot.playerName, email)
+                                networkManager.requestEmailChangeCode(settingsRoot.playerName, email)
                             }
                         }
 
@@ -1645,6 +1676,176 @@ Rectangle {
                 }
             }
 
+        }
+    }
+
+    // Timer pour le cooldown de renvoi du code email
+    Timer {
+        id: emailResendCooldownTimer
+        interval: 1000
+        repeat: true
+        onTriggered: {
+            if (settingsRoot.emailResendCooldown > 0)
+                settingsRoot.emailResendCooldown--
+            else
+                stop()
+        }
+    }
+
+    // Panneau de vérification du code email (overlay plein écran)
+    Rectangle {
+        anchors.fill: parent
+        color: "#1a1a2e"
+        z: 10
+        visible: settingsRoot.showEmailVerificationStep
+
+        StarryBackground {
+            anchors.fill: parent
+            minRatio: settingsRoot.minRatio
+            z: -1
+        }
+
+        ColumnLayout {
+            anchors.centerIn: parent
+            spacing: 15 * settingsRoot.minRatio
+            width: Math.min(parent.width * settingsRoot.formWidthRatio, 500 * settingsRoot.widthRatio)
+
+            Text {
+                text: "Vérification de\nvotre email"
+                font.pixelSize: 48 * settingsRoot.minRatio
+                font.bold: true
+                color: "#FFD700"
+                Layout.alignment: Qt.AlignHCenter
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            Text {
+                text: "Un code de vérification a été envoyé à\n" + settingsRoot.pendingEmailToVerify
+                font.pixelSize: 26 * settingsRoot.minRatio
+                color: "white"
+                Layout.alignment: Qt.AlignHCenter
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
+            // Champ code à 6 chiffres
+            TextField {
+                id: emailVerifCodeField
+                Layout.fillWidth: true
+                Layout.preferredHeight: 80 * settingsRoot.heightRatio
+                placeholderText: ""
+                font.pixelSize: 48 * settingsRoot.minRatio
+                horizontalAlignment: Text.AlignHCenter
+                maximumLength: 6
+                inputMethodHints: Qt.ImhDigitsOnly
+                validator: IntValidator { bottom: 0; top: 999999 }
+                background: Rectangle {
+                    color: "#2a2a2a"
+                    border.color: emailVerifCodeField.activeFocus ? "#FFD700" : "#555555"
+                    border.width: 2 * settingsRoot.minRatio
+                    radius: 5 * settingsRoot.minRatio
+                }
+                color: "white"
+
+                Text {
+                    text: "000000"
+                    font.pixelSize: 48 * settingsRoot.minRatio
+                    color: "#888888"
+                    anchors.fill: parent
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    visible: emailVerifCodeField.displayText.length === 0
+                }
+            }
+
+            Text {
+                id: emailVerifError
+                text: ""
+                font.pixelSize: 24 * settingsRoot.minRatio
+                color: "#ff6666"
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                opacity: text === "" ? 0 : 1
+            }
+
+            // Bouton Valider
+            AppButton {
+                Layout.fillWidth: true
+                Layout.preferredHeight: settingsRoot.isPortrait ? 100 * settingsRoot.heightRatio : 90 * settingsRoot.heightRatio
+
+                background: Rectangle {
+                    color: parent.down ? "#0088cc" : (parent.hovered ? "#00aaee" : "#0099dd")
+                    radius: 8 * settingsRoot.minRatio
+                }
+
+                contentItem: Text {
+                    text: "Valider"
+                    font.pixelSize: 40 * settingsRoot.minRatio
+                    font.bold: true
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    if (emailVerifCodeField.text.length !== 6) {
+                        emailVerifError.text = "Veuillez entrer le code à 6 chiffres"
+                        return
+                    }
+                    emailVerifError.text = ""
+                    networkManager.verifyCodeAndChangeEmail(
+                        settingsRoot.playerName,
+                        settingsRoot.pendingEmailToVerify,
+                        emailVerifCodeField.text
+                    )
+                }
+            }
+
+            // Lien "Renvoyer le code"
+            Text {
+                text: settingsRoot.emailResendCooldown > 0
+                      ? "Renvoyer le code (" + settingsRoot.emailResendCooldown + "s)"
+                      : "Renvoyer le code"
+                font.pixelSize: 26 * settingsRoot.minRatio
+                color: settingsRoot.emailResendCooldown > 0 ? "#666666" : "#00aaee"
+                font.underline: settingsRoot.emailResendCooldown === 0
+                Layout.alignment: Qt.AlignHCenter
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: settingsRoot.emailResendCooldown > 0 ? Qt.ArrowCursor : Qt.PointingHandCursor
+                    onClicked: {
+                        if (settingsRoot.emailResendCooldown > 0) return
+                        emailVerifError.text = ""
+                        networkManager.requestEmailChangeCode(
+                            settingsRoot.playerName,
+                            settingsRoot.pendingEmailToVerify
+                        )
+                    }
+                }
+            }
+
+            // Lien "Modifier l'email"
+            Text {
+                text: "Modifier l'email"
+                font.pixelSize: 26 * settingsRoot.minRatio
+                color: "#aaaaaa"
+                font.underline: true
+                Layout.alignment: Qt.AlignHCenter
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        settingsRoot.showEmailVerificationStep = false
+                        emailVerifCodeField.text = ""
+                        emailVerifError.text = ""
+                    }
+                }
+            }
         }
     }
 }

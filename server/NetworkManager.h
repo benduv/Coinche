@@ -334,6 +334,23 @@ public:
         sendMessage(msg);
     }
 
+    Q_INVOKABLE void requestEmailChangeCode(const QString &pseudo, const QString &newEmail) {
+        QJsonObject msg;
+        msg["type"] = "requestEmailChangeCode";
+        msg["pseudo"] = pseudo;
+        msg["newEmail"] = newEmail;
+        sendMessage(msg);
+    }
+
+    Q_INVOKABLE void verifyCodeAndChangeEmail(const QString &pseudo, const QString &newEmail, const QString &code) {
+        QJsonObject msg;
+        msg["type"] = "verifyCodeAndChangeEmail";
+        msg["pseudo"] = pseudo;
+        msg["newEmail"] = newEmail;
+        msg["code"] = code;
+        sendMessage(msg);
+    }
+
     Q_INVOKABLE void setAnonymous(bool anonymous) {
         // qDebug() << "Demande anonymisation:" << anonymous;
         QJsonObject msg;
@@ -585,6 +602,9 @@ signals:
     void changePseudoFailed(QString error);
     void changeEmailSuccess(QString newEmail);
     void changeEmailFailed(QString error);
+    void emailChangeCodeSent(QString newEmail);
+    void emailChangeCodeFailed(QString error);
+    void verifyEmailChangeFailed(QString error);
     void setAnonymousSuccess(bool anonymous);
     void setAnonymousFailed(QString error);
     void isAnonymousChanged();
@@ -1161,6 +1181,18 @@ private slots:
             QString error = obj["error"].toString();
             // qDebug() << "NetworkManager - Echec changement email:" << error;
             emit changeEmailFailed(error);
+        }
+        else if (type == "requestEmailChangeCodeSuccess") {
+            QString newEmail = obj["newEmail"].toString();
+            emit emailChangeCodeSent(newEmail);
+        }
+        else if (type == "requestEmailChangeCodeFailed") {
+            QString error = obj["error"].toString();
+            emit emailChangeCodeFailed(error);
+        }
+        else if (type == "verifyEmailChangeFailed") {
+            QString error = obj["error"].toString();
+            emit verifyEmailChangeFailed(error);
         }
         else if (type == "setAnonymousSuccess") {
             bool anonymous = obj["anonymous"].toBool();

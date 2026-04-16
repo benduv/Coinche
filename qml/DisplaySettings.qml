@@ -8,8 +8,8 @@ QtObject {
     // Tri des cartes : true = fortes à gauche, false = fortes à droite (défaut)
     property bool strongCardsLeft: false
 
-    // Sens de jeu : true = horaire, false = antihoraire (défaut)
-    property bool antiClockwisePlay: false
+    // Sens de jeu : true = antihoraire (défaut), false = horaire
+    property bool antiClockwisePlay: true
 
     // QSettings pour persister les préférences d'affichage
     property Settings storage: Settings {
@@ -17,7 +17,7 @@ QtObject {
         category: "Display"
 
         property bool storedStrongCardsLeft: false
-        property bool storedAntiClockwisePlay: false
+        property bool storedAntiClockwisePlay: true
     }
 
     // Charger les préférences au démarrage

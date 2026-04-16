@@ -134,6 +134,10 @@ void GameServer::onTextMessageReceived(const QString &message) {
         handleChangePseudo(sender, obj);
     } else if (type == "changeEmail") {
         handleChangeEmail(sender, obj);
+    } else if (type == "requestEmailChangeCode") {
+        handleRequestEmailChangeCode(sender, obj);
+    } else if (type == "verifyCodeAndChangeEmail") {
+        handleVerifyCodeAndChangeEmail(sender, obj);
     } else if (type == "setAnonymous") {
         handleSetAnonymous(sender, obj);
     } else if (type == "sendFriendRequest") {
@@ -1337,6 +1341,167 @@ void GameServer::handleChangeEmail(QWebSocket *socket, const QJsonObject &data) 
         qWarning() << "[CHANGE_EMAIL] Échec - pseudo:" << pseudo << "erreur:" << errorMsg;
         QJsonObject response;
         response["type"] = "changeEmailFailed";
+        response["error"] = errorMsg;
+        sendMessage(socket, response);
+    }
+}
+
+void GameServer::handleRequestEmailChangeCode(QWebSocket *socket, const QJsonObject &data) {
+    QString pseudo = data["pseudo"].toString();
+    QString newEmail = data["newEmail"].toString();
+
+    qDebug() << "[EMAIL_CHANGE_CODE] Demande code pour:" << pseudo << "->" << newEmail;
+
+    if (!newEmail.contains("@") || !newEmail.contains(".")) {
+        QJsonObject response;
+        response["type"] = "requestEmailChangeCodeFailed";
+        response["error"] = "Adresse email invalide";
+        sendMessage(socket, response);
+        return;
+    }
+    if (m_dbManager->emailExists(newEmail)) {
+        QJsonObject response;
+        response["type"] = "requestEmailChangeCodeFailed";
+        response["error"] = "Cette adresse email est déjà utilisée";
+        sendMessage(socket, response);
+        return;
+    }
+
+    // Vérifier cooldown de renvoi
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (m_pendingVerifications.contains(newEmail)) {
+        PendingVerification *existing = m_pendingVerifications[newEmail];
+        if (now - existing->lastResendAt < 60000) {
+            QJsonObject response;
+            response["type"] = "requestEmailChangeCodeFailed";
+            response["error"] = "Veuillez patienter avant de renvoyer un code";
+            sendMessage(socket, response);
+            return;
+        }
+        delete existing;
+        m_pendingVerifications.remove(newEmail);
+    }
+
+    // Générer et stocker le code
+    QString code = QString::number(QRandomGenerator::global()->bounded(100000, 1000000));
+    PendingVerification *pending = new PendingVerification{
+        pseudo, newEmail, "", "", code, now, now, 0
+    };
+    m_pendingVerifications[newEmail] = pending;
+
+    // Envoyer l'email
+    SmtpClient *smtp = new SmtpClient(this);
+    smtp->setHost("ssl0.ovh.net", 587);
+    smtp->setCredentials("contact@nebuludik.fr", m_smtpPassword);
+    smtp->setFrom("contact@nebuludik.fr", "Coinche de l'Espace");
+
+    QString subject = "Confirmation de changement d'email";
+    QString emailBody = QString(
+        "<html><body style='font-family: Arial, sans-serif; color: #333;'>"
+        "<h2 style='color: #FFD700;'>Coinche de l'Espace</h2>"
+        "<p>Bonjour <b>%1</b>,</p>"
+        "<p>Votre code de confirmation pour changer votre adresse email est :</p>"
+        "<div style='text-align: center; margin: 20px 0;'>"
+        "<span style='font-size: 32px; font-weight: bold; letter-spacing: 8px; "
+        "background-color: #f0f0f0; padding: 15px 25px; border-radius: 8px;'>%2</span>"
+        "</div>"
+        "<p>Ce code est valable pendant <b>10 minutes</b>.</p>"
+        "<p>Si vous n'avez pas demandé ce changement, ignorez ce message.</p>"
+        "<br><p>Cordialement,<br>L'équipe Coinche de l'Espace</p>"
+        "</body></html>"
+    ).arg(pseudo, code);
+
+    QObject::connect(smtp, &SmtpClient::emailSent, [socket, smtp, newEmail, this](bool success, const QString &error) {
+        if (success) {
+            QJsonObject response;
+            response["type"] = "requestEmailChangeCodeSuccess";
+            response["newEmail"] = newEmail;
+            sendMessage(socket, response);
+            qDebug() << "[EMAIL_CHANGE_CODE] Code envoyé à:" << newEmail;
+        } else {
+            QJsonObject response;
+            response["type"] = "requestEmailChangeCodeFailed";
+            response["error"] = "Erreur lors de l'envoi de l'email. Veuillez réessayer.";
+            sendMessage(socket, response);
+            qWarning() << "[EMAIL_CHANGE_CODE] Échec envoi:" << error;
+            if (m_pendingVerifications.contains(newEmail)) {
+                delete m_pendingVerifications[newEmail];
+                m_pendingVerifications.remove(newEmail);
+            }
+        }
+        smtp->deleteLater();
+    });
+
+    smtp->sendEmail(newEmail, subject, emailBody, true);
+}
+
+void GameServer::handleVerifyCodeAndChangeEmail(QWebSocket *socket, const QJsonObject &data) {
+    QString pseudo = data["pseudo"].toString();
+    QString newEmail = data["newEmail"].toString();
+    QString code = data["code"].toString();
+
+    qDebug() << "[VERIFY_EMAIL_CHANGE] Vérification code pour:" << pseudo << "->" << newEmail;
+
+    if (!m_pendingVerifications.contains(newEmail)) {
+        QJsonObject response;
+        response["type"] = "verifyEmailChangeFailed";
+        response["error"] = "Aucune vérification en cours pour cet email. Veuillez recommencer.";
+        sendMessage(socket, response);
+        return;
+    }
+
+    PendingVerification *pending = m_pendingVerifications[newEmail];
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+
+    if (now - pending->createdAt > 600000) {
+        delete pending;
+        m_pendingVerifications.remove(newEmail);
+        QJsonObject response;
+        response["type"] = "verifyEmailChangeFailed";
+        response["error"] = "Le code a expiré. Veuillez en demander un nouveau.";
+        sendMessage(socket, response);
+        return;
+    }
+    if (pending->attempts >= 5) {
+        delete pending;
+        m_pendingVerifications.remove(newEmail);
+        QJsonObject response;
+        response["type"] = "verifyEmailChangeFailed";
+        response["error"] = "Trop de tentatives. Veuillez demander un nouveau code.";
+        sendMessage(socket, response);
+        return;
+    }
+    if (pending->code != code) {
+        pending->attempts++;
+        int remaining = 5 - pending->attempts;
+        QJsonObject response;
+        response["type"] = "verifyEmailChangeFailed";
+        if (remaining > 0) {
+            response["error"] = QString("Code incorrect. Il vous reste %1 tentative%2.")
+                .arg(remaining).arg(remaining > 1 ? "s" : "");
+        } else {
+            response["error"] = "Trop de tentatives. Veuillez demander un nouveau code.";
+            delete pending;
+            m_pendingVerifications.remove(newEmail);
+        }
+        sendMessage(socket, response);
+        return;
+    }
+
+    // Code correct — changer l'email
+    delete pending;
+    m_pendingVerifications.remove(newEmail);
+
+    QString errorMsg;
+    if (m_dbManager->updateEmail(pseudo, newEmail, errorMsg)) {
+        QJsonObject response;
+        response["type"] = "changeEmailSuccess";
+        response["newEmail"] = newEmail;
+        sendMessage(socket, response);
+        qInfo() << "[VERIFY_EMAIL_CHANGE] SUCCÈS - Email changé - pseudo:" << pseudo << "->" << newEmail;
+    } else {
+        QJsonObject response;
+        response["type"] = "verifyEmailChangeFailed";
         response["error"] = errorMsg;
         sendMessage(socket, response);
     }
