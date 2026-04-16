@@ -808,9 +808,11 @@ void GameServer::handleRequestVerificationCode(QWebSocket *socket, const QJsonOb
         return;
     }
     if (m_dbManager->emailExists(email)) {
+        // Prévention d'énumération : répondre succès silencieux sans envoyer de code
+        qInfo() << "[VERIF_CODE] Email déjà utilisé, succès silencieux pour:" << email;
         QJsonObject response;
-        response["type"] = "requestVerificationCodeFailed";
-        response["error"] = "Cette adresse email est déjà utilisée";
+        response["type"] = "requestVerificationCodeSuccess";
+        response["email"] = email;
         sendMessage(socket, response);
         return;
     }

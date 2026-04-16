@@ -672,7 +672,7 @@ Rectangle {
                     }
 
                     Text {
-                        text: "Un code de vérification a été envoyé à\n" + registerScreenRec.verificationEmail
+                        text: "Si l'adresse indiquée est valide et disponible, vous recevrez un code de vérification à entrer ici."
                         font.pixelSize: 26 * loginRoot.minRatio
                         color: "white"
                         Layout.alignment: Qt.AlignHCenter
