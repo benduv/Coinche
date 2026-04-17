@@ -1060,7 +1060,7 @@ private:
                     if (conn && conn->socket) {
                         QJsonObject botMsg;
                         botMsg["type"] = "botReplacement";
-                        botMsg["message"] = "Un bot a pris le relai car vous n'avez pas annoncé à temps.";
+                        botMsg["message"] = "Un bot a pris le relais car vous n'avez pas annoncé à temps.";
                         sendMessage(conn->socket, botMsg);
                     }
                 }

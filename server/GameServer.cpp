@@ -4360,7 +4360,7 @@ void GameServer::notifyPlayersWithPlayableCards(int roomId) {
                 if (conn && conn->socket && conn->socket->state() == QAbstractSocket::ConnectedState) {
                     QJsonObject notification;
                     notification["type"] = "botReplacement";
-                    notification["message"] = "Un bot a pris le relai car vous n'avez pas joué à temps.";
+                    notification["message"] = "Un bot a pris le relais car vous n'avez pas joué à temps.";
                     conn->socket->sendTextMessage(QJsonDocument(notification).toJson(QJsonDocument::Compact));
                     qDebug() << "TIMEOUT - Notification botReplacement envoyée au joueur" << currentPlayer;
                 }

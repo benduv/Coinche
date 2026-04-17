@@ -7,7 +7,7 @@ Rectangle {
     anchors.fill: parent
     color: "#000000CC"  // Fond semi-transparent
 
-    property string message: "Un bot a pris le relai car vous semblez inactif."
+    property string message: "Un bot a pris le relais car vous semblez inactif."
 
     // Ratio responsive
     property real widthRatio: width / 1024
