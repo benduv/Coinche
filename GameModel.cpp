@@ -745,6 +745,9 @@ void GameModel::updateGameState(const QJsonObject& state)
 
             // Si on passe en phase de jeu, vider le pli actuel et masquer les animations
             if (!m_biddingPhase) {
+                // Masquer la retournée (Belote) — la distribution est terminée
+                setRetournee(-1, -1);
+
                 m_currentPli.clear();
                 emit currentPliChanged();
 
@@ -978,7 +981,8 @@ void GameModel::updateGameState(const QJsonObject& state)
                 default: bidValue = 0; break;
             }
 
-            bid["bidValue"] = QString::number(bidValue);
+            // En Belote, l'annonce n'a pas de valeur numérique (bidValue = 0 → chaîne vide)
+            bid["bidValue"] = (bidValue == 0) ? "" : QString::number(bidValue);
 
             // Déterminer le symbole de la couleur d'atout depuis lastBidSuit (envoyé par le serveur)
             int bidSuit = state.contains("lastBidSuit") ? state["lastBidSuit"].toInt() : 0;

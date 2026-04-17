@@ -575,6 +575,41 @@ void GameServer::handleReconnection(const QString& connectionId, int roomId, int
         }
 
         sendMessage(conn->socket, stateMsg);
+    } else if (room->gameState == "distributing") {
+        // Distribution en cours (Belote round 2) — les cartes sont déjà dans les mains (côté serveur)
+        // mais le timer BELOTE_COMPLETE_DEAL_DURATION_MS n'a pas encore lancé startPlayingPhase.
+        // Envoyer immédiatement un gameState "playing" pour que le client ne reste pas bloqué en biddingPhase.
+        QJsonObject stateMsg;
+        stateMsg["type"] = "gameState";
+        stateMsg["biddingPhase"] = false;
+        stateMsg["currentPlayer"] = room->currentPlayerIndex;
+        stateMsg["firstPlayerIndex"] = room->firstPlayerIndex;
+        stateMsg["atout"] = static_cast<int>(room->couleurAtout);
+        stateMsg["isToutAtout"] = room->isToutAtout;
+        stateMsg["isSansAtout"] = room->isSansAtout;
+
+        stateMsg["scoreTeam1"] = room->scoreMancheTeam1;
+        stateMsg["scoreTeam2"] = room->scoreMancheTeam2;
+        stateMsg["scoreTotalTeam1"] = room->scoreTeam1;
+        stateMsg["scoreTotalTeam2"] = room->scoreTeam2;
+
+        if (room->lastBidderIndex >= 0) {
+            stateMsg["lastBidderIndex"] = room->lastBidderIndex;
+            stateMsg["lastBidAnnonce"] = static_cast<int>(room->lastBidAnnonce);
+            stateMsg["lastBidSuit"] = static_cast<int>(room->lastBidSuit);
+            stateMsg["isCoinched"] = room->coinched;
+            stateMsg["isSurcoinched"] = room->surcoinched;
+            stateMsg["coinchedByPlayerIndex"] = room->coinchePlayerIndex;
+            stateMsg["surcoinchedByPlayerIndex"] = room->surcoinchePlayerIndex;
+        }
+
+        if (room->currentPlayerIndex == playerIndex) {
+            QJsonArray playableCards = calculatePlayableCards(room, playerIndex);
+            stateMsg["playableCards"] = playableCards;
+        }
+
+        qInfo() << "GameServer - Reconnexion (distributing → playing): atout:" << static_cast<int>(room->couleurAtout);
+        sendMessage(conn->socket, stateMsg);
     }
 
     // IMPORTANT: Envoyer botReplacement APRÈS gameFound et gameState
@@ -4878,6 +4913,10 @@ void GameServer::completeBeloteDistribution(int roomId, int takerIndex) {
         cardsMsg["beloteTeam2"] = room->beloteTeam2;
         sendMessage(conn->socket, cardsMsg);
     }
+
+    // La retournée est maintenant dans la main du preneur — ne plus la référencer
+    // (évite qu'une reconnexion envoie une retournée périmée et affiche le panel d'enchères)
+    room->retournee = nullptr;
 
     // Laisser le temps au client d'animer la distribution complète (retournée + round-robin)
     // avant de lancer la phase de jeu (sinon les bots joueraient pendant l'animation).
