@@ -150,7 +150,8 @@ public:
         if (m_retourneeSuit >= 0 && m_retourneeValue >= 0) {
             m_gameModel->setRetournee(m_retourneeSuit, m_retourneeValue);
         }
-        if (m_gameMode == "belote" && m_beloteBidRoundReconnect > 1) {
+        // Toujours synchroniser beloteBidRound (pas seulement > 1)
+        if (m_gameMode == "belote") {
             QJsonObject roundData;
             roundData["beloteBidRound"] = m_beloteBidRoundReconnect;
             m_gameModel->receivePlayerAction(-1, "beloteBidRoundChanged", roundData);
@@ -818,7 +819,9 @@ private slots:
                 if (m_retourneeSuit >= 0 && m_retourneeValue >= 0) {
                     m_gameModel->setRetournee(m_retourneeSuit, m_retourneeValue);
                 }
-                if (m_gameMode == "belote" && m_beloteBidRoundReconnect > 1) {
+                // Toujours synchroniser beloteBidRound (pas seulement > 1)
+                // sinon l'ancien round 2 persiste si on se reconnecte pendant le round 1 d'une nouvelle manche
+                if (m_gameMode == "belote") {
                     QJsonObject roundData;
                     roundData["beloteBidRound"] = m_beloteBidRoundReconnect;
                     m_gameModel->receivePlayerAction(-1, "beloteBidRoundChanged", roundData);

@@ -4885,7 +4885,9 @@ void GameServer::completeBeloteDistribution(int roomId, int takerIndex) {
 
     // Envoyer les nouvelles cartes à chaque joueur
     for (int i = 0; i < 4; i++) {
-        if (room->isBot[i]) continue;
+        // Ne pas skipper les humains remplacés par des bots mais encore connectés
+        // (isBot[i] == true && connectionIds[i] non vide = humain AFK qui regarde)
+        if (room->isBot[i] && room->connectionIds[i].isEmpty()) continue;
         QString connId = room->connectionIds[i];
         if (connId.isEmpty()) continue;
         PlayerConnection* conn = m_connections.value(connId);
