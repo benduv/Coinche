@@ -9,7 +9,7 @@ QtObject {
     // - "emulator" : Émulateur Android - WS non sécurisé
     // - "local-network" : Tests sur réseau local (PC hotspot) - WS non sécurisé
     // - "remote" : Serveur VPS distant en production - WSS sécurisé (SSL/TLS)
-    property string environment: "test-remote"
+    property string environment: "remote"
 
     // URLs pour chaque environnement
     // Note: Les environnements de développement utilisent WS (non sécurisé)
